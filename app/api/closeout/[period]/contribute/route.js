@@ -21,7 +21,7 @@ export async function POST(request, { params }) {
 
   const admin = supabaseAdmin();
   const { data: real } = await admin
-    .from("retirement_accounts")
+    .from("simple_retirement_accounts")
     .select("account_id")
     .eq("user_id", user.id)
     .eq("retirement_type", retirementType)

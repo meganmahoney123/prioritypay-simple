@@ -5,7 +5,7 @@ export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const { data, error } = await supabaseAdmin().from("profiles").select("*").eq("id", user.id).single();
+  const { data, error } = await supabaseAdmin().from("simple_profiles").select("*").eq("id", user.id).single();
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({
@@ -31,7 +31,7 @@ export async function PUT(request) {
   const rp = body.retirementProfile || {};
 
   const { error } = await supabaseAdmin()
-    .from("profiles")
+    .from("simple_profiles")
     .update({
       persona: body.persona,
       business_name: body.businessName,

@@ -6,7 +6,7 @@ export default async function RootPage() {
   if (!user) redirect("/login");
 
   const { data: profile } = await supabaseAdmin()
-    .from("profiles")
+    .from("simple_profiles")
     .select("onboarded")
     .eq("id", user.id)
     .single();

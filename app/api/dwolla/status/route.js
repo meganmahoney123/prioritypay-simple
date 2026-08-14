@@ -6,7 +6,7 @@ export async function GET() {
   if (!user) return unauthorized();
 
   const { data } = await supabaseAdmin()
-    .from("dwolla_customers")
+    .from("simple_dwolla_customers")
     .select("verification_status")
     .eq("user_id", user.id)
     .single();

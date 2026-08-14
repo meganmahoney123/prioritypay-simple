@@ -42,7 +42,7 @@ export async function POST(request) {
     const customerId = customerUrl.split("/").pop();
 
     const admin = supabaseAdmin();
-    const { error: dbError } = await admin.from("dwolla_customers").upsert({
+    const { error: dbError } = await admin.from("simple_dwolla_customers").upsert({
       user_id: user.id,
       dwolla_customer_id: customerId,
       dwolla_customer_url: customerUrl,

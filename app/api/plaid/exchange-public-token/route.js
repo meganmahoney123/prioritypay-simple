@@ -28,7 +28,7 @@ export async function POST(request) {
   const admin = supabaseAdmin();
 
   const { data: dwollaCustomer } = await admin
-    .from("dwolla_customers")
+    .from("simple_dwolla_customers")
     .select("dwolla_customer_url")
     .eq("user_id", user.id)
     .single();
@@ -60,7 +60,7 @@ export async function POST(request) {
     const fundingSourceId = fundingSourceUrl.split("/").pop();
 
     const { data: inserted, error: dbError } = await admin
-      .from("accounts")
+      .from("simple_accounts")
       .insert({
         user_id: user.id,
         institution_name: institution_name || "Bank",

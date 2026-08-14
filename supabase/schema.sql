@@ -13,7 +13,7 @@
 
 create extension if not exists "uuid-ossp";
 
-create table if not exists profiles (
+create table if not exists simple_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   persona text not null default 'Self-Employed (No W2 Employees)',
   business_name text,
@@ -26,7 +26,7 @@ create table if not exists profiles (
   created_at timestamptz not null default now()
 );
 
-create table if not exists accounts (
+create table if not exists simple_accounts (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,
   institution_name text not null,
@@ -41,7 +41,7 @@ create table if not exists accounts (
   created_at timestamptz not null default now()
 );
 
-create table if not exists dwolla_customers (
+create table if not exists simple_dwolla_customers (
   user_id uuid primary key references auth.users(id) on delete cascade,
   dwolla_customer_id text not null,
   dwolla_customer_url text not null,
@@ -53,7 +53,7 @@ create table if not exists dwolla_customers (
 -- SEP IRA, Investments, Tax Reserve, Emergency Fund, OPEX, Savings, or
 -- anything custom -- is a row here: a percentage of every deposit, an
 -- optional monthly total cap, and a connected account.
-create table if not exists split_rules_percent (
+create table if not exists simple_split_rules_percent (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,
   label text not null,
@@ -61,13 +61,13 @@ create table if not exists split_rules_percent (
   pct numeric not null default 0,
   cap numeric,
   color text not null default '#065f46',
-  account_id uuid references accounts(id) on delete set null,
+  account_id uuid references simple_accounts(id) on delete set null,
   retirement_type text, -- 'solo_401k' | 'sep_ira' | null
   investment_type text, -- slug derived from label for investment-flavored rows, or null
   created_at timestamptz not null default now()
 );
 
-create table if not exists transfers (
+create table if not exists simple_transfers (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,
   source_amount numeric not null,
@@ -78,11 +78,11 @@ create table if not exists transfers (
   created_at timestamptz not null default now()
 );
 create unique index if not exists transfers_plaid_transaction_id_key
-  on transfers (plaid_transaction_id) where plaid_transaction_id is not null;
+  on simple_transfers(plaid_transaction_id) where plaid_transaction_id is not null;
 
-create table if not exists transfer_allocations (
+create table if not exists simple_transfer_allocations (
   id uuid primary key default uuid_generate_v4(),
-  transfer_id uuid not null references transfers(id) on delete cascade,
+  transfer_id uuid not null references simple_transfers(id) on delete cascade,
   category_type text not null default 'percent',
   label text not null,
   amount numeric not null,
@@ -96,16 +96,16 @@ create table if not exists transfer_allocations (
 -- The user's REAL Solo 401k / SEP IRA account -- deliberately separate from
 -- split_rules_percent's account_id, which is just where that money holds
 -- until Close-Out sends it here in one click.
-create table if not exists retirement_accounts (
+create table if not exists simple_retirement_accounts (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,
   retirement_type text not null,
-  account_id uuid not null references accounts(id) on delete cascade,
+  account_id uuid not null references simple_accounts(id) on delete cascade,
   connected_at timestamptz not null default now(),
   unique (user_id, retirement_type)
 );
 
-create table if not exists monthly_closeouts (
+create table if not exists simple_monthly_closeouts (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,
   period date not null,
@@ -117,11 +117,11 @@ create table if not exists monthly_closeouts (
   unique (user_id, period)
 );
 
-create table if not exists closeout_transactions (
+create table if not exists simple_closeout_transactions (
   id uuid primary key default uuid_generate_v4(),
-  closeout_id uuid not null references monthly_closeouts(id) on delete cascade,
+  closeout_id uuid not null references simple_monthly_closeouts(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  account_id uuid references accounts(id) on delete set null,
+  account_id uuid references simple_accounts(id) on delete set null,
   plaid_transaction_id text not null,
   txn_date date not null,
   name text,
@@ -135,38 +135,38 @@ create table if not exists closeout_transactions (
 
 -- ---------- Row Level Security ----------
 
-alter table profiles enable row level security;
-alter table accounts enable row level security;
-alter table dwolla_customers enable row level security;
-alter table split_rules_percent enable row level security;
-alter table transfers enable row level security;
-alter table transfer_allocations enable row level security;
-alter table retirement_accounts enable row level security;
-alter table monthly_closeouts enable row level security;
-alter table closeout_transactions enable row level security;
+alter table simple_profiles enable row level security;
+alter table simple_accounts enable row level security;
+alter table simple_dwolla_customers enable row level security;
+alter table simple_split_rules_percent enable row level security;
+alter table simple_transfers enable row level security;
+alter table simple_transfer_allocations enable row level security;
+alter table simple_retirement_accounts enable row level security;
+alter table simple_monthly_closeouts enable row level security;
+alter table simple_closeout_transactions enable row level security;
 
-create policy "own profile" on profiles for all using (auth.uid() = id) with check (auth.uid() = id);
-create policy "own accounts" on accounts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own dwolla customer" on dwolla_customers for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own percent rules" on split_rules_percent for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own transfers" on transfers for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own transfer allocations" on transfer_allocations for all using (
-  exists (select 1 from transfers t where t.id = transfer_id and t.user_id = auth.uid())
+create policy "own profile" on simple_profiles for all using (auth.uid() = id) with check (auth.uid() = id);
+create policy "own accounts" on simple_accounts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own dwolla customer" on simple_dwolla_customers for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own percent rules" on simple_split_rules_percent for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own transfers" on simple_transfers for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own transfer allocations" on simple_transfer_allocations for all using (
+  exists (select 1 from simple_transfers t where t.id = transfer_id and t.user_id = auth.uid())
 );
-create policy "own retirement accounts" on retirement_accounts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own closeouts" on monthly_closeouts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "own closeout transactions" on closeout_transactions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own retirement accounts" on simple_retirement_accounts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own closeouts" on simple_monthly_closeouts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own closeout transactions" on simple_closeout_transactions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Auto-create a profile row the moment someone signs up.
-create or replace function public.handle_new_user()
+create or replace function public.handle_new_simple_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id) values (new.id);
+  insert into public.simple_profiles (id) values (new.id);
   return new;
 end;
 $$ language plpgsql security definer;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
+drop trigger if exists on_auth_user_created_simple on auth.users;
+create trigger on_auth_user_created_simple
   after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+  for each row execute procedure public.handle_new_simple_user();

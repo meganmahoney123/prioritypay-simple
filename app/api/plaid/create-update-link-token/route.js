@@ -23,7 +23,7 @@ export async function POST(request) {
 
   const admin = supabaseAdmin();
   const { data: account } = await admin
-    .from("accounts")
+    .from("simple_accounts")
     .select("id, plaid_access_token")
     .eq("id", accountId)
     .eq("user_id", user.id)

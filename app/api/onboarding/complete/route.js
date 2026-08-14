@@ -11,7 +11,7 @@ export async function POST(request) {
   const rp = retirementProfile || {};
 
   const { error: profileError } = await admin
-    .from("profiles")
+    .from("simple_profiles")
     .update({
       persona,
       business_name: businessName,
@@ -25,7 +25,7 @@ export async function POST(request) {
     .eq("id", user.id);
   if (profileError) return Response.json({ error: profileError.message }, { status: 500 });
 
-  await admin.from("split_rules_percent").delete().eq("user_id", user.id);
+  await admin.from("simple_split_rules_percent").delete().eq("user_id", user.id);
 
   const percent = splitRules?.percent || [];
 
@@ -42,7 +42,7 @@ export async function POST(request) {
       // Same derivation as /api/split-rules -- see the comment there.
       investment_type: r.group === "Investments" && !r.retirementType ? investmentTypeFromLabel(r.label) : null,
     }));
-    const { error } = await admin.from("split_rules_percent").insert(rows);
+    const { error } = await admin.from("simple_split_rules_percent").insert(rows);
     if (error) return Response.json({ error: error.message }, { status: 500 });
   }
 

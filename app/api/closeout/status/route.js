@@ -17,7 +17,7 @@ export async function GET() {
   const periodDate = `${period}-01`;
 
   const { data: closeout } = await admin
-    .from("monthly_closeouts")
+    .from("simple_monthly_closeouts")
     .select("status")
     .eq("user_id", user.id)
     .eq("period", periodDate)

@@ -16,7 +16,7 @@ export async function PATCH(request, { params }) {
 
   const admin = supabaseAdmin();
   const { error } = await admin
-    .from("closeout_transactions")
+    .from("simple_closeout_transactions")
     .update({ confirmed_category: confirmedCategory })
     .eq("id", params.id)
     .eq("user_id", user.id);

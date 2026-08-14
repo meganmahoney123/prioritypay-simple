@@ -18,7 +18,7 @@ export async function POST(request) {
 
   const admin = supabaseAdmin();
   const { error } = await admin
-    .from("retirement_accounts")
+    .from("simple_retirement_accounts")
     .upsert(
       { user_id: user.id, retirement_type: retirementType, account_id: accountId, connected_at: new Date().toISOString() },
       { onConflict: "user_id,retirement_type" }

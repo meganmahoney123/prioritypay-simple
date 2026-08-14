@@ -38,7 +38,7 @@ export async function POST(request, { params }) {
   const admin = supabaseAdmin();
 
   const { data: closeout } = await admin
-    .from("monthly_closeouts")
+    .from("simple_monthly_closeouts")
     .select("*")
     .eq("user_id", user.id)
     .eq("period", periodDate)
@@ -46,7 +46,7 @@ export async function POST(request, { params }) {
   if (!closeout) return Response.json({ error: "Start this close-out first." }, { status: 404 });
 
   const { data: transactions } = await admin
-    .from("closeout_transactions")
+    .from("simple_closeout_transactions")
     .select("amount, confirmed_category, suggested_category")
     .eq("closeout_id", closeout.id);
 
@@ -61,11 +61,11 @@ export async function POST(request, { params }) {
   const netIncome = income - expense;
 
   await admin
-    .from("monthly_closeouts")
+    .from("simple_monthly_closeouts")
     .update({ status: "confirmed", net_income: netIncome, tax_rate_pct: taxRatePct, confirmed_at: new Date().toISOString() })
     .eq("id", closeout.id);
 
-  const { data: profile } = await admin.from("profiles").select("age_bracket").eq("id", user.id).single();
+  const { data: profile } = await admin.from("simple_profiles").select("age_bracket").eq("id", user.id).single();
   const ageBracket = profile?.age_bracket || "under50";
 
   // Every transfer_allocations row tagged with this retirement_type since
@@ -74,8 +74,8 @@ export async function POST(request, { params }) {
   // true year-to-date figure the annual IRS limit needs to be checked
   // against (see estimateRetirementRoom's comment in lib/allocations.js).
   const { data: ytdRows } = await admin
-    .from("transfer_allocations")
-    .select("amount, retirement_type, transfers!inner(user_id, created_at)")
+    .from("simple_transfer_allocations")
+    .select("amount, retirement_type, simple_transfers!inner(user_id, created_at)")
     .eq("transfers.user_id", user.id)
     .gte("transfers.created_at", yearStartIso(period))
     .neq("status", "failed")
@@ -89,16 +89,16 @@ export async function POST(request, { params }) {
   // live directly as percent rows (see DEFAULT_SPLIT_RULES in
   // lib/allocations.js).
   const { data: fixedRetirementRows } = await admin
-    .from("split_rules_percent")
+    .from("simple_split_rules_percent")
     .select("*")
     .eq("user_id", user.id)
     .not("retirement_type", "is", null);
 
-  const { data: realAccountRows } = await admin.from("retirement_accounts").select("*").eq("user_id", user.id);
+  const { data: realAccountRows } = await admin.from("simple_retirement_accounts").select("*").eq("user_id", user.id);
   const realByType = Object.fromEntries((realAccountRows || []).map((r) => [r.retirement_type, r]));
 
   const { data: accounts } = await admin
-    .from("accounts")
+    .from("simple_accounts")
     .select("id, institution_name, account_name, mask, current_balance")
     .eq("user_id", user.id);
   const accountsById = Object.fromEntries((accounts || []).map((a) => [a.id, a]));
@@ -139,7 +139,7 @@ export async function POST(request, { params }) {
   // so it's looked up by label instead, same anchor pattern used everywhere
   // else in the app for this kind of row.
   const { data: taxReserveRow } = await admin
-    .from("split_rules_percent")
+    .from("simple_split_rules_percent")
     .select("account_id")
     .eq("user_id", user.id)
     .eq("label", "Tax Reserve")
@@ -152,8 +152,8 @@ export async function POST(request, { params }) {
   // top of it share the label "Tax Reserve" (see PERCENT_MINIMUM_NOTE_LABELS
   // in lib/allocations.js), so a single label match captures both.
   const { data: taxAllocationRows } = await admin
-    .from("transfer_allocations")
-    .select("amount, transfers!inner(user_id, created_at)")
+    .from("simple_transfer_allocations")
+    .select("amount, simple_transfers!inner(user_id, created_at)")
     .eq("transfers.user_id", user.id)
     .eq("label", "Tax Reserve")
     .gte("transfers.created_at", periodStartIso(period))

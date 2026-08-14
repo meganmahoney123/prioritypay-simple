@@ -36,8 +36,8 @@ export async function GET(request, { params }) {
   const { startIso, endIso } = periodBounds(period);
 
   let query = admin
-    .from("transfer_allocations")
-    .select("label, amount, category_type, transfers!inner(user_id, created_at, status)")
+    .from("simple_transfer_allocations")
+    .select("label, amount, category_type, simple_transfers!inner(user_id, created_at, status)")
     .eq("transfers.user_id", user.id)
     .neq("status", "failed")
     .gte("transfers.created_at", startIso)
@@ -46,7 +46,7 @@ export async function GET(request, { params }) {
 
   const [{ data: allocRows }, { data: profile }] = await Promise.all([
     query,
-    admin.from("profiles").select("created_at").eq("id", user.id).single(),
+    admin.from("simple_profiles").select("created_at").eq("id", user.id).single(),
   ]);
 
   const byLabel = {};

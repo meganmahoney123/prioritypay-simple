@@ -26,7 +26,7 @@ export async function POST(request) {
     const status = event.topic === "transfer_completed" ? "completed" : "failed";
 
     const { data: allocation } = await admin
-      .from("transfer_allocations")
+      .from("simple_transfer_allocations")
       .update({ status })
       .eq("dwolla_transfer_id", dwollaTransferId)
       .select("transfer_id")
@@ -36,14 +36,14 @@ export async function POST(request) {
     // categories has settled; "failed" if any of them didn't.
     if (allocation) {
       const { data: siblings } = await admin
-        .from("transfer_allocations")
+        .from("simple_transfer_allocations")
         .select("status")
         .eq("transfer_id", allocation.transfer_id);
       const statuses = (siblings || []).map((s) => s.status);
       let parentStatus = "processing";
       if (statuses.some((s) => s === "failed")) parentStatus = "failed";
       else if (statuses.every((s) => s === "completed" || s === "reserved")) parentStatus = "completed";
-      await admin.from("transfers").update({ status: parentStatus }).eq("id", allocation.transfer_id);
+      await admin.from("simple_transfers").update({ status: parentStatus }).eq("id", allocation.transfer_id);
     }
   }
 

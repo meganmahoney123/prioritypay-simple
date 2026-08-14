@@ -19,7 +19,7 @@ export async function GET() {
   const admin = supabaseAdmin();
 
   const { data, error } = await admin
-    .from("accounts")
+    .from("simple_accounts")
     .select("id, institution_name, account_name, mask, current_balance, plaid_access_token, plaid_account_id, plaid_cursor, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
@@ -36,7 +36,7 @@ export async function GET() {
           if (match) {
             const fresh = match.balances.available ?? match.balances.current;
             if (fresh !== null && fresh !== undefined && fresh !== acc.current_balance) {
-              await admin.from("accounts").update({ current_balance: fresh }).eq("id", acc.id);
+              await admin.from("simple_accounts").update({ current_balance: fresh }).eq("id", acc.id);
             }
             if (fresh !== null && fresh !== undefined) balance = fresh;
           }

@@ -26,8 +26,8 @@ export async function GET(request) {
 
   const admin = supabaseAdmin();
   let query = admin
-    .from("transfer_allocations")
-    .select("label, amount, category_type, transfers!inner(user_id, created_at, status)")
+    .from("simple_transfer_allocations")
+    .select("label, amount, category_type, simple_transfers!inner(user_id, created_at, status)")
     .eq("transfers.user_id", user.id)
     .neq("status", "failed")
     .gte("transfers.created_at", startIso)

@@ -47,7 +47,7 @@ export async function GET(request, { params }) {
   const admin = supabaseAdmin();
 
   let { data: closeout } = await admin
-    .from("monthly_closeouts")
+    .from("simple_monthly_closeouts")
     .select("*")
     .eq("user_id", user.id)
     .eq("period", periodDate)
@@ -55,7 +55,7 @@ export async function GET(request, { params }) {
 
   if (!closeout) {
     const { data: created, error } = await admin
-      .from("monthly_closeouts")
+      .from("simple_monthly_closeouts")
       .insert({ user_id: user.id, period: periodDate })
       .select("*")
       .single();
@@ -65,7 +65,7 @@ export async function GET(request, { params }) {
 
   if (closeout.status === "draft") {
     const { data: accounts } = await admin
-      .from("accounts")
+      .from("simple_accounts")
       .select("id, plaid_access_token")
       .eq("user_id", user.id)
       .not("plaid_access_token", "is", null);
@@ -98,13 +98,13 @@ export async function GET(request, { params }) {
       // ignoreDuplicates so a re-visit doesn't clobber confirmed_category
       // on a transaction the person already reviewed.
       await admin
-        .from("closeout_transactions")
+        .from("simple_closeout_transactions")
         .upsert(rows, { onConflict: "closeout_id,plaid_transaction_id", ignoreDuplicates: true });
     }
   }
 
   const { data: transactions } = await admin
-    .from("closeout_transactions")
+    .from("simple_closeout_transactions")
     .select("*")
     .eq("closeout_id", closeout.id)
     .order("txn_date", { ascending: false });

@@ -29,7 +29,7 @@ export async function GET() {
   const admin = supabaseAdmin();
 
   const { data: percent, error } = await admin
-    .from("split_rules_percent")
+    .from("simple_split_rules_percent")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
@@ -51,7 +51,7 @@ export async function PUT(request) {
   const { percent } = await request.json();
   const admin = supabaseAdmin();
 
-  await admin.from("split_rules_percent").delete().eq("user_id", user.id);
+  await admin.from("simple_split_rules_percent").delete().eq("user_id", user.id);
 
   if (percent?.length) {
     const rows = percent.map((r) => ({
@@ -69,7 +69,7 @@ export async function PUT(request) {
       // tracking buckets instead of colliding under one generic type.
       investment_type: r.group === "Investments" && !r.retirementType ? investmentTypeFromLabel(r.label) : null,
     }));
-    const { error } = await admin.from("split_rules_percent").insert(rows);
+    const { error } = await admin.from("simple_split_rules_percent").insert(rows);
     if (error) return Response.json({ error: error.message }, { status: 500 });
   }
 

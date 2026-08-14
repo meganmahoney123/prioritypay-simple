@@ -40,7 +40,7 @@ export async function POST(request) {
   const admin = supabaseAdmin();
 
   const { data: accounts } = await admin
-    .from("accounts")
+    .from("simple_accounts")
     .select("id, user_id, plaid_access_token, plaid_account_id, plaid_cursor")
     .eq("plaid_item_id", item_id);
 
@@ -89,7 +89,7 @@ export async function POST(request) {
         }
       }
 
-      await admin.from("accounts").update({ plaid_cursor: cursor }).eq("id", account.id);
+      await admin.from("simple_accounts").update({ plaid_cursor: cursor }).eq("id", account.id);
     } catch (err) {
       console.error("Plaid webhook sync failed for account", account.id, err?.response?.data || err);
     }

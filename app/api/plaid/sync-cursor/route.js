@@ -16,7 +16,7 @@ export async function POST(request) {
   const admin = supabaseAdmin();
 
   const { data: account } = await admin
-    .from("accounts")
+    .from("simple_accounts")
     .select("id, plaid_access_token")
     .eq("id", accountId)
     .eq("user_id", user.id)
@@ -28,7 +28,7 @@ export async function POST(request) {
 
   try {
     const { cursor } = await syncNewTransactions(account.plaid_access_token, null);
-    await admin.from("accounts").update({ plaid_cursor: cursor }).eq("id", account.id);
+    await admin.from("simple_accounts").update({ plaid_cursor: cursor }).eq("id", account.id);
     return Response.json({ ok: true });
   } catch (err) {
     const detail = err?.response?.data || err?.message || String(err);

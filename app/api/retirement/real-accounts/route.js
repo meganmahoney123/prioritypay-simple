@@ -10,7 +10,7 @@ export async function GET() {
   const admin = supabaseAdmin();
 
   const { data, error } = await admin
-    .from("retirement_accounts")
+    .from("simple_retirement_accounts")
     .select("retirement_type, account_id, accounts(institution_name, account_name, mask)")
     .eq("user_id", user.id);
 
