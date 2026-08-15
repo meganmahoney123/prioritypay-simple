@@ -23,23 +23,19 @@ import { plaidClient } from "@/lib/plaid";
 // get a placeholder dwolla_funding_source_id and a curated display balance
 // instead of a real one. Don't use these rows to actually move money.
 const SEED_ACCOUNTS = [
-  { displayInstitution: "Chase", accountName: "Total Checking", mask: "4821", searchName: "First Platypus Bank", balance: 8432.17 },
-  { displayInstitution: "Bank of America", accountName: "Advantage Checking", mask: "0193", searchName: "Tattersall Federal Credit Union", balance: 3120.55 },
-  { displayInstitution: "Ally Bank", accountName: "Business Checking", mask: "7756", searchName: "Tartan Bank", balance: 12890.4 },
-  { displayInstitution: "PayPal", accountName: "PayPal Balance", mask: "3310", searchName: null, balance: 642.1 },
-  { displayInstitution: "Cash App", accountName: "Cash App Balance", mask: "9042", searchName: null, balance: 310.75 },
+  { displayInstitution: "Chase", accountName: "Total Checking", mask: "4821", subtype: "checking", balance: 8432.17 },
+  { displayInstitution: "Bank of America", accountName: "Advantage Checking", mask: "0193", subtype: "checking", balance: 3120.55 },
+  { displayInstitution: "Ally Bank", accountName: "Business Checking", mask: "7756", subtype: "checking", balance: 12890.4 },
+  { displayInstitution: "PayPal", accountName: "PayPal Balance", mask: "3310", subtype: "paypal", balance: 642.1 },
+  { displayInstitution: "Cash App", accountName: "Cash App Balance", mask: "9042", subtype: "prepaid", balance: 310.75 },
 ];
 
-async function resolveInstitutionId(name) {
-  const res = await plaidClient.institutionsSearch({
-    query: name,
-    products: ["transactions"],
-    country_codes: ["US"],
-  });
-  const match = res.data.institutions[0];
-  if (!match) throw new Error(`No sandbox institution found for "${name}"`);
-  return match.institution_id;
-}
+// Always the same non-OAuth sandbox institution (Plaid's own docs flag
+// custom-user balance overrides as unreliable at OAuth institutions like
+// real Chase/BofA -- First Platypus Bank is one of the two they recommend
+// instead). institution_name/account_name are cosmetic overrides at insert
+// time regardless, same as the real "Connect These Apps" buttons.
+const SANDBOX_INSTITUTION_ID = "ins_109508"; // First Platypus Bank
 
 export async function POST(request) {
   if ((process.env.PLAID_ENV || "sandbox") !== "sandbox") {
@@ -61,10 +57,26 @@ export async function POST(request) {
 
   for (const seed of SEED_ACCOUNTS) {
     try {
-      const institutionId = await resolveInstitutionId(seed.searchName || "First Platypus Bank");
+      // Plaid's Sandbox "custom user" feature: passing override_username
+      // "user_custom" plus a JSON-stringified config as override_password
+      // lets us set an exact starting_balance per account instead of
+      // getting whatever random/default balance the test institution
+      // normally hands back (~$100), entirely server-side, no Link UI.
       const sandboxRes = await plaidClient.sandboxPublicTokenCreate({
-        institution_id: institutionId,
+        institution_id: SANDBOX_INSTITUTION_ID,
         initial_products: ["transactions"],
+        options: {
+          override_username: "user_custom",
+          override_password: JSON.stringify({
+            override_accounts: [
+              {
+                type: "depository",
+                subtype: seed.subtype,
+                starting_balance: seed.balance,
+              },
+            ],
+          }),
+        },
       });
       const publicToken = sandboxRes.data.public_token;
 
