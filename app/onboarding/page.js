@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ArrowLeft, Zap } from "lucide-react";
 import { PrimaryButton, GhostButton, Badge } from "@/components/ui";
@@ -27,7 +27,19 @@ export default function OnboardingPage() {
   const [businessName, setBusinessName] = useState("");
   const [entityType] = useState("Sole proprietor / freelancer");
   const [businessType, setBusinessType] = useState(BUSINESS_TYPES[0]);
-  const [dwollaDone, setDwollaDone] = useState(false);
+  // Checked against the real Dwolla record on mount instead of assuming
+  // false -- someone who already verified in an earlier session (or hit
+  // this step twice) would otherwise always see a blank form again, and
+  // submitting it a second time gets rejected by Dwolla as a duplicate
+  // customer for the same email. `null` means "still checking."
+  const [dwollaDone, setDwollaDone] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/dwolla/status")
+      .then((r) => r.json())
+      .then((d) => setDwollaDone(!!d.verified))
+      .catch(() => setDwollaDone(false));
+  }, []);
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
   const [creating, setCreating] = useState({});
@@ -130,7 +142,9 @@ export default function OnboardingPage() {
           {step === 2 && (
             <div>
               <h2 className="text-2xl font-bold mb-6">Verify your identity</h2>
-              {dwollaDone ? (
+              {dwollaDone === null ? (
+                <p className="text-sm text-neutral-400 mb-6">Checking your identity status…</p>
+              ) : dwollaDone ? (
                 <p className="text-sm text-emerald-700 font-medium mb-6">Identity verified.</p>
               ) : (
                 <IdentityForm onDone={() => setDwollaDone(true)} />
