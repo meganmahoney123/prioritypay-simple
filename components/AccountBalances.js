@@ -31,7 +31,7 @@ function CategoryRow({ label, account, ytd, mtd }) {
           {account ? (account.current_balance === null || account.current_balance === undefined ? "—" : currency(account.current_balance)) : "—"}
         </div>
         <div className="text-[10px] text-neutral-400">
-          {currency(ytd)} YTD · {currency(mtd)} this month
+          {currency(ytd)} this year · {currency(mtd)} this month
         </div>
       </div>
     </div>
@@ -97,7 +97,7 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
               {byAccount[acc.id].map((r) => (
                 <div key={r.id} className="flex justify-between gap-2">
                   <span className="truncate">{r.label}</span>
-                  <span className="font-mono shrink-0">{currency(ytdByLabel[r.label] || 0)} YTD</span>
+                  <span className="font-mono shrink-0">{currency(ytdByLabel[r.label] || 0)} this year</span>
                 </div>
               ))}
             </div>
