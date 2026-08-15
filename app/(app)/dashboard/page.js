@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import AccountBalances from "@/components/AccountBalances";
 import CloseoutNudge from "@/components/CloseoutNudge";
 import MoneyDistributionChart from "@/components/MoneyDistributionChart";
-import { allRules, DEFAULT_SPLIT_RULES } from "@/lib/allocations";
+import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS } from "@/lib/allocations";
 import { Card } from "@/components/ui";
+import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 function currentPeriod() {
@@ -64,6 +65,21 @@ export default function DashboardPage() {
     [splitRules]
   );
 
+  // Persistent (non-dismissible, by design -- Megan doesn't want these
+  // closeable) call-outs when someone has fully zeroed out Retirement or
+  // Investments in Split Rules. A 0% row is a valid, deliberate choice
+  // (some people genuinely can't afford either yet), but it's exactly the
+  // kind of thing that's easy to set once during onboarding and forget --
+  // this is the dashboard actively surfacing it every time, not just once.
+  const retirementPct = useMemo(
+    () => groupPctTotal((splitRules?.percent || []).filter((r) => r.group === "Retirement")),
+    [splitRules]
+  );
+  const investmentsPct = useMemo(
+    () => groupPctTotal((splitRules?.percent || []).filter((r) => r.group === "Investments")),
+    [splitRules]
+  );
+
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
@@ -92,6 +108,43 @@ export default function DashboardPage() {
           {unconnected.map((r) => r.label).join(", ")}. Head to{" "}
           <Link href="/splits" className="text-emerald-700 font-semibold">Split Rules</Link> to connect or create
           one for each -- until then, that percentage just stays wherever a deposit lands.
+        </Card>
+      )}
+
+      {retirementPct === 0 && (
+        <Card className="p-4 text-sm text-red-900 bg-red-50 border-red-200 flex items-start gap-2">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span>
+            <span className="font-semibold">Warning:</span> You currently aren&apos;t contributing to retirement.
+            We highly recommend that you set up a Solo 401k and/or SEP IRA to start contributing to retirement.{" "}
+            <a
+              href={RETIREMENT_SETUP_LINKS.sep_ira}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold underline"
+            >
+              Need help?
+            </a>
+          </span>
+        </Card>
+      )}
+
+      {investmentsPct === 0 && (
+        <Card className="p-4 text-sm text-red-900 bg-red-50 border-red-200 flex items-start gap-2">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span>
+            <span className="font-semibold">Warning:</span> You currently aren&apos;t investing any money. This
+            means you&apos;re missing out on compounding growth. We highly recommend that you set up investment
+            accounts.{" "}
+            <a
+              href={INVESTMENT_SETUP_LINKS.brokerage}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold underline"
+            >
+              Need help?
+            </a>
+          </span>
         </Card>
       )}
 

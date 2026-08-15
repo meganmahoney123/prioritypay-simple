@@ -11,12 +11,14 @@ import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTo
 // Investments/Retirement sub-accounts, same per-row connect-or-create
 // account controls, same copy voice. The only things this page adds on
 // top are things a one-time wizard step doesn't need: an explicit Save
-// (onboarding submits everything at once at the end), a Monthly Cap $
-// field per row, "add your own category" / suggestion chips, and a reset
-// to PriorityPay Simple's defaults. Live month-to-date/year-to-date dollar
-// amounts per category now live on the Dashboard instead of here, so
-// there's exactly one place that shows "how much have I actually put
-// where" instead of two slightly-different copies of the same numbers.
+// (onboarding submits everything at once at the end), "add your own
+// category" / suggestion chips, and a reset to PriorityPay Simple's
+// defaults. Live month-to-date/year-to-date dollar amounts per category
+// now live on the Dashboard instead of here, so there's exactly one place
+// that shows "how much have I actually put where" instead of two
+// slightly-different copies of the same numbers. No Monthly Cap $ field
+// here anymore -- removed per product decision, one less thing to
+// configure.
 export default function SplitRulesPage() {
   const [percent, setPercent] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -120,7 +122,6 @@ export default function SplitRulesPage() {
         setCreating={setCreating}
         connecting={connecting}
         setConnecting={setConnecting}
-        showCap
       />
 
       <div className="flex items-center gap-2 flex-wrap">

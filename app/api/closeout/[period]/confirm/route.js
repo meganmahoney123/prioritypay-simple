@@ -50,13 +50,24 @@ export async function POST(request, { params }) {
     .select("amount, confirmed_category, suggested_category")
     .eq("closeout_id", closeout.id);
 
+  // "income" here means business/side-hustle income only -- W2 paycheck
+  // deposits get their own category (w2_income) and are deliberately left
+  // out of this sum. Retirement contribution room (Solo 401k/SEP IRA) and
+  // the tax reserve estimate below are both derived from netIncome, so a
+  // W2 paycheck never inflates either: an employer already withholds taxes
+  // and may already offer a 401k, and PriorityPay has no way to know what
+  // room, if any, is left there. w2Income is tracked and returned purely
+  // for transparency -- so the confirmed number visibly excludes it
+  // instead of silently doing so.
   let income = 0;
   let expense = 0;
+  let w2Income = 0;
   (transactions || []).forEach((t) => {
     const cat = t.confirmed_category || t.suggested_category;
     const amt = Number(t.amount) || 0;
     if (cat === "income") income += amt;
     if (cat === "expense") expense += amt;
+    if (cat === "w2_income") w2Income += amt;
   });
   const netIncome = income - expense;
 
@@ -166,6 +177,7 @@ export async function POST(request, { params }) {
     netIncome,
     income,
     expense,
+    w2Income,
     retirement,
     ageBracket,
     tax: {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
@@ -25,6 +25,7 @@ function periodLabel(period) {
 
 const CATS = [
   { value: "income", label: "Income" },
+  { value: "w2_income", label: "W2 Income" },
   { value: "expense", label: "Expense" },
   { value: "exclude", label: "Exclude" },
 ];
@@ -54,6 +55,14 @@ export default function CloseoutPage() {
   const [calculatorPlanType, setCalculatorPlanType] = useState(null);
   const [annualNetIncome, setAnnualNetIncome] = useState("");
   const [annualTaxRatePct, setAnnualTaxRatePct] = useState(25);
+  // Gate on first landing on this tab: "Do you have W2 income this month?"
+  // -- Yes forces flagging every W2 paycheck before touching anything else
+  // on the page (see the w2_income category and how it's excluded from
+  // netIncome in the confirm route), No just dismisses it. Deliberately
+  // NOT reset by the period useEffect below -- switching months with the
+  // prev/next arrows shouldn't re-ask, only navigating to this tab fresh
+  // (a fresh mount of this component) does.
+  const [w2PopupStep, setW2PopupStep] = useState("ask");
 
   const load = async (p) => {
     setLoading(true);
@@ -107,6 +116,27 @@ export default function CloseoutPage() {
     });
     return income - expense;
   }, [transactions]);
+  const w2IncomePreview = useMemo(
+    () =>
+      transactions.reduce((sum, t) => {
+        const cat = t.confirmed_category || t.suggested_category;
+        return cat === "w2_income" ? sum + (Number(t.amount) || 0) : sum;
+      }, 0),
+    [transactions]
+  );
+  // Only real income candidates are relevant to the W2 popup -- no reason
+  // to ask someone to flag an expense, or a transfer already excluded as
+  // PriorityPay's own money moving between their own accounts, as a
+  // paycheck.
+  const incomeTransactions = useMemo(
+    () =>
+      transactions.filter((t) => {
+        if (t.direction !== "in") return false;
+        const cat = t.confirmed_category || t.suggested_category;
+        return cat === "income" || cat === "w2_income";
+      }),
+    [transactions]
+  );
 
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
   const realByType = useMemo(() => Object.fromEntries(realAccounts.map((r) => [r.retirementType, r])), [realAccounts]);
@@ -176,6 +206,11 @@ export default function CloseoutPage() {
 
   const isConfirmed = closeout?.status === "confirmed";
   const displayNetIncome = isConfirmed ? Number(closeout?.net_income) || 0 : netIncomePreview;
+  // recommendations.w2Income (from the confirm response) is the source of
+  // truth once available; w2IncomePreview covers the brief window before
+  // it loads and the normal not-yet-confirmed preview state -- both derive
+  // from the same per-transaction category, so they agree once loaded.
+  const displayW2Income = recommendations?.w2Income ?? w2IncomePreview;
   const liveTaxEstimate = estimateTaxReserve(displayNetIncome, taxRatePct);
   const annualNetIncomeValue = annualNetIncome === "" ? displayNetIncome * 12 : Number(annualNetIncome) || 0;
   const annualTaxEstimate = estimateTaxReserve(annualNetIncomeValue, annualTaxRatePct);
@@ -250,6 +285,12 @@ export default function CloseoutPage() {
           <span className="text-sm font-semibold">Net income {isConfirmed ? "(confirmed)" : "(preview)"}</span>
           <span className="text-sm font-mono font-bold">{currency(displayNetIncome)}</span>
         </div>
+        {displayW2Income > 0 && (
+          <div className="flex items-center justify-between text-xs text-neutral-400 mt-1">
+            <span>W2 income this month (excluded from retirement &amp; tax below)</span>
+            <span className="font-mono">{currency(displayW2Income)}</span>
+          </div>
+        )}
         {!isConfirmed && (
           <PrimaryButton onClick={handleConfirm} disabled={confirming} className="w-full mt-4">
             {confirming ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
@@ -408,8 +449,8 @@ export default function CloseoutPage() {
               accurate, and it&apos;s not tax advice. Talk to a tax professional about your real effective rate.
             </p>
             <p className="text-xs text-neutral-400 mb-3">
-              All of this stays in whichever account you already chose for Tax Reserve on the Minimums page --
-              this is just a number to compare against what&apos;s already there. Want to add more?
+              All of this stays in whichever account you already chose for Tax Reserve on Split Rules -- this is
+              just a number to compare against what&apos;s already there. Want to add more?
             </p>
             {!topUp.open ? (
               <GhostButton onClick={() => setTopUp((prev) => ({ ...prev, open: true }))} className="text-xs px-3 py-1.5">
@@ -453,6 +494,83 @@ export default function CloseoutPage() {
 
       {calculatorPlanType && (
         <ContributionCalculatorModal planType={calculatorPlanType} onClose={() => setCalculatorPlanType(null)} />
+      )}
+
+      {w2PopupStep !== "closed" && !loading && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+            {w2PopupStep === "ask" && (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <Briefcase size={18} className="text-emerald-700" />
+                  <span className="text-base font-bold">Do you have W2 income this month?</span>
+                </div>
+                <p className="text-sm text-neutral-500 mb-6">
+                  If any deposit this month was a W2 paycheck (as opposed to business or side-hustle income),
+                  flag it so PriorityPay can leave it out of your retirement contribution room and tax reserve
+                  estimate below -- your employer already withholds taxes and may already offer a 401k, so
+                  those numbers shouldn&apos;t double-count it.
+                </p>
+                <div className="flex gap-3">
+                  <GhostButton onClick={() => setW2PopupStep("closed")} className="flex-1 justify-center">
+                    No
+                  </GhostButton>
+                  <PrimaryButton onClick={() => setW2PopupStep("flagging")} className="flex-1 justify-center">
+                    Yes
+                  </PrimaryButton>
+                </div>
+              </>
+            )}
+            {w2PopupStep === "flagging" && (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <Briefcase size={18} className="text-emerald-700" />
+                  <span className="text-base font-bold">Flag your W2 paychecks</span>
+                </div>
+                <p className="text-xs text-neutral-500 mb-4">
+                  Toggle on anything that&apos;s a W2 paycheck for {periodLabel(period)}. Everything else stays
+                  counted as regular business income. You can always change this later in Step 1 below.
+                </p>
+                {incomeTransactions.length === 0 ? (
+                  <p className="text-sm text-neutral-400 mb-4">
+                    No income transactions found for {periodLabel(period)} yet -- nothing to flag right now.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto mb-4">
+                    {incomeTransactions.map((t) => {
+                      const cat = t.confirmed_category || t.suggested_category;
+                      const isW2 = cat === "w2_income";
+                      return (
+                        <div
+                          key={t.id}
+                          className="flex items-center justify-between gap-3 border border-neutral-200 rounded-lg px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium truncate">{t.name}</div>
+                            <div className="text-xs text-neutral-400">
+                              {t.txn_date} • {currency(t.amount)}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setCategory(t.id, isW2 ? "income" : "w2_income")}
+                            className={`text-[11px] font-semibold px-3 py-1.5 rounded-full shrink-0 ${
+                              isW2 ? "bg-emerald-600 text-white" : "bg-neutral-100 text-neutral-500"
+                            }`}
+                          >
+                            {isW2 ? "W2 income" : "Mark as W2"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <PrimaryButton onClick={() => setW2PopupStep("closed")} className="w-full justify-center">
+                  Continue
+                </PrimaryButton>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -27,10 +27,27 @@ function periodBounds(period) {
 // counted once when the original deposit landed. Falls back to a plain
 // sign-based guess (Plaid convention: negative amount = money in) when PFC
 // isn't present, which can happen for some institutions/sandbox data.
+//
+// W2 paychecks get their own guess too (w2_income, distinct from plain
+// income) -- Plaid tags a regular payroll deposit's personal_finance_category
+// as INCOME_WAGES, which is about as reliable a signal as PFC gets. Falls
+// back to matching common payroll-processor/paycheck naming when PFC is
+// missing or unclear (sandbox data especially). Either way this is only a
+// starting suggestion -- the W2 popup (see app/(app)/closeout/page.js)
+// walks the person through confirming or correcting every one before
+// anything downstream (retirement room, tax reserve) trusts it.
+const PAYROLL_NAME_PATTERN = /\b(payroll|direct ?dep(osit)?|salary|bi-?weekly pay|adp|gusto|paychex|justworks|rippling|paylocity|workday|tri ?net|insperity)\b/i;
+
 function suggestCategory(txn) {
   const pfc = txn.personal_finance_category?.primary || "";
+  const pfcDetailed = txn.personal_finance_category?.detailed || "";
   if (pfc === "TRANSFER_IN" || pfc === "TRANSFER_OUT") return "exclude";
-  return txn.amount < 0 ? "income" : "expense";
+  if (txn.amount < 0) {
+    const name = txn.merchant_name || txn.name || "";
+    if (pfcDetailed === "INCOME_WAGES" || PAYROLL_NAME_PATTERN.test(name)) return "w2_income";
+    return "income";
+  }
+  return "expense";
 }
 
 // GET creates the draft close-out for this period if it doesn't exist yet

@@ -11,9 +11,7 @@ import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SU
 // Emergency Fund, OPEX, Savings, anything a person adds) or a sub-account
 // inside a group (Investments, Retirement). `canRemove` is only passed
 // true for group sub-accounts -- flat rows have no delete control here.
-// `showCap` optionally renders the Monthly Cap $ field (Split Rules only;
-// onboarding skips it to keep the wizard focused).
-function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showCap }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, setCreating, connecting, setConnecting, onAccountLinked }) {
   return (
     <div className="border border-neutral-200 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -32,19 +30,6 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, s
           className="w-14 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
         />
         <span className="text-xs text-neutral-500">%</span>
-        {showCap && (
-          <span className="flex items-center gap-1.5">
-            <span className="text-xs text-neutral-500">Cap $</span>
-            <input
-              type="number"
-              min={0}
-              placeholder="none"
-              value={rule.max === null || rule.max === undefined ? "" : rule.max}
-              onChange={(e) => onUpdate(rule.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
-              className="w-20 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
-            />
-          </span>
-        )}
         {canRemove && (
           <button onClick={() => onRemove(rule.id)} className="text-neutral-400 hover:text-red-600 shrink-0">
             <Trash2 size={14} />
@@ -120,7 +105,6 @@ export default function PercentSplitEditor({
   setCreating,
   connecting,
   setConnecting,
-  showCap = false,
 }) {
   return (
     <div className="space-y-3">
@@ -148,7 +132,6 @@ export default function PercentSplitEditor({
                   connecting={connecting}
                   setConnecting={setConnecting}
                   onAccountLinked={onAccountLinked}
-                  showCap={showCap}
                 />
               ))}
             </div>
@@ -171,7 +154,6 @@ export default function PercentSplitEditor({
             connecting={connecting}
             setConnecting={setConnecting}
             onAccountLinked={onAccountLinked}
-            showCap={showCap}
           />
         )
       )}
