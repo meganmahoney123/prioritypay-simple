@@ -328,9 +328,14 @@ export default function Homepage() {
       <section className="border-t border-neutral-200 bg-white overflow-hidden">
         <div className="max-w-6xl mx-auto px-5 pt-20 pb-4 text-center">
           <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Connects to how you actually get paid</h2>
-          <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mx-auto mb-10">
+          <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mx-auto mb-5">
             Do you have income scattered everywhere? No problem. Connect all of your income-receiving accounts and
             apps so that every deposit is accounted for.
+          </p>
+          <p className="text-neutral-600 max-w-2xl mx-auto mb-10">
+            Venmo, PayPal, and Cash App connect directly, plus effectively any US bank or credit union checking or
+            savings account through Plaid -- including all the major ones and roughly 12,000 smaller banks and
+            credit unions.
           </p>
         </div>
         <div className="relative pb-20">

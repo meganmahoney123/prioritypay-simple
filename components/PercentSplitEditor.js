@@ -1,26 +1,39 @@
 "use client";
 
-import { Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Pencil } from "lucide-react";
 import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
-import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SUBTEXT } from "@/lib/allocations";
+import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SUBTEXT, isCoreRow } from "@/lib/allocations";
 
 // One row of the percent-split editor -- a flat category (Tax Reserve,
 // Emergency Fund, OPEX, Savings, anything a person adds) or a sub-account
-// inside a group (Investments, Retirement). `canRemove` is only passed
-// true for group sub-accounts -- flat rows have no delete control here.
-function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings }) {
+// inside a group (Investments, Retirement). `locked` rows are one of the
+// seven categories every account starts with (see isCoreRow in
+// lib/allocations.js): their name is fixed and they can't be deleted.
+// Everything else -- a custom flat category, or an extra Investment/
+// Retirement sub-account someone added themselves -- gets a visibly
+// editable name field and a delete control.
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings }) {
+  const locked = isCoreRow(rule.id);
   return (
     <div className="border border-neutral-200 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: rule.color }} />
-        <input
-          value={rule.label}
-          onChange={(e) => onUpdate(rule.id, { label: e.target.value })}
-          className="text-sm font-medium flex-1 min-w-0 bg-transparent border-none focus:outline-none focus:underline"
-        />
+        {locked ? (
+          <span className="text-sm font-medium flex-1 min-w-0 text-neutral-800">{rule.label}</span>
+        ) : (
+          <div className="relative flex-1 min-w-0">
+            <Pencil size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+            <input
+              value={rule.label}
+              onChange={(e) => onUpdate(rule.id, { label: e.target.value })}
+              placeholder="Name this category"
+              className="text-sm font-medium w-full min-w-0 bg-white border border-neutral-300 rounded-lg pl-6 pr-2 py-1 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+        )}
         <input
           type="number"
           min={0}
@@ -30,8 +43,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, s
           className="w-14 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
         />
         <span className="text-xs text-neutral-500">%</span>
-        {canRemove && (
-          <button onClick={() => onRemove(rule.id)} className="text-neutral-400 hover:text-red-600 shrink-0">
+        {!locked && (
+          <button onClick={() => onRemove(rule.id)} className="text-neutral-400 hover:text-red-600 shrink-0" title="Delete category">
             <Trash2 size={14} />
           </button>
         )}
@@ -85,7 +98,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, s
         <div className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <span>
-            No account connected yet -- until you connect one, this {rule.pct}% won&apos;t be routed anywhere and
+            No account connected yet. Until you connect one, this {rule.pct}% won&apos;t be routed anywhere and
             stays wherever the deposit landed.
           </span>
         </div>
@@ -100,12 +113,16 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, s
 // interfaces. Investments and Retirement render as groups of sub-accounts
 // with an auto-summed subtotal (see percentSections/groupPctTotal in
 // lib/allocations.js); everything else renders as a single flat row.
+// `onRemoveRow(id)` is the one delete handler for every row, core or not
+// (PercentRow itself only ever calls it for non-core rows) -- callers are
+// expected to snapshot the removed row so it can be restored on "Undo"
+// (see the lastDeleted/undo pattern in Split Rules and onboarding).
 export default function PercentSplitEditor({
   percent,
   accounts,
   onUpdatePercent,
   onAddSubAccount,
-  onRemoveSubAccount,
+  onRemoveRow,
   onAccountLinked,
   creating,
   setCreating,
@@ -132,8 +149,7 @@ export default function PercentSplitEditor({
                   rule={rule}
                   accounts={accounts}
                   onUpdate={onUpdatePercent}
-                  onRemove={(id) => onRemoveSubAccount(section.group, id)}
-                  canRemove={section.rows.length > 1}
+                  onRemove={onRemoveRow}
                   creating={creating}
                   setCreating={setCreating}
                   connecting={connecting}
@@ -156,7 +172,7 @@ export default function PercentSplitEditor({
             rule={section.row}
             accounts={accounts}
             onUpdate={onUpdatePercent}
-            canRemove={false}
+            onRemove={onRemoveRow}
             creating={creating}
             setCreating={setCreating}
             connecting={connecting}

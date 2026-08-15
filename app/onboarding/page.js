@@ -76,17 +76,53 @@ export default function OnboardingPage() {
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  // Saved as soon as an account is connected/changed on a row, even mid-
+  // onboarding -- PUT replaces the whole rule set for this user regardless
+  // of whether onboarding has been "finished" yet, so a real linked
+  // account is never lost just because someone closes the tab before
+  // reaching Step 5. Percentage/name edits still only get written for real
+  // at finish() -- see below.
+  const saveSplitRulesNow = (nextPercent) =>
+    fetch("/api/split-rules", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ percent: nextPercent }),
+    });
   const updatePercent = (id, patch) =>
-    setPercent((prev) =>
-      prev.map((r) =>
+    setPercent((prev) => {
+      const next = prev.map((r) =>
         r.id === id
           ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
           : r
-      )
-    );
+      );
+      if (patch.accountId !== undefined) saveSplitRulesNow(next);
+      return next;
+    });
   const addSubAccount = (group) => setPercent((prev) => [...prev, newSubAccountRow(group, prev.length)]);
-  const removeSubAccount = (group, id) =>
-    setPercent((prev) => (prev.filter((r) => r.group === group).length <= 1 ? prev : prev.filter((r) => r.id !== id)));
+  // { row, index } of the most recently deleted category/sub-account, so
+  // "Undo" can put it back exactly where it was.
+  const [lastDeleted, setLastDeleted] = useState(null);
+  useEffect(() => {
+    if (!lastDeleted) return;
+    const t = setTimeout(() => setLastDeleted(null), 8000);
+    return () => clearTimeout(t);
+  }, [lastDeleted]);
+  const removeRow = (id) =>
+    setPercent((prev) => {
+      const index = prev.findIndex((r) => r.id === id);
+      if (index === -1) return prev;
+      setLastDeleted({ row: prev[index], index });
+      return prev.filter((r) => r.id !== id);
+    });
+  const undoDelete = () => {
+    if (!lastDeleted) return;
+    setPercent((prev) => {
+      const copy = [...prev];
+      copy.splice(Math.min(lastDeleted.index, copy.length), 0, lastDeleted.row);
+      return copy;
+    });
+    setLastDeleted(null);
+  };
   const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
 
   // Same "add your own category" capability as Split Rules -- Wedding,
@@ -321,7 +357,7 @@ export default function OnboardingPage() {
                 accounts={accounts}
                 onUpdatePercent={updatePercent}
                 onAddSubAccount={addSubAccount}
-                onRemoveSubAccount={removeSubAccount}
+                onRemoveRow={removeRow}
                 onAccountLinked={onAccountLinked}
                 creating={creating}
                 setCreating={setCreating}
@@ -425,6 +461,15 @@ export default function OnboardingPage() {
               </PrimaryButton>
             </div>
           </div>
+        </div>
+      )}
+
+      {lastDeleted && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-sm rounded-xl pl-4 pr-2 py-2.5 flex items-center gap-3 shadow-lg z-50">
+          <span>&quot;{lastDeleted.row.label}&quot; removed.</span>
+          <button onClick={undoDelete} className="font-bold text-emerald-300 hover:text-emerald-200 px-2 py-1">
+            Undo
+          </button>
         </div>
       )}
     </div>

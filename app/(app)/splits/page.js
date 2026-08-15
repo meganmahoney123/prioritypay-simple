@@ -1,24 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Save, RotateCcw } from "lucide-react";
-import { PrimaryButton, GhostButton } from "@/components/ui";
+import { Plus, Save } from "lucide-react";
+import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
+import { SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
 // step (see components/PercentSplitEditor.js) -- same grouped
 // Investments/Retirement sub-accounts, same per-row connect-or-create
-// account controls, same copy voice. The only things this page adds on
-// top are things a one-time wizard step doesn't need: an explicit Save
-// (onboarding submits everything at once at the end), "add your own
-// category" / suggestion chips, and a reset to PriorityPay Simple's
-// defaults. Live month-to-date/year-to-date dollar amounts per category
-// now live on the Dashboard instead of here, so there's exactly one place
-// that shows "how much have I actually put where" instead of two
-// slightly-different copies of the same numbers. No Monthly Cap $ field
-// here anymore -- removed per product decision, one less thing to
-// configure.
+// account controls, same copy voice. Connecting an account on any row
+// saves immediately (see updatePercent below) so that never depends on
+// someone remembering to hit Save; the Save button covers percentage/name
+// edits, which are lower-stakes to lose. No Monthly Cap $ field here
+// anymore -- removed per product decision, one less thing to configure.
 export default function SplitRulesPage() {
   const [percent, setPercent] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -26,6 +21,10 @@ export default function SplitRulesPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
+  // { row, index } of the most recently deleted category/sub-account, so
+  // "Undo" can put it back exactly where it was. Cleared automatically
+  // after a few seconds or as soon as it's used.
+  const [lastDeleted, setLastDeleted] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -39,26 +38,61 @@ export default function SplitRulesPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!lastDeleted) return;
+    const t = setTimeout(() => setLastDeleted(null), 8000);
+    return () => clearTimeout(t);
+  }, [lastDeleted]);
+
   const totalPct = useMemo(() => pctTotal(percent), [percent]);
   const remainingPct = Math.max(0, 100 - totalPct);
 
+  const saveNow = async (nextPercent) => {
+    await fetch("/api/split-rules", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ percent: nextPercent }),
+    });
+    setSaved(true);
+  };
+
   const updatePercent = (id, patch) => {
     setSaved(false);
-    setPercent((prev) =>
-      prev.map((r) =>
+    setPercent((prev) => {
+      const next = prev.map((r) =>
         r.id === id
           ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
           : r
-      )
-    );
+      );
+      // Connecting (or switching) an account is the one edit that auto-
+      // saves immediately -- losing a just-made connection because someone
+      // navigated away before clicking Save would be a bad, silent way to
+      // lose real linked-account state.
+      if (patch.accountId !== undefined) saveNow(next);
+      return next;
+    });
   };
   const addSubAccount = (group) => {
     setSaved(false);
     setPercent((prev) => [...prev, newSubAccountRow(group, prev.length)]);
   };
-  const removeSubAccount = (group, id) => {
+  const removeRow = (id) => {
     setSaved(false);
-    setPercent((prev) => (prev.filter((r) => r.group === group).length <= 1 ? prev : prev.filter((r) => r.id !== id)));
+    setPercent((prev) => {
+      const index = prev.findIndex((r) => r.id === id);
+      if (index === -1) return prev;
+      setLastDeleted({ row: prev[index], index });
+      return prev.filter((r) => r.id !== id);
+    });
+  };
+  const undoDelete = () => {
+    if (!lastDeleted) return;
+    setPercent((prev) => {
+      const copy = [...prev];
+      copy.splice(Math.min(lastDeleted.index, copy.length), 0, lastDeleted.row);
+      return copy;
+    });
+    setLastDeleted(null);
   };
   const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
 
@@ -76,10 +110,6 @@ export default function SplitRulesPage() {
       { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, color: suggestion.color, accountId: null },
     ]);
   };
-  const resetPercent = () => {
-    setPercent(DEFAULT_SPLIT_RULES.percent);
-    setSaved(false);
-  };
 
   const usedLabels = useMemo(() => new Set(percent.map((r) => r.label)), [percent]);
   const availableSuggestions = useMemo(
@@ -88,12 +118,7 @@ export default function SplitRulesPage() {
   );
 
   const handleSave = async () => {
-    await fetch("/api/split-rules", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ percent }),
-    });
-    setSaved(true);
+    await saveNow(percent);
   };
 
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
@@ -102,12 +127,20 @@ export default function SplitRulesPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <h2 className="text-lg font-bold mb-1">Split every deposit by percentage</h2>
+        <p className="text-sm text-neutral-500 mb-2">
+          Each deposit you receive will be split and automatically sent to the following accounts. Here, set the
+          percentages you want sent to each account.
+        </p>
+        <p className="text-sm text-neutral-500 mb-2">
+          For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, $10 will
+          be automatically routed to the savings account connected.
+        </p>
+        <p className="text-sm text-neutral-500 mb-2">
+          If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no money
+          will be routed to that account.
+        </p>
         <p className="text-sm text-neutral-500">
-          Investments and Retirement can each hold multiple accounts (rename, add, or delete them freely);
-          every row's total is just whatever its accounts add up to. Connect or create an account for anywhere
-          you want the money to land, or leave it disconnected for now -- the dashboard will nudge you before
-          any money actually moves. Doesn&apos;t need to add to 100%: whatever&apos;s left stays wherever a
-          deposit lands, so it&apos;s there to cover rent, food, and everything else.
+          Note: Any money not routed to one of the accounts below will remain where it was deposited.
         </p>
       </div>
 
@@ -116,7 +149,7 @@ export default function SplitRulesPage() {
         accounts={accounts}
         onUpdatePercent={updatePercent}
         onAddSubAccount={addSubAccount}
-        onRemoveSubAccount={removeSubAccount}
+        onRemoveRow={removeRow}
         onAccountLinked={onAccountLinked}
         creating={creating}
         setCreating={setCreating}
@@ -128,9 +161,6 @@ export default function SplitRulesPage() {
         <button onClick={addPercent} className="flex-1 min-w-[200px] flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-xl py-2.5">
           <Plus size={15} /> Add your own category
         </button>
-        <GhostButton onClick={resetPercent}>
-          <RotateCcw size={16} /> Reset to default categories
-        </GhostButton>
       </div>
 
       {availableSuggestions.length > 0 && (
@@ -162,6 +192,15 @@ export default function SplitRulesPage() {
         </PrimaryButton>
         {saved && <span className="text-sm text-emerald-700 font-medium">Saved</span>}
       </div>
+
+      {lastDeleted && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-sm rounded-xl pl-4 pr-2 py-2.5 flex items-center gap-3 shadow-lg z-50">
+          <span>&quot;{lastDeleted.row.label}&quot; removed.</span>
+          <button onClick={undoDelete} className="font-bold text-emerald-300 hover:text-emerald-200 px-2 py-1">
+            Undo
+          </button>
+        </div>
+      )}
     </div>
   );
 }

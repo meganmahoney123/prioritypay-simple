@@ -538,8 +538,8 @@ export default function CloseoutPage() {
                 <p className="text-sm text-neutral-500 mb-6">
                   If any deposit this month was a W2 paycheck (as opposed to business or side-hustle income),
                   flag it so PriorityPay can leave it out of your retirement contribution room and tax reserve
-                  estimate below -- your employer already withholds taxes and may already offer a 401k, so
-                  those numbers shouldn&apos;t double-count it.
+                  estimate below. This impacts how much you can contribute to your Solo 401k, SEP IRA, and how
+                  much you should set aside for taxes.
                 </p>
                 <div className="flex gap-3">
                   <GhostButton onClick={() => setW2PopupStep("closed")} className="flex-1 justify-center">
