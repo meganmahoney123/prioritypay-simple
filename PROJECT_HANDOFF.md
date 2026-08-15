@@ -246,11 +246,9 @@ code is gone.
   mismatch** (section 4c) — needs an explicit decision before production.
 - **Remove the "Skip identity verification" testing link** (section 4f)
   before production.
-- **`README.md`'s "What's simplified for this first version" section is
-  stale** — it still says deposit detection is manual and balances aren't
-  fetched, both of which are now false (real webhook-driven auto-split
-  and live balance fetching are both built and working). Worth a cleanup
-  pass so a new developer doesn't read it as current.
+- ~~`README.md`'s "What's simplified" section was stale~~ — corrected
+  alongside this document; it now points here instead of repeating
+  outdated claims.
 - **Mobile layout** has been built with Tailwind's mobile-first responsive
   classes throughout, but couldn't be pixel-verified via screenshot in the
   browser-automation tooling used for this session (a tooling limitation,
