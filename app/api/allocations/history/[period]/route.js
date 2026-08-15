@@ -38,10 +38,10 @@ export async function GET(request, { params }) {
   let query = admin
     .from("simple_transfer_allocations")
     .select("label, amount, category_type, simple_transfers!inner(user_id, created_at, status)")
-    .eq("transfers.user_id", user.id)
+    .eq("simple_transfers.user_id", user.id)
     .neq("status", "failed")
-    .gte("transfers.created_at", startIso)
-    .lt("transfers.created_at", endIso);
+    .gte("simple_transfers.created_at", startIso)
+    .lt("simple_transfers.created_at", endIso);
   if (categoryType) query = query.eq("category_type", categoryType);
 
   const [{ data: allocRows }, { data: profile }] = await Promise.all([

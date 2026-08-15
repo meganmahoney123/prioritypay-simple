@@ -87,8 +87,8 @@ export async function POST(request, { params }) {
   const { data: ytdRows } = await admin
     .from("simple_transfer_allocations")
     .select("amount, retirement_type, simple_transfers!inner(user_id, created_at)")
-    .eq("transfers.user_id", user.id)
-    .gte("transfers.created_at", yearStartIso(period))
+    .eq("simple_transfers.user_id", user.id)
+    .gte("simple_transfers.created_at", yearStartIso(period))
     .neq("status", "failed")
     .not("retirement_type", "is", null);
   const ytdByType = {};
@@ -165,10 +165,10 @@ export async function POST(request, { params }) {
   const { data: taxAllocationRows } = await admin
     .from("simple_transfer_allocations")
     .select("amount, simple_transfers!inner(user_id, created_at)")
-    .eq("transfers.user_id", user.id)
+    .eq("simple_transfers.user_id", user.id)
     .eq("label", "Tax Reserve")
-    .gte("transfers.created_at", periodStartIso(period))
-    .lt("transfers.created_at", periodEndIso(period))
+    .gte("simple_transfers.created_at", periodStartIso(period))
+    .lt("simple_transfers.created_at", periodEndIso(period))
     .neq("status", "failed");
   const taxSetAsideThisMonth = (taxAllocationRows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
 
