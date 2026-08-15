@@ -16,7 +16,7 @@ import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SU
 // Retirement sub-account someone added themselves -- gets a visibly
 // editable name field and a delete control.
 function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings }) {
-  const locked = isCoreRow(rule.id);
+  const locked = isCoreRow(rule);
   return (
     <div className="border border-neutral-200 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
