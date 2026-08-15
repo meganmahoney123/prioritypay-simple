@@ -8,18 +8,42 @@ import { allRules, DEFAULT_SPLIT_RULES } from "@/lib/allocations";
 import { Card } from "@/components/ui";
 import Link from "next/link";
 
+function currentPeriod() {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function startOfYearIso() {
+  return new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1)).toISOString();
+}
+
+function toByLabel(categories) {
+  const map = {};
+  (categories || []).forEach((c) => { map[c.label] = c.amount; });
+  return map;
+}
+
 export default function DashboardPage() {
   const [splitRules, setSplitRules] = useState(DEFAULT_SPLIT_RULES);
   const [accounts, setAccounts] = useState([]);
+  const [mtdByLabel, setMtdByLabel] = useState({});
+  const [ytdByLabel, setYtdByLabel] = useState({});
+  const [allTimeTotal, setAllTimeTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const loadAll = async () => {
-    const [rulesRes, accountsRes] = await Promise.all([
+    const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes] = await Promise.all([
       fetch("/api/split-rules").then((r) => r.json()),
       fetch("/api/accounts").then((r) => r.json()),
+      fetch(`/api/allocations/history/${currentPeriod()}?categoryType=percent`).then((r) => r.json()),
+      fetch(`/api/allocations/history/range?since=${startOfYearIso()}&categoryType=percent`).then((r) => r.json()),
+      fetch(`/api/allocations/history/range?all=true`).then((r) => r.json()),
     ]);
     if (rulesRes.splitRules) setSplitRules(rulesRes.splitRules);
     if (accountsRes.accounts) setAccounts(accountsRes.accounts);
+    setMtdByLabel(toByLabel(mtdRes.categories));
+    setYtdByLabel(toByLabel(ytdRes.categories));
+    setAllTimeTotal(allTimeRes.total || 0);
     setLoading(false);
   };
 
@@ -44,7 +68,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <AccountBalances accounts={accounts} splitRules={splitRules} />
+      <AccountBalances
+        accounts={accounts}
+        splitRules={splitRules}
+        mtdByLabel={mtdByLabel}
+        ytdByLabel={ytdByLabel}
+        allTimeTotal={allTimeTotal}
+      />
 
       <CloseoutNudge />
 

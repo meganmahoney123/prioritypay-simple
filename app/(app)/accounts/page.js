@@ -29,12 +29,6 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-neutral-600 max-w-xl">
-        Linked accounts feed income into PriorityPay and are where split money actually lands. Real Plaid
-        Link, sandbox mode -- use Plaid's test credentials (e.g. institution "Chase", username{" "}
-        <code className="font-mono">user_good</code>, password <code className="font-mono">pass_good</code>).
-      </p>
-
       {!dwollaVerified ? (
         <Card className="p-5">
           <h2 className="text-sm font-semibold mb-3">Verify your identity first</h2>

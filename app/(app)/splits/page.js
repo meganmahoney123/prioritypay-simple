@@ -1,28 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Save, RotateCcw } from "lucide-react";
-import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import AccountSelect from "@/components/AccountSelect";
-import CreateSubAccountFlow from "@/components/CreateSubAccountFlow";
-import PlaidLinkButton from "@/components/PlaidLinkButton";
-import BucketIcon from "@/components/BucketIcon";
-import RetirementNote from "@/components/RetirementNote";
-import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal } from "@/lib/allocations";
+import { Plus, Save, RotateCcw } from "lucide-react";
+import { PrimaryButton, GhostButton } from "@/components/ui";
+import PercentSplitEditor from "@/components/PercentSplitEditor";
+import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow } from "@/lib/allocations";
 
-function currentPeriod() {
-  const now = new Date();
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
+// Split Rules is the exact same editor as onboarding's Percentage Splits
+// step (see components/PercentSplitEditor.js) -- same grouped
+// Investments/Retirement sub-accounts, same per-row connect-or-create
+// account controls, same copy voice. The only things this page adds on
+// top are things a one-time wizard step doesn't need: an explicit Save
+// (onboarding submits everything at once at the end), a Monthly Cap $
+// field per row, "add your own category" / suggestion chips, and a reset
+// to PriorityPay Simple's defaults. Live month-to-date/year-to-date dollar
+// amounts per category now live on the Dashboard instead of here, so
+// there's exactly one place that shows "how much have I actually put
+// where" instead of two slightly-different copies of the same numbers.
 export default function SplitRulesPage() {
   const [percent, setPercent] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  // Real month-to-date dollars per category label (see
-  // app/api/allocations/history/[period] with categoryType=percent) -- the
-  // exact same source of truth the server uses to enforce Monthly Total Cap.
-  const [mtdByLabel, setMtdByLabel] = useState({});
-  const [mtdPercentTotal, setMtdPercentTotal] = useState(0);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState({});
@@ -30,17 +27,12 @@ export default function SplitRulesPage() {
 
   useEffect(() => {
     (async () => {
-      const [rulesRes, accountsRes, mtdRes] = await Promise.all([
+      const [rulesRes, accountsRes] = await Promise.all([
         fetch("/api/split-rules").then((r) => r.json()),
         fetch("/api/accounts").then((r) => r.json()),
-        fetch(`/api/allocations/history/${currentPeriod()}?categoryType=percent`).then((r) => r.json()),
       ]);
       setPercent(rulesRes.splitRules?.percent || []);
       setAccounts(accountsRes.accounts || []);
-      const byLabel = {};
-      (mtdRes.categories || []).forEach((c) => { byLabel[c.label] = c.amount; });
-      setMtdByLabel(byLabel);
-      setMtdPercentTotal(mtdRes.total || 0);
       setLoading(false);
     })();
   }, []);
@@ -52,24 +44,29 @@ export default function SplitRulesPage() {
     setSaved(false);
     setPercent((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
+  const addSubAccount = (group) => {
+    setSaved(false);
+    setPercent((prev) => [...prev, newSubAccountRow(group, prev.length)]);
+  };
+  const removeSubAccount = (group, id) => {
+    setSaved(false);
+    setPercent((prev) => (prev.filter((r) => r.group === group).length <= 1 ? prev : prev.filter((r) => r.id !== id)));
+  };
+  const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
+
   const addPercent = () => {
     setSaved(false);
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: "New category", pct: 0, max: null, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], accountId: null },
+      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], accountId: null },
     ]);
   };
   const addSuggested = (suggestion) => {
     setSaved(false);
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: suggestion.label, pct: 0, max: null, color: suggestion.color, accountId: null },
+      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, color: suggestion.color, accountId: null },
     ]);
-  };
-  const removePercent = (id) => {
-    if (percent.length <= 1) return;
-    setSaved(false);
-    setPercent((prev) => prev.filter((r) => r.id !== id));
   };
   const resetPercent = () => {
     setPercent(DEFAULT_SPLIT_RULES.percent);
@@ -94,114 +91,63 @@ export default function SplitRulesPage() {
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div className="text-center mb-1">
+    <div className="max-w-2xl space-y-6">
+      <div>
         <h2 className="text-lg font-bold mb-1">Split every deposit by percentage</h2>
-        <p className="text-sm text-neutral-500 max-w-xl mx-auto">
-          Set a percentage and connect an account for each category below. Every deposit gets divided up
-          automatically. Whatever percentage isn&apos;t claimed here stays in the account the deposit landed
-          in -- that&apos;s what covers rent, food, and everything else that isn&apos;t a category below, so
-          it&apos;s on you to leave enough room for those.
+        <p className="text-sm text-neutral-500">
+          Investments and Retirement can each hold multiple accounts (rename, add, or delete them freely);
+          every row's total is just whatever its accounts add up to. Connect or create an account for anywhere
+          you want the money to land, or leave it disconnected for now -- the dashboard will nudge you before
+          any money actually moves. Doesn&apos;t need to add to 100%: whatever&apos;s left stays wherever a
+          deposit lands, so it&apos;s there to cover rent, food, and everything else.
         </p>
       </div>
 
-      <Card className="p-6">
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          {percent.map((rule) => {
-            const mtdBaseline = mtdByLabel[rule.label] || 0;
-            const fillPct = mtdPercentTotal > 0 ? (mtdBaseline / mtdPercentTotal) * 100 : 0;
-            return (
-              <div key={rule.id} className="border border-neutral-100 rounded-xl p-4 flex flex-col items-center text-center gap-2">
-                <div className="flex items-center gap-2 w-full">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: rule.color }} />
-                  <input value={rule.label} onChange={(e) => updatePercent(rule.id, { label: e.target.value })} className="text-sm font-medium bg-transparent border-none focus:outline-none focus:underline text-center flex-1 min-w-0" />
-                  <button onClick={() => removePercent(rule.id)} disabled={percent.length <= 1} className="text-neutral-400 hover:text-red-600 disabled:opacity-30 shrink-0"><Trash2 size={14} /></button>
-                </div>
-                <BucketIcon fillPct={fillPct} size={52} />
-                <span className="text-[10px] font-mono text-neutral-500">{currency(mtdBaseline)} this month</span>
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  <input type="number" min={0} max={100} value={rule.pct} onChange={(e) => updatePercent(rule.id, { pct: Number(e.target.value) })} className="w-14 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center" />
-                  <span className="text-xs text-neutral-500">%</span>
-                </div>
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  <span className="text-xs text-neutral-500">Monthly Cap $</span>
-                  <input type="number" min={0} placeholder="none" value={rule.max === null ? "" : rule.max} onChange={(e) => updatePercent(rule.id, { max: e.target.value === "" ? null : Number(e.target.value) })} className="w-20 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center" />
-                </div>
-                {rule.retirementType && <RetirementNote label={rule.label} />}
-                <div className="w-full">
-                  <label className="block text-[11px] text-neutral-500 mb-1">What account should this money be stored in?</label>
-                  <AccountSelect
-                    value={rule.accountId}
-                    onChange={(v) => updatePercent(rule.id, { accountId: v })}
-                    accounts={accounts}
-                    onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
-                    onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
-                    recommendCreate={false}
-                  />
-                  {connecting[rule.id] && (
-                    <div className="mt-2">
-                      <PlaidLinkButton
-                        label="Connect another account"
-                        onLinked={(account) => {
-                          if (account) {
-                            setAccounts((prev) => [...prev, account]);
-                            updatePercent(rule.id, { accountId: account.id });
-                          }
-                          setConnecting((prev) => ({ ...prev, [rule.id]: false }));
-                        }}
-                        className="text-xs px-4 py-2"
-                      />
-                    </div>
-                  )}
-                  {creating[rule.id] && (
-                    <CreateSubAccountFlow
-                      costLabel={rule.label}
-                      accounts={accounts}
-                      onAccountLinked={(account) => setAccounts((prev) => [...prev, account])}
-                      onConfirmed={(accountId) => {
-                        updatePercent(rule.id, { accountId });
-                        setCreating((prev) => ({ ...prev, [rule.id]: false }));
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <PercentSplitEditor
+        percent={percent}
+        accounts={accounts}
+        onUpdatePercent={updatePercent}
+        onAddSubAccount={addSubAccount}
+        onRemoveSubAccount={removeSubAccount}
+        onAccountLinked={onAccountLinked}
+        creating={creating}
+        setCreating={setCreating}
+        connecting={connecting}
+        setConnecting={setConnecting}
+        showCap
+      />
 
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <button onClick={addPercent} className="flex-1 min-w-[200px] flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-xl py-2.5">
-            <Plus size={15} /> Add your own category
-          </button>
-          <GhostButton onClick={resetPercent}>
-            <RotateCcw size={16} /> Reset to default categories
-          </GhostButton>
-        </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button onClick={addPercent} className="flex-1 min-w-[200px] flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-xl py-2.5">
+          <Plus size={15} /> Add your own category
+        </button>
+        <GhostButton onClick={resetPercent}>
+          <RotateCcw size={16} /> Reset to default categories
+        </GhostButton>
+      </div>
 
-        {availableSuggestions.length > 0 && (
-          <div className="pt-4 mt-4 border-t border-neutral-100">
-            <p className="text-xs text-neutral-500 mb-2">Suggestions -- click to add, starts at 0%:</p>
-            <div className="flex flex-wrap gap-2">
-              {availableSuggestions.map((s) => (
-                <button
-                  key={s.label}
-                  onClick={() => addSuggested(s)}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 flex items-center gap-1"
-                >
-                  <Plus size={12} /> {s.label}
-                </button>
-              ))}
-            </div>
+      {availableSuggestions.length > 0 && (
+        <div>
+          <p className="text-xs text-neutral-500 mb-2">Suggestions -- click to add, starts at 0%:</p>
+          <div className="flex flex-wrap gap-2">
+            {availableSuggestions.map((s) => (
+              <button
+                key={s.label}
+                onClick={() => addSuggested(s)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 flex items-center gap-1"
+              >
+                <Plus size={12} /> {s.label}
+              </button>
+            ))}
           </div>
-        )}
-
-        <div className="pt-4 mt-4 border-t border-neutral-100 text-center text-xs">
-          <span className="font-semibold text-neutral-500">
-            Percentages total {totalPct}%{remainingPct > 0 ? ` -- ${remainingPct}% stays wherever each deposit lands` : ""}
-          </span>
         </div>
-      </Card>
+      )}
+
+      <div className="text-center text-xs">
+        <span className="font-semibold text-neutral-500">
+          Percentages total {totalPct}%{remainingPct > 0 ? ` -- ${remainingPct}% stays wherever each deposit lands` : ""}
+        </span>
+      </div>
 
       <div className="flex items-center gap-3 flex-wrap">
         <PrimaryButton onClick={handleSave}>

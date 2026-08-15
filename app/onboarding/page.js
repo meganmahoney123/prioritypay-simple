@@ -2,97 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Zap, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Zap } from "lucide-react";
 import { PrimaryButton, GhostButton, Badge } from "@/components/ui";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
-import AccountSelect from "@/components/AccountSelect";
-import CreateSubAccountFlow from "@/components/CreateSubAccountFlow";
-import RetirementNote from "@/components/RetirementNote";
-import { DEFAULT_SPLIT_RULES, pctTotal, percentSections, groupPctTotal, newSubAccountRow } from "@/lib/allocations";
+import PercentSplitEditor from "@/components/PercentSplitEditor";
+import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow } from "@/lib/allocations";
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
-// you are, verified identity (required before any money can move), and the
-// percentage each category gets of every deposit (with an account connect
-// or create option right on each row -- no separate "connect your bank"
-// step). Percentages start at PriorityPay Simple's suggested split (see
-// DEFAULT_SPLIT_RULES in lib/allocations.js) and get tuned afterward from
-// Split Rules -- nothing here is final, and every account connection here
-// is skippable: the dashboard nudges you to finish connecting before any
-// money actually moves.
-const STEPS = ["Welcome", "Business", "Identity", "Percentage Splits", "Review"];
+// you are, verified identity (required before any money can move), every
+// account money reaches you through (so nothing skips the split), and the
+// percentage each category gets of every deposit (with its own account
+// connect-or-create option right on each row). Percentages start at
+// PriorityPay Simple's suggested split (see DEFAULT_SPLIT_RULES in
+// lib/allocations.js) and get tuned afterward from Split Rules -- nothing
+// here is final, and every account connection is skippable: the dashboard
+// nudges you to finish connecting before any money actually moves.
+const STEPS = ["Welcome", "Business", "Identity", "Connect Accounts", "Percentage Splits", "Review"];
 const BUSINESS_TYPES = ["Self Employed (No W2 Employees)", "W2 Employee + Side Hustle"];
-
-// One row of the Percentage Splits step -- used both for flat rows (Tax
-// Reserve, Emergency Fund, OPEX, Savings) and for sub-account rows inside
-// an Investments/Retirement group. `canRemove` is only true for group
-// sub-accounts -- the flat default rows have no delete control here (that
-// lives on the full Split Rules page later, if someone wants it).
-function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, setCreating, connecting, setConnecting, onAccountLinked }) {
-  return (
-    <div className="border border-neutral-200 rounded-xl p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: rule.color }} />
-        <input
-          value={rule.label}
-          onChange={(e) => onUpdate(rule.id, { label: e.target.value })}
-          className="text-sm font-medium flex-1 min-w-0 bg-transparent border-none focus:outline-none focus:underline"
-        />
-        <input
-          type="number"
-          min={0}
-          max={100}
-          value={rule.pct}
-          onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
-          className="w-14 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
-        />
-        <span className="text-xs text-neutral-500">%</span>
-        {canRemove && (
-          <button onClick={() => onRemove(rule.id)} className="text-neutral-400 hover:text-red-600 shrink-0">
-            <Trash2 size={14} />
-          </button>
-        )}
-      </div>
-      {rule.retirementType || rule.group === "Retirement" ? <RetirementNote label={rule.label} /> : null}
-      <div className="mt-2">
-        <AccountSelect
-          value={rule.accountId}
-          onChange={(v) => onUpdate(rule.id, { accountId: v })}
-          accounts={accounts}
-          onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
-          onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
-          recommendCreate={false}
-        />
-      </div>
-      {connecting[rule.id] && (
-        <div className="mt-2">
-          <PlaidLinkButton
-            label="Connect another account"
-            onLinked={(account) => {
-              if (account) {
-                onAccountLinked(account);
-                onUpdate(rule.id, { accountId: account.id });
-              }
-              setConnecting((prev) => ({ ...prev, [rule.id]: false }));
-            }}
-            className="text-xs px-4 py-2"
-          />
-        </div>
-      )}
-      {creating[rule.id] && (
-        <CreateSubAccountFlow
-          costLabel={rule.label}
-          accounts={accounts}
-          onAccountLinked={onAccountLinked}
-          onConfirmed={(accountId) => {
-            onUpdate(rule.id, { accountId });
-            setCreating((prev) => ({ ...prev, [rule.id]: false }));
-          }}
-        />
-      )}
-    </div>
-  );
-}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -217,6 +144,38 @@ export default function OnboardingPage() {
 
           {step === 3 && (
             <div>
+              <h2 className="text-2xl font-bold mb-1">Connect everywhere money reaches you</h2>
+              <p className="text-sm text-neutral-500 mb-6">
+                PriorityPay Simple can only split a deposit it actually sees. Connect every account a client
+                could ever pay you into -- your business checking and savings, of course, but also Venmo,
+                Zelle, Cash App, PayPal, and anywhere else money might land. Miss one, and every deposit that
+                lands there skips your split entirely. Add as many as you need, one at a time -- you can always
+                come back and add more later from Accounts.
+              </p>
+              <PlaidLinkButton
+                label={accounts.length > 0 ? "Connect another account" : "Connect an account"}
+                onLinked={onAccountLinked}
+              />
+              <div className="mt-4 space-y-2">
+                {accounts.map((a) => (
+                  <div key={a.id} className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-3 py-2">
+                    {a.institution_name} — {a.account_name} •••• {a.mask}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-6">
+                <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
+                {accounts.length > 0 ? (
+                  <PrimaryButton onClick={next} className="flex-1">Continue <ArrowRight size={16} /></PrimaryButton>
+                ) : (
+                  <GhostButton onClick={next} className="flex-1">Skip for now</GhostButton>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div>
               <h2 className="text-2xl font-bold mb-1">Set your percentage splits</h2>
               <p className="text-sm text-neutral-500 mb-4">
                 Started at a sensible default -- dial each one in. Investments and Retirement can each hold
@@ -226,53 +185,19 @@ export default function OnboardingPage() {
                 actually moves. Doesn&apos;t need to add to 100%: whatever&apos;s left stays wherever a deposit
                 lands, so it&apos;s there to cover rent, food, and anything else.
               </p>
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-                {percentSections(percent).map((section) =>
-                  section.type === "group" ? (
-                    <div key={section.group} className="border border-neutral-200 rounded-xl p-3 bg-neutral-50">
-                      <div className="flex items-center justify-between mb-2 px-0.5">
-                        <span className="text-sm font-semibold">{section.group}</span>
-                        <span className="text-xs font-mono text-neutral-500">{groupPctTotal(section.rows)}% total</span>
-                      </div>
-                      <div className="space-y-2">
-                        {section.rows.map((rule) => (
-                          <PercentRow
-                            key={rule.id}
-                            rule={rule}
-                            accounts={accounts}
-                            onUpdate={updatePercent}
-                            onRemove={(id) => removeSubAccount(section.group, id)}
-                            canRemove={section.rows.length > 1}
-                            creating={creating}
-                            setCreating={setCreating}
-                            connecting={connecting}
-                            setConnecting={setConnecting}
-                            onAccountLinked={onAccountLinked}
-                          />
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => addSubAccount(section.group)}
-                        className="mt-2 w-full text-xs font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-lg py-1.5 flex items-center justify-center gap-1"
-                      >
-                        <Plus size={12} /> Add {section.group === "Retirement" ? "a retirement account" : "an investment account"}
-                      </button>
-                    </div>
-                  ) : (
-                    <PercentRow
-                      key={section.row.id}
-                      rule={section.row}
-                      accounts={accounts}
-                      onUpdate={updatePercent}
-                      canRemove={false}
-                      creating={creating}
-                      setCreating={setCreating}
-                      connecting={connecting}
-                      setConnecting={setConnecting}
-                      onAccountLinked={onAccountLinked}
-                    />
-                  )
-                )}
+              <div className="max-h-96 overflow-y-auto pr-1">
+                <PercentSplitEditor
+                  percent={percent}
+                  accounts={accounts}
+                  onUpdatePercent={updatePercent}
+                  onAddSubAccount={addSubAccount}
+                  onRemoveSubAccount={removeSubAccount}
+                  onAccountLinked={onAccountLinked}
+                  creating={creating}
+                  setCreating={setCreating}
+                  connecting={connecting}
+                  setConnecting={setConnecting}
+                />
               </div>
               <p className="text-xs text-neutral-500 mt-3 text-center">
                 Total {totalPct}%{remainingPct > 0 ? ` -- ${remainingPct}% left over` : ""}
@@ -284,7 +209,7 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <div>
               <h2 className="text-2xl font-bold mb-1">Review and finish</h2>
               <p className="text-sm text-neutral-500 mb-6">
