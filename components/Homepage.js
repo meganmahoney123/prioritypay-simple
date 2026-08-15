@@ -13,29 +13,83 @@ import {
   ClipboardCheck,
   Sparkles,
   Check,
-  X,
   Plus,
 } from "lucide-react";
-import BucketIcon from "./BucketIcon";
 import { PrimaryButton, GhostButton } from "./ui";
 
+// Percentages match this project's actual onboarding defaults
+// (lib/allocations.js DEFAULT_SPLIT_RULES) so the homepage isn't showing
+// numbers the product itself wouldn't suggest.
 const DEFAULT_BUCKETS = [
-  { label: "Solo 401k", icon: Landmark, fill: 62, color: "#8b5cf6" },
-  { label: "SEP IRA", icon: Landmark, fill: 48, color: "#ec4899" },
-  { label: "Investments", icon: TrendingUp, fill: 71, color: "#14b8a6" },
-  { label: "Tax Reserve", icon: ShieldCheck, fill: 55, color: "#a3a3a3" },
-  { label: "Emergency Fund", icon: PiggyBank, fill: 80, color: "#f59e0b" },
-  { label: "OPEX", icon: Briefcase, fill: 40, color: "#7c3aed" },
-  { label: "Savings", icon: Wallet, fill: 66, color: "#ef4444" },
+  { label: "Solo 401k", icon: Landmark, pct: 10, color: "#8b5cf6" },
+  { label: "SEP IRA", icon: Landmark, pct: 5, color: "#ec4899" },
+  { label: "Investments", icon: TrendingUp, pct: 10, color: "#14b8a6" },
+  { label: "Tax Reserve", icon: ShieldCheck, pct: 20, color: "#a3a3a3" },
+  { label: "Emergency Fund", icon: PiggyBank, pct: 10, color: "#f59e0b" },
+  { label: "OPEX", icon: Briefcase, pct: 10, color: "#7c3aed" },
+  { label: "Savings", icon: Wallet, pct: 10, color: "#ef4444" },
 ];
 
 const CUSTOM_EXAMPLES = ["Wedding", "College Fund", "Vacation Fund", "House Downpayment", "Hobbies"];
 
-const INTEGRATIONS = ["Venmo", "Cash App", "PayPal", "any checking or savings account"];
+// The three apps have real brand icons available via simpleicons.org's
+// public CDN (an SVG-per-request service, widely used for exactly this
+// "integrates with" use case). Banks/credit unions render as wordmark
+// chips in their brand color instead -- simple-icons doesn't carry
+// traditional bank logos, and reproducing them as image assets isn't
+// something to do without the genuine artwork. Zelle is deliberately not
+// here -- it isn't Plaid-connectable (see Connect Accounts step).
+const LOGO_ITEMS = [
+  { name: "Venmo", iconSrc: "https://cdn.simpleicons.org/venmo/3D95CE" },
+  { name: "PayPal", iconSrc: "https://cdn.simpleicons.org/paypal/0070BA" },
+  { name: "Cash App", iconSrc: "https://cdn.simpleicons.org/cashapp/00D632" },
+  { name: "Chase", color: "#117ACA" },
+  { name: "Bank of America", color: "#012169" },
+  { name: "Wells Fargo", color: "#D71E28" },
+  { name: "Capital One", color: "#004977" },
+  { name: "Citibank", color: "#003B70" },
+  { name: "U.S. Bank", color: "#0D3F6E" },
+  { name: "PNC Bank", color: "#F58025" },
+  { name: "Truist", color: "#582C83" },
+  { name: "Ally Bank", color: "#6100FF" },
+  { name: "Discover", color: "#FF6000" },
+  { name: "American Express", color: "#016FD0" },
+  { name: "Chime", color: "#1FD15D" },
+  { name: "SoFi", color: "#00A9E0" },
+  { name: "+ 12,000 more banks & credit unions", color: "#525252" },
+];
+
+function LogoChip({ item }) {
+  return (
+    <div className="shrink-0 flex items-center gap-2.5 bg-white border border-neutral-200 rounded-2xl px-5 py-3.5 mx-2">
+      {item.iconSrc && (
+        <img src={item.iconSrc} alt="" width={20} height={20} className="shrink-0" />
+      )}
+      <span className="text-sm font-bold whitespace-nowrap" style={{ color: item.color || "#171717" }}>
+        {item.name}
+      </span>
+    </div>
+  );
+}
 
 export default function Homepage() {
+  const logoTrack = [...LOGO_ITEMS, ...LOGO_ITEMS];
+
   return (
     <div className="min-h-screen bg-[#fafafa]">
+      <style>{`
+        @keyframes pp-logo-scroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .pp-logo-track {
+          animation: pp-logo-scroll 32s linear infinite;
+        }
+        .pp-logo-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* Nav */}
       <header className="sticky top-0 z-30 bg-[#fafafa]/90 backdrop-blur border-b border-neutral-200">
         <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
@@ -64,13 +118,12 @@ export default function Homepage() {
             Built for the self-employed
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] text-neutral-900">
-            Get paid, and watch your money route itself
-            <span className="text-emerald-600"> before you can spend it.</span>
+            Automatically route income to investments and savings.
+            <span className="text-emerald-600"> BEFORE you can spend it.</span>
           </h1>
           <p className="mt-6 text-lg md:text-xl text-neutral-600 leading-relaxed">
-            No employer is doing this for you anymore. PriorityPay splits every deposit the moment it lands, sending a
-            percentage toward retirement, savings, and taxes automatically -- so whatever's left in your checking
-            account is genuinely, guilt-free yours to spend.
+            PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement,
+            savings, and taxes automatically. Spend the rest, guilt free.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <Link href="/signup">
@@ -83,8 +136,8 @@ export default function Homepage() {
             </Link>
           </div>
           <p className="mt-4 text-xs text-neutral-400">
-            PriorityPay moves money between the accounts you connect. It doesn&apos;t manage or invest your money for
-            you -- you stay in control of every account.
+            PriorityPay moves money between the accounts you connect. It doesn&apos;t manage or invest your money
+            for you. You stay in control of every account.
           </p>
         </div>
       </section>
@@ -94,24 +147,24 @@ export default function Homepage() {
         <div className="max-w-6xl mx-auto px-5 py-20">
           <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Financial accountability, on autopilot</h2>
           <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mb-14">
-            You don&apos;t have to remember to save. You just have to get paid.
+            Never remind yourself to save again.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 step: "01",
                 title: "A deposit lands",
-                body: "Client payment, Venmo, Cash App, PayPal, a check you deposited -- any money hitting a connected account triggers PriorityPay.",
+                body: "Client payment, Venmo, Cash App, PayPal, a check you deposited. Any money hitting a connected account triggers PriorityPay.",
               },
               {
                 step: "02",
-                title: "It splits by your percentages, instantly",
-                body: "Before you ever see it in your everyday checking account, your chosen percentage routes out to retirement, savings, taxes, and anywhere else you've set up.",
+                title: "Deposit is split by percentages you set",
+                body: "PriorityPay automatically routes a percentage of every deposit to retirement, savings, taxes, and any other accounts you wish. You choose the percentage for each account.",
               },
               {
                 step: "03",
-                title: "Whatever's left is yours, guilt-free",
-                body: "No more wondering if that dinner out was actually 'okay.' If it's sitting in checking, it's already been accounted for -- spend it.",
+                title: "Spend what's left. Guilt free.",
+                body: "Never wonder if you can afford to splurge this weekend. If the money is in checking? Spend it. Guilt free.",
               },
             ].map((s) => (
               <div key={s.step}>
@@ -133,19 +186,24 @@ export default function Homepage() {
               We start you off with seven buckets built for self-employed income.
             </p>
             <p className="text-neutral-600 leading-relaxed">
-              Solo 401k, SEP IRA, Investments, Tax Reserve, Emergency Fund, business expenses (OPEX), and Savings --
-              the accounts that actually matter when nobody's withholding anything for you. Don&apos;t need one?
-              Remove it. Want more? Add your own.
+              Set your percentages for Solo 401k, SEP IRA, Investments, Tax Reserve, Emergency Fund, business
+              expenses (OPEX), and Savings. Don&apos;t need one? Remove it. Want more? Add your own.
             </p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-10">
-            {DEFAULT_BUCKETS.map((b) => (
-              <div key={b.label} className="bg-white border border-neutral-200 rounded-2xl card-shadow p-4 flex flex-col items-center text-center">
-                <BucketIcon fillPct={b.fill} size={44} />
-                <span className="mt-2 text-xs font-bold text-neutral-800 leading-tight">{b.label}</span>
-              </div>
-            ))}
+            {DEFAULT_BUCKETS.map((b) => {
+              const Icon = b.icon;
+              return (
+                <div key={b.label} className="bg-white border border-neutral-200 rounded-2xl card-shadow p-4 flex flex-col items-center text-center">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2.5" style={{ backgroundColor: `${b.color}1a` }}>
+                    <Icon size={18} style={{ color: b.color }} strokeWidth={2.25} />
+                  </div>
+                  <span className="text-xs font-bold text-neutral-800 leading-tight mb-1">{b.label}</span>
+                  <span className="text-sm font-extrabold font-mono" style={{ color: b.color }}>{b.pct}%</span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="bg-white border border-neutral-200 rounded-2xl card-shadow p-6 md:p-7">
@@ -181,7 +239,7 @@ export default function Homepage() {
             </p>
             <p className="text-neutral-600 leading-relaxed mb-4">
               PriorityPay just shows you what you&apos;ve already, effortlessly, saved. No budgeting homework, no
-              guilt trip -- just a running total of the retirement, tax, and savings progress that happened
+              guilt trip. Just a running total of the retirement, tax, and savings progress that happened
               automatically while you were busy running your business.
             </p>
             <ul className="space-y-2.5 mt-6">
@@ -259,26 +317,28 @@ export default function Homepage() {
             </p>
             <p className="text-neutral-600 leading-relaxed">
               PriorityPay&apos;s Month Close-Out walks you through confirming each transaction once, then uses it to
-              recommend exactly how much to send to your Tax Reserve and retirement accounts -- so tax season is a
-              formality, not a scramble, and W2 income gets kept separate automatically.
+              recommend exactly how much to send to your Tax Reserve and retirement accounts. Have W2 income? No
+              problem, we&apos;ll separate it out automatically.
             </p>
           </div>
         </div>
       </section>
 
       {/* Integrations */}
-      <section className="border-t border-neutral-200 bg-white">
-        <div className="max-w-6xl mx-auto px-5 py-20 text-center">
+      <section className="border-t border-neutral-200 bg-white overflow-hidden">
+        <div className="max-w-6xl mx-auto px-5 pt-20 pb-4 text-center">
           <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Connects to how you actually get paid</h2>
           <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mx-auto mb-10">
-            Self-employed income doesn&apos;t just show up in one checking account. PriorityPay doesn&apos;t assume it
-            does either.
+            Do you have income scattered everywhere? No problem. Connect all of your income-receiving accounts and
+            apps so that every deposit is accounted for.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {INTEGRATIONS.map((name) => (
-              <div key={name} className="bg-neutral-50 border border-neutral-200 rounded-2xl px-6 py-4 font-bold text-neutral-800 text-sm">
-                {name}
-              </div>
+        </div>
+        <div className="relative pb-20">
+          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10" />
+          <div className="flex w-max pp-logo-track">
+            {logoTrack.map((item, i) => (
+              <LogoChip key={`${item.name}-${i}`} item={item} />
             ))}
           </div>
         </div>
@@ -288,10 +348,10 @@ export default function Homepage() {
       <section className="border-t border-neutral-200">
         <div className="max-w-6xl mx-auto px-5 py-24 text-center">
           <h2 className="text-3xl md:text-4xl font-extrabold text-neutral-900 mb-4">
-            Stop deciding what to save. Start knowing it's already done.
+            Stop reacting to your finances. Take an effortless, proactive approach.
           </h2>
           <p className="text-neutral-600 max-w-xl mx-auto mb-9">
-            Set your percentages once. Every deposit after that takes care of itself.
+            Set your percentages once. Every deposit after that is routed to savings and investments automatically.
           </p>
           <Link href="/signup">
             <PrimaryButton className="!px-8 !py-4 !text-base">
