@@ -26,7 +26,7 @@ const SEED_ACCOUNTS = [
   { displayInstitution: "Chase", accountName: "Total Checking", mask: "4821", subtype: "checking", balance: 8432.17 },
   { displayInstitution: "Bank of America", accountName: "Advantage Checking", mask: "0193", subtype: "checking", balance: 3120.55 },
   { displayInstitution: "Ally Bank", accountName: "Business Checking", mask: "7756", subtype: "checking", balance: 12890.4 },
-  { displayInstitution: "PayPal", accountName: "PayPal Balance", mask: "3310", subtype: "paypal", balance: 642.1 },
+  { displayInstitution: "PayPal", accountName: "PayPal Balance", mask: "3310", subtype: "checking", balance: 642.1 },
   { displayInstitution: "Cash App", accountName: "Cash App Balance", mask: "9042", subtype: "prepaid", balance: 310.75 },
 ];
 
