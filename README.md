@@ -8,6 +8,11 @@ access with Plaid and Dwolla (see "Going to production" below).
 Verified to build clean (`next build`, 23/23 pages, no errors) before this
 was handed to you.
 
+> **New to this project? Start with [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md)
+> first.** This README covers how to run and deploy the app; PROJECT_HANDOFF.md
+> covers the product model, the decisions behind it, and a list of specific
+> gotchas that will otherwise cost you real debugging time.
+
 ## Architecture in one paragraph
 
 Next.js App Router, deployed on Vercel. Supabase Auth handles sign-up/login;
@@ -165,18 +170,22 @@ database, just real credentials.
 
 ---
 
-## What's simplified for this first version (fast follow-ups)
+## What's simplified today (fast follow-ups)
 
-- **Deposit detection is manual.** The Payments page asks you to enter an
-  amount instead of automatically noticing a new deposit. The real version
-  of this needs Plaid's Transactions product + webhooks — a solid next
-  build, not done here.
-- **Account balances aren't fetched yet.** Wire up Plaid's
-  `/accounts/balance/get` on the Dashboard once you're ready.
+This section used to say deposit detection was manual and balances weren't
+fetched -- both are now built (see PROJECT_HANDOFF.md section 3 and 5).
+What's actually still simplified or open:
+
 - **Access-token encryption at rest.** `accounts.plaid_access_token` is
   stored as plain text in Postgres today, protected only by RLS + the fact
   that it's never selected by the browser client. Before handling real
   money, encrypt it (Supabase Vault, or `pgsodium`) as defense in depth.
+- **Percentage-to-dollar behavior needs a decision.** See
+  PROJECT_HANDOFF.md section 4c -- the split engine currently normalizes
+  percentages to 100% of every deposit rather than leaving an unclaimed
+  remainder, which doesn't match the product's own copy. Unresolved.
+- **The "skip identity verification" testing shortcut** in onboarding must
+  be removed before production (PROJECT_HANDOFF.md section 4f).
 - **Mobile app** — not started. React Native (Expo) reusing `lib/allocations.js`
   and the same API routes is the natural path once the web app is stable;
   budget real time for App Store / Play Store review after that.
