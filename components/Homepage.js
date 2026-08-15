@@ -14,6 +14,7 @@ import {
   Sparkles,
   Check,
   Plus,
+  Repeat,
   Coins,
   SplitSquareHorizontal,
   PartyPopper,
@@ -297,6 +298,44 @@ export default function Homepage() {
               recommend exactly how much to send to your Tax Reserve and retirement accounts. Have W2 income? No
               problem, we&apos;ll separate it out automatically.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Subscription radar */}
+      <section className="border-t border-neutral-200 bg-white">
+        <div className="max-w-6xl mx-auto px-5 py-20 grid md:grid-cols-2 gap-14 items-center">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Never get surprised by a charge again</h2>
+            <p className="text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
+              See every subscription before it charges.
+            </p>
+            <p className="text-neutral-600 leading-relaxed">
+              PriorityPay scans your connected accounts and flags recurring charges before they hit --
+              streaming services, software, memberships, anything billing you on a schedule. Know what&apos;s
+              coming out of your account next month, before it happens.
+            </p>
+          </div>
+          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Repeat size={18} className="text-emerald-700" />
+              <span className="text-sm font-bold text-neutral-900">Charging soon</span>
+            </div>
+            <div className="space-y-3">
+              {[
+                { name: "Adobe Creative Cloud", date: "Aug 22", amount: "$59.99" },
+                { name: "Netflix", date: "Aug 24", amount: "$15.49" },
+                { name: "Spotify", date: "Sep 1", amount: "$11.99" },
+              ].map((s) => (
+                <div key={s.name} className="flex items-center justify-between bg-white border border-neutral-200 rounded-xl px-4 py-3">
+                  <div>
+                    <div className="text-sm font-semibold text-neutral-800">{s.name}</div>
+                    <div className="text-xs text-neutral-500">{s.date}</div>
+                  </div>
+                  <span className="text-sm font-bold text-neutral-900 font-mono">{s.amount}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

@@ -7,6 +7,7 @@ import {
   Landmark,
   SplitSquareVertical,
   CalendarCheck,
+  Repeat,
   Settings as SettingsIcon,
   Zap,
   Menu,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { href: "/accounts", label: "Accounts", icon: Landmark },
   { href: "/splits", label: "Split Rules", icon: SplitSquareVertical },
   { href: "/closeout", label: "Close Out", icon: CalendarCheck },
+  { href: "/subscriptions", label: "Subscriptions", icon: Repeat },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -31,6 +33,7 @@ const TITLES = {
   "/accounts": "Linked Accounts",
   "/splits": "Split Rules",
   "/closeout": "Monthly Close-Out",
+  "/subscriptions": "Subscriptions",
   "/settings": "Settings",
 };
 
