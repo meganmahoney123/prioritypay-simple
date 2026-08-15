@@ -147,7 +147,22 @@ export default function OnboardingPage() {
               ) : dwollaDone ? (
                 <p className="text-sm text-emerald-700 font-medium mb-6">Identity verified.</p>
               ) : (
-                <IdentityForm onDone={() => setDwollaDone(true)} />
+                <>
+                  <IdentityForm onDone={() => setDwollaDone(true)} />
+                  {/* TEMPORARY -- testing convenience only, remove before this
+                      app moves past prototype. Lets Megan click through
+                      onboarding repeatedly without fighting Dwolla sandbox's
+                      one-identity-per-email rule. Sets local state only --
+                      no real Dwolla customer gets created, so dwollaDone
+                      resets to false again on the next fresh visit unless
+                      IdentityForm is actually completed. */}
+                  <button
+                    onClick={() => setDwollaDone(true)}
+                    className="text-xs text-neutral-400 underline mt-3"
+                  >
+                    Skip identity verification (testing only)
+                  </button>
+                </>
               )}
               <div className="flex gap-3 mt-6">
                 <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
