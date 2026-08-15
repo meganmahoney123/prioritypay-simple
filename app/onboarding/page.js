@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Zap, Plus } from "lucide-react";
+import { ArrowRight, ArrowLeft, Zap, Plus, X } from "lucide-react";
 import { PrimaryButton, GhostButton, Badge } from "@/components/ui";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
@@ -20,6 +20,25 @@ import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow, clampPctToRemaining, S
 // nudges you to finish connecting before any money actually moves.
 const STEPS = ["Welcome", "Business", "Identity", "Connect Accounts", "Percentage Splits", "Review"];
 const BUSINESS_TYPES = ["Self Employed (No W2 Employees)", "W2 Employee + Side Hustle"];
+
+// "Tax Reserve" / "Investments and Emergency Fund" / "A, B, and C" -- used
+// to list unconnected category names in one sentence on Step 4 (see
+// showUnconnectedModal below).
+function joinWithAnd(items) {
+  if (items.length <= 1) return items[0] || "";
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+// Plaid can't connect to Zelle directly -- unlike PayPal, Venmo, and Cash
+// App, Zelle has no account/routing number of its own; it's a feature
+// layered onto whatever bank account someone already registered with it.
+// Clicking it shows an explanation instead of opening (and failing) Link.
+const APP_CONNECT_OPTIONS = [
+  { key: "paypal", name: "PayPal", color: "#0070ba", hoverColor: "#005ea6" },
+  { key: "venmo", name: "Venmo", color: "#3D95CE", hoverColor: "#2f7dad" },
+  { key: "cashapp", name: "Cash App", color: "#00D632", hoverColor: "#00b82b" },
+];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -45,6 +64,18 @@ export default function OnboardingPage() {
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  // Step 3: after any account links, ask "got more?" instead of leaving it
+  // to a static button label. Zelle isn't Plaid-connectable on its own --
+  // it's a feature layered onto an existing bank account, not a separate
+  // account with its own routing/account number -- so it gets an
+  // explanatory note instead of trying (and failing) to open Link.
+  const [showAddMorePopup, setShowAddMorePopup] = useState(false);
+  const [showZelleNote, setShowZelleNote] = useState(false);
+  // Step 4: the inline per-row "not connected" note is off here (see
+  // showRowWarnings=false below) -- instead this catches it once, at the
+  // moment someone tries to leave the step, and lists every affected
+  // category by name in one place.
+  const [showUnconnectedModal, setShowUnconnectedModal] = useState(false);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
@@ -82,6 +113,18 @@ export default function OnboardingPage() {
 
   const totalPct = pctTotal(percent);
   const remainingPct = Math.max(0, 100 - totalPct);
+
+  // Same criterion the Dashboard nudge uses post-onboarding (see
+  // app/(app)/dashboard/page.js) -- a row claiming a real percentage with
+  // nowhere to send it yet.
+  const unconnectedForStep4 = percent.filter((r) => (Number(r.pct) || 0) > 0 && !r.accountId);
+  const handleStep4Continue = () => {
+    if (unconnectedForStep4.length > 0) {
+      setShowUnconnectedModal(true);
+      return;
+    }
+    next();
+  };
 
   const finish = async () => {
     setSubmitting(true);
@@ -205,9 +248,48 @@ export default function OnboardingPage() {
                 might land. You can always add more inside the dashboard.
               </p>
               <PlaidLinkButton
-                label={accounts.length > 0 ? "Connect another account" : "Connect an account"}
-                onLinked={onAccountLinked}
+                label="Connect Account"
+                onLinked={(account) => {
+                  onAccountLinked(account);
+                  if (account) setShowAddMorePopup(true);
+                }}
               />
+
+              <p className="text-xs font-semibold text-neutral-500 mt-6 mb-2">Connect these apps:</p>
+              <div className="flex flex-wrap gap-2">
+                {APP_CONNECT_OPTIONS.map((app) => (
+                  <PlaidLinkButton
+                    key={app.key}
+                    label={app.name}
+                    className="text-xs px-4 py-2"
+                    style={{ backgroundColor: app.color }}
+                    onLinked={(account) => {
+                      onAccountLinked(account);
+                      if (account) setShowAddMorePopup(true);
+                    }}
+                  />
+                ))}
+                <button
+                  onClick={() => setShowZelleNote(true)}
+                  className="inline-flex items-center justify-center gap-2 text-white font-bold rounded-2xl px-4 py-2 text-xs transition-colors"
+                  style={{ backgroundColor: "#6d1ed4" }}
+                >
+                  Zelle
+                </button>
+              </div>
+              {showZelleNote && (
+                <div className="mt-2 flex items-start justify-between gap-2 text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2">
+                  <span>
+                    Zelle doesn&apos;t have its own account -- money sent through Zelle lands directly in
+                    whichever bank account you&apos;ve already registered with it. Connect that bank account
+                    above instead of Zelle itself.
+                  </span>
+                  <button onClick={() => setShowZelleNote(false)} className="text-neutral-400 hover:text-neutral-600 shrink-0">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
               <div className="mt-4 space-y-2">
                 {accounts.map((a) => (
                   <div key={a.id} className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-3 py-2">
@@ -256,6 +338,7 @@ export default function OnboardingPage() {
                   setCreating={setCreating}
                   connecting={connecting}
                   setConnecting={setConnecting}
+                  showRowWarnings={false}
                 />
               </div>
               <div className="flex items-center gap-2 flex-wrap mt-3">
@@ -287,7 +370,7 @@ export default function OnboardingPage() {
               </p>
               <div className="flex gap-3 mt-4">
                 <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
-                <PrimaryButton onClick={next} className="flex-1">Continue <ArrowRight size={16} /></PrimaryButton>
+                <PrimaryButton onClick={handleStep4Continue} className="flex-1">Continue <ArrowRight size={16} /></PrimaryButton>
               </div>
             </div>
           )}
@@ -313,6 +396,49 @@ export default function OnboardingPage() {
           )}
         </div>
       </div>
+
+      {showAddMorePopup && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
+            <h3 className="text-base font-bold mb-4">Have any more accounts to add?</h3>
+            <div className="flex flex-col gap-2">
+              <PlaidLinkButton
+                label="Connect More Accounts"
+                onLinked={(account) => {
+                  onAccountLinked(account);
+                }}
+              />
+              <GhostButton onClick={() => setShowAddMorePopup(false)}>No, that&apos;s all</GhostButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUnconnectedModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
+            <h3 className="text-base font-bold mb-3">Missing accounts</h3>
+            <p className="text-sm text-neutral-600 mb-6">
+              You haven&apos;t connected an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} yet.
+              Until you connect one, money will not be routed and will stay wherever the deposit landed.
+            </p>
+            <div className="flex gap-3">
+              <GhostButton onClick={() => setShowUnconnectedModal(false)} className="flex-1">
+                Go back and connect
+              </GhostButton>
+              <PrimaryButton
+                onClick={() => {
+                  setShowUnconnectedModal(false);
+                  next();
+                }}
+                className="flex-1"
+              >
+                Continue anyway
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

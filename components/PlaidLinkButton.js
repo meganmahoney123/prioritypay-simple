@@ -40,6 +40,7 @@ export default function PlaidLinkButton({
   retirementType,
   investmentType,
   savingsOnly,
+  style,
 }) {
   const [linkToken, setLinkToken] = useState(null);
   const [exchanging, setExchanging] = useState(false);
@@ -188,7 +189,7 @@ export default function PlaidLinkButton({
 
   return (
     <div>
-      <PrimaryButton onClick={() => open()} disabled={disabled || !ready || exchanging} className={className}>
+      <PrimaryButton onClick={() => open()} disabled={disabled || !ready || exchanging} className={className} style={style}>
         {exchanging && <Loader2 size={15} className="animate-spin" />}
         {exchanging ? "Linking…" : isOAuthReturn && !ready ? "Resuming…" : label}
       </PrimaryButton>

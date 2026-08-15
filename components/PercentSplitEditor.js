@@ -132,6 +132,7 @@ export default function PercentSplitEditor({
                   connecting={connecting}
                   setConnecting={setConnecting}
                   onAccountLinked={onAccountLinked}
+                  showRowWarnings={showRowWarnings}
                 />
               ))}
             </div>
@@ -154,6 +155,7 @@ export default function PercentSplitEditor({
             connecting={connecting}
             setConnecting={setConnecting}
             onAccountLinked={onAccountLinked}
+            showRowWarnings={showRowWarnings}
           />
         )
       )}

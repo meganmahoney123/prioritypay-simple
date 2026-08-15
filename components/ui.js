@@ -4,12 +4,13 @@ export function Card({ children, className = "" }) {
   return <div className={`bg-white border border-neutral-200 rounded-xl card-shadow ${className}`}>{children}</div>;
 }
 
-export function PrimaryButton({ children, onClick, disabled, className = "", type = "button" }) {
+export function PrimaryButton({ children, onClick, disabled, className = "", type = "button", style }) {
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      style={style}
       className={`inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl px-6 py-3 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
     >
       {children}
