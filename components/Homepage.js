@@ -1,23 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   Zap,
   ArrowRight,
-  Wallet,
-  ShieldCheck,
-  TrendingUp,
-  PiggyBank,
-  Briefcase,
-  Landmark,
   ClipboardCheck,
   Sparkles,
   Check,
-  Plus,
   Repeat,
-  Coins,
-  SplitSquareHorizontal,
-  PartyPopper,
+  ChevronDown,
 } from "lucide-react";
 import { PrimaryButton, GhostButton } from "./ui";
 
@@ -25,35 +17,57 @@ import { PrimaryButton, GhostButton } from "./ui";
 // (lib/allocations.js DEFAULT_SPLIT_RULES) so the homepage isn't showing
 // numbers the product itself wouldn't suggest.
 const DEFAULT_BUCKETS = [
-  { label: "Solo 401k", icon: Landmark, pct: 10, color: "#8b5cf6" },
-  { label: "SEP IRA", icon: Landmark, pct: 5, color: "#ec4899" },
-  { label: "Investments", icon: TrendingUp, pct: 10, color: "#14b8a6" },
-  { label: "Tax Reserve", icon: ShieldCheck, pct: 20, color: "#a3a3a3" },
-  { label: "Emergency Fund", icon: PiggyBank, pct: 10, color: "#f59e0b" },
-  { label: "OPEX", icon: Briefcase, pct: 10, color: "#7c3aed" },
-  { label: "Savings", icon: Wallet, pct: 10, color: "#ef4444" },
+  { label: "Solo 401k", pct: 10, color: "#8b5cf6" },
+  { label: "SEP IRA", pct: 5, color: "#ec4899" },
+  { label: "Investments", pct: 10, color: "#14b8a6" },
+  { label: "Tax Reserve", pct: 20, color: "#a3a3a3" },
+  { label: "Emergency Fund", pct: 10, color: "#f59e0b" },
+  { label: "OPEX", pct: 10, color: "#7c3aed" },
+  { label: "Savings", pct: 10, color: "#ef4444" },
 ];
-
-const CUSTOM_EXAMPLES = ["Wedding", "College Fund", "Vacation Fund", "House Downpayment", "Hobbies"];
 
 const HOW_IT_WORKS = [
   {
     step: "01",
-    icon: Coins,
     title: "A deposit lands",
     body: "Client payment, Venmo, Cash App, PayPal, a check you deposited. Any money hitting a connected account triggers PriorityPay.",
   },
   {
     step: "02",
-    icon: SplitSquareHorizontal,
     title: "Deposit is split by percentages you set",
     body: "PriorityPay automatically routes a percentage of every deposit to retirement, savings, taxes, and any other accounts you wish. You choose the percentage for each account.",
   },
   {
     step: "03",
-    icon: PartyPopper,
     title: "Spend what's left. Guilt free.",
     body: "Never wonder if you can afford to splurge this weekend. If the money is in checking? Spend it. Guilt free.",
+  },
+];
+
+const FAQS = [
+  {
+    q: "Who is PriorityPay for?",
+    a: "PriorityPay is built for self-employed people -- freelancers, sole proprietors, single-member LLCs, and S-Corps -- along with anyone earning side income, even if you also have a W2 job. If you get paid in a way that doesn't automatically set aside money for taxes and retirement the way a traditional payroll job does, PriorityPay is for you.",
+  },
+  {
+    q: "Do I need to already have a Solo 401k or SEP IRA?",
+    a: "Yes. PriorityPay isn't a bank or an investment custodian, so it doesn't open retirement or brokerage accounts for you. You open a Solo 401k, SEP IRA, or investment account with a provider of your choice, then connect it to PriorityPay so your percentage split routes money there automatically.",
+  },
+  {
+    q: "What accounts and apps can I connect?",
+    a: "Any US bank or credit union checking or savings account through Plaid -- including all the major banks and roughly 12,000 smaller banks and credit unions -- plus Venmo, PayPal, and Cash App directly. Zelle isn't supported, since it isn't connectable through Plaid.",
+  },
+  {
+    q: "Does PriorityPay manage or invest my money?",
+    a: "No. PriorityPay only moves money between accounts you already own and control. It is not a bank, broker-dealer, or investment adviser, and never holds or invests your funds -- you stay in control of every account.",
+  },
+  {
+    q: "Can I change my percentages later?",
+    a: "Anytime, from Split Rules in your dashboard. Add or remove categories, adjust any percentage, and reconnect accounts whenever your income or goals change.",
+  },
+  {
+    q: "Is my identity and money movement secure?",
+    a: "Yes. PriorityPay verifies your identity before any money can move, and all account connections and transfers run through Plaid and Dwolla, the same infrastructure trusted by banks and other financial apps.",
   },
 ];
 
@@ -99,17 +113,53 @@ function LogoChip({ item }) {
 
 function StepBadge({ n }) {
   return (
-    <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-mono font-extrabold text-sm flex items-center justify-center shrink-0">
+    <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-mono font-extrabold text-sm flex items-center justify-center shrink-0">
       {n}
+    </div>
+  );
+}
+
+function OnboardingStepCard({ n, title, body, children }) {
+  return (
+    <div className="flex flex-col">
+      <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-5 sm:p-6 mb-5 flex-1">
+        {children}
+      </div>
+      <div className="flex items-center gap-2.5 mb-2">
+        <StepBadge n={n} />
+        <h3 className="text-base sm:text-lg font-bold text-neutral-900">{title}</h3>
+      </div>
+      <p className="text-sm text-neutral-600 leading-relaxed">{body}</p>
+    </div>
+  );
+}
+
+function FaqItem({ item, open, onToggle }) {
+  return (
+    <div className="border-b border-neutral-200 py-5">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-4 text-left"
+      >
+        <span className="text-sm sm:text-base font-bold text-neutral-900">{item.q}</span>
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-neutral-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <p className="mt-3 text-sm text-neutral-600 leading-relaxed max-w-3xl">{item.a}</p>
+      )}
     </div>
   );
 }
 
 export default function Homepage() {
   const logoTrack = [...LOGO_ITEMS, ...LOGO_ITEMS];
+  const [openFaq, setOpenFaq] = useState(0);
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-[#fafafa] overflow-x-hidden">
       <style>{`
         @keyframes pp-logo-scroll {
           from { transform: translateX(0); }
@@ -125,47 +175,47 @@ export default function Homepage() {
 
       {/* Nav */}
       <header className="sticky top-0 z-30 bg-[#fafafa]/90 backdrop-blur border-b border-neutral-200">
-        <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
               <Zap size={18} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-lg font-bold">PriorityPay</span>
+            <span className="text-base sm:text-lg font-bold">PriorityPay</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 px-3 py-2">
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <Link href="/login" className="text-xs sm:text-sm font-semibold text-neutral-600 hover:text-neutral-900 px-2 sm:px-3 py-2">
               Log in
             </Link>
             <Link href="/signup">
-              <PrimaryButton className="!px-4 !py-2 !rounded-xl">Get started</PrimaryButton>
+              <PrimaryButton className="!px-3.5 !py-2 !text-xs sm:!px-4 sm:!text-sm !rounded-xl">Get started</PrimaryButton>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-5 pt-16 pb-20 md:pt-24 md:pb-28">
+      <section className="max-w-6xl mx-auto px-4 sm:px-5 pt-12 pb-14 md:pt-24 md:pb-28">
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-full mb-6">
             <Sparkles size={13} />
             Built for the self-employed
           </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] text-neutral-900">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.1] md:leading-[1.05] text-neutral-900">
             Automatically route income to investments and savings.
             <span className="text-emerald-600"> BEFORE you spend it.</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-neutral-600 leading-relaxed">
+          <p className="mt-5 md:mt-6 text-base sm:text-lg md:text-xl text-neutral-600 leading-relaxed">
             PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement,
             savings, and taxes automatically. Spend the rest, guilt free.
           </p>
-          <div className="mt-9 flex flex-wrap items-center gap-3">
+          <div className="mt-8 md:mt-9 flex flex-wrap items-center gap-3">
             <Link href="/signup">
-              <PrimaryButton className="!px-7 !py-3.5 !text-base">
+              <PrimaryButton className="!px-6 !py-3 sm:!px-7 sm:!py-3.5 !text-sm sm:!text-base">
                 Get started free <ArrowRight size={17} />
               </PrimaryButton>
             </Link>
             <Link href="/login">
-              <GhostButton className="!px-7 !py-3.5 !text-base">Log in</GhostButton>
+              <GhostButton className="!px-6 !py-3 sm:!px-7 sm:!py-3.5 !text-sm sm:!text-base">Log in</GhostButton>
             </Link>
           </div>
           <p className="mt-4 text-xs text-neutral-400">
@@ -177,42 +227,29 @@ export default function Homepage() {
 
       {/* How it works */}
       <section className="border-t border-neutral-200 bg-white">
-        <div className="max-w-6xl mx-auto px-5 py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-14 md:py-20">
           <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Financial accountability, on autopilot</h2>
-          <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mb-14">
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mb-10 md:mb-14">
             Never remind yourself to save again.
           </p>
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            {HOW_IT_WORKS.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <div key={s.step} className="relative">
-                  {i < HOW_IT_WORKS.length - 1 && (
-                    <ArrowRight
-                      size={20}
-                      strokeWidth={2.5}
-                      className="hidden md:block absolute -right-7 top-6 text-emerald-200"
-                    />
-                  )}
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mb-4">
-                    <Icon size={26} className="text-emerald-700" strokeWidth={2} />
-                  </div>
-                  <div className="text-3xl font-extrabold text-neutral-200 mb-3 font-mono">{s.step}</div>
-                  <h3 className="text-lg font-bold text-neutral-900 mb-2">{s.title}</h3>
-                  <p className="text-sm text-neutral-600 leading-relaxed">{s.body}</p>
-                </div>
-              );
-            })}
+          <div className="grid sm:grid-cols-3 gap-8 sm:gap-6 md:gap-8">
+            {HOW_IT_WORKS.map((s) => (
+              <div key={s.step}>
+                <div className="text-3xl font-extrabold text-neutral-200 mb-3 font-mono">{s.step}</div>
+                <h3 className="text-lg font-bold text-neutral-900 mb-2">{s.title}</h3>
+                <p className="text-sm text-neutral-600 leading-relaxed">{s.body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Feel good logging in */}
       <section className="border-t border-neutral-200 bg-white">
-        <div className="max-w-6xl mx-auto px-5 py-20 grid md:grid-cols-2 gap-14 items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-14 md:py-20 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">The only app you'll actually enjoy opening</h2>
-            <p className="text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
               Most platforms show what you owe, overspend, and should have done.
             </p>
             <p className="text-neutral-600 leading-relaxed mb-4">
@@ -235,9 +272,9 @@ export default function Homepage() {
               ))}
             </ul>
           </div>
-          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-6">
+          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-5 sm:p-6">
             <div className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 mb-1">Total saved since joining</div>
-            <div className="text-4xl font-extrabold text-emerald-700 font-mono mb-6">$34,218</div>
+            <div className="text-3xl sm:text-4xl font-extrabold text-emerald-700 font-mono mb-6">$34,218</div>
             <div className="space-y-3">
               {[
                 { label: "Solo 401k", value: "$11,240", color: "#8b5cf6" },
@@ -247,7 +284,7 @@ export default function Homepage() {
               ].map((r) => (
                 <div key={r.label} className="flex items-center justify-between bg-white border border-neutral-200 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color }} />
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
                     <span className="text-sm font-semibold text-neutral-800">{r.label}</span>
                   </div>
                   <span className="text-sm font-bold text-neutral-900 font-mono">{r.value}</span>
@@ -258,56 +295,12 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* Close out / taxes */}
-      <section className="border-t border-neutral-200">
-        <div className="max-w-6xl mx-auto px-5 py-20 grid md:grid-cols-2 gap-14 items-center">
-          <div className="order-2 md:order-1 bg-white border border-neutral-200 rounded-2xl card-shadow p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <ClipboardCheck size={18} className="text-emerald-700" />
-              <span className="text-sm font-bold text-neutral-900">Monthly Close Out -- July 2026</span>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: "Income", value: "$14,220", tone: "text-emerald-700" },
-                { label: "Business expenses", value: "$3,110", tone: "text-neutral-700" },
-                { label: "W2 income (excluded)", value: "$0", tone: "text-neutral-400" },
-              ].map((r) => (
-                <div key={r.label} className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500">{r.label}</span>
-                  <span className={`font-mono font-semibold ${r.tone}`}>{r.value}</span>
-                </div>
-              ))}
-              <div className="h-px bg-neutral-200 my-1" />
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold text-neutral-800">Net income this month</span>
-                <span className="font-mono font-bold text-neutral-900">$11,110</span>
-              </div>
-            </div>
-            <div className="mt-5 bg-emerald-50 rounded-xl p-4 text-sm text-emerald-800">
-              Solo 401k and SEP IRA contribution room recalculated automatically -- no spreadsheet required.
-            </div>
-          </div>
-          <div className="order-1 md:order-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Taxes, already halfway done</h2>
-            <p className="text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
-              At the end of every month, you already know what was income, what was an expense, and where it came
-              from.
-            </p>
-            <p className="text-neutral-600 leading-relaxed">
-              PriorityPay&apos;s Month Close-Out walks you through confirming each transaction once, then uses it to
-              recommend exactly how much to send to your Tax Reserve and retirement accounts. Have W2 income? No
-              problem, we&apos;ll separate it out automatically.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Subscription radar */}
       <section className="border-t border-neutral-200 bg-white">
-        <div className="max-w-6xl mx-auto px-5 py-20 grid md:grid-cols-2 gap-14 items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-14 md:py-20 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Never get surprised by a charge again</h2>
-            <p className="text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
               See every subscription before it charges.
             </p>
             <p className="text-neutral-600 leading-relaxed">
@@ -316,7 +309,7 @@ export default function Homepage() {
               coming out of your account next month, before it happens.
             </p>
           </div>
-          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-6">
+          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-5">
               <Repeat size={18} className="text-emerald-700" />
               <span className="text-sm font-bold text-neutral-900">Charging soon</span>
@@ -340,104 +333,145 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* 3 Simple Onboarding Steps */}
+      {/* 3 Simple Onboarding Steps -- card grid, each with a mockup visual on
+          top, a heading, and a short description, one row on mobile, three
+          across on desktop. */}
       <section className="border-t border-neutral-200 bg-white overflow-hidden">
-        <div className="max-w-6xl mx-auto px-5 pt-20 pb-2 text-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 pt-14 md:pt-20 pb-2 text-center">
           <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Getting started</h2>
-          <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mx-auto">
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mx-auto">
             3 Simple Onboarding Steps
           </p>
         </div>
 
-        {/* Step 1 -- connect accounts */}
-        <div className="max-w-6xl mx-auto px-5 pt-16">
-          <div className="flex items-center gap-3 mb-5">
-            <StepBadge n="1" />
-            <h3 className="text-xl font-bold text-neutral-900">Connect how you actually get paid</h3>
-          </div>
-          <p className="text-neutral-600 max-w-2xl mb-10">
-            Do you have income scattered everywhere? No problem. Connect all of your income-receiving accounts
-            and apps so that every deposit is accounted for. Venmo, PayPal, and Cash App connect directly, plus
-            effectively any US bank or credit union checking or savings account through Plaid -- including all
-            the major ones and roughly 12,000 smaller banks and credit unions.
-          </p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-10 md:py-14 grid sm:grid-cols-3 gap-10 sm:gap-6 md:gap-8">
+          <OnboardingStepCard
+            n="1"
+            title="Connect how you actually get paid"
+            body="Connect all of your income-receiving accounts and apps so that every deposit is accounted for. We connect with over 12,000 banks and credit unions as well as your favorite apps like Venmo, PayPal, and Cash App."
+          >
+            <div className="flex flex-wrap gap-2">
+              {LOGO_ITEMS.slice(0, 6).map((item) => (
+                <div key={item.name} className="flex items-center gap-1.5 bg-white border border-neutral-200 rounded-xl px-3 py-2">
+                  {item.iconSrc && <img src={item.iconSrc} alt="" width={14} height={14} className="shrink-0" />}
+                  <span className="text-xs font-bold whitespace-nowrap" style={{ color: item.color || "#171717" }}>
+                    {item.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </OnboardingStepCard>
+
+          <OnboardingStepCard
+            n="2"
+            title="Set your percentages"
+            body="We start you off with seven buckets built for self-employed income -- Solo 401k, SEP IRA, Investments, Tax Reserve, Emergency Fund, business expenses (OPEX), and Savings. Don't need one? Remove it. Want more? Add your own."
+          >
+            <div className="space-y-2">
+              {DEFAULT_BUCKETS.map((b) => (
+                <div key={b.label} className="flex items-center justify-between bg-white border border-neutral-200 rounded-xl px-3.5 py-2.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: b.color }} />
+                    <span className="text-xs sm:text-sm font-semibold text-neutral-800 truncate">{b.label}</span>
+                  </div>
+                  <span className="text-xs sm:text-sm font-extrabold font-mono shrink-0" style={{ color: b.color }}>{b.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </OnboardingStepCard>
+
+          <OnboardingStepCard
+            n="3"
+            title="Spend the rest, guilt free"
+            body="That's it. From here, every future deposit gets split automatically the moment it lands. Whatever's sitting in checking is yours to spend, guilt free."
+          >
+            <div className="bg-white border border-neutral-200 rounded-xl px-4 py-5 text-center">
+              <div className="text-[11px] font-bold uppercase tracking-wide text-neutral-400 mb-1">Available to spend</div>
+              <div className="text-3xl font-extrabold text-emerald-700 font-mono">$1,842</div>
+              <div className="text-xs text-neutral-500 mt-1">already split &amp; saved this month</div>
+            </div>
+          </OnboardingStepCard>
         </div>
-        <div className="relative pb-20">
-          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-white to-transparent z-10" />
-          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white to-transparent z-10" />
+
+        <div className="relative pb-14 md:pb-20">
+          <div className="absolute left-0 top-0 bottom-0 w-10 sm:w-16 bg-gradient-to-r from-white to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-10 sm:w-16 bg-gradient-to-l from-white to-transparent z-10" />
           <div className="flex w-max pp-logo-track">
             {logoTrack.map((item, i) => (
               <LogoChip key={`${item.name}-${i}`} item={item} />
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Step 2 -- set percentages */}
-        <div className="max-w-6xl mx-auto px-5 py-16 border-t border-neutral-200">
-          <div className="flex items-center gap-3 mb-5">
-            <StepBadge n="2" />
-            <h3 className="text-xl font-bold text-neutral-900">Set your percentages</h3>
-          </div>
-          <p className="text-neutral-600 max-w-2xl mb-10">
-            We start you off with seven buckets built for self-employed income. Set your percentages for Solo
-            401k, SEP IRA, Investments, Tax Reserve, Emergency Fund, business expenses (OPEX), and Savings.
-            Don&apos;t need one? Remove it. Want more? Add your own.
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-10">
-            {DEFAULT_BUCKETS.map((b) => {
-              const Icon = b.icon;
-              return (
-                <div key={b.label} className="bg-white border border-neutral-200 rounded-2xl card-shadow p-4 flex flex-col items-center text-center">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2.5" style={{ backgroundColor: `${b.color}1a` }}>
-                    <Icon size={18} style={{ color: b.color }} strokeWidth={2.25} />
-                  </div>
-                  <span className="text-xs font-bold text-neutral-800 leading-tight mb-1">{b.label}</span>
-                  <span className="text-sm font-extrabold font-mono" style={{ color: b.color }}>{b.pct}%</span>
+      {/* Close out / taxes */}
+      <section className="border-t border-neutral-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-14 md:py-20 grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+          <div className="order-2 md:order-1 bg-white border border-neutral-200 rounded-2xl card-shadow p-5 sm:p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <ClipboardCheck size={18} className="text-emerald-700" />
+              <span className="text-sm font-bold text-neutral-900">Monthly Close Out -- July 2026</span>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: "Income", value: "$14,220", tone: "text-emerald-700" },
+                { label: "Business expenses", value: "$3,110", tone: "text-neutral-700" },
+                { label: "W2 income (excluded)", value: "$0", tone: "text-neutral-400" },
+              ].map((r) => (
+                <div key={r.label} className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500">{r.label}</span>
+                  <span className={`font-mono font-semibold ${r.tone}`}>{r.value}</span>
                 </div>
-              );
-            })}
-          </div>
-
-          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-6 md:p-7">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                <Plus size={17} className="text-emerald-700" />
-              </div>
-              <div>
-                <h4 className="font-bold text-neutral-900 mb-1">Or build your own categories entirely</h4>
-                <p className="text-sm text-neutral-600 mb-3">
-                  Saving toward something specific? Add a bucket for it and give it a percentage, same as any other.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {CUSTOM_EXAMPLES.map((c) => (
-                    <span key={c} className="text-xs font-semibold bg-white border border-neutral-200 text-neutral-700 px-3 py-1.5 rounded-full">
-                      {c}
-                    </span>
-                  ))}
-                </div>
+              ))}
+              <div className="h-px bg-neutral-200 my-1" />
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-semibold text-neutral-800">Net income this month</span>
+                <span className="font-mono font-bold text-neutral-900">$11,110</span>
               </div>
             </div>
+            <div className="mt-5 bg-emerald-50 rounded-xl p-4 text-sm text-emerald-800">
+              Calculate your Solo 401k and SEP IRA contributions effortlessly inside the dashboard.
+            </div>
+          </div>
+          <div className="order-1 md:order-2">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Taxes, already halfway done</h2>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
+              At the end of every month, you already know what was income, what was an expense, and where it came
+              from.
+            </p>
+            <p className="text-neutral-600 leading-relaxed">
+              PriorityPay&apos;s Month Close-Out walks you through confirming each transaction once, then uses it to
+              recommend exactly how much to send to your Tax Reserve and retirement accounts. Have W2 income? No
+              problem, we&apos;ll separate it out automatically.
+            </p>
           </div>
         </div>
+      </section>
 
-        {/* Step 3 -- spend guilt free */}
-        <div className="max-w-6xl mx-auto px-5 pb-20 pt-16 border-t border-neutral-200">
-          <div className="flex items-center gap-3 mb-5">
-            <StepBadge n="3" />
-            <h3 className="text-xl font-bold text-neutral-900">Spend the rest, guilt free</h3>
-          </div>
-          <p className="text-neutral-600 max-w-2xl">
-            That&apos;s it. From here, every future deposit gets split automatically the moment it lands.
-            Whatever&apos;s sitting in checking is yours to spend, guilt free.
+      {/* FAQ */}
+      <section className="border-t border-neutral-200 bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-5 py-14 md:py-20">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3 text-center">Questions</h2>
+          <p className="text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 mb-10 text-center">
+            Frequently asked questions
           </p>
+          <div>
+            {FAQS.map((item, i) => (
+              <FaqItem
+                key={item.q}
+                item={item}
+                open={openFaq === i}
+                onToggle={() => setOpenFaq(openFaq === i ? -1 : i)}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Final CTA */}
       <section className="border-t border-neutral-200">
-        <div className="max-w-6xl mx-auto px-5 py-24 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-neutral-900 mb-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-16 md:py-24 text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-neutral-900 mb-4">
             Stop reacting to your finances. Take an effortless, proactive approach.
           </h2>
           <p className="text-neutral-600 max-w-xl mx-auto mb-9">
@@ -452,7 +486,7 @@ export default function Homepage() {
       </section>
 
       <footer className="border-t border-neutral-200">
-        <div className="max-w-6xl mx-auto px-5 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-5 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-emerald-600 flex items-center justify-center">
               <Zap size={13} className="text-white" strokeWidth={2.5} />
