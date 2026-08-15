@@ -20,14 +20,30 @@ import { dwollaClient } from "@/lib/dwolla";
 // cosmetic labels on top of a normal Plaid Link session; whichever bank
 // the user actually picks becomes the stored institution_name).
 const SEED_ACCOUNTS = [
-  { displayInstitution: "Chase", accountName: "Total Checking", mask: "4821" },
-  { displayInstitution: "Bank of America", accountName: "Advantage Checking", mask: "0193" },
-  { displayInstitution: "Ally Bank", accountName: "Business Checking", mask: "7756" },
-  { displayInstitution: "PayPal", accountName: "PayPal Balance", mask: "3310" },
-  { displayInstitution: "Cash App", accountName: "Cash App Balance", mask: "9042" },
+  { displayInstitution: "Chase", accountName: "Total Checking", mask: "4821", searchName: "First Platypus Bank" },
+  { displayInstitution: "Bank of America", accountName: "Advantage Checking", mask: "0193", searchName: "Tattersall Federal Credit Union" },
+  { displayInstitution: "Ally Bank", accountName: "Business Checking", mask: "7756", searchName: "Tartan Bank" },
+  { displayInstitution: "PayPal", accountName: "PayPal Balance", mask: "3310", searchName: "Houndstooth Bank" },
+  { displayInstitution: "Cash App", accountName: "Cash App Balance", mask: "9042", searchName: "House Trust Bank" },
 ];
 
-const SANDBOX_INSTITUTION_ID = "ins_109508"; // First Platypus Bank
+// Each seed uses a DIFFERENT underlying Plaid sandbox test institution.
+// Dwolla treats an account/routing number pair as a unique funding source,
+// and Plaid's sandbox test data is deterministic per institution -- reusing
+// the same institution for every seed would hand Dwolla the same
+// account+routing number five times and get rejected as a duplicate bank
+// after the first. Resolved by name via institutionsSearch at request time
+// instead of hardcoding ins_ ids, since those aren't documented as stable.
+async function resolveInstitutionId(name) {
+  const res = await plaidClient.institutionsSearch({
+    query: name,
+    products: ["auth", "transactions"],
+    country_codes: ["US"],
+  });
+  const match = res.data.institutions[0];
+  if (!match) throw new Error(`No sandbox institution found for "${name}"`);
+  return match.institution_id;
+}
 
 export async function POST(request) {
   if ((process.env.PLAID_ENV || "sandbox") !== "sandbox") {
@@ -57,8 +73,9 @@ export async function POST(request) {
 
   for (const seed of SEED_ACCOUNTS) {
     try {
+      const institutionId = await resolveInstitutionId(seed.searchName);
       const sandboxRes = await plaidClient.sandboxPublicTokenCreate({
-        institution_id: SANDBOX_INSTITUTION_ID,
+        institution_id: institutionId,
         initial_products: ["auth", "transactions"],
       });
       const publicToken = sandboxRes.data.public_token;
