@@ -7,28 +7,12 @@ import AccountSelect from "@/components/AccountSelect";
 import CreateSubAccountFlow from "@/components/CreateSubAccountFlow";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import BucketIcon from "@/components/BucketIcon";
+import RetirementNote from "@/components/RetirementNote";
 import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal } from "@/lib/allocations";
 
 function currentPeriod() {
   const now = new Date();
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-
-// PriorityPay Simple has exactly one split mechanism: every deposit gets
-// divided by percentage across whichever categories you set up here, full
-// stop -- no fixed minimums, no priority order, no waterfall. Whatever
-// percentage isn't claimed by a category just stays in the account the
-// deposit landed in, available for rent, food, and everything else that
-// isn't a percentage category below. That's the trade: simpler mental
-// model, but you're on the hook for making sure fixed costs are covered.
-function RetirementNote({ label }) {
-  return (
-    <p className="text-[11px] text-neutral-400 leading-snug">
-      This money is held in the account below, not sent to your real {label}. At the end of each month,
-      PriorityPay helps you confirm your net income and then you can send the money to your {label} with
-      one click. This helps avoid over (and under) contributing.
-    </p>
-  );
 }
 
 export default function SplitRulesPage() {

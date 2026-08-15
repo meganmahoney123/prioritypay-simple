@@ -49,10 +49,6 @@ export default function IdentityForm({ onDone }) {
 
   return (
     <form onSubmit={submit} className="space-y-3 max-w-md">
-      <p className="text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-lg p-3">
-        Dwolla (who actually moves the money) requires this before any transfer can happen. In sandbox mode,
-        use test data -- try SSN <code className="font-mono">1234</code> for an instantly-verified test customer.
-      </p>
       <div className="grid grid-cols-2 gap-3">
         <input required placeholder="First name" value={form.firstName} onChange={update("firstName")} className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5" />
         <input required placeholder="Last name" value={form.lastName} onChange={update("lastName")} className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5" />
