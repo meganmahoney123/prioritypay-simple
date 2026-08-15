@@ -3,16 +3,42 @@
 Last updated: August 15, 2026
 
 This document is the narrative history and working context for this
-project — what it is, why it's built the way it is, what's been shipped,
-what's still open, and the specific traps a new developer will otherwise
-rediscover the hard way. `README.md` covers *how to run and deploy* the
-app; this covers *why it looks like this* and *what to know before you
-touch it*.
+project — what it is, why it's built the way it is, exactly how each part
+of it is supposed to function, what's been shipped, what's still open, and
+the specific traps a new developer will otherwise rediscover the hard way.
 
-If you're a developer picking this up cold: read this whole document
-first, then skim `git log --oneline` for the granular, dated history of
-every change (commit messages in this repo are written to be genuinely
-informative, not just "fix bug").
+## How to get full context on this project
+
+If you're picking this up cold — whether that's a developer, a
+contractor, or future-Megan six months from now — there are three sources
+of context, in this order:
+
+1. **This document.** Read it start to finish before touching code. It's
+   the only place the *why* behind decisions, the known rough edges, and
+   the intended behavior of every screen are written down in one spot.
+2. **`git log --oneline`** (or `git log` for full messages) in the repo.
+   Every commit in this project's history has a specific, descriptive
+   message explaining what changed and why — not generic messages like
+   "fix bug" or "update page." Treat it as a dated changelog you can
+   search (`git log --oneline -- components/Homepage.js` to see just that
+   file's history, for example).
+3. **Inline code comments.** This codebase leans heavily on explaining
+   *why* directly above the function or block in question, not just what
+   it does — especially `lib/allocations.js`, `lib/runSplit.js`,
+   `lib/plaidSync.js`, and the API routes under `app/api/**`. Read the
+   comment block before changing anything it's attached to.
+
+Raw chat/session transcripts from building this were deliberately **not**
+exported or attached anywhere — they're full of dead ends, back-and-forth,
+and tooling noise that would take longer to read than the code itself.
+Everything actually worth keeping from those sessions has been distilled
+into the three sources above. If a future assistant or developer is ever
+asked to "review the chat history" for context on this project, point them
+here instead.
+
+`README.md` (same repo) covers the fourth thing this document doesn't:
+*how to actually run and deploy* the app — required accounts, environment
+variables, and the checklist for cutting over from sandbox to real money.
 
 ---
 
@@ -90,7 +116,133 @@ Solo 401k / SEP IRA contributions based on real confirmed net income. Once
 a month is confirmed, it is **permanently locked** — this is intentional,
 not a bug (see gotcha below).
 
-## 4. Critical gotchas — read before changing anything
+## 4. How each part of the product is supposed to function
+
+This section is the closest thing to a functional spec — what should
+happen on each screen, so a developer can tell "working as designed" apart
+from "regression" without having to guess.
+
+**Homepage (public, logged out)** — `components/Homepage.js`. Hero with
+headline/subhead and two CTAs (Get started free / Log in), plus a
+disclaimer line that PriorityPay doesn't manage or invest money. A "how it
+works" 3-step explainer (deposit lands → split by percentages → spend
+guilt free). A comparison section with a mock "Total saved" card. A
+"Never get surprised" mock preview. A "3 Simple Onboarding Steps" section
+laid out as three cards (connect accounts/apps, with a real auto-scrolling
+logo carousel of supported banks and apps below it; set percentages, with
+a mock bucket-and-percentage card; spend the rest). A Close-Out preview.
+An FAQ accordion (six questions, opens the first one by default, covers
+eligibility and how money movement works). A final CTA. Copy throughout
+has been through many specific, deliberate rounds of wording changes —
+check `git log --oneline -- components/Homepage.js` before assuming any
+phrase is arbitrary or safe to casually rewrite.
+
+**Onboarding wizard (new signup)** — `app/onboarding/page.js`. Linear,
+six steps, can't skip ahead: Welcome → Business (business name + entity
+type: Sole proprietor/freelancer, LLC, or S-Corp) → Identity (real Dwolla
+identity verification; required before any money can move; there is a
+"Skip identity verification (testing only)" link that must be removed
+before production, see gotcha 4f) → Connect Accounts (a generic "Connect
+Account" button plus Venmo/PayPal/Cash App one-click buttons plus a
+"Connect More Apps" catch-all; at least one connected account is required
+to continue) → Percentage Splits (the exact same `PercentSplitEditor`
+component used later in the in-app Split Rules page — same rules, same
+7 default categories pre-filled at 75% total combined, same 100% cap,
+same "add your own category" flow) → Review, which submits everything to
+`POST /api/onboarding/complete` and creates the real split rules
+server-side. Whatever a user sees and sets here is not a preview that gets
+redone later — it's the same data model as Split Rules from day one.
+
+**Dashboard (main logged-in home)** — `app/(app)/dashboard/page.js` +
+`components/AccountBalances.js` + `components/MoneyDistributionChart.js`.
+Three things happen here: (1) a "Total saved since joining PriorityPay"
+figure — the all-time sum of every dollar PriorityPay has ever actually
+routed via the split engine, not a snapshot of account balances; (2)
+account balances grouped into Retirement (Solo 401k/SEP IRA sub-accounts),
+Investments, and "Other connected accounts" (everything else) — each row
+shows the connected account's live Plaid balance alongside
+*PriorityPay-tracked* "this year" / "this month" totals for that specific
+category, which is deliberately a different number than the account's own
+balance or transaction history (a connected account's balance can move
+for reasons that have nothing to do with PriorityPay's own splits); (3) a
+real pie chart of how deposits have actually split, switchable between a
+single navigable month (back/forward arrows, gated so you can't page back
+before the account's own signup date) or a rolled-up trailing 6 or 12
+months. Non-dismissible warnings appear if Investments or Retirement are
+still sitting at 0% allocated, nudging the user to fund them.
+
+**Accounts** — `app/(app)/accounts/page.js`. If Dwolla identity isn't
+verified yet, this page shows the identity form instead of anything else
+— no accounts can be linked before that's done. Once verified: a "Connect
+a bank account or app" button, the same Venmo/PayPal/Cash App quick-connect
+row as onboarding, and a "Connect More Apps" catch-all. Every linked
+account renders as a card (institution, account name, masked account
+number, an "Active" badge) with one of two states underneath: "Deposits
+here split automatically" (the normal, expected state — Plaid's sync
+cursor is established and the webhook is watching it), or an amber warning
+plus an "Enable auto-detect" button, which only appears for accounts
+linked before the auto-detect webhook flow existed, or for accounts
+created through the dev seed tooling (section 6) that bypassed the normal
+Plaid Link flow. A real user linking a real account through this page
+should never see the amber warning state.
+
+**Split Rules** — `app/(app)/splits/page.js`, shared
+`components/PercentSplitEditor.js`. The seven core categories (Tax
+Reserve, Investments, Solo 401k, SEP IRA, Emergency Fund, OPEX, Savings)
+are permanently locked by name — they cannot be renamed or deleted — but
+their percentage and connected account can always be changed. Custom
+categories the user adds are fully editable (name, percentage, account)
+and deletable, with an 8-second "Undo" toast after every delete. Real
+sub-accounts added under Investments or Retirement (via "Add Investment
+Account" / "Add Retirement Account") behave like custom categories too —
+they can be renamed and deleted even though the group header itself
+can't. Connecting a real account to Investments or Retirement is
+restricted to non-checking (savings-type) accounts, since this money is
+meant to sit and grow rather than get spent — OPEX is the one deliberate
+exception, since operating expenses are meant to actually be paid out of
+that account. Connecting an account to any row **auto-saves immediately**
+to the server (no separate click needed for that specific action);
+renaming a category or changing a percentage still requires clicking the
+explicit "Save split rules" button. Total percentage across every row is
+capped at 100%, with a live summary line describing how much is allocated
+— see gotcha 4c for a real, currently-unresolved mismatch between what
+that summary line implies and what the underlying engine actually does
+with an unclaimed percentage.
+
+**Close Out (monthly ritual)** — `app/(app)/closeout/page.js`. One record
+per calendar month per user, and the current/future month can't be
+started until it's actually over (shown as "check back on the last day of
+the month"). The first time a given past month is opened, PriorityPay
+pulls every transaction across every linked account for that month from
+Plaid and auto-tags each one (income / W2 income / expense / exclude) as
+a best guess — Plaid's own transfer-detection is used to auto-exclude
+PriorityPay's own internal splits from counting as income or expense, and
+a payroll-name pattern plus Plaid's income category flag is used to guess
+W2 paychecks. **Step 1** is the user reviewing and correcting every
+transaction's category, kicked off by a "Do you have W2 income this
+month?" popup — answering yes walks through flagging which specific
+deposits were W2 paychecks so those get excluded from retirement-room and
+tax-reserve math (self-employment income and W2 wages are calculated
+differently). Once the user clicks "Confirm," **the entire month becomes
+permanently read-only** — every category button is disabled and a clear
+banner explains the month was confirmed on a specific date and can't be
+re-categorized. This is intentional, not a bug (see gotcha 4b's history —
+a lack of this banner is exactly what caused real confusion once already).
+**Steps 2/3**, unlocked after confirming, show recommended Solo 401k / SEP
+IRA contribution room (via the 2026 IRS-limit calculator) and a Tax
+Reserve amount to set aside, computed from the real confirmed net income
+— with one-click "contribute" transfers and a manual top-up flow.
+
+**Settings** — `app/(app)/settings/page.js`. Deliberately minimal by
+design: just a business profile card (business name, entity type
+dropdown). A retirement-age selector, an integrations/connection-status
+section, and an "autopay bills roadmap" section were all built earlier in
+this project and later deliberately removed to keep the page focused —
+don't reintroduce them without first checking why they were cut (see
+section 7 for the pattern of features that were built and then
+intentionally removed).
+
+## 5. Critical gotchas — read before changing anything
 
 These are things that either caused real bugs during development or will
 confuse the next person if they're not written down.
@@ -160,43 +312,6 @@ production deployment.** It's a deliberate sandbox-only shortcut around
 Dwolla's identity verification requirement. Standing reminder, not yet
 actioned since the app is still sandbox-only.
 
-## 5. Feature inventory (what's actually built)
-
-- **Marketing homepage** (`components/Homepage.js`) — hero, "how it
-  works," a live-style dashboard preview, a subscription-adjacent feature
-  was built and then deliberately removed (see section 7), a 3-step
-  onboarding explainer with an auto-scrolling bank/app logo carousel, a
-  Close-Out preview, an FAQ section, final CTA. Copy has been through many
-  rounds of specific wording edits — check `git log -- components/Homepage.js`
-  before assuming any phrase is arbitrary.
-- **Onboarding wizard** (`app/onboarding/page.js`) — Welcome → Business →
-  Identity (real Dwolla identity verification) → Connect Accounts (banks
-  + Venmo/PayPal/Cash App quick-connect + generic "Connect More Apps") →
-  Percentage Splits (same editor as the in-app Split Rules page) → Review.
-- **Dashboard** (`app/(app)/dashboard/page.js` +
-  `components/AccountBalances.js` + `components/MoneyDistributionChart.js`) —
-  account balances grouped by Retirement / Investments / everything else,
-  "Total saved since joining," and a real (not simulated) pie chart of how
-  deposits have actually split, navigable by month or rolled up over 6/12
-  months.
-- **Accounts** (`app/(app)/accounts/page.js`) — linked account list,
-  "Connect a bank account or app" plus the same Venmo/PayPal/Cash App
-  quick-connect row used in onboarding, per-account "deposits split
-  automatically" status.
-- **Split Rules** (`app/(app)/splits/page.js`, shared
-  `components/PercentSplitEditor.js`) — add/rename/delete custom
-  categories (the seven core ones are locked, sub-accounts under
-  Investments/Retirement can be renamed and deleted freely), undo on
-  delete, auto-save the moment an account is connected to a row.
-- **Close Out** (`app/(app)/closeout/page.js`) — the Step 1/2/3 monthly
-  flow described in section 3, gated so the current in-progress month
-  can't be closed out early, with a clear "this month was confirmed on
-  [date], categories are locked" banner once confirmed.
-- **Settings** (`app/(app)/settings/page.js`) — intentionally minimal:
-  just business profile (name, entity type). Retirement-age, integrations
-  status, and autopay-roadmap sections were built earlier and then
-  deliberately removed to keep the page focused.
-
 ## 6. Dev-only tooling (sandbox only — do not expose in production)
 
 All of these live under `app/api/dev/**`, are guarded by a
@@ -238,17 +353,17 @@ didn't fit the product's focus. If a "predict my subscriptions" idea comes
 back later, the detection logic (merchant-normalization, cadence
 classification, next-charge-date prediction) is preserved in git history
 (`git log --oneline --all | grep -i subscription`) even though the live
-code is gone.
+code is gone. The Settings page sections mentioned in section 4
+(retirement-age, integrations status, autopay roadmap) follow the same
+pattern — built, then cut for focus, still recoverable from git history if
+ever needed again.
 
 ## 8. Open items / not yet decided
 
 - **The `computeAllocations` 100%-normalization vs. displayed-percentage
-  mismatch** (section 4c) — needs an explicit decision before production.
-- **Remove the "Skip identity verification" testing link** (section 4f)
+  mismatch** (gotcha 5c) — needs an explicit decision before production.
+- **Remove the "Skip identity verification" testing link** (gotcha 5f)
   before production.
-- ~~`README.md`'s "What's simplified" section was stale~~ — corrected
-  alongside this document; it now points here instead of repeating
-  outdated claims.
 - **Mobile layout** has been built with Tailwind's mobile-first responsive
   classes throughout, but couldn't be pixel-verified via screenshot in the
   browser-automation tooling used for this session (a tooling limitation,
@@ -258,14 +373,3 @@ code is gone.
   README.md's "Going to production" section for exactly what that
   requires (a registered legal business entity, Dwolla Platform
   verification, Plaid production access request).
-
-## 9. Where to look for more detail
-
-- `git log --oneline` — every change, in order, with descriptive commit
-  messages.
-- Inline code comments throughout `lib/allocations.js`, `lib/runSplit.js`,
-  `lib/plaidSync.js`, and the API routes — this codebase leans heavily on
-  explaining *why*, not just *what*, directly next to the code in
-  question. Read the comment block above a function before changing it.
-- `README.md` — environment setup, required accounts (Supabase, Plaid,
-  Dwolla, Vercel), and the production-cutover checklist.
