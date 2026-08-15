@@ -14,7 +14,15 @@ const CONNECT = "__connect__";
 // (different from onCreateNew, which walks through opening a brand-new
 // one). Callers that pass neither (e.g. some Split Rules rows) get the
 // plain picker as before.
-export default function AccountSelect({ value, onChange, accounts, onCreateNew, onConnectAnother, recommendCreate }) {
+export default function AccountSelect({ value, onChange, accounts, onCreateNew, onConnectAnother, recommendCreate, excludeSubtypes }) {
+  // Filters out accounts by Plaid subtype (e.g. keeping checking accounts
+  // out of the Investments picker) without touching the caller's list --
+  // the currently-selected account stays visible/selectable even if it
+  // would now be filtered, so an existing (grandfathered) assignment
+  // doesn't just silently vanish from the dropdown.
+  const visibleAccounts = excludeSubtypes?.length
+    ? accounts.filter((a) => a.id === value || !excludeSubtypes.includes(a.subtype))
+    : accounts;
   const connected = accounts.find((a) => a.id === value);
   const createOption = onCreateNew && (
     <option value={CREATE}>
@@ -48,7 +56,7 @@ export default function AccountSelect({ value, onChange, accounts, onCreateNew, 
       >
         {recommendCreate && createOption}
         <option value="">Not connected — choose an account</option>
-        {accounts.map((acc) => (
+        {visibleAccounts.map((acc) => (
           <option key={acc.id} value={acc.id}>
             {acc.institution_name} {acc.account_name} •••• {acc.mask}
           </option>

@@ -29,6 +29,7 @@ export async function GET() {
   const accounts = await Promise.all(
     (data || []).map(async (acc) => {
       let balance = acc.current_balance;
+      let subtype = null;
       if (acc.plaid_access_token && acc.plaid_account_id) {
         try {
           const res = await plaidClient.accountsBalanceGet({ access_token: acc.plaid_access_token });
@@ -39,6 +40,7 @@ export async function GET() {
               await admin.from("simple_accounts").update({ current_balance: fresh }).eq("id", acc.id);
             }
             if (fresh !== null && fresh !== undefined) balance = fresh;
+            subtype = match.subtype || null;
           }
         } catch (err) {
           console.error("Plaid balance refresh failed for account", acc.id, err?.response?.data || err?.message);
@@ -50,6 +52,10 @@ export async function GET() {
         account_name: acc.account_name,
         mask: acc.mask,
         current_balance: balance,
+        // Live from Plaid, not stored -- same reasoning as balance above.
+        // Used to keep checking accounts out of the Investments picker
+        // (see AccountSelect's excludeSubtypes) without a schema change.
+        subtype,
         // Whether a deposit landing here gets auto-split via the Plaid
         // webhook, or still needs the manual "Split $X now" button --
         // false for accounts linked before Transactions/webhook support

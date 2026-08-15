@@ -265,7 +265,20 @@ export default function OnboardingPage() {
                     }}
                   />
                 ))}
+                <PlaidLinkButton
+                  label="Connect More Apps"
+                  className="text-xs px-4 py-2"
+                  style={{ backgroundColor: "#525252" }}
+                  onLinked={(account) => {
+                    onAccountLinked(account);
+                    if (account) setShowAddMorePopup(true);
+                  }}
+                />
               </div>
+              <p className="text-[11px] text-neutral-400 mt-2">
+                &quot;Connect More Apps&quot; opens the same Plaid search used above -- look up any other app or
+                bank you get paid through that isn&apos;t listed here.
+              </p>
 
               <div className="mt-4 space-y-2">
                 {accounts.map((a) => (
@@ -303,21 +316,19 @@ export default function OnboardingPage() {
               <p className="text-sm text-neutral-500 mb-4">
                 Note: Any money not routed to one of the accounts below will remain where it was deposited.
               </p>
-              <div className="max-h-96 overflow-y-auto pr-1">
-                <PercentSplitEditor
-                  percent={percent}
-                  accounts={accounts}
-                  onUpdatePercent={updatePercent}
-                  onAddSubAccount={addSubAccount}
-                  onRemoveSubAccount={removeSubAccount}
-                  onAccountLinked={onAccountLinked}
-                  creating={creating}
-                  setCreating={setCreating}
-                  connecting={connecting}
-                  setConnecting={setConnecting}
-                  showRowWarnings={false}
-                />
-              </div>
+              <PercentSplitEditor
+                percent={percent}
+                accounts={accounts}
+                onUpdatePercent={updatePercent}
+                onAddSubAccount={addSubAccount}
+                onRemoveSubAccount={removeSubAccount}
+                onAccountLinked={onAccountLinked}
+                creating={creating}
+                setCreating={setCreating}
+                connecting={connecting}
+                setConnecting={setConnecting}
+                showRowWarnings={false}
+              />
               <div className="flex items-center gap-2 flex-wrap mt-3">
                 <button
                   onClick={addPercent}

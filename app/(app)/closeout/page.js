@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
@@ -21,6 +21,20 @@ function shiftPeriod(period, delta) {
 function periodLabel(period) {
   const [y, m] = period.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+// "YYYY-MM" strings compare correctly with plain string comparison. Used
+// to gate the current (and any future) month out of close-out entirely --
+// closing out a month that hasn't finished yet means working from an
+// incomplete transaction list, so recommendations would just be wrong.
+function currentPeriod() {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+function isLastDayOfCurrentMonthUTC() {
+  const now = new Date();
+  const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  return tomorrow.getUTCDate() === 1;
 }
 
 const CATS = [
@@ -204,6 +218,10 @@ export default function CloseoutPage() {
 
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
+  // Current month (or, in principle, any month that hasn't happened yet)
+  // stays locked until its last day -- the one exception is the current
+  // month ON its last day, which is a real close-out day.
+  const isTooEarlyToClose = period >= currentPeriod() && !(period === currentPeriod() && isLastDayOfCurrentMonthUTC());
   const isConfirmed = closeout?.status === "confirmed";
   const displayNetIncome = isConfirmed ? Number(closeout?.net_income) || 0 : netIncomePreview;
   // recommendations.w2Income (from the confirm response) is the source of
@@ -234,6 +252,16 @@ export default function CloseoutPage() {
         )}
       </div>
 
+      {isTooEarlyToClose ? (
+        <Card className="p-8 text-center">
+          <Calendar size={28} className="mx-auto text-neutral-300 mb-3" />
+          <p className="text-sm font-semibold text-neutral-700 mb-1">
+            {periodLabel(period)} isn&apos;t finished yet.
+          </p>
+          <p className="text-sm text-neutral-500">Check back on the last day of the month.</p>
+        </Card>
+      ) : (
+      <>
       <Card className="p-6">
         <h2 className="text-sm font-semibold mb-1">Step 1: Confirm Net Income</h2>
         <p className="text-xs text-neutral-500 mb-4">
@@ -491,12 +519,14 @@ export default function CloseoutPage() {
           </Card>
         </>
       )}
+      </>
+      )}
 
       {calculatorPlanType && (
         <ContributionCalculatorModal planType={calculatorPlanType} onClose={() => setCalculatorPlanType(null)} />
       )}
 
-      {w2PopupStep !== "closed" && !loading && (
+      {w2PopupStep !== "closed" && !loading && !isTooEarlyToClose && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
             {w2PopupStep === "ask" && (

@@ -45,6 +45,12 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, s
           onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
           onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
           recommendCreate={false}
+          // Investments should never point at a plain checking account --
+          // same principle as the savings-only restriction Plaid Link
+          // already applies when connecting a brand-new account for this
+          // row (see connectSavingsOnly below), just also enforced against
+          // accounts that were already connected for some other category.
+          excludeSubtypes={rule.group === "Investments" ? ["checking"] : undefined}
         />
       </div>
       {connecting[rule.id] && (
