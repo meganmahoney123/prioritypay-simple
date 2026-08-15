@@ -14,6 +14,9 @@ import {
   Sparkles,
   Check,
   Plus,
+  Coins,
+  SplitSquareHorizontal,
+  PartyPopper,
 } from "lucide-react";
 import { PrimaryButton, GhostButton } from "./ui";
 
@@ -31,6 +34,27 @@ const DEFAULT_BUCKETS = [
 ];
 
 const CUSTOM_EXAMPLES = ["Wedding", "College Fund", "Vacation Fund", "House Downpayment", "Hobbies"];
+
+const HOW_IT_WORKS = [
+  {
+    step: "01",
+    icon: Coins,
+    title: "A deposit lands",
+    body: "Client payment, Venmo, Cash App, PayPal, a check you deposited. Any money hitting a connected account triggers PriorityPay.",
+  },
+  {
+    step: "02",
+    icon: SplitSquareHorizontal,
+    title: "Deposit is split by percentages you set",
+    body: "PriorityPay automatically routes a percentage of every deposit to retirement, savings, taxes, and any other accounts you wish. You choose the percentage for each account.",
+  },
+  {
+    step: "03",
+    icon: PartyPopper,
+    title: "Spend what's left. Guilt free.",
+    body: "Never wonder if you can afford to splurge this weekend. If the money is in checking? Spend it. Guilt free.",
+  },
+];
 
 // The three apps have real brand icons available via simpleicons.org's
 // public CDN (an SVG-per-request service, widely used for exactly this
@@ -68,6 +92,14 @@ function LogoChip({ item }) {
       <span className="text-sm font-bold whitespace-nowrap" style={{ color: item.color || "#171717" }}>
         {item.name}
       </span>
+    </div>
+  );
+}
+
+function StepBadge({ n }) {
+  return (
+    <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-mono font-extrabold text-sm flex items-center justify-center shrink-0">
+      {n}
     </div>
   );
 }
@@ -119,7 +151,7 @@ export default function Homepage() {
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.05] text-neutral-900">
             Automatically route income to investments and savings.
-            <span className="text-emerald-600"> BEFORE you can spend it.</span>
+            <span className="text-emerald-600"> BEFORE you spend it.</span>
           </h1>
           <p className="mt-6 text-lg md:text-xl text-neutral-600 leading-relaxed">
             PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement,
@@ -149,82 +181,27 @@ export default function Homepage() {
           <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mb-14">
             Never remind yourself to save again.
           </p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: "01",
-                title: "A deposit lands",
-                body: "Client payment, Venmo, Cash App, PayPal, a check you deposited. Any money hitting a connected account triggers PriorityPay.",
-              },
-              {
-                step: "02",
-                title: "Deposit is split by percentages you set",
-                body: "PriorityPay automatically routes a percentage of every deposit to retirement, savings, taxes, and any other accounts you wish. You choose the percentage for each account.",
-              },
-              {
-                step: "03",
-                title: "Spend what's left. Guilt free.",
-                body: "Never wonder if you can afford to splurge this weekend. If the money is in checking? Spend it. Guilt free.",
-              },
-            ].map((s) => (
-              <div key={s.step}>
-                <div className="text-3xl font-extrabold text-neutral-200 mb-3 font-mono">{s.step}</div>
-                <h3 className="text-lg font-bold text-neutral-900 mb-2">{s.title}</h3>
-                <p className="text-sm text-neutral-600 leading-relaxed">{s.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Buckets */}
-      <section className="border-t border-neutral-200">
-        <div className="max-w-6xl mx-auto px-5 py-20">
-          <div className="max-w-2xl mb-12">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Your buckets, your rules</h2>
-            <p className="text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
-              We start you off with seven buckets built for self-employed income.
-            </p>
-            <p className="text-neutral-600 leading-relaxed">
-              Set your percentages for Solo 401k, SEP IRA, Investments, Tax Reserve, Emergency Fund, business
-              expenses (OPEX), and Savings. Don&apos;t need one? Remove it. Want more? Add your own.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-10">
-            {DEFAULT_BUCKETS.map((b) => {
-              const Icon = b.icon;
+          <div className="grid md:grid-cols-3 gap-8 relative">
+            {HOW_IT_WORKS.map((s, i) => {
+              const Icon = s.icon;
               return (
-                <div key={b.label} className="bg-white border border-neutral-200 rounded-2xl card-shadow p-4 flex flex-col items-center text-center">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2.5" style={{ backgroundColor: `${b.color}1a` }}>
-                    <Icon size={18} style={{ color: b.color }} strokeWidth={2.25} />
+                <div key={s.step} className="relative">
+                  {i < HOW_IT_WORKS.length - 1 && (
+                    <ArrowRight
+                      size={20}
+                      strokeWidth={2.5}
+                      className="hidden md:block absolute -right-7 top-6 text-emerald-200"
+                    />
+                  )}
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mb-4">
+                    <Icon size={26} className="text-emerald-700" strokeWidth={2} />
                   </div>
-                  <span className="text-xs font-bold text-neutral-800 leading-tight mb-1">{b.label}</span>
-                  <span className="text-sm font-extrabold font-mono" style={{ color: b.color }}>{b.pct}%</span>
+                  <div className="text-3xl font-extrabold text-neutral-200 mb-3 font-mono">{s.step}</div>
+                  <h3 className="text-lg font-bold text-neutral-900 mb-2">{s.title}</h3>
+                  <p className="text-sm text-neutral-600 leading-relaxed">{s.body}</p>
                 </div>
               );
             })}
-          </div>
-
-          <div className="bg-white border border-neutral-200 rounded-2xl card-shadow p-6 md:p-7">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                <Plus size={17} className="text-emerald-700" />
-              </div>
-              <div>
-                <h3 className="font-bold text-neutral-900 mb-1">Or build your own categories entirely</h3>
-                <p className="text-sm text-neutral-600 mb-3">
-                  Saving toward something specific? Add a bucket for it and give it a percentage, same as any other.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {CUSTOM_EXAMPLES.map((c) => (
-                    <span key={c} className="text-xs font-semibold bg-neutral-100 text-neutral-700 px-3 py-1.5 rounded-full">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -235,7 +212,7 @@ export default function Homepage() {
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">The only app you'll actually enjoy opening</h2>
             <p className="text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
-              Every other financial app shows you what you owe, what you overspent, what you should&apos;ve done.
+              Most platforms show what you owe, overspend, and should have done.
             </p>
             <p className="text-neutral-600 leading-relaxed mb-4">
               PriorityPay just shows you what you&apos;ve already, effortlessly, saved. No budgeting homework, no
@@ -324,18 +301,26 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* Integrations */}
+      {/* 3 Simple Onboarding Steps */}
       <section className="border-t border-neutral-200 bg-white overflow-hidden">
-        <div className="max-w-6xl mx-auto px-5 pt-20 pb-4 text-center">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Connects to how you actually get paid</h2>
-          <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mx-auto mb-5">
-            Do you have income scattered everywhere? No problem. Connect all of your income-receiving accounts and
-            apps so that every deposit is accounted for.
+        <div className="max-w-6xl mx-auto px-5 pt-20 pb-2 text-center">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-emerald-700 mb-3">Getting started</h2>
+          <p className="text-2xl md:text-3xl font-bold text-neutral-900 max-w-2xl mx-auto">
+            3 Simple Onboarding Steps
           </p>
-          <p className="text-neutral-600 max-w-2xl mx-auto mb-10">
-            Venmo, PayPal, and Cash App connect directly, plus effectively any US bank or credit union checking or
-            savings account through Plaid -- including all the major ones and roughly 12,000 smaller banks and
-            credit unions.
+        </div>
+
+        {/* Step 1 -- connect accounts */}
+        <div className="max-w-6xl mx-auto px-5 pt-16">
+          <div className="flex items-center gap-3 mb-5">
+            <StepBadge n="1" />
+            <h3 className="text-xl font-bold text-neutral-900">Connect how you actually get paid</h3>
+          </div>
+          <p className="text-neutral-600 max-w-2xl mb-10">
+            Do you have income scattered everywhere? No problem. Connect all of your income-receiving accounts
+            and apps so that every deposit is accounted for. Venmo, PayPal, and Cash App connect directly, plus
+            effectively any US bank or credit union checking or savings account through Plaid -- including all
+            the major ones and roughly 12,000 smaller banks and credit unions.
           </p>
         </div>
         <div className="relative pb-20">
@@ -346,6 +331,67 @@ export default function Homepage() {
               <LogoChip key={`${item.name}-${i}`} item={item} />
             ))}
           </div>
+        </div>
+
+        {/* Step 2 -- set percentages */}
+        <div className="max-w-6xl mx-auto px-5 py-16 border-t border-neutral-200">
+          <div className="flex items-center gap-3 mb-5">
+            <StepBadge n="2" />
+            <h3 className="text-xl font-bold text-neutral-900">Set your percentages</h3>
+          </div>
+          <p className="text-neutral-600 max-w-2xl mb-10">
+            We start you off with seven buckets built for self-employed income. Set your percentages for Solo
+            401k, SEP IRA, Investments, Tax Reserve, Emergency Fund, business expenses (OPEX), and Savings.
+            Don&apos;t need one? Remove it. Want more? Add your own.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-10">
+            {DEFAULT_BUCKETS.map((b) => {
+              const Icon = b.icon;
+              return (
+                <div key={b.label} className="bg-white border border-neutral-200 rounded-2xl card-shadow p-4 flex flex-col items-center text-center">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2.5" style={{ backgroundColor: `${b.color}1a` }}>
+                    <Icon size={18} style={{ color: b.color }} strokeWidth={2.25} />
+                  </div>
+                  <span className="text-xs font-bold text-neutral-800 leading-tight mb-1">{b.label}</span>
+                  <span className="text-sm font-extrabold font-mono" style={{ color: b.color }}>{b.pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="bg-neutral-50 border border-neutral-200 rounded-2xl card-shadow p-6 md:p-7">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <Plus size={17} className="text-emerald-700" />
+              </div>
+              <div>
+                <h4 className="font-bold text-neutral-900 mb-1">Or build your own categories entirely</h4>
+                <p className="text-sm text-neutral-600 mb-3">
+                  Saving toward something specific? Add a bucket for it and give it a percentage, same as any other.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {CUSTOM_EXAMPLES.map((c) => (
+                    <span key={c} className="text-xs font-semibold bg-white border border-neutral-200 text-neutral-700 px-3 py-1.5 rounded-full">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Step 3 -- spend guilt free */}
+        <div className="max-w-6xl mx-auto px-5 pb-20 pt-16 border-t border-neutral-200">
+          <div className="flex items-center gap-3 mb-5">
+            <StepBadge n="3" />
+            <h3 className="text-xl font-bold text-neutral-900">Spend the rest, guilt free</h3>
+          </div>
+          <p className="text-neutral-600 max-w-2xl">
+            That&apos;s it. From here, every future deposit gets split automatically the moment it lands.
+            Whatever&apos;s sitting in checking is yours to spend, guilt free.
+          </p>
         </div>
       </section>
 
