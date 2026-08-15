@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Zap, Plus, X } from "lucide-react";
+import { ArrowRight, ArrowLeft, Zap, Plus } from "lucide-react";
 import { PrimaryButton, GhostButton, Badge } from "@/components/ui";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
@@ -30,10 +30,10 @@ function joinWithAnd(items) {
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
 
-// Plaid can't connect to Zelle directly -- unlike PayPal, Venmo, and Cash
-// App, Zelle has no account/routing number of its own; it's a feature
-// layered onto whatever bank account someone already registered with it.
-// Clicking it shows an explanation instead of opening (and failing) Link.
+// Quick-connect shortcuts for the fintech apps money most often lands in.
+// Zelle isn't included on purpose -- it has no account/routing number of
+// its own, it's a feature layered onto whatever bank account someone
+// already registered with it, so there's nothing for Plaid to connect to.
 const APP_CONNECT_OPTIONS = [
   { key: "paypal", name: "PayPal", color: "#0070ba", hoverColor: "#005ea6" },
   { key: "venmo", name: "Venmo", color: "#3D95CE", hoverColor: "#2f7dad" },
@@ -65,12 +65,8 @@ export default function OnboardingPage() {
   const [connecting, setConnecting] = useState({});
   const [submitting, setSubmitting] = useState(false);
   // Step 3: after any account links, ask "got more?" instead of leaving it
-  // to a static button label. Zelle isn't Plaid-connectable on its own --
-  // it's a feature layered onto an existing bank account, not a separate
-  // account with its own routing/account number -- so it gets an
-  // explanatory note instead of trying (and failing) to open Link.
+  // to a static button label.
   const [showAddMorePopup, setShowAddMorePopup] = useState(false);
-  const [showZelleNote, setShowZelleNote] = useState(false);
   // Step 4: the inline per-row "not connected" note is off here (see
   // showRowWarnings=false below) -- instead this catches it once, at the
   // moment someone tries to leave the step, and lists every affected
@@ -244,8 +240,8 @@ export default function OnboardingPage() {
               <h2 className="text-2xl font-bold mb-1">Connect everywhere money reaches you</h2>
               <p className="text-sm text-neutral-500 mb-6">
                 PriorityPay Simple can only split a deposit it actually sees. Connect every account you could
-                receive a client payment from, including Venmo, Zelle, Cash App, PayPal, and anywhere else money
-                might land. You can always add more inside the dashboard.
+                receive a client payment from, including Venmo, Cash App, PayPal, and anywhere else money might
+                land. You can always add more inside the dashboard.
               </p>
               <PlaidLinkButton
                 label="Connect Account"
@@ -269,26 +265,7 @@ export default function OnboardingPage() {
                     }}
                   />
                 ))}
-                <button
-                  onClick={() => setShowZelleNote(true)}
-                  className="inline-flex items-center justify-center gap-2 text-white font-bold rounded-2xl px-4 py-2 text-xs transition-colors"
-                  style={{ backgroundColor: "#6d1ed4" }}
-                >
-                  Zelle
-                </button>
               </div>
-              {showZelleNote && (
-                <div className="mt-2 flex items-start justify-between gap-2 text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2">
-                  <span>
-                    Zelle doesn&apos;t have its own account -- money sent through Zelle lands directly in
-                    whichever bank account you&apos;ve already registered with it. Connect that bank account
-                    above instead of Zelle itself.
-                  </span>
-                  <button onClick={() => setShowZelleNote(false)} className="text-neutral-400 hover:text-neutral-600 shrink-0">
-                    <X size={14} />
-                  </button>
-                </div>
-              )}
 
               <div className="mt-4 space-y-2">
                 {accounts.map((a) => (

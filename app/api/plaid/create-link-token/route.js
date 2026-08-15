@@ -12,7 +12,7 @@ export async function POST(request) {
   // work") pass { savingsOnly: true }. Callers that need to catch deposits
   // (onboarding's Connect Accounts step, the general Accounts page) send no
   // body at all and get every account type, since a client could pay into
-  // checking, Venmo, Zelle, etc.
+  // checking, Venmo, Cash App, etc.
   let savingsOnly = false;
   try {
     const body = await request.json();
