@@ -39,6 +39,7 @@ export default function PlaidLinkButton({
   className,
   retirementType,
   investmentType,
+  savingsOnly,
 }) {
   const [linkToken, setLinkToken] = useState(null);
   const [exchanging, setExchanging] = useState(false);
@@ -52,6 +53,8 @@ export default function PlaidLinkButton({
     ? `${STORAGE_KEY}_retirement_${retirementType}`
     : investmentType
     ? `${STORAGE_KEY}_investment_${investmentType}`
+    : savingsOnly
+    ? `${STORAGE_KEY}_savings_only`
     : STORAGE_KEY;
 
   useEffect(() => {
@@ -75,10 +78,12 @@ export default function PlaidLinkButton({
       ? JSON.stringify({ retirementType })
       : investmentType
       ? JSON.stringify({ investmentType })
+      : savingsOnly
+      ? JSON.stringify({ savingsOnly: true })
       : undefined;
     fetch(endpoint, {
       method: "POST",
-      headers: mode === "update" || retirementType || investmentType ? { "Content-Type": "application/json" } : undefined,
+      headers: mode === "update" || retirementType || investmentType || savingsOnly ? { "Content-Type": "application/json" } : undefined,
       body,
     })
       .then((r) => r.json())
@@ -87,7 +92,7 @@ export default function PlaidLinkButton({
         window.localStorage.setItem(storageKey, d.link_token);
       })
       .catch(() => setError("Could not reach Plaid."));
-  }, [isOAuthReturn, mode, accountId, retirementType, investmentType, storageKey]);
+  }, [isOAuthReturn, mode, accountId, retirementType, investmentType, savingsOnly, storageKey]);
 
   const onSuccess = useCallback(async (public_token, metadata) => {
     window.localStorage.removeItem(storageKey);

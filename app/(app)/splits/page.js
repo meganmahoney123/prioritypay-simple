@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Save, RotateCcw } from "lucide-react";
 import { PrimaryButton, GhostButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
 // step (see components/PercentSplitEditor.js) -- same grouped
@@ -42,7 +42,13 @@ export default function SplitRulesPage() {
 
   const updatePercent = (id, patch) => {
     setSaved(false);
-    setPercent((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    setPercent((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
+          : r
+      )
+    );
   };
   const addSubAccount = (group) => {
     setSaved(false);
@@ -145,7 +151,7 @@ export default function SplitRulesPage() {
 
       <div className="text-center text-xs">
         <span className="font-semibold text-neutral-500">
-          Percentages total {totalPct}%{remainingPct > 0 ? ` -- ${remainingPct}% stays wherever each deposit lands` : ""}
+          {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
         </span>
       </div>
 

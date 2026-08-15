@@ -37,7 +37,7 @@ function recommendedBank(accounts) {
 // they open. Once linked, we have no way to confirm a biller's autopay was
 // actually switched over, so we ask directly and block saving this row
 // until they say yes.
-export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLinked, onConfirmed }) {
+export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLinked, onConfirmed, savingsOnly }) {
   const [bank, setBank] = useState(() => recommendedBank(accounts));
   const [linkedAccount, setLinkedAccount] = useState(null);
   const [showBlock, setShowBlock] = useState(false);
@@ -106,6 +106,7 @@ export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLin
       </ol>
       <PlaidLinkButton
         label="I opened it — link it now"
+        savingsOnly={savingsOnly}
         onLinked={(account) => {
           onAccountLinked(account);
           setLinkedAccount(account);

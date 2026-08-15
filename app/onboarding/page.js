@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Zap } from "lucide-react";
+import { ArrowRight, ArrowLeft, Zap, Plus } from "lucide-react";
 import { PrimaryButton, GhostButton, Badge } from "@/components/ui";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
 // you are, verified identity (required before any money can move), every
@@ -49,11 +49,36 @@ export default function OnboardingPage() {
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
-  const updatePercent = (id, patch) => setPercent((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const updatePercent = (id, patch) =>
+    setPercent((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
+          : r
+      )
+    );
   const addSubAccount = (group) => setPercent((prev) => [...prev, newSubAccountRow(group, prev.length)]);
   const removeSubAccount = (group, id) =>
     setPercent((prev) => (prev.filter((r) => r.group === group).length <= 1 ? prev : prev.filter((r) => r.id !== id)));
   const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
+
+  // Same "add your own category" capability as Split Rules -- Wedding,
+  // College Fund, Hobbies, Profit, or literally anything else -- available
+  // right in onboarding instead of only after finishing it. New rows start
+  // at 0% (see newSubAccountRow's comment) so adding one never changes
+  // anyone else's split.
+  const addPercent = () =>
+    setPercent((prev) => [
+      ...prev,
+      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], accountId: null },
+    ]);
+  const addSuggested = (suggestion) =>
+    setPercent((prev) => [
+      ...prev,
+      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, color: suggestion.color, accountId: null },
+    ]);
+  const usedLabels = new Set(percent.map((r) => r.label));
+  const availableSuggestions = SUGGESTED_EXTRA_CATEGORIES.filter((s) => !usedLabels.has(s.label));
 
   const totalPct = pctTotal(percent);
   const remainingPct = Math.max(0, 100 - totalPct);
@@ -175,11 +200,9 @@ export default function OnboardingPage() {
             <div>
               <h2 className="text-2xl font-bold mb-1">Connect everywhere money reaches you</h2>
               <p className="text-sm text-neutral-500 mb-6">
-                PriorityPay Simple can only split a deposit it actually sees. Connect every account a client
-                could ever pay you into -- your business checking and savings, of course, but also Venmo,
-                Zelle, Cash App, PayPal, and anywhere else money might land. Miss one, and every deposit that
-                lands there skips your split entirely. Add as many as you need, one at a time -- you can always
-                come back and add more later from Accounts.
+                PriorityPay Simple can only split a deposit it actually sees. Connect every account you could
+                receive a client payment from, including Venmo, Zelle, Cash App, PayPal, and anywhere else money
+                might land. You can always add more inside the dashboard.
               </p>
               <PlaidLinkButton
                 label={accounts.length > 0 ? "Connect another account" : "Connect an account"}
@@ -206,13 +229,20 @@ export default function OnboardingPage() {
           {step === 4 && (
             <div>
               <h2 className="text-2xl font-bold mb-1">Set your percentage splits</h2>
+              <p className="text-sm text-neutral-500 mb-2">
+                Each deposit you receive will be split and automatically sent to the following accounts. Here,
+                set the percentages you want sent to each account.
+              </p>
+              <p className="text-sm text-neutral-500 mb-2">
+                For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit,
+                $10 will be automatically routed to the savings account connected.
+              </p>
+              <p className="text-sm text-neutral-500 mb-2">
+                If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no
+                money will be routed to that account.
+              </p>
               <p className="text-sm text-neutral-500 mb-4">
-                Started at a sensible default -- dial each one in. Investments and Retirement can each hold
-                multiple accounts (rename, add, or delete them freely); every row's total is just whatever its
-                accounts add up to. Connect or create an account for anywhere you want the money to land, or
-                skip it for now -- you can always finish connecting later from the dashboard, before any money
-                actually moves. Doesn&apos;t need to add to 100%: whatever&apos;s left stays wherever a deposit
-                lands, so it&apos;s there to cover rent, food, and anything else.
+                Note: Any money not routed to one of the accounts below will remain where it was deposited.
               </p>
               <div className="max-h-96 overflow-y-auto pr-1">
                 <PercentSplitEditor
@@ -228,8 +258,32 @@ export default function OnboardingPage() {
                   setConnecting={setConnecting}
                 />
               </div>
+              <div className="flex items-center gap-2 flex-wrap mt-3">
+                <button
+                  onClick={addPercent}
+                  className="flex-1 min-w-[180px] flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-xl py-2"
+                >
+                  <Plus size={15} /> Add your own category
+                </button>
+              </div>
+              {availableSuggestions.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs text-neutral-500 mb-2">Suggestions -- click to add, starts at 0%:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSuggestions.map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => addSuggested(s)}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 flex items-center gap-1"
+                      >
+                        <Plus size={12} /> {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <p className="text-xs text-neutral-500 mt-3 text-center">
-                Total {totalPct}%{remainingPct > 0 ? ` -- ${remainingPct}% left over` : ""}
+                {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
               </p>
               <div className="flex gap-3 mt-4">
                 <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
