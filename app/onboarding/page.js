@@ -8,6 +8,7 @@ import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
+import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
 // you are, verified identity (required before any money can move), every
@@ -29,16 +30,6 @@ function joinWithAnd(items) {
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
-
-// Quick-connect shortcuts for the fintech apps money most often lands in.
-// Zelle isn't included on purpose -- it has no account/routing number of
-// its own, it's a feature layered onto whatever bank account someone
-// already registered with it, so there's nothing for Plaid to connect to.
-const APP_CONNECT_OPTIONS = [
-  { key: "paypal", name: "PayPal", color: "#0070ba", hoverColor: "#005ea6" },
-  { key: "venmo", name: "Venmo", color: "#3D95CE", hoverColor: "#2f7dad" },
-  { key: "cashapp", name: "Cash App", color: "#00D632", hoverColor: "#00b82b" },
-];
 
 export default function OnboardingPage() {
   const router = useRouter();

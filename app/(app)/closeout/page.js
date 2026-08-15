@@ -269,6 +269,19 @@ export default function CloseoutPage() {
           best guess at what&apos;s real income, a real expense, or an internal transfer that shouldn&apos;t count
           as either (like PriorityPay&apos;s own splits moving between your accounts).
         </p>
+        {isConfirmed && (
+          <div className="mb-4 flex items-start gap-2 bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2.5 text-xs text-neutral-600">
+            <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+            <span>
+              This month was confirmed
+              {closeout?.confirmed_at
+                ? ` on ${new Date(closeout.confirmed_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                : ""}
+              . Categories are locked and the buttons below aren&apos;t clickable on purpose -- once a month is
+              confirmed it can&apos;t be re-categorized.
+            </span>
+          </div>
+        )}
         {transactions.length === 0 ? (
           <p className="text-sm text-neutral-400">No transactions found for this month.</p>
         ) : (

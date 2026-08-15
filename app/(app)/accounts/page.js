@@ -5,6 +5,7 @@ import { Landmark } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
+import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
@@ -35,7 +36,27 @@ export default function AccountsPage() {
           <IdentityForm onDone={load} />
         </Card>
       ) : (
-        <PlaidLinkButton onLinked={load} />
+        <div>
+          <PlaidLinkButton label="Connect a bank account or app" onLinked={load} />
+          <p className="text-xs font-semibold text-neutral-500 mt-5 mb-2">Connect these apps:</p>
+          <div className="flex flex-wrap gap-2">
+            {APP_CONNECT_OPTIONS.map((app) => (
+              <PlaidLinkButton
+                key={app.key}
+                label={app.name}
+                className="text-xs px-4 py-2"
+                style={{ backgroundColor: app.color }}
+                onLinked={load}
+              />
+            ))}
+            <PlaidLinkButton
+              label="Connect More Apps"
+              className="text-xs px-4 py-2"
+              style={{ backgroundColor: "#525252" }}
+              onLinked={load}
+            />
+          </div>
+        </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
