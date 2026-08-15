@@ -11,7 +11,7 @@ import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SU
 // Emergency Fund, OPEX, Savings, anything a person adds) or a sub-account
 // inside a group (Investments, Retirement). `canRemove` is only passed
 // true for group sub-accounts -- flat rows have no delete control here.
-function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, setCreating, connecting, setConnecting, onAccountLinked }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings }) {
   return (
     <div className="border border-neutral-200 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -75,7 +75,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, canRemove, creating, s
           }}
         />
       )}
-      {Number(rule.pct) > 0 && !rule.accountId && (
+      {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
         <div className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <span>
@@ -105,6 +105,7 @@ export default function PercentSplitEditor({
   setCreating,
   connecting,
   setConnecting,
+  showRowWarnings = true,
 }) {
   return (
     <div className="space-y-3">
