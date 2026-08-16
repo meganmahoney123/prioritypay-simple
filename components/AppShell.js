@@ -1,29 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  Landmark,
-  SplitSquareVertical,
-  CalendarCheck,
-  Settings as SettingsIcon,
-  Zap,
-  Menu,
-} from "lucide-react";
-import { Badge } from "./ui";
+import { Menu, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 
 // Payments tab removed -- every deposit splits automatically the moment
 // Plaid's webhook detects it (see app/api/plaid/webhook), so there's no
 // longer a manual trigger someone needs a dedicated nav item for. Recent
 // transfers are still visible on the Dashboard.
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/accounts", label: "Accounts", icon: Landmark },
-  { href: "/splits", label: "Split Rules", icon: SplitSquareVertical },
-  { href: "/closeout", label: "Close Out", icon: CalendarCheck },
-  { href: "/settings", label: "Settings", icon: SettingsIcon },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/accounts", label: "Accounts" },
+  { href: "/splits", label: "Split Rules" },
+  { href: "/closeout", label: "Close Out" },
+  { href: "/settings", label: "Settings" },
 ];
 
 const TITLES = {
@@ -42,10 +34,71 @@ function titleFor(pathname) {
   return TITLES[pathname] || "PriorityPay Simple";
 }
 
+function Logo() {
+  return (
+    <span style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+      <span style={{ fontFamily: "var(--font-heading)", fontSize: 21 }}>Priority</span>
+      <span style={{ fontFamily: "var(--font-heading)", fontSize: 21, fontStyle: "italic", color: "var(--color-accent-700)", marginLeft: -9 }}>
+        Pay
+      </span>
+    </span>
+  );
+}
+
+function NavLink({ href, label, active, onClick }) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className="pp-ledger-navlink"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        width: "100%",
+        textAlign: "left",
+        background: active ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+        borderLeft: `2px solid ${active ? "var(--color-accent)" : "transparent"}`,
+        cursor: "pointer",
+        padding: "12px 13px",
+        fontFamily: "var(--font-heading)",
+        fontSize: 16,
+        letterSpacing: "0.01em",
+        whiteSpace: "nowrap",
+        color: active ? "var(--color-accent-700)" : "var(--color-text)",
+        textDecoration: "none",
+      }}
+    >
+      <span
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: "50%",
+          background: active ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 25%, transparent)",
+          flex: "none",
+        }}
+      />
+      {label}
+    </a>
+  );
+}
+
 export default function AppShell({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [narrow, setNarrow] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => {
+      const isNarrow = window.innerWidth < 880;
+      setNarrow(isNarrow);
+      if (!isNarrow) setMenuOpen(false);
+    };
+    onResize();
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const handleLogout = async () => {
     await supabaseBrowser().auth.signOut();
@@ -54,66 +107,196 @@ export default function AppShell({ children }) {
   };
 
   return (
-    <div className="relative flex h-screen w-full bg-neutral-50 text-neutral-900 overflow-hidden">
-      {sidebarOpen && (
-        <div className="absolute inset-0 bg-neutral-900/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
+    <div
+      className="pp-ledger-shell"
+      style={{
+        ...LEDGER_TOKENS,
+        minHeight: "100vh",
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "stretch",
+      }}
+    >
+      {!narrow && (
+        <aside style={{ flex: "1 1 232px", minWidth: 0, borderRight: "1px solid var(--color-divider)", background: "var(--color-neutral-100)" }}>
+          <div style={{ position: "sticky", top: 0, padding: "20px 0 22px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "0 22px 20px" }}>
+              <Logo />
+              <span style={{ width: 22, height: 1, background: "var(--color-accent)", alignSelf: "center" }} />
+            </div>
+            <nav style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "0 12px", flexDirection: "column" }}>
+              {NAV_ITEMS.map((n) => (
+                <NavLink key={n.href} href={n.href} label={n.label} active={pathname === n.href || pathname.startsWith(`${n.href}/`)} />
+              ))}
+            </nav>
+            <div style={{ padding: "20px 22px 0" }}>
+              <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: "transparent",
+                  border: 0,
+                  cursor: "pointer",
+                  padding: 0,
+                  fontFamily: "var(--font-body)",
+                  fontSize: 14,
+                  color: "color-mix(in srgb, var(--color-text) 52%, transparent)",
+                }}
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </aside>
       )}
 
-      <aside
-        className={`w-64 md:w-56 shrink-0 bg-white border-r border-neutral-200 flex flex-col h-full absolute md:static inset-y-0 left-0 z-40 transform transition-transform duration-200 ease-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0`}
-      >
-        <div className="px-5 py-5 flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center">
-            <Zap size={16} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-base font-bold tracking-tight">PriorityPay Simple</span>
-        </div>
-        <nav className="flex-1 px-3 space-y-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <a
-                key={href}
-                href={href}
-                onClick={() => setSidebarOpen(false)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  active ? "bg-emerald-50 text-emerald-700" : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900"
-                }`}
+      <div style={{ flex: "999 1 560px", minWidth: 0 }}>
+        <header
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 15,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 20,
+            padding: "22px clamp(20px, 3.5vw, 44px)",
+            borderBottom: "1px solid var(--color-divider)",
+            background: "color-mix(in srgb, var(--color-bg) 92%, transparent)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+            {narrow && (
+              <button
+                onClick={() => setMenuOpen(true)}
+                aria-label="Open menu"
+                style={{
+                  display: "inline-flex",
+                  flex: "none",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  background: "transparent",
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: "var(--radius-sm)",
+                  cursor: "pointer",
+                  color: "var(--color-text)",
+                }}
               >
-                <Icon size={18} strokeWidth={2} />
-                {label}
-              </a>
-            );
-          })}
-        </nav>
-        <div className="px-3 pb-4">
-          <button
-            onClick={handleLogout}
-            className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700"
+                <Menu size={18} />
+              </button>
+            )}
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 400, margin: 0, letterSpacing: "-0.01em" }}>
+              {titleFor(pathname)}
+            </h1>
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: 11,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "var(--color-accent-700)",
+              border: "1px solid var(--color-accent)",
+              borderRadius: 999,
+              padding: "6px 14px",
+              whiteSpace: "nowrap",
+            }}
           >
-            Log out
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <header className="h-14 shrink-0 border-b border-neutral-200 bg-white flex items-center justify-between px-4 sm:px-6 gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden text-neutral-500 hover:text-neutral-900 shrink-0"
-              aria-label="Open menu"
-            >
-              <Menu size={20} />
-            </button>
-            <h1 className="text-lg font-bold text-neutral-900 truncate">{titleFor(pathname)}</h1>
-          </div>
-          <Badge>Sandbox mode</Badge>
+            Sandbox mode
+          </span>
         </header>
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">{children}</main>
+
+        <main style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>{children}</main>
       </div>
+
+      {narrow && menuOpen && (
+        <div
+          onClick={() => setMenuOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 70, background: "color-mix(in srgb, #171614 48%, transparent)", display: "flex" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(84vw, 300px)",
+              background: "var(--color-neutral-100)",
+              borderRight: "1px solid var(--color-divider)",
+              boxShadow: "var(--shadow-lg)",
+              padding: "20px 0 26px",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0 20px 20px" }}>
+              <Logo />
+              <button
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+                style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", padding: 4 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 12 }} />
+            <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px" }}>
+              {NAV_ITEMS.map((n) => (
+                <NavLink
+                  key={n.href}
+                  href={n.href}
+                  label={n.label}
+                  active={pathname === n.href || pathname.startsWith(`${n.href}/`)}
+                  onClick={() => setMenuOpen(false)}
+                />
+              ))}
+            </nav>
+            <div style={{ flex: 1 }} />
+            <div style={{ padding: "20px 22px 0" }}>
+              <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+              <button
+                onClick={handleLogout}
+                style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, fontFamily: "var(--font-body)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        .pp-ledger-navlink:hover {
+          color: var(--color-accent-700) !important;
+        }
+        .pp-ledger-btn-primary:hover {
+          background: var(--color-accent-600) !important;
+          border-color: var(--color-accent-600) !important;
+        }
+        .pp-ledger-btn-ghost:hover {
+          border-color: var(--color-accent) !important;
+          color: var(--color-accent-700) !important;
+        }
+        body {
+          background: var(--color-bg, #f3f2f2);
+        }
+        /* Section headings across Dashboard/Accounts/Split Rules/Close
+           Out/Settings inherit the Ledger serif heading font -- weight
+           still comes from each element's own Tailwind font-* class, this
+           only swaps the typeface. */
+        .pp-ledger-shell h1,
+        .pp-ledger-shell h2,
+        .pp-ledger-shell h3,
+        .pp-ledger-shell h4 {
+          font-family: var(--font-heading);
+          letter-spacing: -0.005em;
+        }
+        .pp-ledger-shell input,
+        .pp-ledger-shell select,
+        .pp-ledger-shell textarea {
+          font-family: var(--font-body);
+        }
+      `}</style>
     </div>
   );
 }

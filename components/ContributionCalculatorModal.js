@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { X, ChevronLeft, AlertTriangle, Calculator } from "lucide-react";
 import { PrimaryButton, GhostButton, currency } from "@/components/ui";
+import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import {
   AGE_BRACKETS,
   BUSINESS_TYPES,
@@ -14,11 +15,15 @@ function OptionButton({ selected, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left text-sm font-semibold px-4 py-3 rounded-xl border transition-colors ${
-        selected
-          ? "bg-emerald-600 border-emerald-600 text-white"
-          : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50"
-      }`}
+      className="w-full text-left text-sm px-4 py-3 transition-colors"
+      style={{
+        fontFamily: "var(--font-body)",
+        fontSize: 15.5,
+        borderRadius: "var(--radius-md)",
+        border: `1px solid ${selected ? "var(--color-accent)" : "var(--color-divider)"}`,
+        background: selected ? "color-mix(in srgb, var(--color-accent) 7%, transparent)" : "transparent",
+        color: selected ? "var(--color-accent-700)" : "var(--color-text)",
+      }}
     >
       {children}
     </button>
@@ -93,18 +98,25 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
   const goBack = () => setStep((s) => Math.max(0, s - 1));
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 relative">
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4 z-50"
+      style={{ ...LEDGER_TOKENS, background: "color-mix(in srgb, #171614 55%, transparent)" }}
+    >
+      <div
+        className="max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 relative"
+        style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)" }}
+      >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600"
+          className="absolute top-4 right-4"
+          style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)", background: "transparent", border: 0, cursor: "pointer" }}
           aria-label="Close"
         >
           <X size={20} />
         </button>
         <div className="flex items-center gap-2 mb-5">
-          <Calculator size={18} className="text-emerald-700" />
-          <span className="text-sm font-bold">{planLabel} contribution calculator</span>
+          <Calculator size={18} style={{ color: "var(--color-accent-700)" }} />
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "var(--color-accent-700)" }}>{planLabel} contribution calculator</span>
         </div>
 
         {current === "business" && (
@@ -254,7 +266,7 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
                     <div className="pt-3 border-t border-neutral-200">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-bold">Maximum you could contribute this year</span>
-                        <span className="font-mono font-bold text-emerald-700">{currency(result.total)}</span>
+                        <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.total)}</span>
                       </div>
                       <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
                         This is the ceiling given what you entered above, not a recommendation -- the most you
@@ -266,7 +278,7 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
                   <div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-bold">Maximum you could contribute this year</span>
-                      <span className="font-mono font-bold text-emerald-700">{currency(result.contribution)}</span>
+                      <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.contribution)}</span>
                     </div>
                     <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
                       This is the ceiling given what you entered above, not a recommendation -- the most you could

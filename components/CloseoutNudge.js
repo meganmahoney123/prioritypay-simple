@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CalendarCheck } from "lucide-react";
 import { Card } from "@/components/ui";
+import { ledgerAccentCardStyle } from "@/lib/ledgerTheme";
 
 function periodLabel(period) {
   const [y, m] = period.split("-").map(Number);
@@ -26,15 +27,15 @@ export default function CloseoutNudge() {
   if (!info || info.status === "confirmed") return null;
 
   return (
-    <Card className="p-4 bg-emerald-50 border-emerald-200 flex items-center justify-between gap-3 flex-wrap">
+    <Card className="p-4 flex items-center justify-between gap-3 flex-wrap" style={ledgerAccentCardStyle()}>
       <div className="flex items-center gap-2">
-        <CalendarCheck size={16} className="text-emerald-700 shrink-0" />
-        <span className="text-sm text-emerald-800">
+        <CalendarCheck size={16} style={{ color: "var(--color-accent-700)" }} className="shrink-0" />
+        <span className="text-sm" style={{ color: "var(--color-accent-800)" }}>
           {info.status === "draft" ? "You've started" : "You haven't closed out"} {periodLabel(info.period)} yet --
           confirm your income to see this month&apos;s retirement and tax recommendations.
         </span>
       </div>
-      <a href="/closeout" className="text-xs font-semibold text-emerald-700 underline shrink-0">
+      <a href="/closeout" className="text-xs shrink-0" style={{ fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "underline" }}>
         Close out {periodLabel(info.period)}
       </a>
     </Card>

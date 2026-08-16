@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Landmark } from "lucide-react";
 import { Card, currency } from "./ui";
+import { ledgerAccentCardStyle } from "@/lib/ledgerTheme";
 import { percentSections } from "@/lib/allocations";
 
 function accountLabel(acc) {
@@ -19,18 +19,18 @@ function accountLabel(acc) {
 // outside of PriorityPay's own splits.
 function CategoryRow({ label, account, ytd, mtd }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-neutral-100 last:border-0 gap-3">
+    <div className="flex items-center justify-between py-3 gap-3" style={{ borderBottom: "1px solid color-mix(in srgb, var(--color-text) 8%, transparent)" }}>
       <div className="min-w-0">
-        <div className="text-sm font-medium truncate">{label}</div>
-        <div className="text-xs text-neutral-400 truncate">
+        <div className="truncate" style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{label}</div>
+        <div className="text-xs truncate" style={{ color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}>
           {account ? accountLabel(account) : "Not connected yet"}
         </div>
       </div>
       <div className="text-right shrink-0">
-        <div className="text-sm font-mono font-semibold">
+        <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 20 }}>
           {account ? (account.current_balance === null || account.current_balance === undefined ? "—" : currency(account.current_balance)) : "—"}
         </div>
-        <div className="text-[10px] text-neutral-400">
+        <div className="text-[11px]" style={{ color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}>
           {currency(ytd)} this year · {currency(mtd)} this month
         </div>
       </div>
@@ -41,8 +41,16 @@ function CategoryRow({ label, account, ytd, mtd }) {
 function GroupBox({ title, rows, accountsById, ytdByLabel, mtdByLabel }) {
   if (!rows.length) return null;
   return (
-    <Card className="p-5">
-      <h3 className="text-sm font-semibold mb-1">{title}</h3>
+    <Card className="p-6">
+      <div
+        style={{
+          fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
+          color: "color-mix(in srgb, var(--color-text) 58%, transparent)", paddingBottom: 16,
+          borderBottom: "1px solid var(--color-divider)",
+        }}
+      >
+        {title}
+      </div>
       <div>
         {rows.map((r) => (
           <CategoryRow
@@ -76,28 +84,31 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
   if (!usedAccounts.length) return null;
 
   return (
-    <Card className="p-5">
-      <h3 className="text-sm font-semibold mb-1">Other connected accounts</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+    <Card className="p-6">
+      <div
+        style={{
+          fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
+          color: "color-mix(in srgb, var(--color-text) 58%, transparent)", paddingBottom: 20,
+          borderBottom: "1px solid var(--color-divider)", marginBottom: 20,
+        }}
+      >
+        Other connected accounts
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {usedAccounts.map((acc) => (
-          <div key={acc.id} className="border border-neutral-100 rounded-xl p-4">
-            <div className="flex items-center gap-2.5 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                <Landmark size={14} className="text-neutral-600" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{acc.institution_name} {acc.account_name}</div>
-                <div className="text-xs text-neutral-400">•••• {acc.mask}</div>
-              </div>
+          <div key={acc.id} style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-bg)", padding: "18px 20px" }}>
+            <div className="flex items-baseline gap-2.5 flex-wrap mb-1">
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name} {acc.account_name}</span>
+              <span className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 48%, transparent)" }}>•••• {acc.mask}</span>
             </div>
-            <div className="text-lg font-mono font-bold mb-2">
+            <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "12px 0 16px" }}>
               {acc.current_balance === null || acc.current_balance === undefined ? "—" : currency(acc.current_balance)}
             </div>
-            <div className="text-xs text-neutral-400 pt-2 border-t border-neutral-100 space-y-1">
+            <div className="space-y-1" style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 12 }}>
               {byAccount[acc.id].map((r) => (
-                <div key={r.id} className="flex justify-between gap-2">
+                <div key={r.id} className="flex justify-between gap-2 text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
                   <span className="truncate">{r.label}</span>
-                  <span className="font-mono shrink-0">{currency(ytdByLabel[r.label] || 0)} this year</span>
+                  <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>{currency(ytdByLabel[r.label] || 0)} this year</span>
                 </div>
               ))}
             </div>
@@ -127,10 +138,34 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
 
   return (
     <div className="space-y-6">
-      <Card className="p-5 bg-emerald-50 border-emerald-100">
-        <div className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1">Total saved since joining PriorityPay</div>
-        <div className="text-3xl font-mono font-extrabold text-emerald-900">{currency(allTimeTotal)}</div>
-        <p className="text-xs text-emerald-700 mt-1">Every dollar PriorityPay has automatically routed out of a deposit, ever.</p>
+      <Card style={ledgerAccentCardStyle({ padding: "clamp(26px, 3.5vw, 40px)" })}>
+        <div
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: 12,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: "var(--color-accent-700)",
+            marginBottom: 14,
+          }}
+        >
+          Total saved since joining PriorityPay
+        </div>
+        <div
+          className="font-mono"
+          style={{
+            fontSize: "clamp(38px, 6vw, 64px)",
+            lineHeight: 1,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            color: "var(--color-text)",
+          }}
+        >
+          {currency(allTimeTotal)}
+        </div>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 62%, transparent)", marginTop: 16 }}>
+          Every dollar PriorityPay has automatically routed out of a deposit, ever.
+        </div>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -33,12 +33,17 @@ export default function AccountsPage() {
       {!dwollaVerified ? (
         <Card className="p-5">
           <h2 className="text-sm font-semibold mb-3">Verify your identity first</h2>
-          <IdentityForm onDone={load} />
+          <IdentityForm onDone={load} theme="ledger" />
         </Card>
       ) : (
         <div>
           <PlaidLinkButton label="Connect a bank account or app" onLinked={load} />
-          <p className="text-xs font-semibold text-neutral-500 mt-5 mb-2">Connect these apps:</p>
+          <p
+            className="mt-5 mb-2"
+            style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 58%, transparent)" }}
+          >
+            Connect these apps:
+          </p>
           <div className="flex flex-wrap gap-2">
             {APP_CONNECT_OPTIONS.map((app) => (
               <PlaidLinkButton
@@ -75,7 +80,7 @@ export default function AccountsPage() {
               <Badge>Active</Badge>
             </div>
             {acc.autoDetectEnabled ? (
-              <p className="text-xs text-emerald-700 font-medium">Deposits here split automatically</p>
+              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here split automatically</p>
             ) : (
               <div>
                 <p className="text-xs text-amber-700 mb-2">

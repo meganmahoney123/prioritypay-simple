@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
+import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import { SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -124,22 +125,34 @@ export default function SplitRulesPage() {
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6" style={LEDGER_TOKENS}>
       <div>
-        <h2 className="text-lg font-bold mb-1">Split every deposit by percentage</h2>
-        <p className="text-sm text-neutral-500 mb-2">
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.4vw, 34px)", fontWeight: 400, margin: "0 0 8px" }}>
+          Split every deposit by percentage
+        </h2>
+        <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
+        <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
           Each deposit you receive will be split and automatically sent to the following accounts. Here, set the
           percentages you want sent to each account.
         </p>
-        <p className="text-sm text-neutral-500 mb-2">
+        <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
           For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, $10 will
           be automatically routed to the savings account connected.
         </p>
-        <p className="text-sm text-neutral-500 mb-2">
+        <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
           If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no money
           will be routed to that account.
         </p>
-        <p className="text-sm text-neutral-500">
+        <p
+          className="text-sm"
+          style={{
+            fontStyle: "italic",
+            fontFamily: "var(--font-heading)",
+            color: "color-mix(in srgb, var(--color-text) 66%, transparent)",
+            borderLeft: "1px solid var(--color-accent-300)",
+            paddingLeft: 16,
+          }}
+        >
           Note: Any money not routed to one of the accounts below will remain where it was deposited.
         </p>
       </div>
@@ -155,23 +168,53 @@ export default function SplitRulesPage() {
         setCreating={setCreating}
         connecting={connecting}
         setConnecting={setConnecting}
+        theme="ledger"
       />
 
       <div className="flex items-center gap-2 flex-wrap">
-        <button onClick={addPercent} className="flex-1 min-w-[200px] flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-xl py-2.5">
+        <button
+          onClick={addPercent}
+          className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5"
+          style={{
+            background: "transparent",
+            border: "1px dashed var(--color-accent-300)",
+            borderRadius: "var(--radius-md)",
+            fontFamily: "var(--font-heading)",
+            fontSize: 14,
+            letterSpacing: "0.04em",
+            color: "var(--color-accent-700)",
+            cursor: "pointer",
+          }}
+        >
           <Plus size={15} /> Add your own category
         </button>
       </div>
 
       {availableSuggestions.length > 0 && (
         <div>
-          <p className="text-xs text-neutral-500 mb-2">Suggestions -- click to add, starts at 0%:</p>
+          <p
+            className="mb-2"
+            style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
+          >
+            Suggestions -- click to add, starts at 0%:
+          </p>
           <div className="flex flex-wrap gap-2">
             {availableSuggestions.map((s) => (
               <button
                 key={s.label}
                 onClick={() => addSuggested(s)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 flex items-center gap-1"
+                className="flex items-center gap-1"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 14,
+                  color: "color-mix(in srgb, var(--color-text) 72%, transparent)",
+                  background: "transparent",
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: 999,
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
               >
                 <Plus size={12} /> {s.label}
               </button>
@@ -180,8 +223,11 @@ export default function SplitRulesPage() {
         </div>
       )}
 
-      <div className="text-center text-xs">
-        <span className="font-semibold text-neutral-500">
+      <div className="flex items-baseline justify-between" style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 20 }}>
+        <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          Allocated
+        </span>
+        <span style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>
           {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
         </span>
       </div>
@@ -190,13 +236,16 @@ export default function SplitRulesPage() {
         <PrimaryButton onClick={handleSave}>
           <Save size={16} /> Save split rules
         </PrimaryButton>
-        {saved && <span className="text-sm text-emerald-700 font-medium">Saved</span>}
+        {saved && <span className="text-sm font-medium" style={{ color: "var(--color-accent-700)", fontFamily: "var(--font-heading)", fontStyle: "italic" }}>Saved.</span>}
       </div>
 
       {lastDeleted && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-sm rounded-xl pl-4 pr-2 py-2.5 flex items-center gap-3 shadow-lg z-50">
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm pl-4 pr-2 py-2.5 flex items-center gap-3 z-50"
+          style={{ background: "#171614", color: "#f3f2f2", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)" }}
+        >
           <span>&quot;{lastDeleted.row.label}&quot; removed.</span>
-          <button onClick={undoDelete} className="font-bold text-emerald-300 hover:text-emerald-200 px-2 py-1">
+          <button onClick={undoDelete} className="px-2 py-1" style={{ fontWeight: 700, color: "var(--color-accent-300)" }}>
             Undo
           </button>
         </div>

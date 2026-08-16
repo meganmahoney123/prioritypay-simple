@@ -9,8 +9,8 @@ import { Card, currency } from "@/components/ui";
 // user's current split rules (e.g. a category they've since renamed or
 // deleted) -- same look-and-feel palette as DEFAULT_SPLIT_RULES.
 const FALLBACK_PALETTE = [
-  "#065f46", "#059669", "#0ea5e9", "#6366f1", "#f59e0b", "#a3a3a3",
-  "#7c3aed", "#8b5cf6", "#ec4899", "#14b8a6", "#ef4444",
+  "#7d5411", "#a06f24", "#c28d41", "#b68235", "#e1ad66", "#facb8d",
+  "#605d5d", "#9b9797", "#3a270d", "#5a3b0a", "#d7d3d3",
 ];
 
 function currentPeriod() {
@@ -87,11 +87,18 @@ export default function MoneyDistributionChart({ rules = [] }) {
             <button
               key={m.key}
               onClick={() => setMode(m.key)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                mode === m.key
-                  ? "bg-emerald-600 border-emerald-600 text-white"
-                  : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-              }`}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: 13,
+                letterSpacing: "0.06em",
+                color: mode === m.key ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 62%, transparent)",
+                background: "transparent",
+                border: `1px solid ${mode === m.key ? "var(--color-accent)" : "var(--color-divider)"}`,
+                borderRadius: 999,
+                padding: "8px 16px",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
             >
               {m.label}
             </button>
@@ -101,15 +108,25 @@ export default function MoneyDistributionChart({ rules = [] }) {
               <button
                 onClick={() => !atEarliest && setPeriod((p) => shiftPeriod(p, -1))}
                 disabled={atEarliest}
-                className="p-1 rounded-lg border border-neutral-200 text-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-50"
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 30, height: 30, borderRadius: "50%", background: "transparent",
+                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
+                  cursor: atEarliest ? "not-allowed" : "pointer", opacity: atEarliest ? 0.3 : 1,
+                }}
               >
                 <ChevronLeft size={14} />
               </button>
-              <span className="text-xs font-semibold w-28 text-center">{periodLabel(period)}</span>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, width: 108, textAlign: "center" }}>{periodLabel(period)}</span>
               <button
                 onClick={() => !atLatest && setPeriod((p) => shiftPeriod(p, 1))}
                 disabled={atLatest}
-                className="p-1 rounded-lg border border-neutral-200 text-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-neutral-50"
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 30, height: 30, borderRadius: "50%", background: "transparent",
+                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
+                  cursor: atLatest ? "not-allowed" : "pointer", opacity: atLatest ? 0.3 : 1,
+                }}
               >
                 <ChevronRight size={14} />
               </button>

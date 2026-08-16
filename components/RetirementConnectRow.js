@@ -34,7 +34,8 @@ export default function RetirementConnectRow({ retirementType, accountId, accoun
             href={RETIREMENT_SETUP_LINKS[retirementType]}
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-emerald-700 font-semibold underline"
+            className="text-xs font-semibold underline"
+            style={{ color: "var(--color-accent-700)" }}
           >
             Don&apos;t have one yet? Here&apos;s how to open one
           </a>
@@ -47,7 +48,7 @@ export default function RetirementConnectRow({ retirementType, accountId, accoun
 
   return (
     <div className="mt-1">
-      <p className="text-xs text-emerald-700 font-medium">
+      <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>
         Connected{account ? ` — ${account.institution_name} ${account.account_name} •••• ${account.mask}` : ""}
       </p>
       {account && (
@@ -62,7 +63,8 @@ export default function RetirementConnectRow({ retirementType, accountId, accoun
               href={loginUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-emerald-700 font-semibold underline inline-flex items-center gap-1"
+              className="text-xs font-semibold underline inline-flex items-center gap-1"
+              style={{ color: "var(--color-accent-700)" }}
             >
               View account <ExternalLink size={11} />
             </a>

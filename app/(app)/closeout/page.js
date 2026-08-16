@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
+import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
 import ContributionCalculatorModal from "@/components/ContributionCalculatorModal";
@@ -234,7 +235,7 @@ export default function CloseoutPage() {
   const annualTaxEstimate = estimateTaxReserve(annualNetIncomeValue, annualTaxRatePct);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6" style={LEDGER_TOKENS}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GhostButton onClick={() => setPeriod((p) => shiftPeriod(p, -1))} className="px-2 py-1.5">
@@ -246,7 +247,7 @@ export default function CloseoutPage() {
           </GhostButton>
         </div>
         {isConfirmed && (
-          <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+          <span className="text-xs font-semibold flex items-center gap-1" style={{ color: "var(--color-accent-700)" }}>
             <CheckCircle2 size={14} /> Confirmed
           </span>
         )}
@@ -271,7 +272,7 @@ export default function CloseoutPage() {
         </p>
         {isConfirmed && (
           <div className="mb-4 flex items-start gap-2 bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2.5 text-xs text-neutral-600">
-            <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+            <CheckCircle2 size={14} style={{ color: "var(--color-accent-700)" }} className="shrink-0 mt-0.5" />
             <span>
               This month was confirmed
               {closeout?.confirmed_at
@@ -308,9 +309,14 @@ export default function CloseoutPage() {
                           key={c.value}
                           onClick={() => !isConfirmed && setCategory(t.id, c.value)}
                           disabled={isConfirmed}
-                          className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
-                            cat === c.value ? "bg-emerald-600 text-white" : "bg-neutral-100 text-neutral-500"
-                          } disabled:opacity-60`}
+                          className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
+                          style={{
+                            fontFamily: "var(--font-heading)",
+                            letterSpacing: "0.08em",
+                            border: `1px solid ${cat === c.value ? "var(--color-accent)" : "transparent"}`,
+                            color: cat === c.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
+                            background: cat === c.value ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+                          }}
                         >
                           {c.label}
                         </button>
@@ -401,6 +407,7 @@ export default function CloseoutPage() {
                               value={contributeFrom[r.retirementType] ?? r.holdingAccountId}
                               onChange={(v) => setContributeFrom((prev) => ({ ...prev, [r.retirementType]: v }))}
                               accounts={accounts}
+                              theme="ledger"
                             />
                           </div>
                           <PrimaryButton
@@ -504,12 +511,14 @@ export default function CloseoutPage() {
                   value={topUp.fromAccountId}
                   onChange={(v) => setTopUp((prev) => ({ ...prev, fromAccountId: v }))}
                   accounts={accounts}
+                  theme="ledger"
                 />
                 <label className="block text-xs text-neutral-500">To</label>
                 <AccountSelect
                   value={topUp.toAccountId}
                   onChange={(v) => setTopUp((prev) => ({ ...prev, toAccountId: v }))}
                   accounts={accounts}
+                  theme="ledger"
                 />
                 <label className="block text-xs text-neutral-500">Amount</label>
                 <input
@@ -540,12 +549,15 @@ export default function CloseoutPage() {
       )}
 
       {w2PopupStep !== "closed" && !loading && !isTooEarlyToClose && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ ...LEDGER_TOKENS, background: "color-mix(in srgb, #171614 55%, transparent)" }}>
+          <div
+            className="max-w-lg w-full max-h-[90vh] overflow-y-auto p-6"
+            style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)" }}
+          >
             {w2PopupStep === "ask" && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <Briefcase size={18} className="text-emerald-700" />
+                  <Briefcase size={18} style={{ color: "var(--color-accent-700)" }} />
                   <span className="text-base font-bold">Do you have W2 income this month?</span>
                 </div>
                 <p className="text-sm text-neutral-500 mb-6">
@@ -567,7 +579,7 @@ export default function CloseoutPage() {
             {w2PopupStep === "flagging" && (
               <>
                 <div className="flex items-center gap-2 mb-1">
-                  <Briefcase size={18} className="text-emerald-700" />
+                  <Briefcase size={18} style={{ color: "var(--color-accent-700)" }} />
                   <span className="text-base font-bold">Flag your W2 paychecks</span>
                 </div>
                 <p className="text-xs text-neutral-500 mb-4">
@@ -596,9 +608,13 @@ export default function CloseoutPage() {
                           </div>
                           <button
                             onClick={() => setCategory(t.id, isW2 ? "income" : "w2_income")}
-                            className={`text-[11px] font-semibold px-3 py-1.5 rounded-full shrink-0 ${
-                              isW2 ? "bg-emerald-600 text-white" : "bg-neutral-100 text-neutral-500"
-                            }`}
+                            className="text-[11px] font-semibold px-3 py-1.5 rounded-full shrink-0"
+                            style={{
+                              fontFamily: "var(--font-heading)",
+                              border: `1px solid ${isW2 ? "var(--color-accent)" : "transparent"}`,
+                              color: isW2 ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
+                              background: isW2 ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+                            }}
                           >
                             {isW2 ? "W2 income" : "Mark as W2"}
                           </button>

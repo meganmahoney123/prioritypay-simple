@@ -6,6 +6,7 @@ import CloseoutNudge from "@/components/CloseoutNudge";
 import MoneyDistributionChart from "@/components/MoneyDistributionChart";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS } from "@/lib/allocations";
 import { Card } from "@/components/ui";
+import { ledgerNoticeCardStyle, ledgerWarningCardStyle } from "@/lib/ledgerTheme";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
@@ -95,33 +96,35 @@ export default function DashboardPage() {
       <CloseoutNudge />
 
       {accounts.length === 0 && (
-        <Card className="p-4 text-sm text-neutral-600">
-          No bank account linked yet. Head to <a href="/accounts" className="text-emerald-700 font-semibold">Accounts</a> to connect one via Plaid before running a real split.
+        <Card className="p-4 text-sm" style={{ color: "var(--color-text)" }}>
+          No bank account linked yet. Head to{" "}
+          <a href="/accounts" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Accounts</a> to connect
+          one via Plaid before running a real split.
         </Card>
       )}
 
       {accounts.length > 0 && unconnected.length > 0 && (
-        <Card className="p-4 text-sm text-amber-900 bg-amber-50 border-amber-200">
-          <span className="font-semibold">
+        <Card className="p-4 text-sm" style={ledgerNoticeCardStyle()}>
+          <span style={{ fontWeight: 600 }}>
             {unconnected.length} categor{unconnected.length === 1 ? "y needs" : "ies need"} an account before money can move:
           </span>{" "}
           {unconnected.map((r) => r.label).join(", ")}. Head to{" "}
-          <Link href="/splits" className="text-emerald-700 font-semibold">Split Rules</Link> to connect or create
+          <Link href="/splits" style={{ fontWeight: 600, textDecoration: "underline" }}>Split Rules</Link> to connect or create
           one for each -- until then, that percentage just stays wherever a deposit lands.
         </Card>
       )}
 
       {retirementPct === 0 && (
-        <Card className="p-4 text-sm text-red-900 bg-red-50 border-red-200 flex items-start gap-2">
+        <Card className="p-4 text-sm flex items-start gap-2" style={ledgerWarningCardStyle()}>
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
-            <span className="font-semibold">Warning:</span> You currently aren&apos;t contributing to retirement.
+            <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
             We highly recommend that you set up a Solo 401k and/or SEP IRA to start contributing to retirement.{" "}
             <a
               href={RETIREMENT_SETUP_LINKS.sep_ira}
               target="_blank"
               rel="noreferrer"
-              className="font-semibold underline"
+              style={{ fontWeight: 600, textDecoration: "underline" }}
             >
               Need help?
             </a>
@@ -130,17 +133,17 @@ export default function DashboardPage() {
       )}
 
       {investmentsPct === 0 && (
-        <Card className="p-4 text-sm text-red-900 bg-red-50 border-red-200 flex items-start gap-2">
+        <Card className="p-4 text-sm flex items-start gap-2" style={ledgerWarningCardStyle()}>
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
-            <span className="font-semibold">Warning:</span> You currently aren&apos;t investing any money. This
+            <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t investing any money. This
             means you&apos;re missing out on compounding growth. We highly recommend that you set up investment
             accounts.{" "}
             <a
               href={INVESTMENT_SETUP_LINKS.brokerage}
               target="_blank"
               rel="noreferrer"
-              className="font-semibold underline"
+              style={{ fontWeight: 600, textDecoration: "underline" }}
             >
               Need help?
             </a>
