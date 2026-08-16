@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2, AlertTriangle, Pencil } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Pencil, Link2 } from "lucide-react";
 import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
@@ -15,8 +15,137 @@ import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SU
 // Everything else -- a custom flat category, or an extra Investment/
 // Retirement sub-account someone added themselves -- gets a visibly
 // editable name field and a delete control.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings }) {
+//
+// `theme="ledger"` is purely visual (see LEDGER_TOKENS) -- every prop,
+// handler, and validation rule below behaves identically regardless of
+// theme, so passing no theme (as the standalone Split Rules page does)
+// renders exactly as before.
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, theme }) {
   const locked = isCoreRow(rule);
+
+  if (theme === "ledger") {
+    return (
+      <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-bg)", padding: "18px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+          {locked ? (
+            <span style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: "var(--font-heading)", fontSize: 19 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-accent)", flexShrink: 0 }} />
+              {rule.label}
+            </span>
+          ) : (
+            <span style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-accent)", flexShrink: 0 }} />
+              <input
+                value={rule.label}
+                onChange={(e) => onUpdate(rule.id, { label: e.target.value })}
+                placeholder="Name this category"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 19,
+                  color: "var(--color-text)",
+                  background: "transparent",
+                  border: 0,
+                  borderBottom: "1px solid var(--color-divider)",
+                  borderRadius: 0,
+                  padding: "3px 2px",
+                }}
+              />
+            </span>
+          )}
+          <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={rule.pct}
+              onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
+              style={{
+                width: 62,
+                textAlign: "right",
+                fontFamily: "var(--font-heading)",
+                fontSize: 19,
+                color: "var(--color-text)",
+                background: "transparent",
+                border: 0,
+                borderBottom: "1px solid var(--color-divider)",
+                padding: "4px 4px",
+              }}
+            />
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>%</span>
+            {!locked && (
+              <button
+                onClick={() => onRemove(rule.id)}
+                title="Delete category"
+                style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "color-mix(in srgb, var(--color-text) 45%, transparent)", padding: 4 }}
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+          </span>
+        </div>
+        {(rule.retirementType || rule.group === "Retirement") && <RetirementNote label={rule.label} theme="ledger" />}
+        {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--color-accent-700)", margin: "10px 0 0" }}>
+            No account connected yet. Until you connect one, this {rule.pct}% won&apos;t be routed anywhere and
+            stays wherever the deposit landed.
+          </p>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+          <AccountSelect
+            value={rule.accountId}
+            onChange={(v) => onUpdate(rule.id, { accountId: v })}
+            accounts={accounts}
+            onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
+            onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
+            recommendCreate={false}
+            excludeSubtypes={rule.group === "Investments" ? ["checking"] : undefined}
+            theme="ledger"
+          />
+        </div>
+        {connecting[rule.id] && (
+          <div style={{ marginTop: 10 }}>
+            <PlaidLinkButton
+              label="Connect another account"
+              savingsOnly={connectSavingsOnly(rule)}
+              onLinked={(account) => {
+                if (account) {
+                  onAccountLinked(account);
+                  onUpdate(rule.id, { accountId: account.id });
+                }
+                setConnecting((prev) => ({ ...prev, [rule.id]: false }));
+              }}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 600,
+                fontSize: 13,
+                color: "var(--color-accent)",
+                background: "transparent",
+                border: "1px solid var(--color-accent)",
+                borderRadius: "var(--radius-md)",
+                padding: "9px 18px",
+              }}
+            />
+          </div>
+        )}
+        {creating[rule.id] && (
+          <CreateSubAccountFlow
+            costLabel={rule.label}
+            accounts={accounts}
+            savingsOnly={connectSavingsOnly(rule)}
+            onAccountLinked={onAccountLinked}
+            onConfirmed={(accountId) => {
+              onUpdate(rule.id, { accountId });
+              setCreating((prev) => ({ ...prev, [rule.id]: false }));
+            }}
+            theme="ledger"
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="border border-neutral-200 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -117,6 +246,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
 // (PercentRow itself only ever calls it for non-core rows) -- callers are
 // expected to snapshot the removed row so it can be restored on "Undo"
 // (see the lastDeleted/undo pattern in Split Rules and onboarding).
+//
+// `theme="ledger"` opts a caller into the new visual system without
+// changing this component's behavior -- see the module comment above.
 export default function PercentSplitEditor({
   percent,
   accounts,
@@ -129,7 +261,108 @@ export default function PercentSplitEditor({
   connecting,
   setConnecting,
   showRowWarnings = true,
+  theme,
 }) {
+  if (theme === "ledger") {
+    return (
+      <div style={{ display: "grid", gap: 18 }}>
+        {percentSections(percent).map((section) =>
+          section.type === "group" ? (
+            <div
+              key={section.group}
+              style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "color-mix(in srgb, var(--color-accent) 4%, transparent)", overflow: "hidden" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: 20,
+                  padding: "16px 22px",
+                  borderBottom: "1px solid var(--color-accent-300)",
+                  background: "color-mix(in srgb, var(--color-accent) 7%, transparent)",
+                }}
+              >
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                  {section.group}
+                </span>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, letterSpacing: "0.06em", color: "var(--color-accent-700)", fontVariantNumeric: "lining-nums tabular-nums" }}>
+                  {groupPctTotal(section.rows)}% total
+                </span>
+              </div>
+              <div style={{ padding: "18px 22px 22px" }}>
+                {section.group === "Retirement" && (
+                  <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 18px", maxWidth: "40em" }}>
+                    {RETIREMENT_GROUP_SUBTEXT}
+                  </p>
+                )}
+                <div style={{ display: "grid", gap: 14 }}>
+                  {section.rows.map((rule) => (
+                    <PercentRow
+                      key={rule.id}
+                      rule={rule}
+                      accounts={accounts}
+                      onUpdate={onUpdatePercent}
+                      onRemove={onRemoveRow}
+                      creating={creating}
+                      setCreating={setCreating}
+                      connecting={connecting}
+                      setConnecting={setConnecting}
+                      onAccountLinked={onAccountLinked}
+                      showRowWarnings={showRowWarnings}
+                      theme="ledger"
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => onAddSubAccount(section.group)}
+                  className="pp-ledger-add"
+                  style={{
+                    width: "100%",
+                    marginTop: 16,
+                    background: "transparent",
+                    border: "1px dashed var(--color-accent-300)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "11px 16px",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 14,
+                    letterSpacing: "0.04em",
+                    color: "var(--color-accent-700)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  + &nbsp;Add {section.group === "Retirement" ? "a retirement account" : "an investment account"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <PercentRow
+              key={section.row.id}
+              rule={section.row}
+              accounts={accounts}
+              onUpdate={onUpdatePercent}
+              onRemove={onRemoveRow}
+              creating={creating}
+              setCreating={setCreating}
+              connecting={connecting}
+              setConnecting={setConnecting}
+              onAccountLinked={onAccountLinked}
+              showRowWarnings={showRowWarnings}
+              theme="ledger"
+            />
+          )
+        )}
+        <style jsx>{`
+          .pp-ledger-add:hover {
+            border-color: var(--color-accent);
+            background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {percentSections(percent).map((section) =>

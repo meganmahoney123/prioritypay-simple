@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowLeft, Zap, Plus } from "lucide-react";
-import { PrimaryButton, GhostButton, Badge } from "@/components/ui";
+import { Plus } from "lucide-react";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
 import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
+import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
 // you are, verified identity (required before any money can move), every
@@ -19,7 +19,20 @@ import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
 // lib/allocations.js) and get tuned afterward from Split Rules -- nothing
 // here is final, and every account connection is skippable: the dashboard
 // nudges you to finish connecting before any money actually moves.
+//
+// Visual design: the "Ledger" system Megan designed in Claude Design
+// (see lib/ledgerTheme.js), ported onto this same functional flow --
+// every handler, validation rule, and API call below is unchanged from
+// the previous version. Deeply-nested pieces (IdentityForm,
+// PercentSplitEditor, AccountSelect, CreateSubAccountFlow, RetirementNote)
+// opt into the same look via a `theme="ledger"` prop rather than being
+// forked, so the standalone Split Rules page (which reuses several of the
+// same components) keeps its original appearance untouched.
 const STEPS = ["Welcome", "Business", "Identity", "Connect Accounts", "Percentage Splits", "Review"];
+// Kept at 2 options per product decision, not the wider list shown in the
+// design mock -- businessType drives real retirement-calculation logic
+// downstream (see finish() below), so expanding this list is a separate
+// decision from the visual redesign.
 const BUSINESS_TYPES = ["Self Employed (No W2 Employees)", "W2 Employee + Side Hustle"];
 
 // "Tax Reserve" / "Investments and Emergency Fund" / "A, B, and C" -- used
@@ -29,6 +42,33 @@ function joinWithAnd(items) {
   if (items.length <= 1) return items[0] || "";
   if (items.length === 2) return `${items[0]} and ${items[1]}`;
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function BackBtn({ onClick }) {
+  return (
+    <button onClick={onClick} className="pp-btn pp-btn-secondary" style={{ padding: "13px 24px" }}>
+      ← &nbsp;Back
+    </button>
+  );
+}
+function PrimaryBtn({ onClick, disabled, children, flex }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="pp-btn pp-btn-primary"
+      style={{ padding: "13px 30px", flex: flex ? 1 : undefined, opacity: disabled ? 0.45 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+    >
+      {children}
+    </button>
+  );
+}
+function GhostBtn({ onClick, children, flex }) {
+  return (
+    <button onClick={onClick} className="pp-btn pp-btn-ghost" style={{ padding: "13px 30px", flex: flex ? 1 : undefined }}>
+      {children}
+    </button>
+  );
 }
 
 export default function OnboardingPage() {
@@ -64,8 +104,14 @@ export default function OnboardingPage() {
   // category by name in one place.
   const [showUnconnectedModal, setShowUnconnectedModal] = useState(false);
 
-  const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
-  const back = () => setStep((s) => Math.max(s - 1, 0));
+  const next = () => {
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    window.scrollTo(0, 0);
+  };
+  const back = () => {
+    setStep((s) => Math.max(s - 1, 0));
+    window.scrollTo(0, 0);
+  };
 
   // Saved as soon as an account is connected/changed on a row, even mid-
   // onboarding -- PUT replaces the whole rule set for this user regardless
@@ -174,295 +220,581 @@ export default function OnboardingPage() {
     router.refresh();
   };
 
+  const stepCounter = step === 0 ? "Getting started" : `Step ${step} of 5`;
+  const progress = step === 0 ? 2 : Math.min(100, step * 20);
+
   return (
-    <div className="min-h-screen w-full bg-white flex flex-col">
-      <div className="px-8 pt-6 flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center">
-          <Zap size={16} className="text-white" strokeWidth={2.5} />
+    <div style={{ ...LEDGER_TOKENS, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          background: "color-mix(in srgb, var(--color-bg) 92%, transparent)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "18px clamp(18px, 4vw, 40px) 0", display: "flex", alignItems: "baseline", gap: 10 }}>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "0.01em" }}>Priority</span>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontStyle: "italic", color: "var(--color-accent-700)", marginLeft: -9 }}>Pay</span>
+          <span style={{ width: 26, height: 1, background: "var(--color-accent)", alignSelf: "center" }} />
         </div>
-        <span className="text-base font-bold">PriorityPay Simple</span>
-      </div>
-
-      {step > 0 && (
-        <div className="px-8 pt-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-neutral-500">Step {step} of {STEPS.length - 1}</span>
-            <span className="text-xs font-semibold text-neutral-500">{STEPS[step]}</span>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "18px clamp(18px, 4vw, 40px) 0" }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20, paddingBottom: 10 }}>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", fontVariantNumeric: "lining-nums tabular-nums" }}>
+              {stepCounter}
+            </span>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+              {STEPS[step]}
+            </span>
           </div>
-          <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-600 rounded-full transition-all" style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }} />
+          <div style={{ height: 1, background: "var(--color-divider)", position: "relative" }}>
+            <span
+              style={{
+                position: "absolute",
+                left: 0,
+                top: -1,
+                height: 3,
+                background: "var(--color-accent)",
+                borderRadius: 2,
+                transition: "width 420ms cubic-bezier(.2,.7,.2,1)",
+                width: `${progress}%`,
+              }}
+            />
           </div>
         </div>
-      )}
+      </header>
 
-      <div className="flex-1 flex items-center justify-center px-8 py-10 overflow-y-auto">
-        <div className="w-full max-w-md">
-          {step === 0 && (
-            <div className="text-center">
-              <Badge>Built for the self-employed</Badge>
-              <h1 className="text-4xl font-extrabold leading-tight mb-4 mt-4">
-                Route your money <span className="text-emerald-600">BEFORE you spend it.</span>
-              </h1>
-              <p className="text-neutral-500 text-base mb-8">
-                Allocate a percentage of every deposit to investments, savings, and other accounts automatically
-                and immediately (BEFORE you spend it).
+      <main style={{ flex: 1, maxWidth: 1180, width: "100%", margin: "0 auto", padding: "clamp(40px, 7vw, 88px) clamp(18px, 4vw, 40px) 90px" }}>
+        {step === 0 && (
+          <div style={{ maxWidth: "44em", margin: "clamp(10px, 6vw, 60px) auto 0", textAlign: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 30 }}>
+              <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Built for the self-employed
+              </span>
+              <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
+            </div>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(38px, 7vw, 66px)", fontWeight: 400, lineHeight: 1.02, letterSpacing: "-0.02em", margin: "0 0 26px" }}>
+              Route your money<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
+            </h1>
+            <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
+              Allocate a percentage of every deposit to investments, savings, and other accounts automatically and
+              immediately (BEFORE you spend it).
+            </p>
+            <button onClick={next} className="pp-btn pp-btn-primary" style={{ fontSize: 15, padding: "15px 34px" }}>
+              Get started &nbsp;→
+            </button>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Tell us about your business
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 34px" }} />
+            <div style={{ display: "grid", gap: 26 }}>
+              <div>
+                <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                  Business name
+                </label>
+                <input
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="Business name"
+                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                  Business type
+                </label>
+                <select
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                >
+                  {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={next} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Verify your identity
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 34px" }} />
+            {dwollaDone === null ? (
+              <p style={{ fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 24px" }}>
+                Checking your identity status…
               </p>
-              <PrimaryButton onClick={next} className="w-full">Get started <ArrowRight size={16} /></PrimaryButton>
-            </div>
-          )}
-
-          {step === 1 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Tell us about your business</h2>
-              <div className="space-y-4 mb-8">
-                <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Business name" className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5" />
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Business Type</label>
-                  <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5">
-                    {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
-                <PrimaryButton onClick={next} className="flex-1">Continue <ArrowRight size={16} /></PrimaryButton>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Verify your identity</h2>
-              {dwollaDone === null ? (
-                <p className="text-sm text-neutral-400 mb-6">Checking your identity status…</p>
-              ) : dwollaDone ? (
-                <p className="text-sm text-emerald-700 font-medium mb-6">Identity verified.</p>
-              ) : (
-                <>
-                  <IdentityForm onDone={() => setDwollaDone(true)} />
-                  {/* TEMPORARY -- testing convenience only, remove before this
-                      app moves past prototype. Lets Megan click through
-                      onboarding repeatedly without fighting Dwolla sandbox's
-                      one-identity-per-email rule. Sets local state only --
-                      no real Dwolla customer gets created, so dwollaDone
-                      resets to false again on the next fresh visit unless
-                      IdentityForm is actually completed. */}
-                  <button
-                    onClick={() => setDwollaDone(true)}
-                    className="text-xs text-neutral-400 underline mt-3"
-                  >
-                    Skip identity verification (testing only)
-                  </button>
-                </>
-              )}
-              <div className="flex gap-3 mt-6">
-                <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
-                <PrimaryButton onClick={next} disabled={!dwollaDone} className="flex-1">Continue <ArrowRight size={16} /></PrimaryButton>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-1">Connect everywhere money reaches you</h2>
-              <p className="text-sm text-neutral-500 mb-6">
-                PriorityPay Simple can only split a deposit it actually sees. Connect every account you could
-                receive a client payment from, including Venmo, Cash App, PayPal, and anywhere else money might
-                land. You can always add more inside the dashboard.
-              </p>
-              <PlaidLinkButton
-                label="Connect Account"
-                onLinked={(account) => {
-                  onAccountLinked(account);
-                  if (account) setShowAddMorePopup(true);
+            ) : dwollaDone ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  border: "1px solid var(--color-accent-300)",
+                  borderRadius: "var(--radius-md)",
+                  background: "color-mix(in srgb, var(--color-accent) 6%, transparent)",
+                  padding: "20px 24px",
                 }}
-              />
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 20, color: "var(--color-accent-700)" }}>Identity verified.</span>
+              </div>
+            ) : (
+              <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", padding: 24 }}>
+                <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: "0 0 20px" }}>
+                  We confirm your identity before any money can move. This takes a moment and never affects your
+                  credit.
+                </p>
+                <IdentityForm onDone={() => setDwollaDone(true)} theme="ledger" />
+                {/* TEMPORARY -- testing convenience only, remove before this
+                    app moves past prototype. Lets Megan click through
+                    onboarding repeatedly without fighting Dwolla sandbox's
+                    one-identity-per-email rule. Sets local state only --
+                    no real Dwolla customer gets created, so dwollaDone
+                    resets to false again on the next fresh visit unless
+                    IdentityForm is actually completed. */}
+                <button
+                  onClick={() => setDwollaDone(true)}
+                  style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 45%, transparent)", textDecoration: "underline", marginTop: 14, background: "none", border: 0, cursor: "pointer", padding: 0 }}
+                >
+                  Skip identity verification (testing only)
+                </button>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={next} disabled={!dwollaDone} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        )}
 
-              <p className="text-xs font-semibold text-neutral-500 mt-6 mb-2">Connect these apps:</p>
-              <div className="flex flex-wrap gap-2">
-                {APP_CONNECT_OPTIONS.map((app) => (
-                  <PlaidLinkButton
-                    key={app.key}
-                    label={app.name}
-                    className="text-xs px-4 py-2"
-                    style={{ backgroundColor: app.color }}
-                    onLinked={(account) => {
-                      onAccountLinked(account);
-                      if (account) setShowAddMorePopup(true);
-                    }}
-                  />
-                ))}
+        {step === 3 && (
+          <div style={{ maxWidth: "36em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Connect everywhere money reaches you
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+              PriorityPay Simple can only split a deposit it actually sees. Connect every account you could
+              receive a client payment from, including Venmo, Cash App, PayPal, and anywhere else money might
+              land. You can always add more inside the dashboard.
+            </p>
+            <PlaidLinkButton
+              label="Connect Account"
+              onLinked={(account) => {
+                onAccountLinked(account);
+                if (account) setShowAddMorePopup(true);
+              }}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 600,
+                color: "var(--color-accent)",
+                background: "transparent",
+                border: "1px solid var(--color-accent)",
+                borderRadius: "var(--radius-md)",
+                padding: "13px 26px",
+                marginBottom: 34,
+              }}
+            />
+
+            <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 58%, transparent)", marginBottom: 14, marginTop: 8 }}>
+              Connect these apps
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+              {APP_CONNECT_OPTIONS.map((app) => (
                 <PlaidLinkButton
-                  label="Connect More Apps"
-                  className="text-xs px-4 py-2"
-                  style={{ backgroundColor: "#525252" }}
+                  key={app.key}
+                  label={app.name}
                   onLinked={(account) => {
                     onAccountLinked(account);
                     if (account) setShowAddMorePopup(true);
                   }}
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color: "#fff",
+                    background: app.color,
+                    border: `1px solid ${app.color}`,
+                    borderRadius: "var(--radius-md)",
+                    padding: "10px 18px",
+                  }}
                 />
-              </div>
-              <p className="text-[11px] text-neutral-400 mt-2">
-                &quot;Connect More Apps&quot; opens the same Plaid search used above -- look up any other app or
-                bank you get paid through that isn&apos;t listed here.
-              </p>
-
-              <div className="mt-4 space-y-2">
-                {accounts.map((a) => (
-                  <div key={a.id} className="text-sm text-neutral-700 border border-neutral-200 rounded-lg px-3 py-2">
-                    {a.institution_name} — {a.account_name} •••• {a.mask}
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3 mt-6">
-                <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
-                {accounts.length > 0 ? (
-                  <PrimaryButton onClick={next} className="flex-1">Continue <ArrowRight size={16} /></PrimaryButton>
-                ) : (
-                  <GhostButton onClick={next} className="flex-1">Skip for now</GhostButton>
-                )}
-              </div>
+              ))}
+              <PlaidLinkButton
+                label="Connect More Apps"
+                onLinked={(account) => {
+                  onAccountLinked(account);
+                  if (account) setShowAddMorePopup(true);
+                }}
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  color: "var(--color-text)",
+                  background: "transparent",
+                  border: "1px dashed var(--color-divider)",
+                  borderRadius: 999,
+                  padding: "10px 18px",
+                }}
+              />
             </div>
-          )}
+            <p style={{ fontSize: 13, lineHeight: 1.65, color: "color-mix(in srgb, var(--color-text) 54%, transparent)", borderLeft: "1px solid var(--color-divider)", paddingLeft: 14, margin: "0 0 34px" }}>
+              &quot;Connect more apps&quot; opens the same Plaid search used above — look up any other app or
+              bank you get paid through that isn&apos;t listed here.
+            </p>
 
-          {step === 4 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-1">Set your percentage splits</h2>
-              <p className="text-sm text-neutral-500 mb-2">
-                Each deposit you receive will be split and automatically sent to the following accounts. Here,
-                set the percentages you want sent to each account.
+            {accounts.length > 0 && (
+              <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", overflow: "hidden", marginBottom: 34 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "14px 22px", borderBottom: "1px solid var(--color-divider)" }}>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.18em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                    Connected
+                  </span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)", fontVariantNumeric: "lining-nums tabular-nums" }}>
+                    {accounts.length} {accounts.length === 1 ? "account" : "accounts"}
+                  </span>
+                </div>
+                <div style={{ padding: "2px 22px" }}>
+                  {accounts.map((a) => (
+                    <div
+                      key={a.id}
+                      style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 8%, transparent)" }}
+                    >
+                      <span
+                        style={{
+                          width: 30,
+                          height: 30,
+                          flexShrink: 0,
+                          border: "1px solid var(--color-accent-300)",
+                          borderRadius: "var(--radius-sm)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontFamily: "var(--font-heading)",
+                          fontSize: 14,
+                          color: "var(--color-accent-700)",
+                        }}
+                      >
+                        {(a.institution_name || "?").charAt(0).toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1, minWidth: 0 }}>
+                        {a.institution_name} — {a.account_name} •••• {a.mask}
+                      </span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)" }} />
+                        Linked
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 12 }}>
+              <BackBtn onClick={back} />
+              {accounts.length > 0 ? (
+                <PrimaryBtn onClick={next} flex>Continue &nbsp;→</PrimaryBtn>
+              ) : (
+                <GhostBtn onClick={next} flex>Skip for now</GhostBtn>
+              )}
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div style={{ maxWidth: "40em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Set your percentage splits
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <div style={{ display: "grid", gap: 14, marginBottom: 36, maxWidth: "34em" }}>
+              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                Each deposit you receive will be split and automatically sent to the following accounts. Here, set
+                the percentages you want sent to each account.
               </p>
-              <p className="text-sm text-neutral-500 mb-2">
-                For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit,
-                $10 will be automatically routed to the savings account connected.
+              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, $10
+                will be automatically routed to the savings account connected.
               </p>
-              <p className="text-sm text-neutral-500 mb-2">
+              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
                 If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no
                 money will be routed to that account.
               </p>
-              <p className="text-sm text-neutral-500 mb-4">
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, fontStyle: "italic", fontFamily: "var(--font-heading)", color: "color-mix(in srgb, var(--color-text) 66%, transparent)", borderLeft: "1px solid var(--color-accent-300)", paddingLeft: 16, margin: "6px 0 0" }}>
                 Note: Any money not routed to one of the accounts below will remain where it was deposited.
               </p>
-              <PercentSplitEditor
-                percent={percent}
-                accounts={accounts}
-                onUpdatePercent={updatePercent}
-                onAddSubAccount={addSubAccount}
-                onRemoveRow={removeRow}
-                onAccountLinked={onAccountLinked}
-                creating={creating}
-                setCreating={setCreating}
-                connecting={connecting}
-                setConnecting={setConnecting}
-                showRowWarnings={false}
-              />
-              <div className="flex items-center gap-2 flex-wrap mt-3">
-                <button
-                  onClick={addPercent}
-                  className="flex-1 min-w-[180px] flex items-center justify-center gap-2 text-sm font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-xl py-2"
-                >
-                  <Plus size={15} /> Add your own category
-                </button>
-              </div>
-              {availableSuggestions.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs text-neutral-500 mb-2">Suggestions -- click to add, starts at 0%:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {availableSuggestions.map((s) => (
-                      <button
-                        key={s.label}
-                        onClick={() => addSuggested(s)}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 flex items-center gap-1"
-                      >
-                        <Plus size={12} /> {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <p className="text-xs text-neutral-500 mt-3 text-center">
-                {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
-              </p>
-              <div className="flex gap-3 mt-4">
-                <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
-                <PrimaryButton onClick={handleStep4Continue} className="flex-1">Continue <ArrowRight size={16} /></PrimaryButton>
-              </div>
             </div>
-          )}
 
-          {step === 5 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-1">Review and finish</h2>
-              <p className="text-sm text-neutral-500 mb-6">
-                You can change any percentage, account, or category later from Split Rules.
-              </p>
-              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 mb-6 text-sm space-y-1">
-                <div className="flex justify-between"><span className="text-neutral-500">You are</span><span className="font-semibold">{businessType}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-500">Accounts linked</span><span className="font-semibold">{accounts.length}</span></div>
-                <div className="flex justify-between"><span className="text-neutral-500">Percentages set</span><span className="font-semibold">{totalPct}%</span></div>
+            <PercentSplitEditor
+              percent={percent}
+              accounts={accounts}
+              onUpdatePercent={updatePercent}
+              onAddSubAccount={addSubAccount}
+              onRemoveRow={removeRow}
+              onAccountLinked={onAccountLinked}
+              creating={creating}
+              setCreating={setCreating}
+              connecting={connecting}
+              setConnecting={setConnecting}
+              showRowWarnings={false}
+              theme="ledger"
+            />
+
+            <button
+              onClick={addPercent}
+              className="pp-ledger-dashed"
+              style={{
+                width: "100%",
+                marginTop: 20,
+                background: "transparent",
+                border: "1px dashed var(--color-accent-300)",
+                borderRadius: "var(--radius-md)",
+                padding: "14px 16px",
+                cursor: "pointer",
+                fontFamily: "var(--font-heading)",
+                fontSize: 15,
+                letterSpacing: "0.04em",
+                color: "var(--color-accent-700)",
+              }}
+            >
+              + &nbsp;Add your own category
+            </button>
+
+            {availableSuggestions.length > 0 && (
+              <div style={{ marginTop: 30 }}>
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
+                  Suggestions — click to add, starts at 0%
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                  {availableSuggestions.map((s) => (
+                    <button
+                      key={s.label}
+                      onClick={() => addSuggested(s)}
+                      className="pp-ledger-pill"
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: 14,
+                        color: "color-mix(in srgb, var(--color-text) 72%, transparent)",
+                        background: "transparent",
+                        border: "1px solid var(--color-divider)",
+                        borderRadius: 999,
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      + &nbsp;{s.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-3">
-                <GhostButton onClick={back}><ArrowLeft size={16} /> Back</GhostButton>
-                <PrimaryButton onClick={finish} disabled={submitting} className="flex-1">
-                  {submitting ? "Setting up…" : "Enter dashboard"} <ArrowRight size={16} />
-                </PrimaryButton>
-              </div>
+            )}
+
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20, flexWrap: "wrap", borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 20 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                Allocated
+              </span>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontVariantNumeric: "lining-nums tabular-nums" }}>
+                {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
+              </span>
             </div>
-          )}
-        </div>
-      </div>
+
+            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Review and finish
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 34px" }}>
+              You can change any percentage, account, or category later from Split Rules.
+            </p>
+            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", padding: "6px 24px 8px" }}>
+              {[
+                { label: "You are", value: businessType },
+                { label: "Accounts linked", value: String(accounts.length) },
+                { label: "Percentages set", value: `${totalPct}%` },
+              ].map((r) => (
+                <div key={r.label} style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 24, padding: "16px 0", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 8%, transparent)" }}>
+                  <span style={{ fontSize: 15, color: "color-mix(in srgb, var(--color-text) 66%, transparent)" }}>{r.label}</span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, textAlign: "right", fontVariantNumeric: "lining-nums tabular-nums" }}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={finish} disabled={submitting} flex>
+                {submitting ? "Setting up…" : "Enter dashboard"} &nbsp;→
+              </PrimaryBtn>
+            </div>
+          </div>
+        )}
+      </main>
 
       {showAddMorePopup && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
-            <h3 className="text-base font-bold mb-4">Have any more accounts to add?</h3>
-            <div className="flex flex-col gap-2">
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", maxWidth: "26em", width: "100%", padding: "34px 34px 30px" }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 400, margin: "0 0 20px" }}>Have any more accounts to add?</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <PlaidLinkButton
                 label="Connect More Accounts"
-                onLinked={(account) => {
-                  onAccountLinked(account);
+                onLinked={(account) => onAccountLinked(account)}
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 600,
+                  color: "var(--color-accent)",
+                  background: "transparent",
+                  border: "1px solid var(--color-accent)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "12px 22px",
                 }}
               />
-              <GhostButton onClick={() => setShowAddMorePopup(false)}>No, that&apos;s all</GhostButton>
+              <button onClick={() => setShowAddMorePopup(false)} className="pp-btn pp-btn-secondary" style={{ padding: "12px 22px" }}>
+                No, that&apos;s all
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {showUnconnectedModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6">
-            <h3 className="text-base font-bold mb-3">Missing accounts</h3>
-            <p className="text-sm text-neutral-600 mb-6">
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", maxWidth: "30em", width: "100%", padding: "34px 34px 30px" }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 28, fontWeight: 400, margin: "0 0 8px" }}>Missing accounts</h2>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 20px" }} />
+            <p style={{ fontSize: 15.5, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 28px" }}>
               You haven&apos;t connected an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} yet.
               Until you connect one, money will not be routed and will stay wherever the deposit landed.
             </p>
-            <div className="flex gap-3">
-              <GhostButton onClick={() => setShowUnconnectedModal(false)} className="flex-1">
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button onClick={() => setShowUnconnectedModal(false)} className="pp-btn pp-btn-secondary" style={{ padding: "12px 22px" }}>
                 Go back and connect
-              </GhostButton>
-              <PrimaryButton
+              </button>
+              <button
                 onClick={() => {
                   setShowUnconnectedModal(false);
                   next();
                 }}
-                className="flex-1"
+                className="pp-btn pp-btn-primary"
+                style={{ padding: "12px 22px" }}
               >
                 Continue anyway
-              </PrimaryButton>
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {lastDeleted && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-sm rounded-xl pl-4 pr-2 py-2.5 flex items-center gap-3 shadow-lg z-50">
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#171614",
+            color: "#f3f2f2",
+            fontSize: 14,
+            borderRadius: "var(--radius-md)",
+            paddingLeft: 18,
+            paddingRight: 10,
+            paddingTop: 10,
+            paddingBottom: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            boxShadow: "var(--shadow-lg)",
+            zIndex: 50,
+          }}
+        >
           <span>&quot;{lastDeleted.row.label}&quot; removed.</span>
-          <button onClick={undoDelete} className="font-bold text-emerald-300 hover:text-emerald-200 px-2 py-1">
+          <button
+            onClick={undoDelete}
+            style={{ fontFamily: "var(--font-heading)", fontWeight: 600, color: "var(--color-accent-300)", background: "none", border: 0, cursor: "pointer", padding: "6px 10px" }}
+          >
             Undo
           </button>
         </div>
       )}
+
+      <style jsx>{`
+        a {
+          color: var(--color-accent-700);
+          text-decoration: none;
+        }
+        a:hover {
+          color: var(--color-accent-600);
+        }
+        input:focus-visible,
+        select:focus-visible,
+        button:focus-visible {
+          outline: 2px solid var(--color-accent);
+          outline-offset: 2px;
+        }
+        .pp-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+          text-decoration: none;
+          font-family: var(--font-heading);
+          font-weight: 600;
+          font-size: 14px;
+          line-height: 1.2;
+          color: var(--color-text);
+          background: transparent;
+          border: 1px solid transparent;
+          border-radius: var(--radius-md);
+        }
+        .pp-btn-primary {
+          color: var(--color-accent);
+          border-color: var(--color-accent);
+        }
+        .pp-btn-primary:hover {
+          background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+        }
+        .pp-btn-secondary {
+          border-color: var(--color-divider);
+        }
+        .pp-btn-secondary:hover {
+          background: color-mix(in srgb, var(--color-text) 7%, transparent);
+        }
+        .pp-btn-ghost {
+          color: var(--color-accent);
+        }
+        .pp-btn-ghost:hover {
+          background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+        }
+        .pp-ledger-dashed:hover {
+          border-color: var(--color-accent);
+          background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+        }
+        .pp-ledger-pill:hover {
+          border-color: var(--color-accent);
+          color: var(--color-accent-700);
+        }
+      `}</style>
     </div>
   );
 }
