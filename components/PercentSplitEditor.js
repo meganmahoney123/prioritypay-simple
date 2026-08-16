@@ -22,6 +22,13 @@ import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SU
 // renders exactly as before.
 function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, theme }) {
   const locked = isCoreRow(rule);
+  // Cap $ (a monthly dollar cap -- see computeAllocations in
+  // lib/allocations.js) only applies to flat categories (Tax Reserve,
+  // Emergency Fund, OPEX, Savings, anything a person adds themselves).
+  // Investments/Retirement sub-accounts don't get one: those buckets are
+  // meant to keep receiving their full percentage indefinitely, not stop
+  // once some dollar figure is hit.
+  const isGrouped = rule.group === "Investments" || rule.group === "Retirement";
 
   if (theme === "ledger") {
     return (
@@ -86,6 +93,34 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           </span>
         </div>
         {(rule.retirementType || rule.group === "Retirement") && <RetirementNote label={rule.label} theme="ledger" />}
+        {!isGrouped && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, marginTop: 12 }}>
+            <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              Cap $ <span style={{ fontStyle: "italic" }}>(optional monthly limit)</span>
+            </span>
+            <span style={{ display: "flex", alignItems: "baseline", gap: 4, flexShrink: 0 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+              <input
+                type="number"
+                min={0}
+                placeholder="No cap"
+                value={rule.max === null || rule.max === undefined ? "" : rule.max}
+                onChange={(e) => onUpdate(rule.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
+                style={{
+                  width: 90,
+                  textAlign: "right",
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 15,
+                  color: "var(--color-text)",
+                  background: "transparent",
+                  border: 0,
+                  borderBottom: "1px solid var(--color-divider)",
+                  padding: "3px 2px",
+                }}
+              />
+            </span>
+          </div>
+        )}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--color-accent-700)", margin: "10px 0 0" }}>
             No account connected yet. Until you connect one, this {rule.pct}% won&apos;t be routed anywhere and
@@ -179,6 +214,19 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
       </div>
       {rule.retirementType || rule.group === "Retirement" ? <RetirementNote label={rule.label} /> : null}
+      {!isGrouped && (
+        <div className="mt-2 flex items-center gap-1.5">
+          <span className="text-xs text-neutral-500">Cap $ (optional monthly limit)</span>
+          <input
+            type="number"
+            min={0}
+            placeholder="none"
+            value={rule.max === null || rule.max === undefined ? "" : rule.max}
+            onChange={(e) => onUpdate(rule.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
+            className="w-20 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center ml-auto"
+          />
+        </div>
+      )}
       <div className="mt-2">
         <AccountSelect
           value={rule.accountId}
@@ -266,6 +314,24 @@ export default function PercentSplitEditor({
   if (theme === "ledger") {
     return (
       <div style={{ display: "grid", gap: 18 }}>
+        <p
+          style={{
+            fontSize: 14,
+            lineHeight: 1.7,
+            fontStyle: "italic",
+            fontFamily: "var(--font-heading)",
+            color: "color-mix(in srgb, var(--color-text) 66%, transparent)",
+            borderLeft: "1px solid var(--color-accent-300)",
+            paddingLeft: 16,
+            margin: 0,
+            maxWidth: "40em",
+          }}
+        >
+          What&apos;s a cap? Any category below other than Investments or Retirement can have an optional Cap $ --
+          a monthly dollar limit. Once a category has received that much from your deposits in a given month, its
+          percentage drops to 0% for the rest of the month and the difference rises proportionally across your
+          other categories instead. The cap resets automatically at the start of each new month.
+        </p>
         {percentSections(percent).map((section) =>
           section.type === "group" ? (
             <div
@@ -365,6 +431,12 @@ export default function PercentSplitEditor({
 
   return (
     <div className="space-y-3">
+      <p className="text-xs text-neutral-500 leading-relaxed">
+        What&apos;s a cap? Any category below other than Investments or Retirement can have an optional Cap $ -- a
+        monthly dollar limit. Once a category has received that much from your deposits in a given month, its
+        percentage drops to 0% for the rest of the month and the difference rises proportionally across your other
+        categories instead. The cap resets automatically at the start of each new month.
+      </p>
       {percentSections(percent).map((section) =>
         section.type === "group" ? (
           <div key={section.group} className="border border-neutral-200 rounded-xl p-3 bg-neutral-50">
