@@ -399,7 +399,8 @@ export default function CloseoutPage() {
                             min={0}
                             value={contributeAmounts[r.retirementType] ?? Math.min(r.room, r.holdingAccountBalance ?? r.room)}
                             onChange={(e) => setContributeAmounts((prev) => ({ ...prev, [r.retirementType]: e.target.value }))}
-                            className="w-24 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono"
+                            className="text-sm font-mono"
+                  style={{ width: 96, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                           />
                           <span className="text-xs text-neutral-500">from</span>
                           <div className="w-48">
@@ -453,7 +454,8 @@ export default function CloseoutPage() {
                   max={100}
                   value={taxRatePct}
                   onChange={(e) => setTaxRatePct(Number(e.target.value))}
-                  className="w-16 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono"
+                  className="text-sm font-mono"
+                  style={{ width: 64, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                 />
                 <span className="text-xs text-neutral-500">%</span>
                 <span className="text-sm font-mono font-bold ml-auto">{currency(liveTaxEstimate)}</span>
@@ -473,7 +475,8 @@ export default function CloseoutPage() {
                   min={0}
                   value={annualNetIncome}
                   onChange={(e) => setAnnualNetIncome(e.target.value)}
-                  className="w-28 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono ml-auto"
+                  className="text-sm font-mono ml-auto"
+                  style={{ width: 112, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -484,7 +487,8 @@ export default function CloseoutPage() {
                   max={100}
                   value={annualTaxRatePct}
                   onChange={(e) => setAnnualTaxRatePct(Number(e.target.value))}
-                  className="w-16 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono"
+                  className="text-sm font-mono"
+                  style={{ width: 64, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                 />
                 <span className="text-xs text-neutral-500">%</span>
                 <span className="text-sm font-mono font-bold ml-auto">{currency(annualTaxEstimate)}</span>
@@ -526,7 +530,8 @@ export default function CloseoutPage() {
                   min={0}
                   value={topUp.amount}
                   onChange={(e) => setTopUp((prev) => ({ ...prev, amount: e.target.value }))}
-                  className="w-32 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono"
+                  className="text-sm font-mono"
+                  style={{ width: 128, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                 />
                 <div className="flex gap-2 pt-1">
                   <PrimaryButton onClick={handleTopUp} disabled={toppingUp} className="text-xs px-3 py-1.5">

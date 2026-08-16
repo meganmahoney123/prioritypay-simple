@@ -296,6 +296,40 @@ export default function AppShell({ children }) {
         .pp-ledger-shell textarea {
           font-family: var(--font-body);
         }
+        /* Broad sweep for the remaining plain Tailwind neutral-gray
+           borders/backgrounds/text left inside page-specific markup (card
+           containers, info banners, muted copy) across Dashboard/
+           Accounts/Split Rules/Close Out/Settings -- keeps every leftover
+           spot visually consistent with the Ledger palette without
+           needing to hand-convert every className. */
+        .pp-ledger-shell .border-neutral-200,
+        .pp-ledger-shell .border-neutral-100 {
+          border-color: var(--color-divider) !important;
+        }
+        .pp-ledger-shell .rounded-xl,
+        .pp-ledger-shell .rounded-lg,
+        .pp-ledger-shell .rounded-2xl {
+          border-radius: var(--radius-md) !important;
+        }
+        .pp-ledger-shell .bg-neutral-100 {
+          background: var(--color-neutral-100) !important;
+        }
+        .pp-ledger-shell .bg-neutral-50,
+        .pp-ledger-shell .bg-white {
+          background: var(--color-bg) !important;
+        }
+        .pp-ledger-shell .text-neutral-400,
+        .pp-ledger-shell .text-neutral-500 {
+          color: color-mix(in srgb, var(--color-text) 55%, transparent) !important;
+        }
+        .pp-ledger-shell .text-neutral-600,
+        .pp-ledger-shell .text-neutral-700 {
+          color: color-mix(in srgb, var(--color-text) 75%, transparent) !important;
+        }
+        .pp-ledger-shell input,
+        .pp-ledger-shell select {
+          background: transparent;
+        }
       `}</style>
     </div>
   );
