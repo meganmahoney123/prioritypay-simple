@@ -19,6 +19,11 @@ function startOfYearIso() {
   return new Date(Date.UTC(new Date().getUTCFullYear(), 0, 1)).toISOString();
 }
 
+function trialDaysLeft(trialEndsAt) {
+  if (!trialEndsAt) return null;
+  return Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86400000));
+}
+
 function toByLabel(categories) {
   const map = {};
   (categories || []).forEach((c) => { map[c.label] = c.amount; });
@@ -31,21 +36,24 @@ export default function DashboardPage() {
   const [mtdByLabel, setMtdByLabel] = useState({});
   const [ytdByLabel, setYtdByLabel] = useState({});
   const [allTimeTotal, setAllTimeTotal] = useState(0);
+  const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadAll = async () => {
-    const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes] = await Promise.all([
+    const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes, profileRes] = await Promise.all([
       fetch("/api/split-rules").then((r) => r.json()),
       fetch("/api/accounts").then((r) => r.json()),
       fetch(`/api/allocations/history/${currentPeriod()}?categoryType=percent`).then((r) => r.json()),
       fetch(`/api/allocations/history/range?since=${startOfYearIso()}&categoryType=percent`).then((r) => r.json()),
       fetch(`/api/allocations/history/range?all=true`).then((r) => r.json()),
+      fetch("/api/profile").then((r) => r.json()),
     ]);
     if (rulesRes.splitRules) setSplitRules(rulesRes.splitRules);
     if (accountsRes.accounts) setAccounts(accountsRes.accounts);
     setMtdByLabel(toByLabel(mtdRes.categories));
     setYtdByLabel(toByLabel(ytdRes.categories));
     setAllTimeTotal(allTimeRes.total || 0);
+    setBilling(profileRes.profile?.billing || null);
     setLoading(false);
   };
 
@@ -83,8 +91,31 @@ export default function DashboardPage() {
 
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
+  const trialRemaining = billing ? trialDaysLeft(billing.trialEndsAt) : null;
+
   return (
     <div className="space-y-6">
+      {billing?.readOnly && (
+        <Card className="p-4 text-sm flex items-start gap-2" style={ledgerWarningCardStyle()}>
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span>
+            <span style={{ fontWeight: 600 }}>Your free trial has ended.</span> You can still see your split rules
+            and history, but connecting new accounts and moving money are paused until you subscribe.{" "}
+            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe -- $12/month</Link>
+          </span>
+        </Card>
+      )}
+
+      {billing && !billing.readOnly && billing.subscriptionStatus !== "active" && trialRemaining !== null && trialRemaining <= 5 && (
+        <Card className="p-4 text-sm" style={ledgerNoticeCardStyle()}>
+          <span style={{ fontWeight: 600 }}>
+            {trialRemaining === 0 ? "Your free trial ends today." : `${trialRemaining} day${trialRemaining === 1 ? "" : "s"} left in your free trial.`}
+          </span>{" "}
+          $12/month after that.{" "}
+          <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe now</Link>
+        </Card>
+      )}
+
       <AccountBalances
         accounts={accounts}
         splitRules={splitRules}

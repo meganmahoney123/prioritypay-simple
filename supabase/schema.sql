@@ -210,3 +210,33 @@ create table if not exists public.simple_login_lockouts (
 
 grant all on table public.simple_login_lockouts to service_role;
 revoke all on table public.simple_login_lockouts from authenticated, anon, public;
+
+-- PHASE C: Subscription billing (Stripe) -- 30 days free, then $12/mo.
+--
+-- trial_ends_at is set once, at signup, inside handle_new_simple_user()
+-- below -- a single source of truth so it's correct regardless of which
+-- app code path creates the user, rather than being computed from
+-- created_at at read time (which would need every caller to agree on the
+-- same "30 days" constant forever).
+--
+-- subscription_status mirrors Stripe's own subscription status values
+-- (trialing / active / past_due / canceled) and is kept in sync by the
+-- Stripe webhook handler (app/api/stripe/webhook/route.js) -- it is NOT
+-- flipped to anything else when a trial lapses unpaid. "Read-only" isn't
+-- its own status: app code treats a profile as read-only whenever
+-- subscription_status is 'trialing' (or 'past_due'/'canceled') AND
+-- trial_ends_at has passed with no active subscription. This avoids
+-- needing a cron job or extra webhook event just to flip a status the
+-- instant a trial expires.
+alter table simple_profiles add column if not exists subscription_status text not null default 'trialing';
+alter table simple_profiles add column if not exists trial_ends_at timestamptz;
+alter table simple_profiles add column if not exists stripe_customer_id text;
+alter table simple_profiles add column if not exists stripe_subscription_id text;
+
+create or replace function public.handle_new_simple_user()
+returns trigger as $$
+begin
+  insert into public.simple_profiles (id, trial_ends_at) values (new.id, now() + interval '30 days');
+  return new;
+end;
+$$ language plpgsql security definer;

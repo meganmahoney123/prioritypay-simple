@@ -1,5 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { isReadOnly } from "@/lib/subscription";
 
 export async function GET() {
   const user = await requireUser();
@@ -19,6 +20,11 @@ export async function GET() {
         hasW2Plan: data.has_w2_plan,
         w2ElectiveDeferralYTD: Number(data.w2_elective_deferral_ytd || 0),
         ageBracket: data.age_bracket,
+      },
+      billing: {
+        subscriptionStatus: data.subscription_status,
+        trialEndsAt: data.trial_ends_at,
+        readOnly: isReadOnly(data),
       },
     },
   });

@@ -2,6 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
 import { dwollaClient } from "@/lib/dwolla";
+import { isReadOnly, getBillingProfile, readOnlyError } from "@/lib/subscription";
 
 // Runs after Plaid Link succeeds in the browser. Three steps:
 //  1. Exchange the public_token for a real access_token (server-only, never
@@ -26,6 +27,13 @@ export async function POST(request) {
   }
 
   const admin = supabaseAdmin();
+
+  // Read-only trial gate (see lib/subscription.js): connecting a NEW
+  // account is blocked once the 30-day trial has passed with no active
+  // subscription. Existing accounts/split rules stay fully visible --
+  // this only stops adding more.
+  const billingProfile = await getBillingProfile(admin, user.id);
+  if (isReadOnly(billingProfile)) return readOnlyError();
 
   const { data: dwollaCustomer } = await admin
     .from("simple_dwolla_customers")
