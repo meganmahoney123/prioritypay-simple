@@ -185,88 +185,28 @@ create trigger on_auth_user_created_simple
 
 -- Account lockout after repeated failed logins (Dwolla approval requirement:
 -- lock an account for at least 30 minutes after 10 incorrect password
--- attempts). Enforced via Supabase's Password Verification Auth Hook, which
--- runs inside Supabase's own Auth server on every sign-in attempt -- so
--- unlike a check built into our own login page/API route, this can't be
--- bypassed by calling Supabase's Auth API directly instead of going through
--- our UI. See: https://supabase.com/docs/guides/auth/auth-hooks/password-verification-hook
+-- attempts). Enforced at the app level in app/api/auth/login/route.js --
+-- the login page always goes through that route, which checks/updates this
+-- table via the service-role client before/after calling Supabase Auth.
 --
--- This table is intentionally only readable/writable by the
--- supabase_auth_admin role that runs the hook -- not by our own app code,
--- and not by end users (RLS is irrelevant here since even the table grants
--- themselves exclude authenticated/anon/public).
+-- (Supabase also offers a server-side "Password Verification" Auth Hook
+-- that would enforce this even against direct Supabase Auth API calls, but
+-- that hook requires the Team plan ($599/mo) -- not worth it for this one
+-- feature, so we enforce in our own app code instead.)
+--
+-- Keyed by email (lowercased), not user_id, because we need to check
+-- lockout status before Supabase Auth has told us whether the email even
+-- corresponds to a real account -- looking up a user_id from an email
+-- pre-auth would need an extra admin API call for no real benefit.
+--
+-- Only the service_role (our own server-side API routes) can read or write
+-- this table -- not end users, and not the browser's anon key.
 create table if not exists public.simple_login_lockouts (
-  user_id uuid primary key,
+  email text primary key,
   failed_count int not null default 0,
   locked_until timestamptz,
   last_attempt_at timestamptz not null default now()
 );
 
-grant all on table public.simple_login_lockouts to supabase_auth_admin;
+grant all on table public.simple_login_lockouts to service_role;
 revoke all on table public.simple_login_lockouts from authenticated, anon, public;
-
-create or replace function public.hook_password_verification_attempt(event jsonb)
-returns jsonb
-language plpgsql
-set search_path = ''
-as $$
-declare
-  v_user_id uuid := (event->>'user_id')::uuid;
-  v_valid boolean := (event->>'valid')::boolean;
-  v_locked_until timestamptz;
-  v_failed_count int;
-begin
-  select locked_until, failed_count into v_locked_until, v_failed_count
-    from public.simple_login_lockouts
-    where user_id = v_user_id;
-
-  -- Already locked out -- reject regardless of whether *this* attempt's
-  -- password happened to be correct, since the lockout is on the account,
-  -- not on any single password guess.
-  if v_locked_until is not null and v_locked_until > now() then
-    return jsonb_build_object(
-      'decision', 'reject',
-      'message', 'Too many failed login attempts. Please try again in about 30 minutes.',
-      'should_logout_user', false
-    );
-  end if;
-
-  if v_valid then
-    -- Correct password and not locked -- clear any failure history and let
-    -- Supabase Auth's normal sign-in proceed.
-    insert into public.simple_login_lockouts (user_id, failed_count, locked_until, last_attempt_at)
-      values (v_user_id, 0, null, now())
-      on conflict (user_id) do update
-        set failed_count = 0, locked_until = null, last_attempt_at = now();
-    return jsonb_build_object('decision', 'continue');
-  end if;
-
-  -- Wrong password -- bump the counter, and lock for 30 minutes once it
-  -- reaches 10.
-  v_failed_count := coalesce(v_failed_count, 0) + 1;
-
-  if v_failed_count >= 10 then
-    insert into public.simple_login_lockouts (user_id, failed_count, locked_until, last_attempt_at)
-      values (v_user_id, 0, now() + interval '30 minutes', now())
-      on conflict (user_id) do update
-        set failed_count = 0, locked_until = now() + interval '30 minutes', last_attempt_at = now();
-    return jsonb_build_object(
-      'decision', 'reject',
-      'message', 'Too many failed login attempts. Your account is locked for 30 minutes.',
-      'should_logout_user', false
-    );
-  end if;
-
-  insert into public.simple_login_lockouts (user_id, failed_count, locked_until, last_attempt_at)
-    values (v_user_id, v_failed_count, null, now())
-    on conflict (user_id) do update
-      set failed_count = v_failed_count, locked_until = null, last_attempt_at = now();
-
-  -- Under the threshold -- let Supabase Auth's normal "invalid password"
-  -- behavior handle this attempt.
-  return jsonb_build_object('decision', 'continue');
-end;
-$$;
-
-grant execute on function public.hook_password_verification_attempt to supabase_auth_admin;
-revoke execute on function public.hook_password_verification_attempt from authenticated, anon, public;

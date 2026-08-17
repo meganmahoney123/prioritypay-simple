@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import AuthCard from "@/components/AuthCard";
 
 export default function LoginPage() {
@@ -16,11 +15,18 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const supabase = supabaseBrowser();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // Goes through our own API route (not supabase.auth.signInWithPassword
+    // directly) so the per-account failed-login lockout Dwolla requires can
+    // be enforced -- see app/api/auth/login/route.js.
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => ({}));
     setLoading(false);
-    if (error) {
-      setError(error.message);
+    if (!res.ok) {
+      setError(data.error || "Something went wrong. Please try again.");
       return;
     }
     router.push("/");
