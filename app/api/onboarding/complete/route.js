@@ -25,7 +25,17 @@ export async function POST(request) {
     .eq("id", user.id);
   if (profileError) return Response.json({ error: profileError.message }, { status: 500 });
 
-  await admin.from("simple_split_rules_percent").delete().eq("user_id", user.id);
+  // Insert-then-delete-old-ids, not delete-then-insert -- same reasoning
+  // as PUT /api/split-rules: a failed insert should never leave someone
+  // with zero split rules, even here where it's less likely to matter
+  // (onboarding hasn't necessarily saved much yet) since mid-onboarding
+  // steps already PUT real rows via saveSplitRulesNow before this final
+  // step runs.
+  const { data: existingRows } = await admin
+    .from("simple_split_rules_percent")
+    .select("id")
+    .eq("user_id", user.id);
+  const oldIds = (existingRows || []).map((r) => r.id);
 
   const percent = splitRules?.percent || [];
 
@@ -45,6 +55,10 @@ export async function POST(request) {
     }));
     const { error } = await admin.from("simple_split_rules_percent").insert(rows);
     if (error) return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  if (oldIds.length) {
+    await admin.from("simple_split_rules_percent").delete().in("id", oldIds);
   }
 
   return Response.json({ ok: true });

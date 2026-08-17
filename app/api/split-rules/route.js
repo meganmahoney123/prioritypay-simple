@@ -15,8 +15,8 @@ function rowToPercent(r) {
     label: r.label,
     group: r.group_name,
     pct: Number(r.pct),
-    max: r.cap === null ? null : Number(r.cap),
-    balanceCap: r.balance_cap === null ? null : Number(r.balance_cap),
+    max: r.cap === null || r.cap === undefined ? null : Number(r.cap),
+    balanceCap: r.balance_cap === null || r.balance_cap === undefined ? null : Number(r.balance_cap),
     color: r.color,
     accountId: r.account_id,
     retirementType: r.retirement_type || null,
@@ -44,15 +44,25 @@ export async function GET() {
   });
 }
 
-// Replaces the user's whole rule set. Simple "delete then insert in order"
-// rather than diffing -- fine at this scale (a few dozen rows per user).
+// Replaces the user's whole rule set. Insert the new rows FIRST and only
+// delete the previous ones once that insert has actually succeeded --
+// deliberately not "delete then insert": if the insert ever fails partway
+// (a schema mismatch, a bad value, a dropped connection), deleting first
+// would leave someone with zero split rules and no way back except
+// re-entering everything by hand. Old and new rows briefly coexist under
+// the same user_id in between, which is fine since only their own `id`s
+// (captured up front) get removed at the end.
 export async function PUT(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
   const { percent } = await request.json();
   const admin = supabaseAdmin();
 
-  await admin.from("simple_split_rules_percent").delete().eq("user_id", user.id);
+  const { data: existingRows } = await admin
+    .from("simple_split_rules_percent")
+    .select("id")
+    .eq("user_id", user.id);
+  const oldIds = (existingRows || []).map((r) => r.id);
 
   if (percent?.length) {
     const rows = percent.map((r) => ({
@@ -73,6 +83,10 @@ export async function PUT(request) {
     }));
     const { error } = await admin.from("simple_split_rules_percent").insert(rows);
     if (error) return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  if (oldIds.length) {
+    await admin.from("simple_split_rules_percent").delete().in("id", oldIds);
   }
 
   return Response.json({ ok: true });
