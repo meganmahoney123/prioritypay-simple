@@ -36,6 +36,7 @@ export async function POST(request) {
       group_name: r.group || null,
       pct: Number(r.pct) || 0,
       cap: r.max === null || r.max === undefined || r.max === "" ? null : Number(r.max),
+      balance_cap: r.balanceCap === null || r.balanceCap === undefined || r.balanceCap === "" ? null : Number(r.balanceCap),
       color: r.color,
       account_id: r.accountId || null,
       retirement_type: r.retirementType || null,

@@ -7,6 +7,108 @@ import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
 import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SUBTEXT, isCoreRow } from "@/lib/allocations";
 
+// A single optional dollar cap control -- rendered twice per flat row (see
+// PercentRow below), once for the monthly cap and once for the account-
+// balance cap (see computeAllocations in lib/allocations.js for how each
+// actually behaves once set). Deliberately NOT a free-typed "0 means no
+// cap" input: the dropdown is the only way to clear a cap back to "None",
+// and once "Set a limit" is chosen the number field can never go below $1
+// -- so a saved cap value is always either exactly `null` (no cap) or a
+// real positive dollar amount, never 0 or an ambiguous empty string.
+function CapField({ label, hint, value, onChange, theme }) {
+  const isSet = value !== null && value !== undefined && value !== "";
+  const clamp = (raw) => {
+    if (raw === "") return "";
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  };
+  const settle = (raw) => {
+    const n = Number(raw);
+    return !raw || !Number.isFinite(n) || n <= 0 ? 1 : n;
+  };
+
+  if (theme === "ledger") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          {label} <span style={{ fontStyle: "italic" }}>({hint})</span>
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <select
+            value={isSet ? "set" : "none"}
+            onChange={(e) => onChange(e.target.value === "none" ? null : 1)}
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 13,
+              color: "var(--color-text)",
+              background: "transparent",
+              border: 0,
+              borderBottom: "1px solid var(--color-divider)",
+              borderRadius: 0,
+              padding: "3px 4px",
+            }}
+          >
+            <option value="none">None</option>
+            <option value="set">Set a limit</option>
+          </select>
+          {isSet && (
+            <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={value}
+                onChange={(e) => onChange(clamp(e.target.value))}
+                onBlur={(e) => onChange(settle(e.target.value))}
+                style={{
+                  width: 84,
+                  textAlign: "right",
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 15,
+                  color: "var(--color-text)",
+                  background: "transparent",
+                  border: 0,
+                  borderBottom: "1px solid var(--color-divider)",
+                  padding: "3px 2px",
+                }}
+              />
+            </span>
+          )}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+      <span className="text-xs text-neutral-500">{label} ({hint})</span>
+      <select
+        value={isSet ? "set" : "none"}
+        onChange={(e) => onChange(e.target.value === "none" ? null : 1)}
+        className="text-xs border border-neutral-200 rounded-lg px-1.5 py-1 ml-auto"
+      >
+        <option value="none">None</option>
+        <option value="set">Set a limit</option>
+      </select>
+      {isSet && (
+        <span className="flex items-center gap-1">
+          <span className="text-xs text-neutral-500">$</span>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={value}
+            onChange={(e) => onChange(clamp(e.target.value))}
+            onBlur={(e) => onChange(settle(e.target.value))}
+            className="w-20 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
+          />
+        </span>
+      )}
+    </div>
+  );
+}
+
 // One row of the percent-split editor -- a flat category (Tax Reserve,
 // Emergency Fund, OPEX, Savings, anything a person adds) or a sub-account
 // inside a group (Investments, Retirement). `locked` rows are one of the
@@ -94,32 +196,22 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         </div>
         {(rule.retirementType || rule.group === "Retirement") && <RetirementNote label={rule.label} theme="ledger" />}
         {!isGrouped && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, marginTop: 12 }}>
-            <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Cap $ <span style={{ fontStyle: "italic" }}>(optional monthly limit)</span>
-            </span>
-            <span style={{ display: "flex", alignItems: "baseline", gap: 4, flexShrink: 0 }}>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-              <input
-                type="number"
-                min={0}
-                placeholder="No cap"
-                value={rule.max === null || rule.max === undefined ? "" : rule.max}
-                onChange={(e) => onUpdate(rule.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
-                style={{
-                  width: 90,
-                  textAlign: "right",
-                  fontFamily: "var(--font-heading)",
-                  fontSize: 15,
-                  color: "var(--color-text)",
-                  background: "transparent",
-                  border: 0,
-                  borderBottom: "1px solid var(--color-divider)",
-                  padding: "3px 2px",
-                }}
-              />
-            </span>
-          </div>
+          <>
+            <CapField
+              label="Monthly Cap $"
+              hint="resets automatically each month"
+              value={rule.max}
+              onChange={(v) => onUpdate(rule.id, { max: v })}
+              theme="ledger"
+            />
+            <CapField
+              label="Account Total Cap $"
+              hint="based on the connected account's balance"
+              value={rule.balanceCap}
+              onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
+              theme="ledger"
+            />
+          </>
         )}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--color-accent-700)", margin: "10px 0 0" }}>
@@ -215,17 +307,20 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       </div>
       {rule.retirementType || rule.group === "Retirement" ? <RetirementNote label={rule.label} /> : null}
       {!isGrouped && (
-        <div className="mt-2 flex items-center gap-1.5">
-          <span className="text-xs text-neutral-500">Cap $ (optional monthly limit)</span>
-          <input
-            type="number"
-            min={0}
-            placeholder="none"
-            value={rule.max === null || rule.max === undefined ? "" : rule.max}
-            onChange={(e) => onUpdate(rule.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
-            className="w-20 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center ml-auto"
+        <>
+          <CapField
+            label="Monthly Cap $"
+            hint="resets automatically each month"
+            value={rule.max}
+            onChange={(v) => onUpdate(rule.id, { max: v })}
           />
-        </div>
+          <CapField
+            label="Account Total Cap $"
+            hint="based on the connected account's balance"
+            value={rule.balanceCap}
+            onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
+          />
+        </>
       )}
       <div className="mt-2">
         <AccountSelect
@@ -327,10 +422,14 @@ export default function PercentSplitEditor({
             maxWidth: "40em",
           }}
         >
-          What&apos;s a cap? Any category below other than Investments or Retirement can have an optional Cap $ --
-          a monthly dollar limit. Once a category has received that much from your deposits in a given month, its
-          percentage drops to 0% for the rest of the month and the difference rises proportionally across your
-          other categories instead. The cap resets automatically at the start of each new month.
+          What&apos;s a cap? Any category below other than Investments or Retirement can have up to two optional
+          caps. A <strong>Monthly Cap</strong> limits how many dollars a category can receive from your deposits in
+          a given calendar month -- once it&apos;s hit, that category drops to 0% for the rest of the month and
+          resets automatically on the 1st. An <strong>Account Total Cap</strong> instead watches the connected
+          account&apos;s own balance -- once that balance reaches the cap, the category drops to 0% and stays there
+          until the balance falls back below it (say, from a withdrawal), with no automatic monthly reset. Either
+          way, whatever a capped category doesn&apos;t take rises proportionally across your other categories
+          instead of going unused.
         </p>
         {percentSections(percent).map((section) =>
           section.type === "group" ? (
@@ -432,10 +531,13 @@ export default function PercentSplitEditor({
   return (
     <div className="space-y-3">
       <p className="text-xs text-neutral-500 leading-relaxed">
-        What&apos;s a cap? Any category below other than Investments or Retirement can have an optional Cap $ -- a
-        monthly dollar limit. Once a category has received that much from your deposits in a given month, its
-        percentage drops to 0% for the rest of the month and the difference rises proportionally across your other
-        categories instead. The cap resets automatically at the start of each new month.
+        What&apos;s a cap? Any category below other than Investments or Retirement can have up to two optional
+        caps. A Monthly Cap limits how many dollars a category can receive from your deposits in a given calendar
+        month -- once it&apos;s hit, that category drops to 0% for the rest of the month and resets automatically
+        on the 1st. An Account Total Cap instead watches the connected account&apos;s own balance -- once that
+        balance reaches the cap, the category drops to 0% and stays there until the balance falls back below it,
+        with no automatic monthly reset. Either way, whatever a capped category doesn&apos;t take rises
+        proportionally across your other categories instead of going unused.
       </p>
       {percentSections(percent).map((section) =>
         section.type === "group" ? (

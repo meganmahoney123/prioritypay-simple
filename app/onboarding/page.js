@@ -170,12 +170,12 @@ export default function OnboardingPage() {
   const addPercent = () =>
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], accountId: null },
+      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, balanceCap: null, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], accountId: null },
     ]);
   const addSuggested = (suggestion) =>
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, color: suggestion.color, accountId: null },
+      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, balanceCap: null, color: suggestion.color, accountId: null },
     ]);
   const usedLabels = new Set(percent.map((r) => r.label));
   const availableSuggestions = SUGGESTED_EXTRA_CATEGORIES.filter((s) => !usedLabels.has(s.label));

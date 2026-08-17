@@ -51,21 +51,33 @@ create table if not exists simple_dwolla_customers (
 
 -- The only split-rules table in this project. Every category -- Solo 401k,
 -- SEP IRA, Investments, Tax Reserve, Emergency Fund, OPEX, Savings, or
--- anything custom -- is a row here: a percentage of every deposit, an
--- optional monthly total cap, and a connected account.
+-- anything custom -- is a row here: a percentage of every deposit, two
+-- independent optional caps (see below), and a connected account.
 create table if not exists simple_split_rules_percent (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,
   label text not null,
   group_name text,
   pct numeric not null default 0,
-  cap numeric,
+  cap numeric, -- optional MONTHLY TOTAL cap, resets every calendar month
   color text not null default '#065f46',
   account_id uuid references simple_accounts(id) on delete set null,
   retirement_type text, -- 'solo_401k' | 'sep_ira' | null
   investment_type text, -- slug derived from label for investment-flavored rows, or null
   created_at timestamptz not null default now()
 );
+
+-- Added after the table above already existed in production -- `cap` is a
+-- monthly-total cap (resets each month), `balance_cap` is a separate,
+-- independent cap keyed off the connected account's live balance instead
+-- (never resets on its own; only clears itself once the account's balance
+-- drops back below it, e.g. from a real withdrawal). Both are optional and
+-- a row may have neither, either, or both at once -- whichever leaves less
+-- room wins on a given deposit (see computeAllocations in
+-- lib/allocations.js). Not applied to Investments/Retirement sub-account
+-- rows in the UI, by product decision -- those buckets are meant to keep
+-- receiving their full percentage indefinitely.
+alter table simple_split_rules_percent add column if not exists balance_cap numeric;
 
 create table if not exists simple_transfers (
   id uuid primary key default uuid_generate_v4(),
