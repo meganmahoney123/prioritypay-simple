@@ -56,6 +56,15 @@ export async function PUT(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
   const { percent } = await request.json();
+  // Guard against exactly what let a malformed QA request wipe a real
+  // user's split rules with zero replacement and no error: this used to
+  // silently treat a missing/malformed `percent` field as "delete
+  // everything, insert nothing." Reject instead -- an update should never
+  // be able to zero out someone's rules by accident. To genuinely delete
+  // all rules, a caller must explicitly send percent: [].
+  if (!Array.isArray(percent)) {
+    return Response.json({ error: "Request body must include a 'percent' array." }, { status: 400 });
+  }
   const admin = supabaseAdmin();
 
   const { data: existingRows } = await admin
