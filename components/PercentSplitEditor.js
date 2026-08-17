@@ -409,11 +409,9 @@ export default function PercentSplitEditor({
   if (theme === "ledger") {
     return (
       <div style={{ display: "grid", gap: 18 }}>
-        <p
+        <details
+          className="pp-cap-details"
           style={{
-            fontSize: 14,
-            lineHeight: 1.7,
-            fontStyle: "italic",
             fontFamily: "var(--font-heading)",
             color: "color-mix(in srgb, var(--color-text) 66%, transparent)",
             borderLeft: "1px solid var(--color-accent-300)",
@@ -422,15 +420,31 @@ export default function PercentSplitEditor({
             maxWidth: "40em",
           }}
         >
-          What&apos;s a cap? Any category below other than Investments or Retirement can have up to two optional
-          caps. A <strong>Monthly Cap</strong> limits how many dollars a category can receive from your deposits in
-          a given calendar month -- once it&apos;s hit, that category drops to 0% for the rest of the month and
-          resets automatically on the 1st. An <strong>Account Total Cap</strong> instead watches the connected
-          account&apos;s own balance -- once that balance reaches the cap, the category drops to 0% and stays there
-          until the balance falls back below it (say, from a withdrawal), with no automatic monthly reset. Either
-          way, whatever a capped category doesn&apos;t take rises proportionally across your other categories
-          instead of going unused.
-        </p>
+          <summary
+            style={{
+              fontSize: 14,
+              fontStyle: "italic",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span className="pp-cap-chevron" style={{ display: "inline-block", transition: "transform 0.15s ease" }}>
+              &#9656;
+            </span>
+            What&apos;s a cap?
+          </summary>
+          <p style={{ fontSize: 14, lineHeight: 1.7, fontStyle: "italic", margin: "8px 0 0" }}>
+            Any category below other than Investments or Retirement can have up to two optional caps. A{" "}
+            <strong>Monthly Cap</strong> limits how many dollars a category can receive from your deposits in a
+            given calendar month. Once it&apos;s hit, that category drops to 0% for the rest of the month and
+            resets automatically on the 1st. An <strong>Account Total Cap</strong> instead watches the
+            connected account&apos;s own balance. Once that balance reaches the cap, the category drops to 0%
+            and stays there until the balance falls back below it (say, from a withdrawal), with no automatic
+            monthly reset. Either way, whatever a capped category doesn&apos;t take rises proportionally
+            across your other categories instead of going unused.
+          </p>
+        </details>
         {percentSections(percent).map((section) =>
           section.type === "group" ? (
             <div
@@ -523,6 +537,19 @@ export default function PercentSplitEditor({
             border-color: var(--color-accent);
             background: color-mix(in srgb, var(--color-accent) 6%, transparent);
           }
+          .pp-cap-details summary {
+            list-style: none;
+            cursor: pointer;
+          }
+          .pp-cap-details summary::-webkit-details-marker {
+            display: none;
+          }
+          .pp-cap-details summary::marker {
+            content: "";
+          }
+          .pp-cap-details[open] .pp-cap-chevron {
+            transform: rotate(90deg);
+          }
         `}</style>
       </div>
     );
@@ -530,15 +557,18 @@ export default function PercentSplitEditor({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-neutral-500 leading-relaxed">
-        What&apos;s a cap? Any category below other than Investments or Retirement can have up to two optional
-        caps. A Monthly Cap limits how many dollars a category can receive from your deposits in a given calendar
-        month -- once it&apos;s hit, that category drops to 0% for the rest of the month and resets automatically
-        on the 1st. An Account Total Cap instead watches the connected account&apos;s own balance -- once that
-        balance reaches the cap, the category drops to 0% and stays there until the balance falls back below it,
-        with no automatic monthly reset. Either way, whatever a capped category doesn&apos;t take rises
-        proportionally across your other categories instead of going unused.
-      </p>
+      <details className="text-xs text-neutral-500 leading-relaxed">
+        <summary className="cursor-pointer font-medium text-neutral-600">What&apos;s a cap?</summary>
+        <p className="mt-2">
+          Any category below other than Investments or Retirement can have up to two optional caps. A Monthly
+          Cap limits how many dollars a category can receive from your deposits in a given calendar month. Once
+          it&apos;s hit, that category drops to 0% for the rest of the month and resets automatically on the
+          1st. An Account Total Cap instead watches the connected account&apos;s own balance. Once that balance
+          reaches the cap, the category drops to 0% and stays there until the balance falls back below it, with
+          no automatic monthly reset. Either way, whatever a capped category doesn&apos;t take rises
+          proportionally across your other categories instead of going unused.
+        </p>
+      </details>
       {percentSections(percent).map((section) =>
         section.type === "group" ? (
           <div key={section.group} className="border border-neutral-200 rounded-xl p-3 bg-neutral-50">
