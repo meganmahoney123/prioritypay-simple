@@ -60,11 +60,11 @@ export async function POST(request) {
   }
 
   try {
-    await plaidClient.sandboxItemFireWebhook({
+    const fireRes = await plaidClient.sandboxItemFireWebhook({
       access_token: account.plaid_access_token,
       webhook_code: "SYNC_UPDATES_AVAILABLE",
     });
-    steps.fireWebhook = { ok: true };
+    steps.fireWebhook = { ok: true, raw: fireRes.data };
   } catch (err) {
     steps.fireWebhook = { ok: false, detail: err?.response?.data || err?.message || String(err) };
     return Response.json({ account: account.account_name, steps }, { status: 200 });
