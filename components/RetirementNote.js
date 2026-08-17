@@ -1,10 +1,9 @@
 export default function RetirementNote({ label, theme }) {
   const text = (
     <>
-      Connect a regular savings account here, not your real {label}. PriorityPay holds this money until the month
-      end, when you confirm your real net income from that month. Then, you&apos;ll confirm how much you want to
-      contribute to your {label} and we&apos;ll send it to your account. This process avoids over (and under)
-      contributing.
+      Connect a regular savings account here, not your real {label}. The account (ideally savings) you connect
+      here will hold this money. At the end of the month, when you confirm your net income, you can transfer it to
+      your {label}. This process avoids over (and under) contributing.
     </>
   );
 
