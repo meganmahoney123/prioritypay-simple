@@ -27,9 +27,10 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  let accountId;
+  let accountId, body;
   try {
-    ({ accountId } = await request.json());
+    body = await request.json();
+    accountId = body?.accountId;
   } catch {
     // no body
   }
@@ -57,6 +58,33 @@ export async function POST(request) {
     steps.baseline = { ran: true, cursorEstablished: !!cursor };
   } else {
     steps.baseline = { ran: false, alreadyHadCursor: true };
+  }
+
+  // Plaid Sandbox's fire_webhook alone does NOT conjure new transaction
+  // data out of nowhere -- per Plaid's docs, SYNC_UPDATES_AVAILABLE only
+  // fires (and /transactions/sync only returns something new) once real
+  // new data exists for the Item. /sandbox/transactions/create is the
+  // actual mechanism for injecting a custom mock transaction (simulating
+  // a /transactions/refresh discovering it), so this deposit amount is
+  // real, custom test data -- not Plaid's random default backlog.
+  const depositAmount = Number(body?.amount) > 0 ? Number(body.amount) : 500;
+  try {
+    const createRes = await plaidClient.sandboxTransactionsCreate({
+      access_token: account.plaid_access_token,
+      transactions: [
+        {
+          date_transacted: new Date().toISOString().slice(0, 10),
+          date_posted: new Date().toISOString().slice(0, 10),
+          // Plaid convention: negative = money IN (a deposit).
+          amount: -depositAmount,
+          description: "QA simulated client payment",
+        },
+      ],
+    });
+    steps.createTransaction = { ok: true, amount: depositAmount, raw: createRes.data };
+  } catch (err) {
+    steps.createTransaction = { ok: false, detail: err?.response?.data || err?.message || String(err) };
+    return Response.json({ account: account.account_name, steps }, { status: 200 });
   }
 
   try {
