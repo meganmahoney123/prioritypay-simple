@@ -65,6 +65,7 @@ export default function AuthCard({
   switchLabel,
   switchHref,
   children,
+  belowFields,
 }) {
   return (
     <div
@@ -146,6 +147,8 @@ export default function AuthCard({
                   style={fieldInputStyle}
                 />
               </div>
+
+              {belowFields}
 
               {error && (
                 <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "#7a2f2a", margin: 0 }}>{error}</p>
