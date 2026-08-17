@@ -9,11 +9,17 @@ import { dwollaClient } from "@/lib/dwolla";
 const DIAGNOSTIC_TOKEN = "pp-qa-check-7f2c9a";
 
 export async function GET(request) {
-  const token = new URL(request.url).searchParams.get("token");
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token");
   if (token !== DIAGNOSTIC_TOKEN) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
+  const deleteId = url.searchParams.get("delete");
   try {
+    if (deleteId) {
+      await dwollaClient().delete(`webhook-subscriptions/${deleteId}`);
+      return Response.json({ deleted: deleteId });
+    }
     const res = await dwollaClient().get("webhook-subscriptions");
     const subs = res.body?._embedded?.["webhook-subscriptions"] || [];
     return Response.json({
