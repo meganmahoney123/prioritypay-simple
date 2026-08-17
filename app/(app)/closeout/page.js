@@ -291,8 +291,8 @@ export default function CloseoutPage() {
               const cat = t.confirmed_category || t.suggested_category;
               const acc = accountsById[t.account_id];
               return (
-                <div key={t.id} className="flex items-center justify-between gap-3 border-b border-neutral-100 pb-2">
-                  <div className="min-w-0">
+                <div key={t.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-neutral-100 pb-2">
+                  <div className="min-w-[110px] flex-1">
                     <div className="text-sm font-medium truncate">{t.name}</div>
                     <div className="text-xs text-neutral-400">
                       {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
@@ -303,7 +303,7 @@ export default function CloseoutPage() {
                       {t.direction === "in" ? "+" : "-"}
                       {currency(t.amount)}
                     </span>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap justify-end">
                       {CATS.map((c) => (
                         <button
                           key={c.value}

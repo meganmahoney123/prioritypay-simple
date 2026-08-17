@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, Loader2 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import AuthCard from "@/components/AuthCard";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -35,61 +35,40 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
-            <Zap size={18} className="text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-lg font-bold">PriorityPay Simple</span>
+    <AuthCard
+      title="Create your account"
+      subtitle="Takes about a minute."
+      email={email}
+      onEmail={(e) => setEmail(e.target.value)}
+      password={password}
+      onPassword={(e) => setPassword(e.target.value)}
+      passwordPlaceholder="Six characters or more"
+      passwordMinLength={6}
+      onSubmit={handleSubmit}
+      submitLabel="Create account"
+      loading={loading}
+      error={error}
+      switchPrompt="Already have an account?"
+      switchLabel="Log in"
+      switchHref="/login"
+    >
+      {checkEmail ? (
+        <div style={{ textAlign: "center", padding: "12px 0" }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "clamp(26px, 6vw, 32px)",
+              fontWeight: 400,
+              margin: "0 0 12px",
+            }}
+          >
+            Check your email
+          </h1>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 66%, transparent)", margin: 0 }}>
+            We sent a confirmation link to {email}. Click it, then come back and log in.
+          </p>
         </div>
-        <div className="bg-white border border-neutral-200 rounded-xl p-6 card-shadow">
-          {checkEmail ? (
-            <div className="text-center py-4">
-              <h1 className="text-lg font-bold mb-2">Check your email</h1>
-              <p className="text-sm text-neutral-500">
-                We sent a confirmation link to {email}. Click it, then come back and log in.
-              </p>
-            </div>
-          ) : (
-            <>
-              <h1 className="text-xl font-bold mb-1">Create your account</h1>
-              <p className="text-sm text-neutral-500 mb-5">Takes about a minute.</p>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <input
-                  type="email"
-                  required
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500"
-                />
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  placeholder="Password (6+ characters)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full text-sm border border-neutral-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500"
-                />
-                {error && <p className="text-xs text-red-600">{error}</p>}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-2.5 text-sm disabled:opacity-50"
-                >
-                  {loading && <Loader2 size={15} className="animate-spin" />}
-                  Create account
-                </button>
-              </form>
-            </>
-          )}
-        </div>
-        <p className="text-center text-sm text-neutral-500 mt-4">
-          Already have an account? <a href="/login" className="text-emerald-700 font-medium">Log in</a>
-        </p>
-      </div>
-    </div>
+      ) : null}
+    </AuthCard>
   );
 }
