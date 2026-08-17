@@ -103,6 +103,10 @@ export default function OnboardingPage() {
   // moment someone tries to leave the step, and lists every affected
   // category by name in one place.
   const [showUnconnectedModal, setShowUnconnectedModal] = useState(false);
+  // Step 3: a last-check confirmation before leaving "Connect Accounts" --
+  // asks the user to double-check they haven't forgotten an income source,
+  // since PriorityPay can only split deposits it actually sees.
+  const [showConfirmAccountsModal, setShowConfirmAccountsModal] = useState(false);
 
   const next = () => {
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -440,11 +444,6 @@ export default function OnboardingPage() {
                 }}
               />
             </div>
-            <p style={{ fontSize: 13, lineHeight: 1.65, color: "color-mix(in srgb, var(--color-text) 54%, transparent)", borderLeft: "1px solid var(--color-divider)", paddingLeft: 14, margin: "0 0 34px" }}>
-              &quot;Connect more apps&quot; opens the same Plaid search used above — look up any other app or
-              bank you get paid through that isn&apos;t listed here.
-            </p>
-
             {accounts.length > 0 && (
               <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", overflow: "hidden", marginBottom: 34 }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "14px 22px", borderBottom: "1px solid var(--color-divider)" }}>
@@ -494,7 +493,7 @@ export default function OnboardingPage() {
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
               {accounts.length > 0 ? (
-                <PrimaryBtn onClick={next} flex>Continue &nbsp;→</PrimaryBtn>
+                <PrimaryBtn onClick={() => setShowConfirmAccountsModal(true)} flex>Continue &nbsp;→</PrimaryBtn>
               ) : (
                 <GhostBtn onClick={next} flex>Skip for now</GhostBtn>
               )}
@@ -521,7 +520,7 @@ export default function OnboardingPage() {
                 If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no
                 money will be routed to that account.
               </p>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, fontStyle: "italic", fontFamily: "var(--font-heading)", color: "color-mix(in srgb, var(--color-text) 66%, transparent)", borderLeft: "1px solid var(--color-accent-300)", paddingLeft: 16, margin: "6px 0 0" }}>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, fontFamily: "var(--font-heading)", color: "color-mix(in srgb, var(--color-text) 66%, transparent)", borderLeft: "1px solid var(--color-accent-300)", paddingLeft: 16, margin: "6px 0 0" }}>
                 Note: Any money not routed to one of the accounts below will remain where it was deposited.
               </p>
             </div>
@@ -637,6 +636,34 @@ export default function OnboardingPage() {
           </div>
         )}
       </main>
+
+      {showConfirmAccountsModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", maxWidth: "26em", width: "100%", padding: "34px 34px 30px" }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 400, margin: "0 0 10px" }}>
+              Are you sure these are all your income accounts?
+            </h2>
+            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 26px" }}>
+              PriorityPay can only route money from connected accounts and apps.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button
+                onClick={() => {
+                  setShowConfirmAccountsModal(false);
+                  next();
+                }}
+                className="pp-btn pp-btn-primary"
+                style={{ padding: "12px 22px" }}
+              >
+                Yes, continue
+              </button>
+              <button onClick={() => setShowConfirmAccountsModal(false)} className="pp-btn pp-btn-secondary" style={{ padding: "12px 22px" }}>
+                Go back and connect more
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddMorePopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>

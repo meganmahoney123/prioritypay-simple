@@ -81,7 +81,6 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
   }, [flatRows]);
 
   const usedAccounts = accounts.filter((a) => byAccount[a.id]?.length);
-  if (!usedAccounts.length) return null;
 
   return (
     <Card className="p-6">
@@ -89,11 +88,17 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
         style={{
           fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
           color: "color-mix(in srgb, var(--color-text) 58%, transparent)", paddingBottom: 20,
-          borderBottom: "1px solid var(--color-divider)", marginBottom: 20,
+          borderBottom: "1px solid var(--color-divider)", marginBottom: usedAccounts.length ? 20 : 0,
         }}
       >
         Other connected accounts
       </div>
+      {!usedAccounts.length && (
+        <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 52%, transparent)", paddingTop: 16, margin: 0 }}>
+          Any account connected for a category like Business Expenses (OPEX) or Savings will show up here, with its
+          balance and how much has landed there this year.
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {usedAccounts.map((acc) => (
           <div key={acc.id} style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-bg)", padding: "18px 20px" }}>
@@ -134,8 +139,11 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
   const investmentRows = sections.find((s) => s.type === "group" && s.group === "Investments")?.rows || [];
   const flatRows = sections.filter((s) => s.type === "row").map((s) => s.row);
 
-  if (!accounts || accounts.length === 0) return null;
-
+  // Dashboard preview: even with nothing connected yet, render every box
+  // with its normal layout and "Not connected yet" / placeholder rows
+  // (each row already handles a missing account -- see CategoryRow below)
+  // instead of hiding the whole section, so people can see what the
+  // dashboard will look like once accounts are linked and deposits split.
   return (
     <div className="space-y-6">
       <Card style={ledgerAccentCardStyle({ padding: "clamp(26px, 3.5vw, 40px)" })}>

@@ -69,7 +69,7 @@ export default function IdentityForm({ onDone, theme }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <input required type="date" value={form.dateOfBirth} onChange={update("dateOfBirth")} style={inp} />
-          <input required placeholder="SSN (last 4, sandbox)" maxLength={9} value={form.ssn} onChange={update("ssn")} style={{ ...inp, fontFamily: "var(--font-heading)" }} />
+          <input required placeholder="SSN" maxLength={9} value={form.ssn} onChange={update("ssn")} style={{ ...inp, fontFamily: "var(--font-heading)" }} />
         </div>
         {error && <p style={{ fontSize: 13, color: "var(--color-accent-700)", margin: 0 }}>{error}</p>}
         <button
@@ -110,7 +110,7 @@ export default function IdentityForm({ onDone, theme }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <input required type="date" value={form.dateOfBirth} onChange={update("dateOfBirth")} className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5" />
-        <input required placeholder="SSN (last 4, sandbox)" maxLength={9} value={form.ssn} onChange={update("ssn")} className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5 font-mono" />
+        <input required placeholder="SSN" maxLength={9} value={form.ssn} onChange={update("ssn")} className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5 font-mono" />
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <PrimaryButton type="submit" disabled={loading} className="w-full">

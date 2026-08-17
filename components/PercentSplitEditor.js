@@ -423,7 +423,6 @@ export default function PercentSplitEditor({
           <summary
             style={{
               fontSize: 14,
-              fontStyle: "italic",
               display: "flex",
               alignItems: "center",
               gap: 6,
@@ -434,7 +433,7 @@ export default function PercentSplitEditor({
             </span>
             What&apos;s a cap?
           </summary>
-          <p style={{ fontSize: 14, lineHeight: 1.7, fontStyle: "italic", margin: "8px 0 0" }}>
+          <p style={{ fontSize: 14, lineHeight: 1.7, margin: "8px 0 0" }}>
             Any category below other than Investments or Retirement can have up to two optional caps. A{" "}
             <strong>Monthly Cap</strong> limits how many dollars a category can receive from your deposits in a
             given calendar month. Once it&apos;s hit, that category drops to 0% for the rest of the month and
