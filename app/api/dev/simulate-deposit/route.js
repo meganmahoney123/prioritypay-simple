@@ -68,22 +68,43 @@ export async function POST(request) {
   // a /transactions/refresh discovering it), so this deposit amount is
   // real, custom test data -- not Plaid's random default backlog.
   const depositAmount = Number(body?.amount) > 0 ? Number(body.amount) : 500;
+  // Calling the REST endpoint directly instead of a plaidClient.* SDK
+  // method -- sandboxTransactionsCreate isn't present on this plaidClient
+  // instance in this SDK version ("is not a function"), so this bypasses
+  // that mystery entirely and just hits Plaid's documented HTTP API the
+  // same way the SDK would under the hood (client_id/secret in the JSON
+  // body is Plaid's standard non-header auth option).
   try {
-    const createRes = await plaidClient.sandboxTransactionsCreate({
-      access_token: account.plaid_access_token,
-      transactions: [
-        {
-          date_transacted: new Date().toISOString().slice(0, 10),
-          date_posted: new Date().toISOString().slice(0, 10),
-          // Plaid convention: negative = money IN (a deposit).
-          amount: -depositAmount,
-          description: "QA simulated client payment",
-        },
-      ],
+    const plaidBase =
+      (process.env.PLAID_ENV || "sandbox") === "sandbox"
+        ? "https://sandbox.plaid.com"
+        : "https://production.plaid.com";
+    const createRes = await fetch(`${plaidBase}/sandbox/transactions/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: process.env.PLAID_CLIENT_ID,
+        secret: process.env.PLAID_SECRET,
+        access_token: account.plaid_access_token,
+        transactions: [
+          {
+            date_transacted: new Date().toISOString().slice(0, 10),
+            date_posted: new Date().toISOString().slice(0, 10),
+            // Plaid convention: negative = money IN (a deposit).
+            amount: -depositAmount,
+            description: "QA simulated client payment",
+          },
+        ],
+      }),
     });
-    steps.createTransaction = { ok: true, amount: depositAmount, raw: createRes.data };
+    const createBody = await createRes.json();
+    if (!createRes.ok) {
+      steps.createTransaction = { ok: false, status: createRes.status, detail: createBody };
+      return Response.json({ account: account.account_name, steps }, { status: 200 });
+    }
+    steps.createTransaction = { ok: true, amount: depositAmount, raw: createBody };
   } catch (err) {
-    steps.createTransaction = { ok: false, detail: err?.response?.data || err?.message || String(err) };
+    steps.createTransaction = { ok: false, detail: err?.message || String(err) };
     return Response.json({ account: account.account_name, steps }, { status: 200 });
   }
 
