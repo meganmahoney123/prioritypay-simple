@@ -157,12 +157,23 @@ export default function CloseoutPage() {
   const realByType = useMemo(() => Object.fromEntries(realAccounts.map((r) => [r.retirementType, r])), [realAccounts]);
 
   const setCategory = async (txnId, category) => {
+    const previous = transactions.find((t) => t.id === txnId)?.confirmed_category;
     setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: category } : t)));
-    await fetch(`/api/closeout/transactions/${txnId}`, {
+    const res = await fetch(`/api/closeout/transactions/${txnId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ confirmedCategory: category }),
     });
+    if (!res.ok) {
+      // Revert the optimistic update instead of leaving the UI showing a
+      // category that never actually saved -- found during QA when the
+      // API's category whitelist didn't yet include "w2_income": clicking
+      // that button looked like it worked (this state update ran
+      // immediately) but silently 400'd underneath, so the real value in
+      // the database never changed.
+      setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: previous ?? null } : t)));
+      alert("Couldn't save that category -- please try again.");
+    }
   };
 
   const handleConfirm = async () => {

@@ -1,7 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-const VALID = ["income", "expense", "exclude"];
+const VALID = ["income", "expense", "exclude", "w2_income"];
 
 // Auto-saves as the person taps through the transaction review list on the
 // close-out screen -- one call per toggle, no separate "save" step, same
