@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data, error } = await admin
     .from("simple_retirement_accounts")
-    .select("retirement_type, account_id, accounts(institution_name, account_name, mask)")
+    .select("retirement_type, account_id, simple_accounts(institution_name, account_name, mask)")
     .eq("user_id", user.id);
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
@@ -19,9 +19,9 @@ export async function GET() {
   const realAccounts = (data || []).map((r) => ({
     retirementType: r.retirement_type,
     accountId: r.account_id,
-    institutionName: r.accounts?.institution_name || null,
-    accountName: r.accounts?.account_name || null,
-    mask: r.accounts?.mask || null,
+    institutionName: r.simple_accounts?.institution_name || null,
+    accountName: r.simple_accounts?.account_name || null,
+    mask: r.simple_accounts?.mask || null,
   }));
 
   return Response.json({ realAccounts });
