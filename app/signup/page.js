@@ -42,8 +42,8 @@ export default function SignupPage() {
       onEmail={(e) => setEmail(e.target.value)}
       password={password}
       onPassword={(e) => setPassword(e.target.value)}
-      passwordPlaceholder="Six characters or more"
-      passwordMinLength={6}
+      passwordPlaceholder="At least 12 characters"
+      passwordMinLength={12}
       onSubmit={handleSubmit}
       submitLabel="Create account"
       loading={loading}

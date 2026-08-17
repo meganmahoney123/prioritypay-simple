@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/accounts", label: "Accounts" },
   { href: "/splits", label: "Split Rules" },
   { href: "/closeout", label: "Close Out" },
+  { href: "/history", label: "History" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -23,6 +24,7 @@ const TITLES = {
   "/accounts": "Linked Accounts",
   "/splits": "Split Rules",
   "/closeout": "Monthly Close-Out",
+  "/history": "Transaction History",
   "/settings": "Settings",
 };
 
