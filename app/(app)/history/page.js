@@ -81,7 +81,7 @@ export default function HistoryPage() {
             <Badge tone={statusTone(t.status)}>{t.status}</Badge>
           </div>
 
-          {Array.isArray(t.transfer_allocations) && t.transfer_allocations.length > 0 && (
+          {Array.isArray(t.simple_transfer_allocations) && t.simple_transfer_allocations.length > 0 && (
             <div
               style={{
                 marginTop: 12,
@@ -92,7 +92,7 @@ export default function HistoryPage() {
                 gap: 6,
               }}
             >
-              {t.transfer_allocations.map((a, i) => (
+              {t.simple_transfer_allocations.map((a, i) => (
                 <div key={i} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 13.5 }}>
                   <span>{a.label}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
