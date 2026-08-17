@@ -31,8 +31,11 @@ export default function CloseoutNudge() {
       <div className="flex items-center gap-2">
         <CalendarCheck size={16} style={{ color: "var(--color-accent-700)" }} className="shrink-0" />
         <span className="text-sm" style={{ color: "var(--color-accent-800)" }}>
-          {info.status === "draft" ? "You've started" : "You haven't closed out"} {periodLabel(info.period)} yet --
-          confirm your income to see this month&apos;s retirement and tax recommendations.
+          {info.status === "draft"
+            ? "You've started but haven't finished closing out"
+            : "You haven't closed out"}{" "}
+          {periodLabel(info.period)} yet -- confirm your income to see this month&apos;s retirement and tax
+          recommendations.
         </span>
       </div>
       <a href="/closeout" className="text-xs shrink-0" style={{ fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "underline" }}>
