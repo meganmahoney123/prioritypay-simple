@@ -52,8 +52,21 @@ export async function POST(request) {
 
     return Response.json({ ok: true, customerId });
   } catch (err) {
+    // dwolla-v2 throws with the parsed JSON error body on `err.body` --
+    // the top-level `message` is usually just "Validation error(s)
+    // present," the field-specific reason lives one level down in
+    // `_embedded.errors`. console.error'ing the raw object truncates that
+    // nested array (Node's default util.inspect depth), so build a flat,
+    // readable string for both the server log and the client response.
     const dwollaError = err?.body || err?.message || String(err);
-    console.error("Dwolla create-customer failed:", dwollaError);
-    return Response.json({ error: "Dwolla rejected this identity info.", detail: dwollaError }, { status: 400 });
+    const embeddedMessages = Array.isArray(dwollaError?._embedded?.errors)
+      ? dwollaError._embedded.errors.map((e) => (e.path ? `${e.path}: ${e.message}` : e.message)).filter(Boolean)
+      : [];
+    const readableDetail = embeddedMessages.length
+      ? embeddedMessages.join(" ")
+      : dwollaError?.message || String(dwollaError);
+
+    console.error("Dwolla create-customer failed:", JSON.stringify(dwollaError, null, 2));
+    return Response.json({ error: readableDetail || "Dwolla rejected this identity info.", detail: dwollaError }, { status: 400 });
   }
 }

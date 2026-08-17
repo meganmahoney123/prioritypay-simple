@@ -360,19 +360,6 @@ export default function OnboardingPage() {
                   credit.
                 </p>
                 <IdentityForm onDone={() => setDwollaDone(true)} theme="ledger" />
-                {/* TEMPORARY -- testing convenience only, remove before this
-                    app moves past prototype. Lets Megan click through
-                    onboarding repeatedly without fighting Dwolla sandbox's
-                    one-identity-per-email rule. Sets local state only --
-                    no real Dwolla customer gets created, so dwollaDone
-                    resets to false again on the next fresh visit unless
-                    IdentityForm is actually completed. */}
-                <button
-                  onClick={() => setDwollaDone(true)}
-                  style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 45%, transparent)", textDecoration: "underline", marginTop: 14, background: "none", border: 0, cursor: "pointer", padding: 0 }}
-                >
-                  Skip identity verification (testing only)
-                </button>
               </div>
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
