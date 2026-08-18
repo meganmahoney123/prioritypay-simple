@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
@@ -71,8 +71,9 @@ function GhostBtn({ onClick, children, flex }) {
   );
 }
 
-export default function OnboardingPage() {
+function OnboardingPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [businessName, setBusinessName] = useState("");
   const [entityType] = useState("Sole proprietor / freelancer");
@@ -92,6 +93,22 @@ export default function OnboardingPage() {
   }, []);
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
+  // Carried over from the Money Simulator's "Start saving for this" /
+  // "Set up my real accounts" buttons (see app/(app)/simulator/page.js),
+  // which base64-encode the simulated split into ?sim=. Runs once on
+  // mount and REPLACES the default seed -- the simulator payload is
+  // already a complete split, not a delta.
+  useEffect(() => {
+    const sim = searchParams.get("sim");
+    if (!sim) return;
+    try {
+      const decoded = JSON.parse(decodeURIComponent(atob(sim)));
+      if (Array.isArray(decoded) && decoded.length > 0) setPercent(decoded);
+    } catch {
+      // Malformed/tampered ?sim= param -- fall back to the normal default
+      // split rather than breaking onboarding over it.
+    }
+  }, [searchParams]);
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -810,5 +827,13 @@ export default function OnboardingPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingPageInner />
+    </Suspense>
   );
 }
