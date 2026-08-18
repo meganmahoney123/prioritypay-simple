@@ -53,6 +53,16 @@ export default function MoneySimulator({
   const remainingPct = Math.round((100 - totalPct) * 10) / 10;
 
   const updateRow = (id, patch) => setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  // Dollar amount is always derived from income * pct -- pct stays the
+  // single source of truth in state (that's what actually gets saved to
+  // real split rules). Editing the dollar field just back-solves for the
+  // pct that produces it, so typing a target amount and typing a
+  // percentage land on the same number either way.
+  const updateRowDollar = (id, dollarValue) => {
+    const dollar = Math.max(0, Number(dollarValue) || 0);
+    const pct = income > 0 ? Math.round((dollar / income) * 10000) / 100 : 0;
+    updateRow(id, { pct: Math.min(100, pct) });
+  };
   const removeRow = (id) => setRows((prev) => prev.filter((r) => r.id !== id));
   const addRow = () =>
     setRows((prev) => [
@@ -141,14 +151,21 @@ export default function MoneySimulator({
                   type="number"
                   min={0}
                   max={100}
+                  step={0.1}
                   value={r.pct}
                   onChange={(e) => updateRow(r.id, { pct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
                   style={ledgerInputStyle({ width: 56, textAlign: "right", fontFamily: "var(--font-heading)", fontSize: 16 })}
                 />
                 <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>%</span>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, minWidth: 84, textAlign: "right" }}>
-                  {currency((income * (r.pct || 0)) / 100)}
-                </span>
+                <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
+                  onChange={(e) => updateRowDollar(r.id, e.target.value)}
+                  style={ledgerInputStyle({ width: 84, textAlign: "right", fontFamily: "var(--font-heading)", fontSize: 16 })}
+                />
                 {r.custom ? (
                   <button onClick={() => removeRow(r.id)} aria-label="Remove category" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
                     <Trash2 size={15} />
