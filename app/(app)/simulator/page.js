@@ -88,7 +88,11 @@ export default function MoneySimulatorDashboardPage() {
         try {
           const closeoutRes = await fetch(`/api/closeout/${statusRes.period}`).then((r) => r.json());
           if (typeof closeoutRes?.closeout?.net_income === "number") {
-            setIncome(closeoutRes.closeout.net_income);
+            // Net income comes back as a raw numeric from Postgres, which
+            // can carry float noise (e.g. 4689.1844154...) -- round to the
+            // dollar for a clean starting number in an input someone's
+            // about to edit anyway.
+            setIncome(Math.round(closeoutRes.closeout.net_income));
             setIncomeSource(`Pulled from your confirmed net income for ${statusRes.period}. Edit anytime.`);
             gotConfirmedIncome = true;
           }
