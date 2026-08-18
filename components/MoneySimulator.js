@@ -262,7 +262,7 @@ export default function MoneySimulator({
                         color: isRecurring ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
                       }}
                     >
-                      Mortgage
+                      Recurring cost
                     </button>
                   </div>
 
