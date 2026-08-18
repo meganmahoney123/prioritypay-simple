@@ -60,24 +60,28 @@ export default function MoneySimulator({
       { id: `custom_${Date.now()}`, label: "New category", pct: 0, fixed: false, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], custom: true },
     ]);
 
-  const addGoal = () => setGoals((prev) => [...prev, { id: `goal_${Date.now()}`, name: "New goal", target: 5000, date: defaultGoalDate() }]);
+  const addGoal = () =>
+    setGoals((prev) => [...prev, { id: `goal_${Date.now()}`, name: "New goal", type: "goal", target: 5000, date: defaultGoalDate(), monthlyAmount: 500 }]);
   const updateGoal = (id, patch) => setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   const removeGoal = (id) => setGoals((prev) => prev.filter((g) => g.id !== id));
 
+  const monthlyNeededFor = (goal) =>
+    goal.type === "recurring" ? Number(goal.monthlyAmount || 0) : goal.target / monthsUntil(goal.date);
+
   const startSavingForGoal = (goal) => {
-    const months = monthsUntil(goal.date);
-    const monthlyNeeded = goal.target / months;
+    const monthlyNeeded = monthlyNeededFor(goal);
     const pct = income > 0 ? Math.round((monthlyNeeded / income) * 1000) / 10 : 0;
     const goalRow = { id: `custom_${Date.now()}`, label: goal.name, pct, fixed: false, color: "#b68235", custom: true };
-    if (onStartSavingForGoal) {
-      onStartSavingForGoal([...rows, goalRow]);
-    } else {
-      // No external handler -- just fold the goal straight into "Your
-      // split" so it's visible alongside everything else. The bottom
-      // "Update my real split rules" button is then the only thing that
-      // actually leaves this screen.
-      setRows((prev) => [...prev, goalRow]);
-    }
+    const nextRows = [...rows, goalRow];
+    // "Start saving for this" is a direct apply, not a preview, and this
+    // screen should keep showing what's now true either way -- so the
+    // local "Your split" list always picks up the new row. On top of
+    // that, the caller decides how "real" happens: the dashboard tab
+    // PUTs straight to /api/split-rules, the public calculator carries it
+    // into /signup so it lands in real split rules the moment onboarding
+    // finishes.
+    setRows(nextRows);
+    onStartSavingForGoal?.(nextRows);
   };
 
   const setUpReal = () => onSetUpReal?.(rows);
@@ -164,14 +168,15 @@ export default function MoneySimulator({
           <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, display: "block", marginBottom: 12 }}>Goals</span>
           {goals.length === 0 && (
             <p className="text-sm mb-3" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Add a goal -- a wedding, a down payment, anything with a target date -- and see what it takes each
-              month to get there.
+              Add a goal -- a wedding by a target date, or a recurring cost like a new mortgage payment -- and see
+              what it takes each month.
             </p>
           )}
           <div className="space-y-3">
             {goals.map((g) => {
+              const isRecurring = g.type === "recurring";
               const months = monthsUntil(g.date);
-              const monthlyNeeded = g.target / months;
+              const monthlyNeeded = monthlyNeededFor(g);
               const pctOfIncome = income > 0 ? (monthlyNeeded / income) * 100 : 0;
               const discretionary = income * (1 - fixedPct / 100);
               const pctOfDiscretionary = discretionary > 0 ? (monthlyNeeded / discretionary) * 100 : 0;
@@ -188,32 +193,87 @@ export default function MoneySimulator({
                       <Trash2 size={15} />
                     </button>
                   </div>
-                  <div className="flex gap-4 flex-wrap mb-2">
-                    <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                      Target $
-                      <input
-                        type="number"
-                        min={0}
-                        step={100}
-                        value={g.target}
-                        onChange={(e) => updateGoal(g.id, { target: Math.max(0, Number(e.target.value) || 0) })}
-                        style={ledgerInputStyle({ width: 100, fontFamily: "var(--font-heading)", fontSize: 15 })}
-                      />
-                    </label>
-                    <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                      By
-                      <input
-                        type="month"
-                        value={g.date}
-                        onChange={(e) => updateGoal(g.id, { date: e.target.value })}
-                        style={ledgerInputStyle({ fontSize: 13 })}
-                      />
-                    </label>
+
+                  <div className="flex gap-2 mb-3" role="group" aria-label="Goal type">
+                    <button
+                      type="button"
+                      onClick={() => updateGoal(g.id, { type: "goal" })}
+                      style={{
+                        fontSize: 12,
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        cursor: "pointer",
+                        border: `1px solid ${!isRecurring ? "var(--color-accent)" : "var(--color-divider)"}`,
+                        background: !isRecurring ? "color-mix(in srgb, var(--color-accent) 10%, transparent)" : "transparent",
+                        color: !isRecurring ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
+                      }}
+                    >
+                      One-time goal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateGoal(g.id, { type: "recurring" })}
+                      style={{
+                        fontSize: 12,
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        cursor: "pointer",
+                        border: `1px solid ${isRecurring ? "var(--color-accent)" : "var(--color-divider)"}`,
+                        background: isRecurring ? "color-mix(in srgb, var(--color-accent) 10%, transparent)" : "transparent",
+                        color: isRecurring ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
+                      }}
+                    >
+                      Recurring cost
+                    </button>
                   </div>
+
+                  {isRecurring ? (
+                    <div className="flex gap-4 flex-wrap mb-2">
+                      <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                        Monthly amount $
+                        <input
+                          type="number"
+                          min={0}
+                          step={50}
+                          value={g.monthlyAmount ?? 0}
+                          onChange={(e) => updateGoal(g.id, { monthlyAmount: Math.max(0, Number(e.target.value) || 0) })}
+                          style={ledgerInputStyle({ width: 110, fontFamily: "var(--font-heading)", fontSize: 15 })}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="flex gap-4 flex-wrap mb-2">
+                      <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                        Target $
+                        <input
+                          type="number"
+                          min={0}
+                          step={100}
+                          value={g.target}
+                          onChange={(e) => updateGoal(g.id, { target: Math.max(0, Number(e.target.value) || 0) })}
+                          style={ledgerInputStyle({ width: 100, fontFamily: "var(--font-heading)", fontSize: 15 })}
+                        />
+                      </label>
+                      <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                        By
+                        <input
+                          type="month"
+                          value={g.date}
+                          onChange={(e) => updateGoal(g.id, { date: e.target.value })}
+                          style={ledgerInputStyle({ fontSize: 13 })}
+                        />
+                      </label>
+                    </div>
+                  )}
+
                   <ul style={{ fontSize: 13.5, lineHeight: 1.8, margin: "0 0 2px", paddingLeft: 18 }}>
-                    <li>{months} months away</li>
+                    {isRecurring ? (
+                      <li>Recurring monthly cost</li>
+                    ) : (
+                      <li>{months} months away</li>
+                    )}
                     <li>
-                      <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>{currency(monthlyNeeded)}</strong>/mo needed
+                      <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>{currency(monthlyNeeded)}</strong>/mo{!isRecurring && " needed"}
                     </li>
                     <li>{Math.round(pctOfIncome * 10) / 10}% of total income</li>
                     <li>{Math.round(pctOfDiscretionary * 10) / 10}% of income after fixed costs</li>
@@ -221,6 +281,8 @@ export default function MoneySimulator({
                   <p className="text-xs mt-1.5" style={{ color: fits ? "color-mix(in srgb, var(--color-text) 55%, transparent)" : "#7a2f2a" }}>
                     {fits
                       ? `Fits within your ${remainingPct}% unallocated.`
+                      : isRecurring
+                      ? `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Lower the monthly amount, raise income, or free up room.`
                       : `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Extend the date, raise income, or free up room.`}
                   </p>
                   {fits && (
