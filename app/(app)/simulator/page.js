@@ -15,12 +15,20 @@ import { encodeSim } from "@/lib/simSharing";
 // applying a change back to Split Rules (see toPercentRules in
 // lib/simSharing.js) never loses an already-connected account -- only
 // pct/label can change here.
+// "Fixed" (tax obligations/business overhead, not a flexible goal-eligible
+// bucket) is matched on LABEL, not id -- simple_split_rules_percent.id is a
+// real Postgres uuid the moment a row is ever saved, not the semantic
+// "tax_reserve"/"opex" string DEFAULT_SPLIT_RULES uses before that first
+// save. Labels are what actually stay stable/comparable for a real,
+// already-onboarded person.
+const FIXED_LABELS = new Set(["Tax Reserve", "Business Expenses (OPEX)"]);
+
 function toSimRows(percent) {
   return (percent || []).map((r) => ({
     id: r.id,
     label: r.label,
     pct: r.pct,
-    fixed: r.id === "tax_reserve" || r.id === "opex",
+    fixed: FIXED_LABELS.has(r.label),
     color: r.color,
     custom: !isCoreRow(r),
     real: r,
