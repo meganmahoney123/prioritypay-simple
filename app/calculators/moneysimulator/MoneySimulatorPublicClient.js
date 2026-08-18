@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import PublicHeader from "@/components/PublicHeader";
 import MoneySimulator from "@/components/MoneySimulator";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
-import { encodeSim } from "@/lib/simSharing";
+import { encodeSim, DEMO_GOALS } from "@/lib/simSharing";
 
 // Public, logged-out-friendly Money Simulator -- linked from the
 // Resources dropdown in PublicHeader. Unlike the dashboard tab (see
@@ -24,8 +24,6 @@ const DEFAULT_ROWS = [
   { id: "solo_401k", label: "Retirement", pct: 15, fixed: false, color: "#8b5cf6" },
   { id: "hobbies", label: "Hobbies", pct: 5, fixed: false, color: "#ec4899" },
 ];
-
-const DEMO_GOALS = [{ id: "demo_wedding", name: "Wedding", target: 50000, date: "2027-06" }];
 
 export default function MoneySimulatorPublicClient() {
   const router = useRouter();

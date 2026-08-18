@@ -69,7 +69,15 @@ export default function MoneySimulator({
     const monthlyNeeded = goal.target / months;
     const pct = income > 0 ? Math.round((monthlyNeeded / income) * 1000) / 10 : 0;
     const goalRow = { id: `custom_${Date.now()}`, label: goal.name, pct, fixed: false, color: "#b68235", custom: true };
-    onStartSavingForGoal?.([...rows, goalRow]);
+    if (onStartSavingForGoal) {
+      onStartSavingForGoal([...rows, goalRow]);
+    } else {
+      // No external handler -- just fold the goal straight into "Your
+      // split" so it's visible alongside everything else. The bottom
+      // "Update my real split rules" button is then the only thing that
+      // actually leaves this screen.
+      setRows((prev) => [...prev, goalRow]);
+    }
   };
 
   const setUpReal = () => onSetUpReal?.(rows);
@@ -97,7 +105,7 @@ export default function MoneySimulator({
         )}
       </Card>
 
-      <div className="grid gap-6" style={{ gridTemplateColumns: "minmax(0,1.5fr) minmax(0,1fr)" }}>
+      <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         <div>
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Your split</span>
@@ -202,11 +210,14 @@ export default function MoneySimulator({
                       />
                     </label>
                   </div>
-                  <p className="text-sm" style={{ lineHeight: 1.7, margin: 0 }}>
-                    {months} months away &middot; <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>{currency(monthlyNeeded)}</strong>/mo needed
-                    <br />
-                    {Math.round(pctOfIncome * 10) / 10}% of total income &middot; {Math.round(pctOfDiscretionary * 10) / 10}% of income after fixed costs
-                  </p>
+                  <ul style={{ fontSize: 13.5, lineHeight: 1.8, margin: "0 0 2px", paddingLeft: 18 }}>
+                    <li>{months} months away</li>
+                    <li>
+                      <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>{currency(monthlyNeeded)}</strong>/mo needed
+                    </li>
+                    <li>{Math.round(pctOfIncome * 10) / 10}% of total income</li>
+                    <li>{Math.round(pctOfDiscretionary * 10) / 10}% of income after fixed costs</li>
+                  </ul>
                   <p className="text-xs mt-1.5" style={{ color: fits ? "color-mix(in srgb, var(--color-text) 55%, transparent)" : "#7a2f2a" }}>
                     {fits
                       ? `Fits within your ${remainingPct}% unallocated.`
@@ -221,9 +232,13 @@ export default function MoneySimulator({
               );
             })}
           </div>
-          <GhostButton onClick={addGoal} className="mt-3">
-            <Plus size={15} /> Add a goal
-          </GhostButton>
+          <button
+            onClick={addGoal}
+            className="mt-3"
+            style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: 0, padding: 0, color: "var(--color-accent-700)", fontSize: 13.5, cursor: "pointer" }}
+          >
+            <Plus size={14} /> Add another goal
+          </button>
         </div>
       </div>
 
