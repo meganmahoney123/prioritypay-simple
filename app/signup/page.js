@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import AuthCard from "@/components/AuthCard";
 
-export default function SignupPage() {
+function SignupPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Carried over from the public Money Simulator (see
+  // app/calculators/moneysimulator/MoneySimulatorPublicClient.js) --
+  // forwarded straight through to onboarding so the split someone just
+  // built lands pre-filled on the real Percentage Splits step instead of
+  // asking them to re-enter it right after creating an account.
+  const sim = searchParams.get("sim");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -46,7 +53,7 @@ export default function SignupPage() {
       setCheckEmail(true);
       return;
     }
-    router.push("/onboarding");
+    router.push(sim ? `/onboarding?sim=${sim}` : "/onboarding");
     router.refresh();
   };
 
@@ -137,5 +144,13 @@ export default function SignupPage() {
         </div>
       ) : null}
     </AuthCard>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageInner />
+    </Suspense>
   );
 }

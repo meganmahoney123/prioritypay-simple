@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Btn from "./PublicBtn";
+import PublicHeader from "./PublicHeader";
 // Design: "Ledger" — one of three homepage concepts Megan designed in
 // Claude Design (Atelier / Ledger / Statement), exported as static HTML
 // and ported here 1:1. Colors, spacing, and type scale below are the
@@ -179,73 +181,12 @@ function Reveal({ children, style, as: Tag = "div" }) {
   );
 }
 
-function Btn({ href, variant, style, children }) {
-  return (
-    <Link href={href} className={`pp-btn pp-btn-${variant}`} style={style}>
-      {children}
-    </Link>
-  );
-}
-
 export default function Homepage() {
   const [openFaq, setOpenFaq] = useState(0);
 
   return (
     <div style={TOKENS}>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          background: "color-mix(in srgb, var(--color-bg) 88%, transparent)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid var(--color-divider)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1180,
-            margin: "0 auto",
-            padding: "16px clamp(18px, 4vw, 40px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: "14px 24px",
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 10,
-              textDecoration: "none",
-              color: "var(--color-text)",
-            }}
-          >
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "0.01em" }}>
-              Priority
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: 22,
-                fontStyle: "italic",
-                color: "var(--color-accent-700)",
-                marginLeft: -9,
-              }}
-            >
-              Pay
-            </span>
-            <span style={{ width: 26, height: 1, background: "var(--color-accent)", marginBottom: 6 }} />
-          </Link>
-          <nav style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Btn href="/login" variant="ghost">Log in</Btn>
-            <Btn href="/signup" variant="primary">Get started</Btn>
-          </nav>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* HERO */}
       <section

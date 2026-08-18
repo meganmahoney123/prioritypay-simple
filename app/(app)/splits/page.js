@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import { SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
+import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
 // step (see components/PercentSplitEditor.js) -- same grouped
@@ -15,7 +17,8 @@ import { SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow
 // someone remembering to hit Save; the Save button covers percentage/name
 // edits, which are lower-stakes to lose. No Monthly Cap $ field here
 // anymore -- removed per product decision, one less thing to configure.
-export default function SplitRulesPage() {
+function SplitRulesPageInner() {
+  const searchParams = useSearchParams();
   const [percent, setPercent] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [saved, setSaved] = useState(false);
@@ -33,10 +36,19 @@ export default function SplitRulesPage() {
         fetch("/api/split-rules").then((r) => r.json()),
         fetch("/api/accounts").then((r) => r.json()),
       ]);
-      setPercent(rulesRes.splitRules?.percent || []);
+      // A person arriving from the Money Simulator (dashboard tab or the
+      // public one under Resources -> via signup+onboarding first) via
+      // "Update my real split rules" carries their simulated split in
+      // ?sim= -- that takes priority over whatever's already saved, since
+      // it's the whole reason they clicked through. Still requires
+      // pressing Save below before it's actually persisted.
+      const simmed = decodeSim(searchParams.get("sim"));
+      setPercent(simmed || rulesRes.splitRules?.percent || []);
+      if (simmed) setSaved(false);
       setAccounts(accountsRes.accounts || []);
       setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -251,5 +263,13 @@ export default function SplitRulesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SplitRulesPage() {
+  return (
+    <Suspense fallback={null}>
+      <SplitRulesPageInner />
+    </Suspense>
   );
 }

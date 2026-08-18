@@ -7,6 +7,7 @@ import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
+import { decodeSim } from "@/lib/simSharing";
 import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 
@@ -99,15 +100,8 @@ function OnboardingPageInner() {
   // mount and REPLACES the default seed -- the simulator payload is
   // already a complete split, not a delta.
   useEffect(() => {
-    const sim = searchParams.get("sim");
-    if (!sim) return;
-    try {
-      const decoded = JSON.parse(decodeURIComponent(atob(sim)));
-      if (Array.isArray(decoded) && decoded.length > 0) setPercent(decoded);
-    } catch {
-      // Malformed/tampered ?sim= param -- fall back to the normal default
-      // split rather than breaking onboarding over it.
-    }
+    const decoded = decodeSim(searchParams.get("sim"));
+    if (decoded) setPercent(decoded);
   }, [searchParams]);
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
