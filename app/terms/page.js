@@ -15,9 +15,9 @@ export default function TermsPage() {
 
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your access to and use of PriorityPay (the
-        &quot;Service&quot;), operated by PriorityPay (&quot;PriorityPay,&quot; &quot;we,&quot; &quot;us,&quot; or
-        &quot;our&quot;). By creating an account or using the Service, you agree to be bound by these Terms. If you do
-        not agree, do not use the Service.
+        &quot;Service&quot;), operated by PriorityPay LLC, a Virginia limited liability company (&quot;PriorityPay,&quot;
+        &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By creating an account or using the Service, you agree to be
+        bound by these Terms. If you do not agree, do not use the Service.
       </p>
 
       <h2>1. What PriorityPay Does</h2>
@@ -123,7 +123,14 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>12. Contact</h2>
+      <h2>12. Governing Law</h2>
+      <p>
+        These Terms are governed by the laws of the Commonwealth of Virginia, without regard to conflict-of-law
+        principles. Any dispute arising from these Terms or the Service will be subject to the exclusive
+        jurisdiction of the state and federal courts located in Virginia.
+      </p>
+
+      <h2>13. Contact</h2>
       <p>
         Questions about these Terms? Reach us at{" "}
         <a href="mailto:megan@ignitemysite.com">megan@ignitemysite.com</a>.
