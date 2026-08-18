@@ -49,19 +49,31 @@ export default function MoneySimulator({
   const [goals, setGoals] = useState(initialGoals);
 
   const totalPct = useMemo(() => rows.reduce((s, r) => s + (Number(r.pct) || 0), 0), [rows]);
-  const fixedPct = useMemo(() => rows.filter((r) => r.fixed).reduce((s, r) => s + (Number(r.pct) || 0), 0), [rows]);
   const remainingPct = Math.round((100 - totalPct) * 10) / 10;
 
   const updateRow = (id, patch) => setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  // Neither field is allowed to push the total past 100% -- a row's max
+  // is whatever's left once every OTHER row's percentage is accounted
+  // for, so raising one number never silently overdraws the rest of the
+  // split.
+  const maxPctForRow = (id) => {
+    const otherTotal = rows.filter((r) => r.id !== id).reduce((s, r) => s + (Number(r.pct) || 0), 0);
+    return Math.max(0, Math.round((100 - otherTotal) * 100) / 100);
+  };
+  const updatePct = (id, rawValue) => {
+    const requested = Math.max(0, Number(rawValue) || 0);
+    updateRow(id, { pct: Math.min(requested, maxPctForRow(id)) });
+  };
   // Dollar amount is always derived from income * pct -- pct stays the
   // single source of truth in state (that's what actually gets saved to
   // real split rules). Editing the dollar field just back-solves for the
   // pct that produces it, so typing a target amount and typing a
-  // percentage land on the same number either way.
+  // percentage land on the same number either way, and both respect the
+  // same 100%-total ceiling.
   const updateRowDollar = (id, dollarValue) => {
     const dollar = Math.max(0, Number(dollarValue) || 0);
-    const pct = income > 0 ? Math.round((dollar / income) * 10000) / 100 : 0;
-    updateRow(id, { pct: Math.min(100, pct) });
+    const requestedPct = income > 0 ? Math.round((dollar / income) * 10000) / 100 : 0;
+    updateRow(id, { pct: Math.min(requestedPct, maxPctForRow(id)) });
   };
   const removeRow = (id) => setRows((prev) => prev.filter((r) => r.id !== id));
   const addRow = () =>
@@ -74,6 +86,17 @@ export default function MoneySimulator({
     setGoals((prev) => [...prev, { id: `goal_${Date.now()}`, name: "New goal", type: "goal", target: 5000, date: defaultGoalDate(), monthlyAmount: 500 }]);
   const updateGoal = (id, patch) => setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   const removeGoal = (id) => setGoals((prev) => prev.filter((g) => g.id !== id));
+  // Switching a goal's type also renames it IF it's still sitting on a
+  // generic/example name nobody typed themselves -- otherwise the "Wedding"
+  // demo goal could get flipped to a recurring cost and stay labeled
+  // "Wedding," which reads as a mismatch. A name someone actually typed in
+  // is always left alone.
+  const GENERIC_GOAL_NAMES = new Set(["New goal", "Wedding", "Mortgage"]);
+  const switchGoalType = (goal, type) => {
+    const patch = { type };
+    if (GENERIC_GOAL_NAMES.has(goal.name)) patch.name = type === "recurring" ? "Mortgage" : "New goal";
+    updateGoal(goal.id, patch);
+  };
 
   const monthlyNeededFor = (goal) =>
     goal.type === "recurring" ? Number(goal.monthlyAmount || 0) : goal.target / monthsUntil(goal.date);
@@ -150,10 +173,10 @@ export default function MoneySimulator({
                 <input
                   type="number"
                   min={0}
-                  max={100}
+                  max={Math.round((r.pct + maxPctForRow(r.id)) * 100) / 100}
                   step={0.1}
                   value={r.pct}
-                  onChange={(e) => updateRow(r.id, { pct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+                  onChange={(e) => updatePct(r.id, e.target.value)}
                   style={ledgerInputStyle({ width: 56, textAlign: "right", fontFamily: "var(--font-heading)", fontSize: 16 })}
                 />
                 <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>%</span>
@@ -161,6 +184,7 @@ export default function MoneySimulator({
                 <input
                   type="number"
                   min={0}
+                  max={income > 0 ? Math.round(((income * (r.pct + maxPctForRow(r.id))) / 100) * 100) / 100 : undefined}
                   step={0.01}
                   value={Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
                   onChange={(e) => updateRowDollar(r.id, e.target.value)}
@@ -195,8 +219,6 @@ export default function MoneySimulator({
               const months = monthsUntil(g.date);
               const monthlyNeeded = monthlyNeededFor(g);
               const pctOfIncome = income > 0 ? (monthlyNeeded / income) * 100 : 0;
-              const discretionary = income * (1 - fixedPct / 100);
-              const pctOfDiscretionary = discretionary > 0 ? (monthlyNeeded / discretionary) * 100 : 0;
               const fits = pctOfIncome <= remainingPct + 0.05;
               return (
                 <Card key={g.id} style={{ padding: "16px 18px", ...(fits ? {} : { borderColor: "#b3695f", background: "color-mix(in srgb, #9b3b3b 7%, transparent)" }) }}>
@@ -214,7 +236,7 @@ export default function MoneySimulator({
                   <div className="flex gap-2 mb-3" role="group" aria-label="Goal type">
                     <button
                       type="button"
-                      onClick={() => updateGoal(g.id, { type: "goal" })}
+                      onClick={() => switchGoalType(g, "goal")}
                       style={{
                         fontSize: 12,
                         padding: "4px 10px",
@@ -229,7 +251,7 @@ export default function MoneySimulator({
                     </button>
                     <button
                       type="button"
-                      onClick={() => updateGoal(g.id, { type: "recurring" })}
+                      onClick={() => switchGoalType(g, "recurring")}
                       style={{
                         fontSize: 12,
                         padding: "4px 10px",
@@ -240,7 +262,7 @@ export default function MoneySimulator({
                         color: isRecurring ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
                       }}
                     >
-                      Recurring cost
+                      Mortgage
                     </button>
                   </div>
 
@@ -293,7 +315,6 @@ export default function MoneySimulator({
                       <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>{currency(monthlyNeeded)}</strong>/mo{!isRecurring && " needed"}
                     </li>
                     <li>{Math.round(pctOfIncome * 10) / 10}% of total income</li>
-                    <li>{Math.round(pctOfDiscretionary * 10) / 10}% of income after fixed costs</li>
                   </ul>
                   <p className="text-xs mt-1.5" style={{ color: fits ? "color-mix(in srgb, var(--color-text) 55%, transparent)" : "#7a2f2a" }}>
                     {fits
