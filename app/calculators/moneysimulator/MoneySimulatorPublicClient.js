@@ -41,7 +41,8 @@ export default function MoneySimulatorPublicClient() {
         </h1>
         <p className="text-sm" style={{ maxWidth: 560, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 28px" }}>
           Enter what you make, set percentages for taxes, savings, and everything else, and add a real goal with a
-          date. Free to use, no account needed -- when you're ready, carry it straight into a real PriorityPay setup.
+          date. Free to use, no account needed. When you're ready, you can carry it straight into a real PriorityPay
+          setup and it will automatically route your money according to the rules you set below.
         </p>
         <MoneySimulator
           initialIncome={10000}

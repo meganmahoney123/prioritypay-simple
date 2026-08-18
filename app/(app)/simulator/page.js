@@ -89,10 +89,10 @@ export default function MoneySimulatorDashboardPage() {
           const closeoutRes = await fetch(`/api/closeout/${statusRes.period}`).then((r) => r.json());
           if (typeof closeoutRes?.closeout?.net_income === "number") {
             // Net income comes back as a raw numeric from Postgres, which
-            // can carry float noise (e.g. 4689.1844154...) -- round to the
-            // dollar for a clean starting number in an input someone's
-            // about to edit anyway.
-            setIncome(Math.round(closeoutRes.closeout.net_income));
+            // can carry float noise (e.g. 4689.1844154...) -- cap to 2
+            // decimal places for a clean starting number in an input
+            // someone's about to edit anyway.
+            setIncome(Math.round(closeoutRes.closeout.net_income * 100) / 100);
             setIncomeSource(`Pulled from your confirmed net income for ${statusRes.period}. Edit anytime.`);
             gotConfirmedIncome = true;
           }
@@ -100,7 +100,7 @@ export default function MoneySimulatorDashboardPage() {
           // Fall through to the 0/editable default below.
         }
       }
-      if (!gotConfirmedIncome) setIncomeSource("Enter your typical monthly income -- last month's confirmed net income wasn't available yet.");
+      if (!gotConfirmedIncome) setIncomeSource("Enter your typical monthly income. Last month's confirmed net income wasn't available yet.");
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps

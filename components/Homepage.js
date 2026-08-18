@@ -969,44 +969,7 @@ export default function Homepage() {
         ::selection {
           background: color-mix(in srgb, var(--color-accent) 30%, transparent);
         }
-        .pp-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          cursor: pointer;
-          text-decoration: none;
-          font-family: var(--font-heading);
-          font-weight: 600;
-          font-size: 14px;
-          line-height: 1.2;
-          color: var(--color-text);
-          background: transparent;
-          border: 1px solid transparent;
-          padding: 9.2px 16.6px;
-          border-radius: var(--radius-md);
-        }
-        .pp-btn-primary {
-          color: var(--color-accent);
-          border-color: var(--color-accent);
-        }
-        .pp-btn-primary:hover {
-          background: color-mix(in srgb, var(--color-accent) 12%, transparent);
-        }
-        .pp-btn-secondary {
-          border-color: var(--color-divider);
-        }
-        .pp-btn-secondary:hover {
-          background: color-mix(in srgb, var(--color-text) 7%, transparent);
-        }
-        .pp-btn-ghost {
-          color: var(--color-accent);
-          padding-left: 4.6px;
-          padding-right: 4.6px;
-        }
-        .pp-btn-ghost:hover {
-          background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-        }
+        /* .pp-btn* now global -- see app/globals.css */
         .pp-faq-btn:hover {
           color: var(--color-accent-700);
         }

@@ -91,9 +91,9 @@ export default function MoneySimulator({
           <input
             type="number"
             min={0}
-            step={100}
+            step={0.01}
             value={income}
-            onChange={(e) => setIncome(Math.max(0, Number(e.target.value) || 0))}
+            onChange={(e) => setIncome(Math.max(0, Math.round((Number(e.target.value) || 0) * 100) / 100))}
             style={ledgerInputStyle({ width: 130, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600 })}
           />
         </span>
@@ -221,7 +221,7 @@ export default function MoneySimulator({
                   <p className="text-xs mt-1.5" style={{ color: fits ? "color-mix(in srgb, var(--color-text) 55%, transparent)" : "#7a2f2a" }}>
                     {fits
                       ? `Fits within your ${remainingPct}% unallocated.`
-                      : `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}% -- extend the date, raise income, or free up room.`}
+                      : `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Extend the date, raise income, or free up room.`}
                   </p>
                   {fits && (
                     <PrimaryButton onClick={() => startSavingForGoal(g)} className="mt-2.5">

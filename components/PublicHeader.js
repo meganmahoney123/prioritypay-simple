@@ -63,7 +63,8 @@ export default function PublicHeader() {
                 alignItems: "center",
                 gap: 4,
                 fontFamily: "var(--font-heading)",
-                fontSize: 15,
+                fontWeight: 600,
+                fontSize: 14,
                 background: "transparent",
                 border: 0,
                 color: "var(--color-text)",
@@ -110,7 +111,7 @@ export default function PublicHeader() {
               </div>
             )}
           </div>
-          <Btn href="/login" variant="ghost">Log in</Btn>
+          <Btn href="/login" variant="secondary">Log in</Btn>
           <Btn href="/signup" variant="primary">Get started</Btn>
         </nav>
       </div>
