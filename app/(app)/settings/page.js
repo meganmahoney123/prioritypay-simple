@@ -90,7 +90,7 @@ function SettingsPageInner() {
         {isActive ? (
           <>
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
-              You&apos;re subscribed to PriorityPay -- <strong>$12/month</strong>.
+              You&apos;re subscribed to PriorityPay -- <strong>$19/month</strong>.
             </p>
             <PrimaryButton onClick={manageBilling} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Manage billing"}
@@ -104,7 +104,7 @@ function SettingsPageInner() {
               paused until you subscribe.
             </p>
             <PrimaryButton onClick={subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : "Subscribe -- $12/month"}
+              {billingBusy ? "Loading…" : "Subscribe -- $19/month"}
             </PrimaryButton>
           </>
         ) : (
@@ -113,7 +113,7 @@ function SettingsPageInner() {
               {remaining === null
                 ? "You're on PriorityPay's 30-day free trial."
                 : `${remaining} day${remaining === 1 ? "" : "s"} left in your free trial`}
-              {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}. $12/month after that.
+              {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}. $19/month after that.
             </p>
             <PrimaryButton onClick={subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Subscribe now"}

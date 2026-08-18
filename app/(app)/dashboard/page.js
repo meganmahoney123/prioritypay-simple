@@ -101,7 +101,7 @@ export default function DashboardPage() {
           <span>
             <span style={{ fontWeight: 600 }}>Your free trial has ended.</span> You can still see your split rules
             and history, but connecting new accounts and moving money are paused until you subscribe.{" "}
-            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe -- $12/month</Link>
+            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe -- $19/month</Link>
           </span>
         </Card>
       )}
@@ -111,7 +111,7 @@ export default function DashboardPage() {
           <span style={{ fontWeight: 600 }}>
             {trialRemaining === 0 ? "Your free trial ends today." : `${trialRemaining} day${trialRemaining === 1 ? "" : "s"} left in your free trial.`}
           </span>{" "}
-          $12/month after that.{" "}
+          $19/month after that.{" "}
           <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe now</Link>
         </Card>
       )}

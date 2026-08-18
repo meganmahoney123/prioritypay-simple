@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { stripeClient, priceId } from "@/lib/stripe";
 
 // Creates (or reuses) a Stripe Customer for this user, then a Checkout
-// Session for the $12/mo PriorityPay Subscription price.
+// Session for the $19/mo PriorityPay Subscription price.
 //
 // The trial itself is NOT modeled in Stripe (no trial_period_days on the
 // subscription) -- PriorityPay's 30-day trial starts at signup
