@@ -50,7 +50,6 @@ export default function MoneySimulatorPublicClient() {
           initialGoals={DEMO_GOALS}
           secondaryCtaLabel="Set up my real accounts"
           secondaryCtaHelp="Like this split even without a specific goal? Carry it into a real PriorityPay account."
-          onStartSavingForGoal={goToSignupWith}
           onSetUpReal={goToSignupWith}
         />
       </div>

@@ -16,13 +16,10 @@ import { toPercentRules, DEMO_GOALS } from "@/lib/simSharing";
 // lib/simSharing.js) never loses an already-connected account -- only
 // pct/label can change here.
 //
-// `onStartSavingForGoal` below writes straight to the real split rules
-// (PUT /api/split-rules) the moment someone clicks "Start saving for
-// this" on a goal card -- no confirm step, per-goal, since a single goal
-// getting folded in is low-stakes and reversible from Split Rules. The
-// bottom "Update my real split rules" button is a separate, bigger action
-// (applies the WHOLE simulator state, including any percentage tweaks)
-// and keeps its confirm-the-diff popup.
+// "Add This Category to My Split" (see components/MoneySimulator.js) is
+// purely local -- it never touches real split rules. The only way
+// anything here becomes real is the bottom "Update my real split rules"
+// button, which opens a confirm-the-diff popup before writing.
 //
 // "Fixed" (tax obligations/business overhead, not a flexible goal-eligible
 // bucket) is matched on LABEL, not id -- simple_split_rules_percent.id is a
@@ -69,7 +66,6 @@ export default function MoneySimulatorDashboardPage() {
   const [incomeSource, setIncomeSource] = useState(null);
   const [pendingRows, setPendingRows] = useState(null);
   const [applying, setApplying] = useState(false);
-  const [goalSavedMessage, setGoalSavedMessage] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -124,27 +120,6 @@ export default function MoneySimulatorDashboardPage() {
     }
   };
 
-  // Fires immediately when someone clicks "Start saving for this" on a
-  // single goal card -- writes that goal straight into the real split
-  // rules (no confirm popup; that's reserved for the bigger bottom
-  // button) and updates local state so the simulator reflects what's
-  // now actually true.
-  const startSavingForGoal = async (nextRows) => {
-    setRows(nextRows);
-    try {
-      await fetch("/api/split-rules", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ percent: toPercentRules(nextRows) }),
-      });
-      setGoalSavedMessage("Added to your real split rules.");
-      setTimeout(() => setGoalSavedMessage(null), 4000);
-    } catch {
-      setGoalSavedMessage("Couldn't save that just now -- try again.");
-      setTimeout(() => setGoalSavedMessage(null), 4000);
-    }
-  };
-
   return (
     <div className="max-w-4xl space-y-6" style={LEDGER_TOKENS}>
       <div>
@@ -153,15 +128,9 @@ export default function MoneySimulatorDashboardPage() {
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 16px" }} />
         <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-          Started from your real split rules and last month's income. Clicking "Start saving for this" on a goal
-          adds it to your real split rules right away -- adjusting percentages here does not, until you confirm
-          it below.
+          Started from your real split rules and last month's income. Try changes here first -- nothing updates
+          your actual accounts until you confirm it below.
         </p>
-        {goalSavedMessage && (
-          <p className="text-sm" style={{ color: "var(--color-accent-700)", fontWeight: 600, margin: "10px 0 0" }}>
-            {goalSavedMessage}
-          </p>
-        )}
       </div>
 
       {loading ? (
@@ -176,7 +145,6 @@ export default function MoneySimulatorDashboardPage() {
           incomeNote={incomeSource}
           secondaryCtaLabel="Update my real split rules"
           secondaryCtaHelp="Ready to make these your real split rules?"
-          onStartSavingForGoal={startSavingForGoal}
           onSetUpReal={(nextRows) => setPendingRows(nextRows)}
         />
       )}

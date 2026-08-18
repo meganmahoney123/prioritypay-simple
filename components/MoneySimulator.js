@@ -41,7 +41,6 @@ export default function MoneySimulator({
   secondaryCtaLabel = "Set up my real accounts",
   secondaryCtaHelp = "Like this split even without a specific goal? Carry it into your real account setup.",
   incomeNote,
-  onStartSavingForGoal,
   onSetUpReal,
 }) {
   const [income, setIncome] = useState(initialIncome);
@@ -101,20 +100,15 @@ export default function MoneySimulator({
   const monthlyNeededFor = (goal) =>
     goal.type === "recurring" ? Number(goal.monthlyAmount || 0) : goal.target / monthsUntil(goal.date);
 
-  const startSavingForGoal = (goal) => {
+  // "Add This Category to My Split" is purely local -- it folds the goal
+  // into "Your split" below so someone can see how it fits alongside
+  // everything else. Nothing becomes real (no write to actual split
+  // rules, no navigation) until the separate bottom CTA is used.
+  const addGoalToSplit = (goal) => {
     const monthlyNeeded = monthlyNeededFor(goal);
     const pct = income > 0 ? Math.round((monthlyNeeded / income) * 1000) / 10 : 0;
     const goalRow = { id: `custom_${Date.now()}`, label: goal.name, pct, fixed: false, color: "#b68235", custom: true };
-    const nextRows = [...rows, goalRow];
-    // "Start saving for this" is a direct apply, not a preview, and this
-    // screen should keep showing what's now true either way -- so the
-    // local "Your split" list always picks up the new row. On top of
-    // that, the caller decides how "real" happens: the dashboard tab
-    // PUTs straight to /api/split-rules, the public calculator carries it
-    // into /signup so it lands in real split rules the moment onboarding
-    // finishes.
-    setRows(nextRows);
-    onStartSavingForGoal?.(nextRows);
+    setRows((prev) => [...prev, goalRow]);
   };
 
   const setUpReal = () => onSetUpReal?.(rows);
@@ -324,8 +318,8 @@ export default function MoneySimulator({
                       : `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Extend the date, raise income, or free up room.`}
                   </p>
                   {fits && (
-                    <PrimaryButton onClick={() => startSavingForGoal(g)} className="mt-2.5">
-                      Start saving for this <ArrowRight size={14} />
+                    <PrimaryButton onClick={() => addGoalToSplit(g)} className="mt-2.5">
+                      Add This Category to My Split <Plus size={14} />
                     </PrimaryButton>
                   )}
                 </Card>
