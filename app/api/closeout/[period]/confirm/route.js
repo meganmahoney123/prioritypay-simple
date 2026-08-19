@@ -62,12 +62,19 @@ export async function POST(request, { params }) {
   let income = 0;
   let expense = 0;
   let w2Income = 0;
+  // Transactions the person flagged "Business" (Business Owner With
+  // Employees persona, commingled accounts) -- same exclusion as
+  // "exclude" for the net income math below, but tracked separately
+  // (rather than lumped in silently) so Step 1 can show it back for
+  // transparency, same pattern as w2Income.
+  let business = 0;
   (transactions || []).forEach((t) => {
     const cat = t.confirmed_category || t.suggested_category;
     const amt = Number(t.amount) || 0;
     if (cat === "income") income += amt;
     if (cat === "expense") expense += amt;
     if (cat === "w2_income") w2Income += amt;
+    if (cat === "business") business += amt;
   });
   const netIncome = income - expense;
 
@@ -178,6 +185,7 @@ export async function POST(request, { params }) {
     income,
     expense,
     w2Income,
+    business,
     retirement,
     ageBracket,
     tax: {

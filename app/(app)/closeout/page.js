@@ -93,6 +93,13 @@ export default function CloseoutPage() {
   const [persona, setPersona] = useState(null);
   const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
+  // "Business" is only ever offered as a category for this persona --
+  // someone whose accounts might be commingled with the business needs a
+  // way to flag a transaction that landed on a personal account but
+  // actually belongs to the business side (see CATS above and the
+  // confirm route, which excludes it from personal net income the same
+  // way "exclude" already does for internal transfers).
+  const cats = isBusinessOwnerWithEmployees ? [...CATS, { value: "business", label: "Business" }] : CATS;
   // Team & Plan Obligations: reuses the exact same split-rule engine every
   // other category already runs on (percent of each deposit + a monthly
   // cap that acts as the target). Only ever fetched/rendered for the
@@ -176,6 +183,14 @@ export default function CloseoutPage() {
       transactions.reduce((sum, t) => {
         const cat = t.confirmed_category || t.suggested_category;
         return cat === "w2_income" ? sum + (Number(t.amount) || 0) : sum;
+      }, 0),
+    [transactions]
+  );
+  const businessPreview = useMemo(
+    () =>
+      transactions.reduce((sum, t) => {
+        const cat = t.confirmed_category || t.suggested_category;
+        return cat === "business" ? sum + (Number(t.amount) || 0) : sum;
       }, 0),
     [transactions]
   );
@@ -340,6 +355,7 @@ export default function CloseoutPage() {
   // it loads and the normal not-yet-confirmed preview state -- both derive
   // from the same per-transaction category, so they agree once loaded.
   const displayW2Income = recommendations?.w2Income ?? w2IncomePreview;
+  const displayBusiness = recommendations?.business ?? businessPreview;
   const liveTaxEstimate = estimateTaxReserve(displayNetIncome, taxRatePct);
   const annualNetIncomeValue = annualNetIncome === "" ? displayNetIncome * 12 : Number(annualNetIncome) || 0;
   const annualTaxEstimate = estimateTaxReserve(annualNetIncomeValue, annualTaxRatePct);
@@ -441,7 +457,7 @@ export default function CloseoutPage() {
                       {currency(t.amount)}
                     </span>
                     <div className="flex gap-1 flex-wrap justify-end">
-                      {CATS.map((c) => (
+                      {cats.map((c) => (
                         <button
                           key={c.value}
                           onClick={() => (!isConfirmed || editingConfirmed) && setCategory(t.id, c.value)}
@@ -473,6 +489,12 @@ export default function CloseoutPage() {
           <div className="flex items-center justify-between text-xs text-neutral-400 mt-1">
             <span>W2 income this month (excluded from retirement &amp; tax below)</span>
             <span className="font-mono">{currency(displayW2Income)}</span>
+          </div>
+        )}
+        {displayBusiness > 0 && (
+          <div className="flex items-center justify-between text-xs text-neutral-400 mt-1">
+            <span>Flagged as business this month (excluded -- belongs to the business side, see Tax Summary)</span>
+            <span className="font-mono">{currency(displayBusiness)}</span>
           </div>
         )}
         {!isConfirmed && (

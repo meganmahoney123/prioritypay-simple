@@ -93,6 +93,18 @@ export default function TaxSummaryPage() {
             </Card>
           </div>
 
+          {data.totals.business > 0 && (
+            <Card className="p-4">
+              <p className="text-xs text-neutral-500 mb-1">Flagged as business (excluded above)</p>
+              <p className="text-xl font-semibold">{currency(data.totals.business)}</p>
+              <p className="text-xs text-neutral-400 mt-1">
+                Transactions marked &quot;Business&quot; in Close-Out -- landed on a personal account but flagged
+                as belonging to the business side. Not counted in income/expenses/net above; included in the CSV
+                below for your accountant.
+              </p>
+            </Card>
+          )}
+
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold">Month by month</h2>

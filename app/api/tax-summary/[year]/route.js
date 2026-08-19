@@ -27,14 +27,21 @@ function summarize(transactions) {
   let income = 0;
   let w2Income = 0;
   let expense = 0;
+  // Transactions flagged "Business" in Close-Out (Business Owner With
+  // Employees persona, commingled accounts) -- excluded from net the same
+  // as always (this branch never adds to income/w2Income/expense), but
+  // tracked and returned separately so Tax Summary can show it back
+  // instead of it silently vanishing like an internal transfer would.
+  let business = 0;
   transactions.forEach((t) => {
     const cat = categoryOf(t);
     const amt = Number(t.amount) || 0;
     if (cat === "income") income += amt;
     else if (cat === "w2_income") w2Income += amt;
     else if (cat === "expense") expense += amt;
+    else if (cat === "business") business += amt;
   });
-  return { income, w2Income, expense, net: income + w2Income - expense };
+  return { income, w2Income, expense, business, net: income + w2Income - expense };
 }
 
 // Pulls (or creates, backfilling from Plaid for any month the person never
@@ -70,9 +77,10 @@ export async function GET(request, { params }) {
       income: acc.income + m.income,
       w2Income: acc.w2Income + m.w2Income,
       expense: acc.expense + m.expense,
+      business: acc.business + m.business,
       net: acc.net + m.net,
     }),
-    { income: 0, w2Income: 0, expense: 0, net: 0 }
+    { income: 0, w2Income: 0, expense: 0, business: 0, net: 0 }
   );
   const confirmedMonths = results.filter((m) => m.status === "confirmed").length;
 

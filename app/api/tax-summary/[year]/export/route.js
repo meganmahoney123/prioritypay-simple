@@ -19,6 +19,7 @@ const CATEGORY_LABELS = {
   w2_income: "W2 Income",
   expense: "Expense",
   exclude: "Excluded (transfer)",
+  business: "Business (excluded -- see accountant)",
 };
 
 // RFC 4180-ish: wrap in quotes and double any embedded quotes whenever a
