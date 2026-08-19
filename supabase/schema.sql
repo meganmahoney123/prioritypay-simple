@@ -79,6 +79,13 @@ create table if not exists simple_split_rules_percent (
 -- receiving their full percentage indefinitely.
 alter table simple_split_rules_percent add column if not exists balance_cap numeric;
 
+-- Credit cards are linked purely for close-out expense visibility --
+-- never a split-rule destination and never wired to Dwolla, since Dwolla
+-- funding sources only support depository (checking/savings) accounts.
+-- 'depository' is the default for every account linked through the
+-- original checking/savings flow.
+alter table simple_accounts add column if not exists account_type text not null default 'depository';
+
 create table if not exists simple_transfers (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,

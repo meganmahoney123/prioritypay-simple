@@ -20,7 +20,7 @@ export async function GET() {
 
   const { data, error } = await admin
     .from("simple_accounts")
-    .select("id, institution_name, account_name, mask, current_balance, plaid_access_token, plaid_account_id, plaid_cursor, created_at")
+    .select("id, institution_name, account_name, mask, current_balance, plaid_access_token, plaid_account_id, plaid_cursor, account_type, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
 
@@ -51,6 +51,7 @@ export async function GET() {
         institution_name: acc.institution_name,
         account_name: acc.account_name,
         mask: acc.mask,
+        account_type: acc.account_type || "depository",
         current_balance: balance,
         // Live from Plaid, not stored -- same reasoning as balance above.
         // Used to keep checking accounts out of the Investments picker

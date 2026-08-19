@@ -40,6 +40,7 @@ export default function PlaidLinkButton({
   retirementType,
   investmentType,
   savingsOnly,
+  creditCard,
   style,
 }) {
   const [linkToken, setLinkToken] = useState(null);
@@ -56,6 +57,8 @@ export default function PlaidLinkButton({
     ? `${STORAGE_KEY}_investment_${investmentType}`
     : savingsOnly
     ? `${STORAGE_KEY}_savings_only`
+    : creditCard
+    ? `${STORAGE_KEY}_credit_card`
     : STORAGE_KEY;
 
   useEffect(() => {
@@ -72,6 +75,8 @@ export default function PlaidLinkButton({
       ? "/api/plaid/create-retirement-link-token"
       : investmentType
       ? "/api/plaid/create-investment-link-token"
+      : creditCard
+      ? "/api/plaid/create-credit-link-token"
       : "/api/plaid/create-link-token";
     const body = mode === "update"
       ? JSON.stringify({ accountId })
@@ -93,7 +98,7 @@ export default function PlaidLinkButton({
         window.localStorage.setItem(storageKey, d.link_token);
       })
       .catch(() => setError("Could not reach Plaid."));
-  }, [isOAuthReturn, mode, accountId, retirementType, investmentType, savingsOnly, storageKey]);
+  }, [isOAuthReturn, mode, accountId, retirementType, investmentType, savingsOnly, creditCard, storageKey]);
 
   const onSuccess = useCallback(async (public_token, metadata) => {
     window.localStorage.removeItem(storageKey);
@@ -126,6 +131,7 @@ export default function PlaidLinkButton({
         institution_name: metadata.institution?.name,
         account_name: account.name,
         mask: account.mask,
+        account_type: creditCard ? "credit" : undefined,
       }),
     });
     const data = await res.json();
@@ -173,7 +179,7 @@ export default function PlaidLinkButton({
 
     setExchanging(false);
     onLinked?.(data.account);
-  }, [onLinked, onUpdated, mode, accountId, retirementType, investmentType, storageKey]);
+  }, [onLinked, onUpdated, mode, accountId, retirementType, investmentType, creditCard, storageKey]);
 
   const { open, ready } = usePlaidLink({
     token: linkToken,

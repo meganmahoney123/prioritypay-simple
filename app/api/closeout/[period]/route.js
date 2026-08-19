@@ -38,10 +38,13 @@ function periodBounds(period) {
 // anything downstream (retirement room, tax reserve) trusts it.
 const PAYROLL_NAME_PATTERN = /\b(payroll|direct ?dep(osit)?|salary|bi-?weekly pay|adp|gusto|paychex|justworks|rippling|paylocity|workday|tri ?net|insperity)\b/i;
 
-function suggestCategory(txn) {
+function suggestCategory(txn, accountType) {
   const pfc = txn.personal_finance_category?.primary || "";
   const pfcDetailed = txn.personal_finance_category?.detailed || "";
   if (pfc === "TRANSFER_IN" || pfc === "TRANSFER_OUT") return "exclude";
+  // On a credit card, a negative amount is a payment/credit reducing the
+  // balance -- your own money moving, same as a transfer -- never income.
+  if (accountType === "credit" && txn.amount < 0) return "exclude";
   if (txn.amount < 0) {
     const name = txn.merchant_name || txn.name || "";
     if (pfcDetailed === "INCOME_WAGES" || PAYROLL_NAME_PATTERN.test(name)) return "w2_income";
@@ -83,7 +86,7 @@ export async function GET(request, { params }) {
   if (closeout.status === "draft") {
     const { data: accounts } = await admin
       .from("simple_accounts")
-      .select("id, plaid_access_token")
+      .select("id, plaid_access_token, account_type")
       .eq("user_id", user.id)
       .not("plaid_access_token", "is", null);
 
@@ -104,7 +107,7 @@ export async function GET(request, { params }) {
               name: t.merchant_name || t.name || "Transaction",
               amount: Math.abs(t.amount),
               direction: t.amount < 0 ? "in" : "out",
-              suggested_category: suggestCategory(t),
+              suggested_category: suggestCategory(t, acc.account_type),
             });
           });
       } catch (err) {

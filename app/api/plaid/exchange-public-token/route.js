@@ -21,10 +21,11 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const { public_token, account_id, institution_name, account_name, mask } = await request.json();
+  const { public_token, account_id, institution_name, account_name, mask, account_type } = await request.json();
   if (!public_token || !account_id) {
     return Response.json({ error: "Missing public_token or account_id." }, { status: 400 });
   }
+  const isCredit = account_type === "credit";
 
   const admin = supabaseAdmin();
 
@@ -35,17 +36,24 @@ export async function POST(request) {
   const billingProfile = await getBillingProfile(admin, user.id);
   if (isReadOnly(billingProfile)) return readOnlyError();
 
-  const { data: dwollaCustomer } = await admin
-    .from("simple_dwolla_customers")
-    .select("dwolla_customer_url")
-    .eq("user_id", user.id)
-    .single();
+  // Credit cards skip identity verification and Dwolla entirely -- they're
+  // never a transfer source/destination, only a close-out expense feed, so
+  // there's nothing for Dwolla to attach a funding source to.
+  let dwollaCustomer = null;
+  if (!isCredit) {
+    const { data } = await admin
+      .from("simple_dwolla_customers")
+      .select("dwolla_customer_url")
+      .eq("user_id", user.id)
+      .single();
+    dwollaCustomer = data;
 
-  if (!dwollaCustomer) {
-    return Response.json(
-      { error: "Complete identity verification (Dwolla) before linking a bank account." },
-      { status: 400 }
-    );
+    if (!dwollaCustomer) {
+      return Response.json(
+        { error: "Complete identity verification (Dwolla) before linking a bank account." },
+        { status: 400 }
+      );
+    }
   }
 
   try {
@@ -53,19 +61,22 @@ export async function POST(request) {
     const accessToken = exchange.data.access_token;
     const itemId = exchange.data.item_id;
 
-    const processorTokenRes = await plaidClient.processorTokenCreate({
-      access_token: accessToken,
-      account_id,
-      processor: "dwolla",
-    });
-    const processorToken = processorTokenRes.data.processor_token;
+    let fundingSourceId = null;
+    if (!isCredit) {
+      const processorTokenRes = await plaidClient.processorTokenCreate({
+        access_token: accessToken,
+        account_id,
+        processor: "dwolla",
+      });
+      const processorToken = processorTokenRes.data.processor_token;
 
-    const fundingSourceRes = await dwollaClient().post(
-      `${dwollaCustomer.dwolla_customer_url}/funding-sources`,
-      { plaidToken: processorToken, name: account_name || "Checking" }
-    );
-    const fundingSourceUrl = fundingSourceRes.headers.get("location");
-    const fundingSourceId = fundingSourceUrl.split("/").pop();
+      const fundingSourceRes = await dwollaClient().post(
+        `${dwollaCustomer.dwolla_customer_url}/funding-sources`,
+        { plaidToken: processorToken, name: account_name || "Checking" }
+      );
+      const fundingSourceUrl = fundingSourceRes.headers.get("location");
+      fundingSourceId = fundingSourceUrl.split("/").pop();
+    }
 
     const { data: inserted, error: dbError } = await admin
       .from("simple_accounts")
@@ -78,8 +89,9 @@ export async function POST(request) {
         plaid_access_token: accessToken,
         plaid_account_id: account_id,
         dwolla_funding_source_id: fundingSourceId,
+        account_type: isCredit ? "credit" : "depository",
       })
-      .select("id, institution_name, account_name, mask, current_balance, created_at")
+      .select("id, institution_name, account_name, mask, current_balance, account_type, created_at")
       .single();
     if (dbError) throw dbError;
 
