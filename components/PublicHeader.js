@@ -16,6 +16,7 @@ const RESOURCES = [
   { href: "/calculators/taxestimator", label: "Tax Estimator" },
   { href: "/calculators/emergencyfund", label: "Emergency Fund" },
   { href: "/calculators/debtpayoff", label: "Debt Payoff" },
+  { href: "/calculators/retirementcalculator", label: "Solo 401k vs SEP IRA" },
 ];
 
 export default function PublicHeader() {
