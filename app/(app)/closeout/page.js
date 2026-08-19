@@ -79,10 +79,17 @@ export default function CloseoutPage() {
   // prev/next arrows shouldn't re-ask, only navigating to this tab fresh
   // (a fresh mount of this component) does.
   const [w2PopupStep, setW2PopupStep] = useState("ask");
+  // Lets someone deliberately reopen a confirmed month for corrections --
+  // categories were never actually locked server-side (PATCH .../transactions/[id]
+  // has no status check, and POST .../confirm can always recompute from
+  // scratch), so this is purely a UI guardrail against *accidental* edits.
+  // Resets to locked every time the person switches months.
+  const [editingConfirmed, setEditingConfirmed] = useState(false);
 
   const load = async (p) => {
     setLoading(true);
     setRecommendations(null);
+    setEditingConfirmed(false);
     const [closeoutRes, accountsRes, realRes] = await Promise.all([
       fetch(`/api/closeout/${p}`).then((r) => r.json()),
       fetch("/api/accounts").then((r) => r.json()),
@@ -157,6 +164,18 @@ export default function CloseoutPage() {
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
   const realByType = useMemo(() => Object.fromEntries(realAccounts.map((r) => [r.retirementType, r])), [realAccounts]);
 
+  const handleConfirm = async () => {
+    setConfirming(true);
+    const rec = await fetch(`/api/closeout/${period}/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taxRatePct }),
+    }).then((r) => r.json());
+    setRecommendations(rec);
+    setCloseout(rec.closeout);
+    setConfirming(false);
+  };
+
   const setCategory = async (txnId, category) => {
     const previous = transactions.find((t) => t.id === txnId)?.confirmed_category;
     setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: category } : t)));
@@ -174,19 +193,18 @@ export default function CloseoutPage() {
       // the database never changed.
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: previous ?? null } : t)));
       alert("Couldn't save that category -- please try again.");
+      return;
     }
-  };
-
-  const handleConfirm = async () => {
-    setConfirming(true);
-    const rec = await fetch(`/api/closeout/${period}/confirm`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ taxRatePct }),
-    }).then((r) => r.json());
-    setRecommendations(rec);
-    setCloseout(rec.closeout);
-    setConfirming(false);
+    // Editing a category on an already-confirmed month: re-run the same
+    // confirm call used the first time around, which always recomputes
+    // net income, retirement room, and the tax reserve estimate from
+    // scratch off the current categories (see the comment on POST
+    // .../confirm) -- so correcting a mistake here immediately ripples
+    // through Step 2/3 below and into Tax Summary's next load, without a
+    // second manual "confirm" click. Money already sent for a prior
+    // (wrong) room/reserve number isn't reversed -- only what's left to
+    // send adjusts.
+    if (isConfirmed) handleConfirm();
   };
 
   const handleContribute = async (retirementType, room, holdingAccountId) => {
@@ -307,14 +325,19 @@ export default function CloseoutPage() {
         {isConfirmed && (
           <div className="mb-4 flex items-start gap-2 bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2.5 text-xs text-neutral-600">
             <CheckCircle2 size={14} style={{ color: "var(--color-accent-700)" }} className="shrink-0 mt-0.5" />
-            <span>
+            <span className="flex-1">
               This month was confirmed
               {closeout?.confirmed_at
                 ? ` on ${new Date(closeout.confirmed_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
                 : ""}
-              . Categories are locked and the buttons below aren&apos;t clickable on purpose -- once a month is
-              confirmed it can&apos;t be re-categorized.
+              . Categories are locked by default to avoid accidental changes
+              {editingConfirmed
+                ? " -- you're editing now. Retirement room, tax reserve, and Tax Summary all recalculate the moment you change a category. Money already sent isn't undone, only what's left to send adjusts."
+                : ". Made a mistake? You can still fix it."}
             </span>
+            <GhostButton onClick={() => setEditingConfirmed((v) => !v)} className="text-[11px] px-2.5 py-1 shrink-0">
+              {editingConfirmed ? "Done editing" : "Edit categories"}
+            </GhostButton>
           </div>
         )}
         {transactions.length === 0 ? (
@@ -341,8 +364,8 @@ export default function CloseoutPage() {
                       {CATS.map((c) => (
                         <button
                           key={c.value}
-                          onClick={() => !isConfirmed && setCategory(t.id, c.value)}
-                          disabled={isConfirmed}
+                          onClick={() => (!isConfirmed || editingConfirmed) && setCategory(t.id, c.value)}
+                          disabled={isConfirmed && !editingConfirmed}
                           className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
                           style={{
                             fontFamily: "var(--font-heading)",
