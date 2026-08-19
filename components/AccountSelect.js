@@ -63,13 +63,15 @@ export default function AccountSelect({
     const selColor = connected ? "var(--color-text)" : "var(--color-accent-700)";
     const selBorder = connected ? "var(--color-divider)" : "var(--color-accent-300)";
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
         <Link2 size={15} style={{ color: linkColor, flexShrink: 0 }} />
         <select
           value={value || ""}
           onChange={handleChange}
           style={{
             flex: 1,
+            minWidth: 0,
+            maxWidth: "100%",
             fontFamily: "var(--font-body)",
             fontSize: 14.5,
             color: selColor,
@@ -78,6 +80,9 @@ export default function AccountSelect({
             borderBottom: `1px solid ${selBorder}`,
             borderRadius: 0,
             padding: "8px 2px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {recommendCreate && createOption}

@@ -284,7 +284,7 @@ export default function CloseoutPage() {
             <p className="text-sm font-semibold mb-1">Connect your credit cards</p>
             <p className="text-xs text-neutral-500 mb-3">
               If you spend on a credit card, close-out is only seeing part of the picture. Add your cards here for a
-              complete monthly expense total -- they&apos;re never used for splits or transfers, just tracked for
+              complete monthly expense total. They&apos;re never used for splits or transfers, just tracked for
               close-out.
             </p>
             <PlaidLinkButton
@@ -437,7 +437,7 @@ export default function CloseoutPage() {
                   style={{ width: 96, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                           />
                           <span className="text-xs text-neutral-500">from</span>
-                          <div className="w-48">
+                          <div style={{ width: 176, minWidth: 0 }}>
                             <AccountSelect
                               value={contributeFrom[r.retirementType] ?? r.holdingAccountId}
                               onChange={(v) => setContributeFrom((prev) => ({ ...prev, [r.retirementType]: v }))}
