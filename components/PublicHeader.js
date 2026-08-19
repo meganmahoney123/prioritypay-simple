@@ -14,6 +14,7 @@ import Btn from "./PublicBtn";
 const RESOURCES = [
   { href: "/calculators/moneysimulator", label: "Money Simulator" },
   { href: "/calculators/taxestimator", label: "Tax Estimator" },
+  { href: "/calculators/emergencyfund", label: "Emergency Fund" },
 ];
 
 export default function PublicHeader() {
