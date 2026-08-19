@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar, CreditCard } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
+import PlaidLinkButton from "@/components/PlaidLinkButton";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
@@ -274,6 +275,28 @@ export default function CloseoutPage() {
         </Card>
       ) : (
       <>
+      {!accounts.some((a) => a.account_type === "credit") && (
+        <Card className="p-5 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+            <CreditCard size={16} className="text-neutral-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold mb-1">Connect your credit cards</p>
+            <p className="text-xs text-neutral-500 mb-3">
+              If you spend on a credit card, close-out is only seeing part of the picture. Add your cards here for a
+              complete monthly expense total -- they&apos;re never used for splits or transfers, just tracked for
+              close-out.
+            </p>
+            <PlaidLinkButton
+              label="Add a credit card"
+              creditCard
+              onLinked={() => load(period)}
+              className="text-xs px-4 py-2"
+              style={{ backgroundColor: "#525252" }}
+            />
+          </div>
+        </Card>
+      )}
       <Card className="p-6">
         <h2 className="text-sm font-semibold mb-1">Step 1: Confirm Net Income</h2>
         <p className="text-xs text-neutral-500 mb-4">
