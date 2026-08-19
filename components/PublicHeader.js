@@ -15,6 +15,7 @@ const RESOURCES = [
   { href: "/calculators/moneysimulator", label: "Money Simulator" },
   { href: "/calculators/taxestimator", label: "Tax Estimator" },
   { href: "/calculators/emergencyfund", label: "Emergency Fund" },
+  { href: "/calculators/debtpayoff", label: "Debt Payoff" },
 ];
 
 export default function PublicHeader() {
