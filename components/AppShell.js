@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/splits", label: "Split Rules" },
   { href: "/simulator", label: "Money Simulator" },
   { href: "/closeout", label: "Close Out" },
+  { href: "/tax-summary", label: "Tax Summary" },
   { href: "/history", label: "History" },
   { href: "/settings", label: "Settings" },
 ];
@@ -26,6 +27,7 @@ const TITLES = {
   "/splits": "Split Rules",
   "/simulator": "Money Simulator",
   "/closeout": "Monthly Close-Out",
+  "/tax-summary": "Tax Summary",
   "/history": "Transaction History",
   "/settings": "Settings",
 };
