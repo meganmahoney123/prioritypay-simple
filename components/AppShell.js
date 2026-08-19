@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import PriorityPayLogo from "@/components/PriorityPayLogo";
 
 // Payments tab removed -- every deposit splits automatically the moment
 // Plaid's webhook detects it (see app/api/plaid/webhook), so there's no
@@ -38,17 +39,6 @@ const TITLES = {
 function titleFor(pathname) {
   if (pathname.startsWith("/splits")) return TITLES["/splits"];
   return TITLES[pathname] || "PriorityPay Simple";
-}
-
-function Logo() {
-  return (
-    <span style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-      <span style={{ fontFamily: "var(--font-heading)", fontSize: 21 }}>Priority</span>
-      <span style={{ fontFamily: "var(--font-heading)", fontSize: 21, fontStyle: "italic", color: "var(--color-accent-700)", marginLeft: -9 }}>
-        Pay
-      </span>
-    </span>
-  );
 }
 
 function NavLink({ href, label, active, onClick }) {
@@ -126,9 +116,8 @@ export default function AppShell({ children }) {
       {!narrow && (
         <aside style={{ flex: "1 1 232px", minWidth: 0, borderRight: "1px solid var(--color-divider)", background: "var(--color-neutral-100)" }}>
           <div style={{ position: "sticky", top: 0, padding: "20px 0 22px" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "0 22px 20px" }}>
-              <Logo />
-              <span style={{ width: 22, height: 1, background: "var(--color-accent)", alignSelf: "center" }} />
+            <div style={{ display: "flex", alignItems: "center", padding: "0 22px 20px" }}>
+              <PriorityPayLogo size={19} />
             </div>
             <nav style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "0 12px", flexDirection: "column" }}>
               {NAV_ITEMS.map((n) => (
@@ -236,7 +225,7 @@ export default function AppShell({ children }) {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0 20px 20px" }}>
-              <Logo />
+              <PriorityPayLogo size={19} />
               <button
                 onClick={() => setMenuOpen(false)}
                 aria-label="Close menu"

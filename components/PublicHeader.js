@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import Btn from "./PublicBtn";
+import PriorityPayLogo from "./PriorityPayLogo";
 
 // Sticky nav for every logged-out/public page (Homepage, and now the
 // /calculators/* resource pages). Extracted out of Homepage.js so those
@@ -45,15 +46,8 @@ export default function PublicHeader() {
           gap: "14px 24px",
         }}
       >
-        <Link
-          href="/"
-          style={{ display: "flex", alignItems: "baseline", gap: 10, textDecoration: "none", color: "var(--color-text)" }}
-        >
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "0.01em" }}>Priority</span>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontStyle: "italic", color: "var(--color-accent-700)", marginLeft: -9 }}>
-            Pay
-          </span>
-          <span style={{ width: 26, height: 1, background: "var(--color-accent)", marginBottom: 6 }} />
+        <Link href="/" style={{ textDecoration: "none", color: "var(--color-text)" }}>
+          <PriorityPayLogo size={21} />
         </Link>
 
         <nav style={{ display: "flex", alignItems: "center", gap: 8 }}>

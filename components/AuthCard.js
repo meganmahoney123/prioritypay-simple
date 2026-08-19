@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import PriorityPayLogo from "@/components/PriorityPayLogo";
 
 // Shared "Ledger" visual scaffold for /login and /signup -- built from
 // Megan's PriorityPay-Auth.dc.html export (a single-card prototype that
@@ -11,17 +12,6 @@ import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 // and each page owns its own Supabase auth call, loading/error state, and
 // copy. Values (padding, font sizes, colors) are copied directly from the
 // exported design's inline styles so the page matches pixel-for-pixel.
-function Logo() {
-  return (
-    <span style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 10, marginBottom: 30 }}>
-      <span style={{ fontFamily: "var(--font-heading)", fontSize: 26, letterSpacing: "0.01em" }}>Priority</span>
-      <span style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontStyle: "italic", color: "var(--color-accent-700)", marginLeft: -10 }}>
-        Pay
-      </span>
-    </span>
-  );
-}
-
 const fieldLabelStyle = {
   display: "block",
   fontFamily: "var(--font-heading)",
@@ -80,7 +70,7 @@ export default function AuthCard({
         padding: "48px 20px 64px",
       }}
     >
-      <Logo />
+      <PriorityPayLogo size={22} layout="stack" style={{ marginBottom: 30 }} />
 
       <div
         style={{
