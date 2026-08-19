@@ -8,7 +8,7 @@ import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
 import ContributionCalculatorModal from "@/components/ContributionCalculatorModal";
-import { RETIREMENT_LABELS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit } from "@/lib/allocations";
+import { RETIREMENT_LABELS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS } from "@/lib/allocations";
 
 function defaultPeriod() {
   const now = new Date();
@@ -93,6 +93,16 @@ export default function CloseoutPage() {
   const [persona, setPersona] = useState(null);
   const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
+  // Team & Plan Obligations: reuses the exact same split-rule engine every
+  // other category already runs on (percent of each deposit + a monthly
+  // cap that acts as the target). Only ever fetched/rendered for the
+  // Business Owner (With Employees) persona.
+  const [splitRulesPercent, setSplitRulesPercent] = useState([]);
+  const [savingObligations, setSavingObligations] = useState(false);
+  const [editingObligations, setEditingObligations] = useState(false);
+  const [obligationsForm, setObligationsForm] = useState({ pct: "", cap: "", accountId: null });
+  const TEAM_OBLIGATIONS_LABEL = "Team & Plan Obligations";
+  const teamObligationsRow = splitRulesPercent.find((r) => r.label === TEAM_OBLIGATIONS_LABEL);
 
   const load = async (p) => {
     setLoading(true);
@@ -106,6 +116,10 @@ export default function CloseoutPage() {
           const est = d.profile?.retirementProfile?.estimatedEmployeePayroll;
           if (est !== null && est !== undefined) setDefaultEmployeePayroll(est);
         })
+        .catch(() => {});
+      fetch("/api/split-rules")
+        .then((r) => r.json())
+        .then((d) => setSplitRulesPercent(d.splitRules?.percent || []))
         .catch(() => {});
     }
     const [closeoutRes, accountsRes, realRes] = await Promise.all([
@@ -263,6 +277,48 @@ export default function CloseoutPage() {
     }
     setTopUp({ open: false, fromAccountId: null, toAccountId: null, amount: "" });
     await load(period);
+  };
+
+  // Creates or updates the "Team & Plan Obligations" split-rule row --
+  // deliberately the exact same mechanism every other category (Tax
+  // Reserve, Solo 401k, etc.) already uses: a percentage of every deposit,
+  // capped at a monthly target, held in a real connected account. Nothing
+  // new on the backend -- this just gives Business Owner (With Employees)
+  // a purpose-built setup form instead of routing them through the
+  // general Split Rules page for something with such specific, one-off
+  // framing ("what did your accountant say you owe").
+  const saveTeamObligations = async () => {
+    setSavingObligations(true);
+    const pctInput = obligationsForm.pct !== "" ? Number(obligationsForm.pct) : Number(teamObligationsRow?.pct ?? 0);
+    const capInput = obligationsForm.cap !== "" ? Number(obligationsForm.cap) : teamObligationsRow?.max ?? null;
+    const accountId = obligationsForm.accountId ?? teamObligationsRow?.accountId ?? null;
+    const others = splitRulesPercent.filter((r) => r.label !== TEAM_OBLIGATIONS_LABEL);
+    const remaining = Math.max(0, 100 - others.reduce((s, r) => s + (Number(r.pct) || 0), 0));
+    const nextRow = {
+      label: TEAM_OBLIGATIONS_LABEL,
+      group: TEAM_OBLIGATIONS_LABEL,
+      pct: Math.max(0, Math.min(pctInput || 0, remaining)),
+      max: capInput,
+      balanceCap: teamObligationsRow?.balanceCap ?? null,
+      color: teamObligationsRow?.color || CATEGORY_COLORS[splitRulesPercent.length % CATEGORY_COLORS.length],
+      accountId,
+      retirementType: null,
+      investmentType: null,
+    };
+    const nextPercent = [...others, nextRow];
+    const res = await fetch("/api/split-rules", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ percent: nextPercent }),
+    });
+    setSavingObligations(false);
+    if (!res.ok) {
+      alert("Couldn't save this reserve -- please try again.");
+      return;
+    }
+    setSplitRulesPercent(nextPercent);
+    setObligationsForm({ pct: "", cap: "", accountId: null });
+    setEditingObligations(false);
   };
 
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
@@ -642,6 +698,101 @@ export default function CloseoutPage() {
               </div>
             )}
           </Card>
+
+          {isBusinessOwnerWithEmployees && (
+            <Card className="p-6">
+              <h2 className="text-sm font-semibold mb-1">Team & Plan Obligations</h2>
+              <p className="text-xs text-neutral-500 mb-4">
+                For employer payroll tax, unemployment insurance, workers&apos; comp, or a standard 401(k) match --
+                anything your accountant or plan administrator calculates a number for. This routes money toward it
+                automatically, same as everything else above, but it&apos;s money staged and ready, not the actual
+                contribution or filing itself -- that still goes through your payroll provider or TPA when it&apos;s
+                due.
+              </p>
+
+              {teamObligationsRow && !editingObligations ? (
+                <div className="border border-neutral-200 rounded-xl p-4">
+                  <div className="flex items-baseline justify-between text-sm mb-1">
+                    <span className="text-neutral-600">Routing</span>
+                    <span className="font-mono font-semibold">{teamObligationsRow.pct}% of every deposit</span>
+                  </div>
+                  {teamObligationsRow.max !== null && (
+                    <div className="flex items-baseline justify-between text-sm mb-1">
+                      <span className="text-neutral-600">Monthly target</span>
+                      <span className="font-mono font-semibold">{currency(teamObligationsRow.max)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between text-sm mb-3">
+                    <span className="text-neutral-600">Holding account</span>
+                    <span className="font-mono font-semibold">
+                      {accountsById[teamObligationsRow.accountId]
+                        ? `${accountsById[teamObligationsRow.accountId].institution_name} •••• ${accountsById[teamObligationsRow.accountId].mask}`
+                        : "Not connected"}
+                    </span>
+                  </div>
+                  <GhostButton onClick={() => setEditingObligations(true)} className="text-xs px-3 py-1.5">
+                    Edit
+                  </GhostButton>
+                </div>
+              ) : (
+                <div className="border border-neutral-200 rounded-xl p-4 space-y-3">
+                  <div>
+                    <label className="block text-xs text-neutral-500 mb-1">
+                      % of every deposit to route here
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={obligationsForm.pct !== "" ? obligationsForm.pct : teamObligationsRow?.pct ?? ""}
+                      onChange={(e) => setObligationsForm((prev) => ({ ...prev, pct: e.target.value }))}
+                      className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-neutral-500 mb-1">
+                      Monthly target (what your accountant/administrator told you to set aside)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={obligationsForm.cap !== "" ? obligationsForm.cap : teamObligationsRow?.max ?? ""}
+                      onChange={(e) => setObligationsForm((prev) => ({ ...prev, cap: e.target.value }))}
+                      className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono"
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-neutral-500 mb-1">Holding account</label>
+                    <AccountSelect
+                      value={obligationsForm.accountId ?? teamObligationsRow?.accountId ?? null}
+                      onChange={(v) => setObligationsForm((prev) => ({ ...prev, accountId: v }))}
+                      accounts={accounts}
+                      theme="ledger"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <PrimaryButton onClick={saveTeamObligations} disabled={savingObligations} className="text-xs px-3 py-1.5">
+                      {savingObligations ? <Loader2 size={14} className="animate-spin" /> : null}
+                      {teamObligationsRow ? "Save changes" : "Set up this reserve"}
+                    </PrimaryButton>
+                    {teamObligationsRow && (
+                      <GhostButton
+                        onClick={() => {
+                          setEditingObligations(false);
+                          setObligationsForm({ pct: "", cap: "", accountId: null });
+                        }}
+                        className="text-xs px-3 py-1.5"
+                      >
+                        Cancel
+                      </GhostButton>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
         </>
       )}
       </>
