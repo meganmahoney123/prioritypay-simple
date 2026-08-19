@@ -20,6 +20,7 @@ export async function POST(request) {
       has_w2_plan: rp.hasW2Plan,
       w2_elective_deferral_ytd: rp.w2ElectiveDeferralYTD,
       age_bracket: rp.ageBracket,
+      estimated_employee_payroll: rp.estimatedEmployeePayroll ?? null,
       onboarded: true,
     })
     .eq("id", user.id);

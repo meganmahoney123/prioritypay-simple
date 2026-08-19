@@ -20,6 +20,7 @@ export async function GET() {
         hasW2Plan: data.has_w2_plan,
         w2ElectiveDeferralYTD: Number(data.w2_elective_deferral_ytd || 0),
         ageBracket: data.age_bracket,
+        estimatedEmployeePayroll: data.estimated_employee_payroll === null ? null : Number(data.estimated_employee_payroll),
       },
       billing: {
         subscriptionStatus: data.subscription_status,
@@ -46,6 +47,7 @@ export async function PUT(request) {
       has_w2_plan: rp.hasW2Plan,
       w2_elective_deferral_ytd: rp.w2ElectiveDeferralYTD,
       age_bracket: rp.ageBracket,
+      estimated_employee_payroll: rp.estimatedEmployeePayroll ?? null,
     })
     .eq("id", user.id);
 

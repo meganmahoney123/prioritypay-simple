@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar, CreditCard } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar, CreditCard, AlertTriangle } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
@@ -85,11 +85,29 @@ export default function CloseoutPage() {
   // scratch), so this is purely a UI guardrail against *accidental* edits.
   // Resets to locked every time the person switches months.
   const [editingConfirmed, setEditingConfirmed] = useState(false);
+  // Persona-gated retirement copy for the "Business Owner (With Employees)"
+  // persona -- Solo 401k is legally unavailable to anyone with employees
+  // other than a spouse, and SEP IRA's employer-parity cost only applies
+  // here. Fetched once; every other persona's Close-Out UI is unaffected
+  // since `persona` just stays null/unused for them.
+  const [persona, setPersona] = useState(null);
+  const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
+  const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
 
   const load = async (p) => {
     setLoading(true);
     setRecommendations(null);
     setEditingConfirmed(false);
+    if (persona === null) {
+      fetch("/api/profile")
+        .then((r) => r.json())
+        .then((d) => {
+          setPersona(d.profile?.persona || null);
+          const est = d.profile?.retirementProfile?.estimatedEmployeePayroll;
+          if (est !== null && est !== undefined) setDefaultEmployeePayroll(est);
+        })
+        .catch(() => {});
+    }
     const [closeoutRes, accountsRes, realRes] = await Promise.all([
       fetch(`/api/closeout/${p}`).then((r) => r.json()),
       fetch("/api/accounts").then((r) => r.json()),
@@ -419,6 +437,22 @@ export default function CloseoutPage() {
               <div className="space-y-5">
                 {recommendations.retirement.map((r) => {
                   const real = realByType[r.retirementType];
+                  if (isBusinessOwnerWithEmployees && r.retirementType === "solo_401k") {
+                    return (
+                      <div key={r.retirementType} className="border border-amber-200 bg-amber-50 rounded-xl p-4 flex gap-3">
+                        <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-sm font-semibold text-amber-800 mb-1">Solo 401k isn&apos;t available to you</div>
+                          <p className="text-xs text-amber-700">
+                            Solo 401k plans only cover a business owner and their spouse -- with other employees on
+                            payroll, the business isn&apos;t eligible for this specific plan, no exceptions. A SEP
+                            IRA (below, if set up) or a standard employer 401(k) are the options to look into
+                            instead -- worth a conversation with a tax professional about which fits.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
                   return (
                     <div key={r.retirementType} className="border border-neutral-200 rounded-xl p-4">
                       <div className="text-sm font-semibold mb-1">{RETIREMENT_LABELS[r.retirementType] || r.label}</div>
@@ -434,6 +468,13 @@ export default function CloseoutPage() {
                           PriorityPay so far this year -- doesn&apos;t include anything contributed outside
                           PriorityPay). Holding in {r.holdingAccountLabel || "no account set"}
                           {r.holdingAccountBalance !== null ? ` (${currency(r.holdingAccountBalance)} available)` : ""}.
+                        </p>
+                      )}
+                      {isBusinessOwnerWithEmployees && r.retirementType === "sep_ira" && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+                          You have employees, so contributing here commits you to the same percentage of
+                          compensation for every eligible employee too. Use the calculator below for the real
+                          total cost before sending anything.
                         </p>
                       )}
                       <GhostButton
@@ -607,7 +648,11 @@ export default function CloseoutPage() {
       )}
 
       {calculatorPlanType && (
-        <ContributionCalculatorModal planType={calculatorPlanType} onClose={() => setCalculatorPlanType(null)} />
+        <ContributionCalculatorModal
+          planType={calculatorPlanType}
+          defaultEmployeePayroll={defaultEmployeePayroll}
+          onClose={() => setCalculatorPlanType(null)}
+        />
       )}
 
       {w2PopupStep !== "closed" && !loading && !isTooEarlyToClose && (

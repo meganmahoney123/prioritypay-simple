@@ -86,6 +86,14 @@ alter table simple_split_rules_percent add column if not exists balance_cap nume
 -- original checking/savings flow.
 alter table simple_accounts add column if not exists account_type text not null default 'depository';
 
+-- Business Owner (With Employees) persona: a rough, self-reported
+-- estimate of total annual employee payroll (not per-employee detail --
+-- no payroll integration exists), used purely to show the SEP IRA
+-- employer-parity cost (same contribution % owed to every eligible
+-- employee) alongside the owner's own contribution room. Null for
+-- every other persona.
+alter table simple_profiles add column if not exists estimated_employee_payroll numeric;
+
 create table if not exists simple_transfers (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references auth.users(id) on delete cascade,

@@ -30,11 +30,17 @@ import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 // forked, so the standalone Split Rules page (which reuses several of the
 // same components) keeps its original appearance untouched.
 const STEPS = ["Welcome", "Business", "Identity", "Connect Accounts", "Percentage Splits", "Review"];
-// Kept at 2 options per product decision, not the wider list shown in the
-// design mock -- businessType drives real retirement-calculation logic
-// downstream (see finish() below), so expanding this list is a separate
-// decision from the visual redesign.
-const BUSINESS_TYPES = ["Self Employed (No W2 Employees)", "W2 Employee + Side Hustle"];
+// businessType drives real retirement-calculation logic downstream (see
+// finish() below). "Business Owner (With Employees)" is the one option
+// that unlocks two extra inline questions on this same step (see step 1
+// below) -- everything else about onboarding stays identical across all
+// three choices.
+const BUSINESS_TYPES = [
+  "Self Employed (No Employees)",
+  "Business Owner (With Employees)",
+  "W2 Employee + Side Hustle",
+];
+const HAS_EMPLOYEES_TYPE = "Business Owner (With Employees)";
 
 // "Tax Reserve" / "Investments and Emergency Fund" / "A, B, and C" -- used
 // to list unconnected category names in one sentence on Step 4 (see
@@ -79,6 +85,15 @@ function OnboardingPageInner() {
   const [businessName, setBusinessName] = useState("");
   const [entityType] = useState("Sole proprietor / freelancer");
   const [businessType, setBusinessType] = useState(BUSINESS_TYPES[0]);
+  // Only asked/used for "Business Owner (With Employees)" -- a rough
+  // self-reported number (no payroll integration exists) that feeds the
+  // SEP IRA employer-parity cost shown later on Close-Out, and whether
+  // business and personal money stay separate or share one account, which
+  // sets the default assumption for how deposits/expenses get categorized
+  // (still correctable transaction-by-transaction either way).
+  const [employeePayroll, setEmployeePayroll] = useState("");
+  const [incomeHandling, setIncomeHandling] = useState(null);
+  const isBusinessOwnerWithEmployees = businessType === HAS_EMPLOYEES_TYPE;
   // Checked against the real Dwolla record on mount instead of assuming
   // false -- someone who already verified in an earlier session (or hit
   // this step twice) would otherwise always see a blank form again, and
@@ -220,13 +235,14 @@ function OnboardingPageInner() {
         businessName,
         entityType,
         retirementProfile: {
-          incomeHandling: "n/a",
+          incomeHandling: isBusinessOwnerWithEmployees ? incomeHandling || "separate" : "n/a",
           hasW2Plan: businessType === "W2 Employee + Side Hustle",
           w2ElectiveDeferralYTD: 0,
           // No age-bracket question in onboarding anymore -- defaults to
           // the under-50 IRS limit tier. Adjustable later from Split Rules
           // if that's ever wrong for someone.
           ageBracket: "under50",
+          estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
         },
         splitRules: { percent },
       }),
@@ -333,10 +349,66 @@ function OnboardingPageInner() {
                   {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
+
+              {isBusinessOwnerWithEmployees && (
+                <>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                      Rough total employee payroll this year
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={employeePayroll}
+                      onChange={(e) => setEmployeePayroll(e.target.value)}
+                      placeholder="e.g. 120000"
+                      style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                    />
+                    <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
+                      A ballpark is fine -- this only shapes what a SEP IRA would cost you once your team&apos;s
+                      required share is included. Adjustable anytime.
+                    </p>
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                      Do you keep business and personal money separate?
+                    </label>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      {[
+                        { value: "separate", label: "Yes, separate accounts" },
+                        { value: "commingled", label: "No, it's mostly one pot" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setIncomeHandling(opt.value)}
+                          style={{
+                            flex: 1,
+                            textAlign: "left",
+                            fontFamily: "var(--font-body)",
+                            fontSize: 14.5,
+                            padding: "12px 14px",
+                            borderRadius: "var(--radius-md)",
+                            border: `1px solid ${incomeHandling === opt.value ? "var(--color-accent)" : "var(--color-divider)"}`,
+                            background: incomeHandling === opt.value ? "color-mix(in srgb, var(--color-accent) 7%, transparent)" : "transparent",
+                            color: incomeHandling === opt.value ? "var(--color-accent-700)" : "var(--color-text)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
+                      Either way, every transaction stays individually correctable later -- this just sets a
+                      sensible starting default.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={next} disabled={isBusinessOwnerWithEmployees && !incomeHandling} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}

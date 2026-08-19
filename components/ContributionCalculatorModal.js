@@ -8,6 +8,7 @@ import {
   AGE_BRACKETS,
   BUSINESS_TYPES,
   calculateSepIra,
+  calculateSepIraEmployerParity,
   calculateSolo401k,
 } from "@/lib/retirementCalculator";
 
@@ -50,13 +51,14 @@ function Step({ title, subtitle, children }) {
 // screen where net income is the one thing meant to be adjusted over and
 // over. See lib/retirementCalculator.js for the actual math and why it's
 // more complete than the auto-cap estimate used elsewhere in the app.
-export default function ContributionCalculatorModal({ planType, onClose }) {
+export default function ContributionCalculatorModal({ planType, defaultEmployeePayroll, onClose }) {
   const isSolo = planType === "solo_401k";
   const planLabel = isSolo ? "Solo 401k" : "SEP IRA";
 
   const [step, setStep] = useState(0);
   const [businessType, setBusinessType] = useState(null);
   const [hasEmployees, setHasEmployees] = useState(null);
+  const [employeePayroll, setEmployeePayroll] = useState(defaultEmployeePayroll ?? "");
   const [ageBracket, setAgeBracket] = useState(null);
   const [hasOtherPlan, setHasOtherPlan] = useState(null);
   const [otherPlanDeferralYTD, setOtherPlanDeferralYTD] = useState("");
@@ -71,6 +73,10 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
   const steps = useMemo(() => {
     const s = ["business", "employees"];
     if (!(isSolo && hasEmployees === true)) {
+      // SEP IRA + employees: ask for a rough total payroll so results can
+      // show the real employer-parity dollar cost instead of just a
+      // qualitative warning.
+      if (!isSolo && hasEmployees === true) s.push("employeePayroll");
       // Age only matters for Solo 401k's catch-up brackets -- SEP IRA has
       // no age-based catch-up, so there's no reason to ask.
       if (isSolo) s.push("age", "otherPlan");
@@ -91,8 +97,11 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
         otherPlanDeferralYTD: hasOtherPlan ? otherPlanDeferralYTD : 0,
       });
     }
+    if (hasEmployees === true) {
+      return calculateSepIraEmployerParity({ netIncome, businessType, employeePayroll });
+    }
     return calculateSepIra({ netIncome, businessType });
-  }, [isSolo, netIncome, businessType, ageBracket, hasOtherPlan, otherPlanDeferralYTD, soloBlockedByEmployees]);
+  }, [isSolo, netIncome, businessType, ageBracket, hasOtherPlan, otherPlanDeferralYTD, soloBlockedByEmployees, hasEmployees, employeePayroll]);
 
   const goNext = () => setStep((s) => Math.min(steps.length - 1, s + 1));
   const goBack = () => setStep((s) => Math.max(0, s - 1));
@@ -159,6 +168,23 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
               </p>
             </div>
           </div>
+        )}
+
+        {current === "employeePayroll" && (
+          <Step
+            title="Roughly what's your total employee payroll?"
+            subtitle="A ballpark is fine. SEP IRA requires contributing the same percentage of compensation to every eligible employee that you contribute for yourself, so this is what turns that rule into a real dollar number below."
+          >
+            <input
+              type="number"
+              min={0}
+              autoFocus
+              value={employeePayroll}
+              onChange={(e) => setEmployeePayroll(e.target.value)}
+              className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono"
+              placeholder="e.g. 120000"
+            />
+          </Step>
         )}
 
         {current === "age" && (
@@ -277,25 +303,36 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
                 ) : (
                   <div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-bold">Maximum you could contribute this year</span>
+                      <span className="font-bold">Your contribution</span>
                       <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.contribution)}</span>
                     </div>
                     <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
                       This is the ceiling given what you entered above, not a recommendation -- the most you could
                       put in, not what you should.
                     </p>
+                    {hasEmployees === true && (
+                      <>
+                        <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-neutral-200">
+                          <span className="text-neutral-600">Required for your team (same rate)</span>
+                          <span className="font-mono font-semibold">{currency(result.employeeParityContribution)}</span>
+                        </div>
+                        <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
+                          SEP IRA requires the same percentage of compensation for every eligible employee --
+                          calculated here off your effective rate ({(result.effectiveRate * 100).toFixed(1)}%)
+                          applied to the payroll estimate you entered.
+                        </p>
+                        <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-neutral-200">
+                          <span className="font-bold">Total real cost</span>
+                          <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.totalCostWithParity)}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
                 {result.cappedByAnnualLimit && (
                   <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                     Capped by this year&apos;s ${result.cap.toLocaleString()} IRS annual limit -- the uncapped
                     formula would&apos;ve allowed more.
-                  </p>
-                )}
-                {hasEmployees && !isSolo && (
-                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                    Remember: contributing this % of your own compensation means contributing the same % for every
-                    eligible employee too.
                   </p>
                 )}
                 {spouseInBusiness && (
@@ -329,6 +366,7 @@ export default function ContributionCalculatorModal({ planType, onClose }) {
               disabled={
                 (current === "business" && !businessType) ||
                 (current === "employees" && hasEmployees === null) ||
+                (current === "employeePayroll" && !employeePayroll && employeePayroll !== 0) ||
                 (current === "age" && !ageBracket) ||
                 (current === "otherPlan" && hasOtherPlan === null) ||
                 (current === "otherPlan" && hasOtherPlan === true && !otherPlanDeferralYTD && otherPlanDeferralYTD !== 0) ||
