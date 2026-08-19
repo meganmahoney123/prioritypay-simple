@@ -11,7 +11,10 @@ import Btn from "./PublicBtn";
 // dropdown -- without duplicating ~50 lines of markup per page. Tokens
 // (--color-*, --font-*) are expected to already be set on an ancestor
 // (see TOKENS in Homepage.js) -- this component doesn't define its own.
-const RESOURCES = [{ href: "/calculators/moneysimulator", label: "Money Simulator" }];
+const RESOURCES = [
+  { href: "/calculators/moneysimulator", label: "Money Simulator" },
+  { href: "/calculators/taxestimator", label: "Tax Estimator" },
+];
 
 export default function PublicHeader() {
   const [resourcesOpen, setResourcesOpen] = useState(false);
