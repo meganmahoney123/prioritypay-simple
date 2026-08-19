@@ -26,6 +26,12 @@ export async function POST(request) {
     return Response.json({ error: "Missing public_token or account_id." }, { status: 400 });
   }
   const isCredit = account_type === "credit";
+  // Business accounts (Business Owner With Employees persona) are linked
+  // purely for balance visibility next to Team & Plan Obligations -- same
+  // reasoning as credit cards, never a transfer source/destination, so
+  // identity verification/Dwolla is skipped for these too.
+  const isBusiness = account_type === "business";
+  const skipDwolla = isCredit || isBusiness;
 
   const admin = supabaseAdmin();
 
@@ -36,11 +42,13 @@ export async function POST(request) {
   const billingProfile = await getBillingProfile(admin, user.id);
   if (isReadOnly(billingProfile)) return readOnlyError();
 
-  // Credit cards skip identity verification and Dwolla entirely -- they're
-  // never a transfer source/destination, only a close-out expense feed, so
-  // there's nothing for Dwolla to attach a funding source to.
+  // Credit cards and business accounts skip identity verification and
+  // Dwolla entirely -- neither is ever a transfer source/destination,
+  // only a close-out expense feed (credit) or a balance to glance at
+  // (business), so there's nothing for Dwolla to attach a funding
+  // source to.
   let dwollaCustomer = null;
-  if (!isCredit) {
+  if (!skipDwolla) {
     const { data } = await admin
       .from("simple_dwolla_customers")
       .select("dwolla_customer_url")
@@ -62,7 +70,7 @@ export async function POST(request) {
     const itemId = exchange.data.item_id;
 
     let fundingSourceId = null;
-    if (!isCredit) {
+    if (!skipDwolla) {
       const processorTokenRes = await plaidClient.processorTokenCreate({
         access_token: accessToken,
         account_id,
@@ -89,7 +97,7 @@ export async function POST(request) {
         plaid_access_token: accessToken,
         plaid_account_id: account_id,
         dwolla_funding_source_id: fundingSourceId,
-        account_type: isCredit ? "credit" : "depository",
+        account_type: isCredit ? "credit" : isBusiness ? "business" : "depository",
       })
       .select("id, institution_name, account_name, mask, current_balance, account_type, created_at")
       .single();

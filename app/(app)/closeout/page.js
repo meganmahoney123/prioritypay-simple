@@ -194,6 +194,12 @@ export default function CloseoutPage() {
   );
 
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
+  // Business accounts (linked for balance visibility only -- see the
+  // Business Account card below) are never a valid destination for a
+  // split-rule holding account, so every AccountSelect picker on this page
+  // uses this filtered list instead of the raw `accounts` state.
+  const splitEligibleAccounts = useMemo(() => accounts.filter((a) => a.account_type !== "business"), [accounts]);
+  const businessAccounts = useMemo(() => accounts.filter((a) => a.account_type === "business"), [accounts]);
   const realByType = useMemo(() => Object.fromEntries(realAccounts.map((r) => [r.retirementType, r])), [realAccounts]);
 
   const handleConfirm = async () => {
@@ -542,7 +548,7 @@ export default function CloseoutPage() {
                       <RetirementConnectRow
                         retirementType={r.retirementType}
                         accountId={real?.accountId}
-                        accounts={accounts}
+                        accounts={splitEligibleAccounts}
                         onLinked={() => load(period)}
                       />
                       {real?.accountId && r.room > 0 && (
@@ -561,7 +567,7 @@ export default function CloseoutPage() {
                             <AccountSelect
                               value={contributeFrom[r.retirementType] ?? r.holdingAccountId}
                               onChange={(v) => setContributeFrom((prev) => ({ ...prev, [r.retirementType]: v }))}
-                              accounts={accounts}
+                              accounts={splitEligibleAccounts}
                               theme="ledger"
                             />
                           </div>
@@ -668,14 +674,14 @@ export default function CloseoutPage() {
                 <AccountSelect
                   value={topUp.fromAccountId}
                   onChange={(v) => setTopUp((prev) => ({ ...prev, fromAccountId: v }))}
-                  accounts={accounts}
+                  accounts={splitEligibleAccounts}
                   theme="ledger"
                 />
                 <label className="block text-xs text-neutral-500">To</label>
                 <AccountSelect
                   value={topUp.toAccountId}
                   onChange={(v) => setTopUp((prev) => ({ ...prev, toAccountId: v }))}
-                  accounts={accounts}
+                  accounts={splitEligibleAccounts}
                   theme="ledger"
                 />
                 <label className="block text-xs text-neutral-500">Amount</label>
@@ -768,7 +774,7 @@ export default function CloseoutPage() {
                     <AccountSelect
                       value={obligationsForm.accountId ?? teamObligationsRow?.accountId ?? null}
                       onChange={(v) => setObligationsForm((prev) => ({ ...prev, accountId: v }))}
-                      accounts={accounts}
+                      accounts={splitEligibleAccounts}
                       theme="ledger"
                     />
                   </div>
@@ -791,6 +797,41 @@ export default function CloseoutPage() {
                   </div>
                 </div>
               )}
+            </Card>
+          )}
+
+          {isBusinessOwnerWithEmployees && (
+            <Card className="p-6">
+              <h2 className="text-sm font-semibold mb-1">Business Account</h2>
+              <p className="text-xs text-neutral-500 mb-4">
+                Link your business checking or savings account to see its balance right here, next to what&apos;s
+                staged in Team & Plan Obligations above -- a quick gut check that there&apos;s actually enough
+                sitting there before you send anything. Read-only: never used for splits or transfers, and never
+                pulled into close-out&apos;s income/expense review.
+              </p>
+              {businessAccounts.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {businessAccounts.map((acc) => (
+                    <div key={acc.id} className="border border-neutral-200 rounded-xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Briefcase size={16} className="text-neutral-500" />
+                        <div>
+                          <div className="text-sm font-medium">{acc.institution_name}</div>
+                          <div className="text-xs text-neutral-500">{acc.account_name} •••• {acc.mask}</div>
+                        </div>
+                      </div>
+                      <span className="font-mono font-semibold text-sm">{currency(acc.current_balance ?? 0)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <PlaidLinkButton
+                label={businessAccounts.length ? "Link another business account" : "Link a business account"}
+                businessAccount
+                onLinked={() => load(period)}
+                className="text-xs px-4 py-2"
+                style={{ backgroundColor: "#525252" }}
+              />
             </Card>
           )}
         </>

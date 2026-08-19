@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Landmark, CreditCard } from "lucide-react";
+import { Landmark, CreditCard, Briefcase } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
@@ -82,6 +82,8 @@ export default function AccountsPage() {
                 <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center">
                   {acc.account_type === "credit" ? (
                     <CreditCard size={18} className="text-neutral-600" />
+                  ) : acc.account_type === "business" ? (
+                    <Briefcase size={18} className="text-neutral-600" />
                   ) : (
                     <Landmark size={18} className="text-neutral-600" />
                   )}
@@ -91,10 +93,12 @@ export default function AccountsPage() {
                   <div className="text-xs text-neutral-500">{acc.account_name} •••• {acc.mask}</div>
                 </div>
               </div>
-              <Badge>{acc.account_type === "credit" ? "Credit card" : "Active"}</Badge>
+              <Badge>{acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}</Badge>
             </div>
             {acc.account_type === "credit" ? (
               <p className="text-xs text-neutral-500">Spending here shows up in close-out. Not used for splits.</p>
+            ) : acc.account_type === "business" ? (
+              <p className="text-xs text-neutral-500">Balance shown for visibility only -- never used for splits or transfers.</p>
             ) : acc.autoDetectEnabled ? (
               <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here split automatically</p>
             ) : (
