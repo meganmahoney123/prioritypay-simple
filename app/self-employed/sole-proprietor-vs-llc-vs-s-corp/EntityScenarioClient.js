@@ -227,12 +227,12 @@ const INTRO_CARDS = [
 const SIDE_BY_SIDE = [
   ["What it is", "The default. You start working and you are one.", "A company you register with your state.", "Not a company. It's a tax choice you make for a company you already have. You must have an LLC."],
   ["Setup", "Nothing to do.", "File with your state, pick a name, get an EIN. About a day of work.", "Set up the company first, then file Form 2553 with the IRS. Then start payroll."],
-  ["Taxes", "Profit goes on your personal return. You pay 15.3% self-employment tax on it.", "<b>Exactly the same as sole proprietor.</b> An LLC does not change your tax.", "Split into a paycheck and the rest. Only the paycheck pays the 15.3%. That is the saving."],
+  ["Taxes", "Profit goes on your personal return. You pay 15.3% self-employment tax on it.", "<b>Exactly the same as sole proprietor.</b> An LLC does not change your tax.", "Split into a paycheck and the rest. <b>Only the paycheck pays the 15.3%.</b> That is the saving."],
   ["If you get sued", "Your own savings and the things you own are at risk.", "Puts some distance between business money and your own. Not a guarantee. Ask a lawyer what your real exposure is.", "Same as the company underneath it."],
   ["If you make a mistake in your own work", "Not protected.", "Not protected. Insurance covers this, not a company.", "Not protected."],
   ["Tax audit risk", "Schedule C draws attention, especially with big deductions next to small income, a home office, vehicle write-offs, or losses several years running.", "Same as sole proprietor. It is still a Schedule C.", "One flag stands out: a small paycheck next to a big profit share. The return is also more complex, so there is more to get wrong."],
   ["Paperwork each year", "None beyond your personal return.", "A short yearly report to your state to keep the LLC alive. Usually online, usually the same date each year.", "The state report, payroll forms every three months, a W-2 for yourself, and a separate company tax return."],
-  ["Backing out", "Nothing to back out of. Keep working, or stop.", "File to close it with your state and stop paying the fee. Simple, but your set-up cost is gone.", "You can drop the tax choice and go back to being taxed as an LLC, but the timing is fussy and the IRS usually makes you wait five years before choosing it again."],
+  ["Shutting down the business", "Nothing to back out of. Keep working, or stop.", "File to close it with your state and stop paying the fee. Simple, but your set-up cost is gone.", "You can drop the tax choice and go back to being taxed as an LLC, but the timing is fussy and the IRS usually makes you wait five years before choosing it again."],
 ];
 
 function inputsValid({ profit, salary, stateCost, adminCost }) {
