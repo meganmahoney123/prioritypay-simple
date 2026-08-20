@@ -255,3 +255,45 @@ begin
   return new;
 end;
 $$ language plpgsql security definer;
+
+-- PHASE D: Business Financials -- a one-time-per-year (editable anytime)
+-- manual entry of Schedule-C-style totals, so the Tax Strategy Advisor has
+-- a real business profit figure for anyone running a separate business
+-- entity, instead of guessing from personal-account cash flow (which is
+-- only accurate for a sole proprietor with no separate entity -- see
+-- lib/advisorPrompt.js). Deliberately NOT synced from Plaid: pulling real
+-- business-account transactions in automatically was considered and
+-- intentionally not built yet (would need its own categorization review
+-- flow, kept separate from Close-Out's personal net-income math). This is
+-- the lightweight alternative -- reusing Schedule C's own line items,
+-- since that's the actual IRS form this advice is in service of, and it's
+-- something anyone running a business already has from bookkeeping or a
+-- prior year's return.
+create table if not exists simple_business_financials (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  tax_year integer not null,
+  gross_receipts numeric not null default 0,
+  cost_of_goods_sold numeric not null default 0,
+  advertising numeric not null default 0,
+  car_and_truck numeric not null default 0,
+  contract_labor numeric not null default 0,
+  depreciation numeric not null default 0,
+  insurance numeric not null default 0,
+  legal_and_professional numeric not null default 0,
+  office_expense numeric not null default 0,
+  rent numeric not null default 0,
+  repairs_and_maintenance numeric not null default 0,
+  supplies numeric not null default 0,
+  taxes_and_licenses numeric not null default 0,
+  travel numeric not null default 0,
+  meals numeric not null default 0,
+  utilities numeric not null default 0,
+  wages numeric not null default 0,
+  other_expenses numeric not null default 0,
+  updated_at timestamptz not null default now(),
+  unique (user_id, tax_year)
+);
+
+alter table simple_business_financials enable row level security;
+create policy "own business financials" on simple_business_financials for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -15,6 +15,7 @@ const TOOL_LABELS = {
   get_profile: "your profile",
   get_income_summary: "your real income & expenses",
   get_expense_breakdown: "your real spending by merchant",
+  get_business_financials: "your business financials",
   get_split_rules: "your split rules",
   get_retirement_contribution_room: "your retirement contribution room",
   compare_entity_tax_scenarios: "the entity tax comparison",
@@ -112,6 +113,28 @@ export default function AdvisorPage() {
           PriorityPay. This points you toward strategies worth researching; it isn't tax or legal advice, and it
           can't replace a real CPA or attorney who knows your full situation.
         </p>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-divider)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+          marginBottom: 16,
+          fontSize: 13.5,
+        }}
+      >
+        <span style={{ color: "var(--color-neutral-700)" }}>
+          Running a separate business (LLC, S-corp, C-corp)? Add your business financials for more accurate advice.
+        </span>
+        <a href="/business-financials" style={{ color: "var(--color-accent-700)", fontWeight: 600, whiteSpace: "nowrap" }}>
+          Add financials &rarr;
+        </a>
       </div>
 
       <Card style={{ padding: 0, display: "flex", flexDirection: "column", height: "62vh", minHeight: 420 }}>
