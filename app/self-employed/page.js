@@ -38,7 +38,7 @@ export default function SelfEmployedHubPage() {
             Self Employed
           </h1>
           <p style={{ fontSize: 17, lineHeight: 1.65, maxWidth: "36em", margin: "0 0 42px", color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-            Guides for freelancers and independent contractors -- taxes, entity structure, and the parts of managing money that don't come with a steady paycheck.
+            Guides to help self employed individuals navigate taxes, entity structure, and the aspects of managing money that don't come with a steady paycheck.
           </p>
 
           <div style={{ display: "grid", gap: 18 }}>

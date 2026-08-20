@@ -1,6 +1,11 @@
 import LegalPage from "@/components/LegalPage";
 
-export const metadata = { title: "Privacy Policy | PriorityPay" };
+export const metadata = {
+  title: "Privacy Policy | PriorityPay",
+  description: "What information PriorityPay collects, how it's used, and who it's shared with -- including Dwolla, Plaid, Supabase, and Vercel.",
+  alternates: { canonical: "https://www.prioritypay.co/privacy" },
+  robots: { index: false, follow: true },
+};
 
 export default function PrivacyPage() {
   return (

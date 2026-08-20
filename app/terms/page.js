@@ -1,6 +1,14 @@
 import LegalPage from "@/components/LegalPage";
 
-export const metadata = { title: "Terms of Service | PriorityPay" };
+export const metadata = {
+  title: "Terms of Service | PriorityPay",
+  description: "The terms that govern using PriorityPay, including how split rules, identity verification, and money movement through Dwolla and Plaid work.",
+  alternates: { canonical: "https://www.prioritypay.co/terms" },
+  // Boilerplate legal page -- noindexed so it doesn't compete for crawl
+  // budget or get treated as thin/duplicate content; still fully
+  // followable/linkable for anyone who lands on it directly.
+  robots: { index: false, follow: true },
+};
 
 export default function TermsPage() {
   return (
