@@ -22,7 +22,7 @@ const CALCULATORS = [
   { href: "/calculators/taxestimator", label: "Tax Reserve Estimator" },
   { href: "/calculators/emergencyfund", label: "Emergency Fund" },
   { href: "/calculators/debtpayoff", label: "Debt Payoff" },
-  { href: "/calculators/retirementcalculator", label: "Solo 401k vs SEP IRA" },
+  { href: "/calculators/retirementcalculator", label: "Solo 401k + SEP IRA" },
   { href: "/calculators/compoundinterest", label: "Compound Interest" },
   { href: "/calculators/advisoryfeecalculator", label: "Advisory Fee Calculator" },
 ];

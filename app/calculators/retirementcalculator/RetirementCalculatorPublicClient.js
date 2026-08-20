@@ -18,12 +18,22 @@ import { calculateSepIra, calculateSolo401k, AGE_BRACKETS, BUSINESS_TYPES } from
 // favor of a note under Expected net income -- otherPlanDeferralYTD is
 // hardcoded to 0 (full deferral room assumed) since this tool is scoped
 // to a single self-employment/business plan, not multi-plan coordination.
+//
+// Renamed from "vs" to "+" and split "already contributed" into two
+// separate fields per Megan's Aug 2026 note: this isn't an either-or
+// choice (SEP IRA and Solo 401k are two different plans someone could
+// hold at once, especially mid-year after switching from one to the
+// other), and a single shared "already contributed" figure silently
+// assumed whichever plan they ended up using got 100% of what they'd
+// already put aside -- wrong if they'd split contributions, or funded
+// one plan earlier in the year before considering the other.
 export default function RetirementCalculatorPublicClient() {
   const router = useRouter();
   const [businessType, setBusinessType] = useState(BUSINESS_TYPES[0].value);
   const [netIncome, setNetIncome] = useState(90000);
   const [ageBracket, setAgeBracket] = useState("under50");
-  const [alreadyContributed, setAlreadyContributed] = useState(0);
+  const [sepContributed, setSepContributed] = useState(0);
+  const [solo401kContributed, setSolo401kContributed] = useState(0);
 
   const sep = useMemo(() => calculateSepIra({ netIncome, businessType }), [netIncome, businessType]);
   const solo401k = useMemo(
@@ -38,8 +48,8 @@ export default function RetirementCalculatorPublicClient() {
   // abstract.
   const monthsRemaining = useMemo(() => Math.max(1, 12 - new Date().getMonth()), []);
 
-  const planProgress = (target) => {
-    const contributed = Math.max(0, Number(alreadyContributed) || 0);
+  const planProgress = (target, contributedRaw) => {
+    const contributed = Math.max(0, Number(contributedRaw) || 0);
     const remaining = target - contributed;
     return {
       contributed,
@@ -48,15 +58,15 @@ export default function RetirementCalculatorPublicClient() {
       monthlyToHitTarget: remaining > 0 ? remaining / monthsRemaining : 0,
     };
   };
-  const sepProgress = planProgress(sep.contribution);
-  const solo401kProgress = planProgress(solo401k.total);
+  const sepProgress = planProgress(sep.contribution, sepContributed);
+  const solo401kProgress = planProgress(solo401k.total, solo401kContributed);
 
   return (
     <div style={LEDGER_TOKENS}>
       <PublicHeader />
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px clamp(18px, 4vw, 40px) 80px" }}>
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 400, margin: "0 0 10px" }}>
-          Solo 401k vs SEP IRA Calculator
+          Solo 401k + SEP IRA Calculator
         </h1>
         <p className="text-sm" style={{ maxWidth: 600, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
           See how much room you actually have in each for 2026, side by side. Free, no account needed -- for
@@ -110,25 +120,6 @@ export default function RetirementCalculatorPublicClient() {
             Just your self-employment or business net income -- if you also have a W2 job, don't include those wages
             here.
           </p>
-
-          <label className="text-xs flex flex-col gap-1" style={{ maxWidth: 260, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            Already contributed this year
-            <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-              <input
-                type="number"
-                min={0}
-                step={500}
-                value={alreadyContributed}
-                onChange={(e) => setAlreadyContributed(Math.max(0, Number(e.target.value) || 0))}
-                style={ledgerInputStyle({ fontSize: 15, width: 100 })}
-              />
-            </span>
-          </label>
-          <p className="text-xs mt-1 mb-0" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-            To whichever plan below you end up using -- so it can show how much room is left and roughly what to
-            send each month.
-          </p>
         </Card>
 
         <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
@@ -147,6 +138,20 @@ export default function RetirementCalculatorPublicClient() {
                 Capped by the annual dollar limit -- the uncapped 20-25% formula would allow {currency(sep.uncappedContribution)}.
               </p>
             )}
+            <label className="text-xs flex flex-col gap-1 mt-4" style={{ maxWidth: 220, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              Already contributed to this SEP IRA
+              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={500}
+                  value={sepContributed}
+                  onChange={(e) => setSepContributed(Math.max(0, Number(e.target.value) || 0))}
+                  style={ledgerInputStyle({ fontSize: 15, width: 100 })}
+                />
+              </span>
+            </label>
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
               {sepProgress.overContributed ? (
                 <p className="text-sm m-0" style={{ color: "#7a2f2a", fontWeight: 600 }}>
@@ -183,6 +188,20 @@ export default function RetirementCalculatorPublicClient() {
                 Capped by the overall annual limit.
               </p>
             )}
+            <label className="text-xs flex flex-col gap-1 mt-4" style={{ maxWidth: 220, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              Already contributed to this Solo 401k
+              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={500}
+                  value={solo401kContributed}
+                  onChange={(e) => setSolo401kContributed(Math.max(0, Number(e.target.value) || 0))}
+                  style={ledgerInputStyle({ fontSize: 15, width: 100 })}
+                />
+              </span>
+            </label>
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
               {solo401kProgress.overContributed ? (
                 <p className="text-sm m-0" style={{ color: "#7a2f2a", fontWeight: 600 }}>
