@@ -160,7 +160,7 @@ function SettingsPageInner() {
           <p style={{ marginTop: 20, fontSize: 13.5, color: "var(--color-neutral-700)" }}>
             Running a separate entity means PriorityPay only sees your personal accounts, not your real business
             numbers. <a href="/business-financials" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Add your business financials</a> for
-            more accurate answers from the Tax Strategy Advisor.
+            more accurate answers from the Tax Strategy Assistant.
           </p>
         )}
       </Card>

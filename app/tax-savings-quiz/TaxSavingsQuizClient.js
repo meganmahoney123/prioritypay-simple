@@ -228,7 +228,7 @@ export default function TaxSavingsQuizClient() {
             {results.results.length === 0 && (
               <Card style={{ padding: 24 }}>
                 <p className="text-sm" style={{ margin: 0 }}>
-                  We didn't find a strong match based on your answers. Try the quiz again with different answers, or explore PriorityPay's full Tax Strategy Advisor once you're set up.
+                  We didn't find a strong match based on your answers. Try the quiz again with different answers, or explore PriorityPay's full Tax Strategy Assistant once you're set up.
                 </p>
               </Card>
             )}
@@ -259,7 +259,7 @@ export default function TaxSavingsQuizClient() {
                 Want this tailored to your real numbers?
               </h3>
               <p className="text-sm" style={{ margin: "0 0 16px", color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                PriorityPay's Tax Strategy Advisor uses your actual income, expenses, and entity type to go deeper than a quiz can -- and you can ask it follow-up questions directly.
+                PriorityPay's Tax Strategy Assistant uses your actual income, expenses, and entity type to go deeper than a quiz can -- and you can ask it follow-up questions directly.
               </p>
               <a href="/signup" style={{ textDecoration: "none" }}>
                 <PrimaryButton>Try PriorityPay free</PrimaryButton>

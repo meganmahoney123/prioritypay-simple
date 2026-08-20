@@ -111,7 +111,7 @@ export default function AdvisorPage() {
     <div style={{ maxWidth: 780, margin: "0 auto" }}>
       <div style={{ marginBottom: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Tax Strategy Advisor</h1>
+          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Tax Strategy Assistant</h1>
           {usage && (
             <span style={{ fontSize: 12.5, color: "var(--color-neutral-600)", whiteSpace: "nowrap" }}>
               {usage.remaining} of {usage.cap} questions left this month

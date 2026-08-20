@@ -108,7 +108,7 @@ export default function BusinessFinancialsPage() {
           If you run a separate business entity (LLC, S-corp, or C-corp), PriorityPay only sees what moves through
           your personal accounts -- not your real business revenue and expenses. Fill in these totals from your
           bookkeeping or last year's return (they follow Schedule C's own categories) and the{" "}
-          <a href="/advisor" style={{ color: "var(--color-accent-700)" }}>Tax Strategy Advisor</a> will use your real
+          <a href="/advisor" style={{ color: "var(--color-accent-700)" }}>Tax Strategy Assistant</a> will use your real
           numbers instead of guessing. Sole proprietors with no separate entity can skip this -- your personal
           account data already is the complete picture.
         </p>
@@ -142,7 +142,7 @@ export default function BusinessFinancialsPage() {
         </div>
         <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--color-neutral-600)" }}>
           Gross receipts minus cost of goods sold minus total expenses ({currency(totalExpenses)}). This is the figure
-          the advisor will use for entity comparisons, retirement room, and tax reserve sizing.
+          the assistant will use for entity comparisons, retirement room, and tax reserve sizing.
         </p>
       </Card>
 
