@@ -23,6 +23,7 @@ const CALCULATORS = [
   { href: "/calculators/emergencyfund", label: "Emergency Fund" },
   { href: "/calculators/debtpayoff", label: "Debt Payoff" },
   { href: "/calculators/retirementcalculator", label: "Solo 401k vs SEP IRA" },
+  { href: "/calculators/compoundinterest", label: "Compound Interest" },
 ];
 
 // The Blog dropdown itself only ever shows the three hub names -- it

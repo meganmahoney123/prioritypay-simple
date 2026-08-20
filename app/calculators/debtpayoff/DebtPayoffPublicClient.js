@@ -4,13 +4,12 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Plus, Trash2 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
-import PersonaToggle from "@/components/PersonaToggle";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 
 const DEFAULT_DEBTS = [
-  { id: "d1", name: "Credit Card", balance: 4000, apr: 22, minPayment: 120, type: "personal" },
-  { id: "d2", name: "Car Loan", balance: 12000, apr: 6, minPayment: 280, type: "personal" },
+  { id: "d1", name: "Credit Card", balance: 4000, apr: 22, minPayment: 120 },
+  { id: "d2", name: "Car Loan", balance: 12000, apr: 6, minPayment: 280 },
 ];
 
 // Month-by-month simulation: accrue interest on every open balance, pay
@@ -93,7 +92,6 @@ function monthsToYearsLabel(months) {
 
 export default function DebtPayoffPublicClient() {
   const router = useRouter();
-  const [persona, setPersona] = useState("self_employed");
   const [debts, setDebts] = useState(DEFAULT_DEBTS);
   const [extraMonthly, setExtraMonthly] = useState(200);
   const [extraYearly, setExtraYearly] = useState(0);
@@ -105,12 +103,10 @@ export default function DebtPayoffPublicClient() {
   const updateDebt = (id, patch) => setDebts((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   const removeDebt = (id) => setDebts((prev) => prev.filter((d) => d.id !== id));
   const addDebt = () =>
-    setDebts((prev) => [...prev, { id: `d_${Date.now()}`, name: "New debt", balance: 1000, apr: 15, minPayment: 50, type: "personal" }]);
+    setDebts((prev) => [...prev, { id: `d_${Date.now()}`, name: "New debt", balance: 1000, apr: 15, minPayment: 50 }]);
 
   const totalBalance = useMemo(() => debts.reduce((s, d) => s + (Number(d.balance) || 0), 0), [debts]);
   const totalMin = useMemo(() => debts.reduce((s, d) => s + (Number(d.minPayment) || 0), 0), [debts]);
-  const personalBalance = useMemo(() => debts.filter((d) => d.type !== "business").reduce((s, d) => s + (Number(d.balance) || 0), 0), [debts]);
-  const businessBalance = useMemo(() => debts.filter((d) => d.type === "business").reduce((s, d) => s + (Number(d.balance) || 0), 0), [debts]);
 
   const extraOpts = useMemo(
     () => ({ extraMonthly, extraYearly, oneTimeAmount, oneTimeMonth, fixedTotal }),
@@ -155,8 +151,6 @@ export default function DebtPayoffPublicClient() {
         </p>
 
         <Card style={{ padding: "24px 26px", marginBottom: 24 }}>
-          <PersonaToggle value={persona} onChange={setPersona} />
-
           <div className="space-y-2.5 mb-4">
             {debts.map((d) => (
               <div key={d.id} className="flex items-center gap-3 flex-wrap" style={{ padding: "10px 0", borderBottom: "1px solid var(--color-divider)" }}>
@@ -198,16 +192,6 @@ export default function DebtPayoffPublicClient() {
                     style={ledgerInputStyle({ width: 70, fontSize: 14 })}
                   />
                 </label>
-                {persona === "business_owner" && (
-                  <select
-                    value={d.type || "personal"}
-                    onChange={(e) => updateDebt(d.id, { type: e.target.value })}
-                    style={ledgerInputStyle({ fontSize: 13, width: 96 })}
-                  >
-                    <option value="personal">Personal</option>
-                    <option value="business">Business</option>
-                  </select>
-                )}
                 <button onClick={() => removeDebt(d.id)} aria-label="Remove debt" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
                   <Trash2 size={15} />
                 </button>
@@ -368,11 +352,6 @@ export default function DebtPayoffPublicClient() {
               payments.
             </p>
           )}
-          {persona === "business_owner" && businessBalance > 0 && (
-            <p className="text-xs mt-3" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-              Of the total above: {currency(personalBalance)} personal, {currency(businessBalance)} business.
-            </p>
-          )}
         </Card>
 
         <Card style={{ padding: "26px 28px", marginBottom: 24 }}>
@@ -426,8 +405,8 @@ export default function DebtPayoffPublicClient() {
         </Card>
 
         <p className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
-          Estimate only -- interest accrues monthly on each remaining balance at the rate you enter, same as a
-          standard amortization simulation. Doesn't account for new charges, promotional/variable rates, or fees.
+          Estimate only. This assumes a fixed APR and steady payments each month, and doesn't account for new charges,
+          promotional rates, or fees.
         </p>
       </div>
     </div>
