@@ -65,6 +65,7 @@ export default function AdvisorPage() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [usage, setUsage] = useState(null);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -88,6 +89,7 @@ export default function AdvisorPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
       setMessages((cur) => [...cur, { role: "assistant", content: data.reply, toolsUsed: data.toolsUsed }]);
+      if (data.usage) setUsage(data.usage);
     } catch (err) {
       setError(err.message || "Something went wrong.");
       setMessages((cur) => cur.slice(0, -1));
@@ -107,7 +109,14 @@ export default function AdvisorPage() {
   return (
     <div style={{ maxWidth: 780, margin: "0 auto" }}>
       <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Tax Strategy Advisor</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Tax Strategy Advisor</h1>
+          {usage && (
+            <span style={{ fontSize: 12.5, color: "var(--color-neutral-600)", whiteSpace: "nowrap" }}>
+              {usage.remaining} of {usage.cap} questions left this month
+            </span>
+          )}
+        </div>
         <p style={{ margin: 0, color: "var(--color-neutral-700)", fontSize: 15, lineHeight: 1.5 }}>
           Ask about your own numbers -- income, expenses, entity type, retirement room, and how you're set up in
           PriorityPay. This points you toward strategies worth researching; it isn't tax or legal advice, and it

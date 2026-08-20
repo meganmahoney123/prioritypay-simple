@@ -2,6 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { TOOL_SCHEMAS, runAdvisorTool } from "@/lib/advisorTools";
 import { ADVISOR_SYSTEM_PROMPT } from "@/lib/advisorPrompt";
+import { checkAdvisorUsage, incrementAdvisorUsage } from "@/lib/advisorUsage";
 
 // Plain fetch against the Messages API instead of pulling in the Anthropic
 // SDK -- one fewer dependency, and this route only ever needs a single
@@ -66,6 +67,19 @@ export async function POST(request) {
   const admin = supabaseAdmin();
   const ctx = { admin, userId: user.id };
 
+  // Checked BEFORE touching the Anthropic API at all -- a capped user
+  // costs nothing further. usage.remaining (post-this-message) is passed
+  // back to the client so the UI can show it, but the cap itself is
+  // enforced here regardless of what the client sends.
+  const usage = await checkAdvisorUsage(admin, user.id);
+  if (usage.atCap) {
+    return Response.json({
+      reply: `You've used all ${usage.cap} tax advisor questions included this month -- your limit resets on the 1st. If you need more room before then, let PriorityPay know.`,
+      toolsUsed: [],
+      usage: { cap: usage.cap, remaining: 0 },
+    });
+  }
+
   let messages = history
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .map((m) => ({ role: m.role, content: m.content }));
@@ -94,12 +108,19 @@ export async function POST(request) {
       }
 
       const text = extractText(resp.content) || "I wasn't able to put together an answer that time -- try rephrasing the question.";
-      return Response.json({ reply: text, toolsUsed: Array.from(toolsUsed) });
+      await incrementAdvisorUsage(admin, user.id);
+      return Response.json({
+        reply: text,
+        toolsUsed: Array.from(toolsUsed),
+        usage: { cap: usage.cap, remaining: Math.max(0, usage.remaining - 1) },
+      });
     }
 
+    await incrementAdvisorUsage(admin, user.id);
     return Response.json({
       reply: "That question needed more digging than I could finish in one go -- try breaking it into a smaller question.",
       toolsUsed: Array.from(toolsUsed),
+      usage: { cap: usage.cap, remaining: Math.max(0, usage.remaining - 1) },
     });
   } catch (err) {
     return Response.json({ error: err.message || "The advisor hit an error." }, { status: 500 });

@@ -297,3 +297,21 @@ create table if not exists simple_business_financials (
 
 alter table simple_business_financials enable row level security;
 create policy "own business financials" on simple_business_financials for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- PHASE E: Advisor usage cap -- one row per user per calendar month,
+-- incremented once per completed chat turn (never on a capped/blocked
+-- attempt, so hitting the cap doesn't cost anything further). Kept as its
+-- own tiny table rather than a column on simple_profiles so the monthly
+-- reset is just "a new row," with no cron job or reset logic needed --
+-- see app/api/advisor/chat/route.js.
+create table if not exists simple_advisor_usage (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  month text not null, -- "YYYY-MM"
+  message_count integer not null default 0,
+  updated_at timestamptz not null default now(),
+  unique (user_id, month)
+);
+
+alter table simple_advisor_usage enable row level security;
+create policy "own advisor usage" on simple_advisor_usage for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
