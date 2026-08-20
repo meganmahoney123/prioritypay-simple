@@ -219,7 +219,7 @@ const INTRO_CARDS = [
   },
   {
     title: "S-corp",
-    body: "Can cut your self-employment tax once profit is high enough, but it adds payroll, a second tax return and real yearly cost. You must have an LLC to have an S-corp.",
+    body: "Can reduce self-employment tax once profit is high enough, (roughly $80,000/year) but it adds payroll, a second tax return and real yearly cost. You must have an LLC to have an S-corp.",
     cost: "Your LLC cost, plus roughly $700 to $3,500 a year, depending on how much you hand off.",
   },
 ];
