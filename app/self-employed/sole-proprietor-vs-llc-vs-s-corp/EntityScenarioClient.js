@@ -59,14 +59,16 @@ const h4Pros = {
 };
 const h4Cons = { ...h4Pros, color: "var(--color-neutral-700)" };
 const h4When = { ...h4Pros, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" };
-// Plain block <ul> -- NOT display:grid/flex. Setting display:grid directly
-// on a <ul> blockifies its <li> children into grid items, and per the CSS
-// Lists spec, list-item marker boxes aren't generated for flex/grid items
-// -- that's what silently dropped the bullets. Spacing between items is
-// done with li margin-bottom instead.
-const ulStyle = { margin: "0 0 22px", paddingLeft: "1.2em" };
+// Plain block <ul> -- NOT display:grid/flex (grid/flex items don't get
+// marker boxes per the CSS Lists spec, which was bug #1). Also explicit
+// listStyle here because Tailwind's preflight base styles reset every
+// <ul>/<ol> on the page to list-style:none -- that's the real reason the
+// bullets vanished. Inline styles beat a stylesheet rule regardless of
+// specificity, so setting it here restores them. Spacing between items is
+// done with li margin-bottom instead of ul gap.
+const ulStyle = { margin: "0 0 22px", paddingLeft: "1.2em", listStyle: "disc" };
 const liStyle = { marginBottom: 9 };
-const olStyle = { margin: "0 0 22px", paddingLeft: "1.4em" };
+const olStyle = { margin: "0 0 22px", paddingLeft: "1.4em", listStyle: "decimal" };
 const oliStyle = { marginBottom: 11 };
 const note = {
   borderLeft: "1px solid var(--color-accent)",
@@ -676,7 +678,7 @@ export default function EntityScenarioClient() {
                 <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>About this article.</b> This is general educational information about how these rules work, not tax or legal advice for your situation. Entity and tax decisions depend on facts specific to you &mdash; your state, your income, your filing status, the nature of your work &mdash; and the right answer for one self employed individual is often wrong for another. Figures are current for the 2026 tax year as of publication. Rules change; check the date. Talk to a CPA or attorney licensed in your state before making a decision.
               </p>
               <h4 style={h4Pros}>Sources</h4>
-              <ul style={{ margin: 0, paddingLeft: "1.2em", fontSize: 16, lineHeight: 1.6 }}>
+              <ul style={{ margin: 0, paddingLeft: "1.2em", fontSize: 16, lineHeight: 1.6, listStyle: "disc" }}>
                 {SOURCES.map(([org, url, label], i) => (
                   <li key={url} style={i === SOURCES.length - 1 ? undefined : { marginBottom: 8 }}>{org} &mdash; <a href={url} target="_blank" rel="noopener noreferrer">{label}</a></li>
                 ))}
