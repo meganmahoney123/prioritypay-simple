@@ -38,12 +38,11 @@ export default function TaxEstimatorPublicClient() {
       <PublicHeader />
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "48px clamp(18px, 4vw, 40px) 80px" }}>
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 400, margin: "0 0 10px" }}>
-          Tax Estimator
+          Tax Reserve Estimator
         </h1>
         <p className="text-sm" style={{ maxWidth: 580, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-          Estimate your 2026 federal tax bill -- self-employment tax included if you're a freelancer or business
-          owner. Free, no account needed. Answers a few questions differently depending on how you're paid, since
-          the math genuinely isn't the same for everyone.
+          Estimate your 2026 federal tax bill so you know how much to set aside for taxes if you're self employed
+          or a business owner.
         </p>
 
         <Card style={{ padding: "24px 26px", marginBottom: 24 }}>
@@ -161,7 +160,7 @@ export default function TaxEstimatorPublicClient() {
             </p>
           ) : (
             <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
-              Your employer withholds throughout the year -- compare this estimate to what's coming out of your
+              Your employer withholds throughout the year. Compare this estimate to what's coming out of your
               paychecks to see if you're on track.
             </p>
           )}

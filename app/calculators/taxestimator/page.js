@@ -1,9 +1,9 @@
 import TaxEstimatorPublicClient from "./TaxEstimatorPublicClient";
 
 export const metadata = {
-  title: "Free Self-Employment & Income Tax Estimator | PriorityPay",
+  title: "Free Tax Reserve Estimator | PriorityPay",
   description:
-    "Estimate your federal income tax -- and self-employment tax if you're a freelancer or business owner -- for 2026. See exactly what percentage to set aside from every payment.",
+    "Estimate your 2026 federal tax bill so you know how much to set aside for taxes if you're self employed or a business owner.",
 };
 
 export default function TaxEstimatorPage() {

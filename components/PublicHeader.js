@@ -19,23 +19,22 @@ import PriorityPayLogo from "./PriorityPayLogo";
 // audience hubs (just "Self Employed" so far; more hubs get their own
 // entry here as Megan adds them).
 const CALCULATORS = [
-  { href: "/calculators/taxestimator", label: "Tax Estimator" },
+  { href: "/calculators/taxestimator", label: "Tax Reserve Estimator" },
   { href: "/calculators/emergencyfund", label: "Emergency Fund" },
   { href: "/calculators/debtpayoff", label: "Debt Payoff" },
   { href: "/calculators/retirementcalculator", label: "Solo 401k vs SEP IRA" },
 ];
 
-// Three audience hubs per Megan: "Self Employed" (has content now),
-// "Business Owner" and "W2" (empty for now -- they render as a header
-// with no items until articles get filed under them, same pattern as
-// Self Employed before its first post existed).
+// The Blog dropdown itself only ever shows the three hub names -- it
+// does not list individual article titles. Each hub name links straight
+// to that hub's landing page (app/self-employed/page.js etc.), and the
+// article list lives there, not in the nav. Self Employed already has
+// one post; Business Owner and W2 show a "coming soon" state on their
+// hub page until Megan files content under them.
 const BLOG_HUBS = [
-  {
-    hub: "Self Employed",
-    items: [{ href: "/self-employed/sole-proprietor-vs-llc-vs-s-corp", label: "Sole Proprietor vs. LLC vs. S-Corp" }],
-  },
-  { hub: "Business Owner", items: [] },
-  { hub: "W2", items: [] },
+  { hub: "Self Employed", href: "/self-employed" },
+  { hub: "Business Owner", href: "/business-owner" },
+  { hub: "W2", href: "/w2" },
 ];
 
 function NavDropdown({ label, open, setOpen, children }) {
@@ -156,37 +155,7 @@ export default function PublicHeader() {
 
           <NavDropdown label="Blog" open={blogOpen} setOpen={setBlogOpen}>
             {BLOG_HUBS.map((hub) => (
-              <div key={hub.hub}>
-                <div
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: 11,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
-                    padding: "8px 12px 4px",
-                  }}
-                >
-                  {hub.hub}
-                </div>
-                {hub.items.length > 0 ? (
-                  hub.items.map((item) => (
-                    <DropdownLink key={item.href} href={item.href} label={item.label} onClick={() => setBlogOpen(false)} />
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: 13,
-                      fontStyle: "italic",
-                      color: "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                      padding: "2px 12px 8px",
-                    }}
-                  >
-                    Coming soon
-                  </div>
-                )}
-              </div>
+              <DropdownLink key={hub.href} href={hub.href} label={hub.hub} onClick={() => setBlogOpen(false)} />
             ))}
           </NavDropdown>
 

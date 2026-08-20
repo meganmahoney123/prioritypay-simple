@@ -57,7 +57,7 @@ const breadcrumbJsonLd = {
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prioritypay.co/" },
     { "@type": "ListItem", position: 2, name: "Blog" },
-    { "@type": "ListItem", position: 3, name: "Self Employed" },
+    { "@type": "ListItem", position: 3, name: "Self Employed", item: "https://www.prioritypay.co/self-employed" },
     {
       "@type": "ListItem",
       position: 4,

@@ -341,7 +341,7 @@ export default function EntityScenarioClient() {
       <div style={{ background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.7 }}>
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "46px 22px 72px" }}>
           <nav aria-label="Breadcrumb" style={{ fontSize: 13, marginBottom: 22, ...muted(55) }}>
-            <Link href="/" style={{ color: "inherit" }}>Home</Link> / Blog / Self Employed / Sole Proprietor vs. LLC vs. S-Corp
+            <Link href="/" style={{ color: "inherit" }}>Home</Link> / Blog / <Link href="/self-employed" style={{ color: "inherit" }}>Self Employed</Link> / Sole Proprietor vs. LLC vs. S-Corp
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
