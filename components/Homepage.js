@@ -875,6 +875,71 @@ export default function Homepage() {
         </Reveal>
       </section>
 
+      {/* Tax Savings Quiz teaser */}
+      <section style={{ borderTop: "1px solid var(--color-divider)" }}>
+        <div
+          style={{
+            maxWidth: 1180,
+            margin: "0 auto",
+            padding: "clamp(56px, 8vw, 90px) clamp(18px, 4vw, 40px)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+            gap: "clamp(32px, 5vw, 64px)",
+            alignItems: "center",
+          }}
+        >
+          <Reveal>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+              Free tool
+            </span>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 400, lineHeight: 1.1, margin: "14px 0 16px" }}>
+              Not sure what tax strategies apply to you?
+            </h2>
+            <p style={{ fontSize: 15.5, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: "0 0 26px", maxWidth: "34em" }}>
+              Take our free 2-minute quiz. Answer a few questions about your income, family, and business setup, and
+              get a personalized list of tax strategies worth researching -- no account needed.
+            </p>
+            <Btn href="/tax-savings-quiz" variant="primary" style={{ fontSize: 15 }}>
+              Take the free quiz
+            </Btn>
+          </Reveal>
+          <Reveal
+            style={{
+              border: "1px solid var(--color-divider)",
+              borderRadius: "var(--radius-lg)",
+              background: "var(--color-neutral-100)",
+              boxShadow: "var(--shadow-sm)",
+              padding: "clamp(22px, 4vw, 32px)",
+            }}
+          >
+            <div style={{ fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.18em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 16 }}>
+              A few of the strategies covered
+            </div>
+            {[
+              "Solo 401(k) vs. SEP IRA",
+              "S-corp election & reasonable salary",
+              "Home office & business deductions",
+              "HSA & 529 account strategies",
+              "QBI (Section 199A) deduction",
+            ].map((s) => (
+              <div
+                key={s}
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 12,
+                  padding: "12px 0",
+                  borderBottom: "1px solid color-mix(in srgb, var(--color-text) 9%, transparent)",
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)", flexShrink: 0 }} />
+                <span style={{ fontSize: 15 }}>{s}</span>
+              </div>
+            ))}
+          </Reveal>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section style={{ borderTop: "1px solid var(--color-divider)", background: "var(--color-neutral-100)" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "clamp(56px, 8vw, 90px) clamp(18px, 4vw, 40px)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "clamp(32px, 4vw, 64px)" }}>

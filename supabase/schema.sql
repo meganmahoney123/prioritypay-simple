@@ -315,3 +315,26 @@ create table if not exists simple_advisor_usage (
 
 alter table simple_advisor_usage enable row level security;
 create policy "own advisor usage" on simple_advisor_usage for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- PHASE F: Tax Savings Quiz leads -- public, unauthenticated marketing quiz
+-- (app/tax-savings-quiz) that runs entirely server-side via
+-- lib/quizEngine.js (no LLM calls -- deterministic matching against the
+-- same curated strategy library the in-app advisor uses). Every submission
+-- is stored here for follow-up: email + raw answers + which strategy ids
+-- matched. Deliberately NO RLS policy is defined (RLS is still enabled) --
+-- this table has no owning user, so there is nothing for anon/authenticated
+-- roles to be granted access to. Only the service-role client
+-- (supabaseAdmin(), used exclusively inside app/api/quiz/submit/route.js)
+-- can read or write it, since the service role bypasses RLS entirely.
+create table if not exists simple_quiz_leads (
+  id uuid primary key default uuid_generate_v4(),
+  email text not null,
+  persona text[] not null default '{}',
+  answers jsonb not null default '{}',
+  matched_strategy_ids text[] not null default '{}',
+  ip_address text,
+  created_at timestamptz not null default now()
+);
+
+alter table simple_quiz_leads enable row level security;
+create index if not exists simple_quiz_leads_ip_created_idx on simple_quiz_leads (ip_address, created_at);

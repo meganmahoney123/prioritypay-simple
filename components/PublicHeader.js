@@ -148,6 +148,20 @@ export default function PublicHeader() {
             Income Distribution Simulator
           </Link>
 
+          <Link
+            href="/tax-savings-quiz"
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontWeight: 600,
+              fontSize: 14,
+              color: "var(--color-text)",
+              textDecoration: "none",
+              padding: "10px 12px",
+            }}
+          >
+            Tax Savings Quiz
+          </Link>
+
           <NavDropdown label="Calculators" open={calcOpen} setOpen={setCalcOpen}>
             {CALCULATORS.map((item) => (
               <DropdownLink key={item.href} href={item.href} label={item.label} onClick={() => setCalcOpen(false)} />
