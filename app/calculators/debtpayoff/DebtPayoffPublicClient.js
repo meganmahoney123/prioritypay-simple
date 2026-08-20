@@ -124,6 +124,24 @@ export default function DebtPayoffPublicClient() {
 
   const hasAnyExtra = extraMonthly > 0 || extraYearly > 0 || oneTimeAmount > 0;
 
+  // "See the impact of paying more" -- holds everything else constant
+  // (yearly/one-time extras, the fixed-total toggle, strategy) and only
+  // varies the monthly extra, so the effect of that one lever is
+  // isolated and comparable at a glance rather than buried in a single
+  // headline number. Always includes whatever's currently typed in, plus
+  // a spread of round numbers above and below it.
+  const impactRows = useMemo(() => {
+    const presets = new Set([0, 100, 200, 300, 500, Math.round(Number(extraMonthly) || 0)]);
+    return [...presets]
+      .filter((n) => n >= 0)
+      .sort((a, b) => a - b)
+      .map((amt) => ({
+        amount: amt,
+        isCurrent: amt === Math.round(Number(extraMonthly) || 0),
+        ...simulatePayoff(debts, { ...extraOpts, extraMonthly: amt }, strategy),
+      }));
+  }, [debts, extraOpts, strategy, extraMonthly]);
+
   return (
     <div style={LEDGER_TOKENS}>
       <PublicHeader />
@@ -256,6 +274,10 @@ export default function DebtPayoffPublicClient() {
               </span>
             </label>
           </div>
+          <p className="text-xs mt-0 mb-5" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            The "Per month" amount is the one lever most worth playing with -- see exactly how much sooner a bigger
+            number gets you out of debt in "See the impact of paying more" below.
+          </p>
 
           <div className="flex gap-6 flex-wrap items-start">
             <div>
@@ -351,6 +373,47 @@ export default function DebtPayoffPublicClient() {
               Of the total above: {currency(personalBalance)} personal, {currency(businessBalance)} business.
             </p>
           )}
+        </Card>
+
+        <Card style={{ padding: "26px 28px", marginBottom: 24 }}>
+          <div style={{ fontFamily: "var(--font-heading)", fontSize: 18, marginBottom: 4 }}>See the impact of paying more</div>
+          <p className="text-xs mb-4" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            Same debts, same strategy -- only the extra monthly amount changes. This is the one number worth
+            experimenting with above.
+          </p>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 420, fontSize: 14 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "8px 12px 8px 0", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                    Extra/mo
+                  </th>
+                  <th style={{ textAlign: "left", padding: "8px 12px", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                    Debt-free in
+                  </th>
+                  <th style={{ textAlign: "right", padding: "8px 0 8px 12px", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                    Total interest
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {impactRows.map((row) => (
+                  <tr key={row.amount} style={row.isCurrent ? { background: "var(--color-accent-100)" } : undefined}>
+                    <td style={{ padding: "9px 12px 9px 0", borderBottom: "1px solid var(--color-divider)", fontWeight: row.isCurrent ? 600 : 400 }}>
+                      {currency(row.amount)}
+                      {row.isCurrent ? <span style={{ fontSize: 11, color: "var(--color-accent-700)", marginLeft: 6 }}>current</span> : null}
+                    </td>
+                    <td style={{ padding: "9px 12px", borderBottom: "1px solid var(--color-divider)", fontWeight: row.isCurrent ? 600 : 400 }}>
+                      {row.reachedCap ? "50+ yrs" : monthsToYearsLabel(row.months)}
+                    </td>
+                    <td style={{ textAlign: "right", padding: "9px 0 9px 12px", borderBottom: "1px solid var(--color-divider)", fontWeight: row.isCurrent ? 600 : 400 }}>
+                      {row.reachedCap ? "--" : currency(row.totalInterest)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
 
         <Card style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "18px 22px", marginBottom: 20 }}>
