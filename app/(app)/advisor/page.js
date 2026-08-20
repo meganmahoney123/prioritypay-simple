@@ -16,6 +16,7 @@ const TOOL_LABELS = {
   get_income_summary: "your real income & expenses",
   get_expense_breakdown: "your real spending by merchant",
   get_business_financials: "your business financials",
+  get_tax_strategies: "PriorityPay's tax strategy library",
   get_split_rules: "your split rules",
   get_retirement_contribution_room: "your retirement contribution room",
   compare_entity_tax_scenarios: "the entity tax comparison",
