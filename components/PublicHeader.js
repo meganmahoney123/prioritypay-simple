@@ -155,6 +155,13 @@ export default function PublicHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
+    // Fragment, not a single root -- backdropFilter below makes <header>
+    // establish a new containing block for any `position: fixed`
+    // descendant (same rule as `filter`/`transform`/`will-change`), which
+    // would otherwise squash the mobile drawer overlay down to the
+    // header's own ~72px box instead of the full screen. Keeping the
+    // overlay as a sibling of <header>, not a child, avoids that.
+    <>
     <header
       style={{
         position: "sticky",
@@ -242,6 +249,7 @@ export default function PublicHeader() {
           <Menu size={18} />
         </button>
       </div>
+    </header>
 
       {menuOpen && (
         <div
@@ -313,6 +321,6 @@ export default function PublicHeader() {
           }
         }
       `}</style>
-    </header>
+    </>
   );
 }
