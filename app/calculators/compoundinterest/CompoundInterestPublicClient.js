@@ -72,8 +72,8 @@ export default function CompoundInterestPublicClient() {
           Compound Interest Calculator
         </h1>
         <p className="text-sm" style={{ maxWidth: 580, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-          See what investing a set amount every year -- in an index fund or anything else with a steady average
-          return -- could grow into over time. Free, no account needed.
+          See what investing a set amount every year, in an index fund or anything else with a steady average
+          return, could grow into over time. Free, no account needed.
         </p>
 
         <Card style={{ padding: "24px 26px", marginBottom: 24 }}>
@@ -93,17 +93,33 @@ export default function CompoundInterestPublicClient() {
               </span>
             </label>
             <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Amount you invest per year
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={250}
-                  value={annualContribution}
-                  onChange={(e) => setAnnualContribution(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 130 })}
-                />
+              Amount you invest
+              <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={250}
+                    value={annualContribution}
+                    onChange={(e) => setAnnualContribution(Math.max(0, Number(e.target.value) || 0))}
+                    style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 110 })}
+                  />
+                  <span className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>/yr</span>
+                </span>
+                <span className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 40%, transparent)" }}>or</span>
+                <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={25}
+                    value={Math.round(annualContribution / 12)}
+                    onChange={(e) => setAnnualContribution(Math.max(0, Number(e.target.value) || 0) * 12)}
+                    style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 100 })}
+                  />
+                  <span className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>/mo</span>
+                </span>
               </span>
             </label>
             <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
@@ -163,7 +179,7 @@ export default function CompoundInterestPublicClient() {
           </div>
           <p className="text-xs mt-3 mb-0" style={{ maxWidth: 600, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
             The S&amp;P 500 has averaged roughly 10% a year before inflation, or about 7% after inflation, over the
-            long run -- past performance doesn't guarantee future returns, and any single year can be very different
+            long run. Past performance doesn't guarantee future returns, and any single year can be very different
             from the average.
           </p>
         </Card>
