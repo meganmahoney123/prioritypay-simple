@@ -159,8 +159,8 @@ function SettingsPageInner() {
         {profile.entityType && profile.entityType !== "Sole proprietor / freelancer" && (
           <p style={{ marginTop: 20, fontSize: 13.5, color: "var(--color-neutral-700)" }}>
             Running a separate entity means PriorityPay only sees your personal accounts, not your real business
-            numbers. <a href="/business-financials" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Add your business financials</a> for
-            more accurate answers from the Tax Strategy Assistant.
+            numbers. <a href="/business-financials" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Add your business financials</a> so
+            your Tax Summary and reserve calculations reflect the complete picture.
           </p>
         )}
       </Card>

@@ -5,150 +5,8 @@ import PublicHeader from "@/components/PublicHeader";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 import { QUIZ_QUESTIONS } from "@/lib/quizEngine";
-
-const CATEGORY_BLURBS = {
-  "Retirement Accounts": "Ways to shelter income and grow savings tax-advantaged.",
-  "Health & Education Accounts": "HSA, 529, and similar earmarked accounts.",
-  "Family & Dependents": "Strategies tied to a spouse, kids, or dependents.",
-  "Business Deductions": "Everyday business spending that may be deductible.",
-  "Business Structure & Elections": "How your entity is set up, and elections available to it.",
-  "Investment Tax": "Managing taxes on a taxable brokerage account.",
-  "Charitable Giving": "Ways to structure giving more tax-efficiently.",
-  "Equity & Startups": "Stock options, QSBS, and startup-equity mechanics.",
-  "State & Residency": "State tax exposure, residency, and cross-border issues.",
-  "Recent Law Changes": "Provisions from recent tax legislation that may affect you.",
-};
-
-// Renders one line of the If / You could / The benefit framework, a
-// small uppercase label plus the sentence, so the three pieces read as a
-// single structured claim per card instead of a wall of prose. "You could"
-// is bolded slightly heavier since it's the actionable center of the card.
-function StrategyLine({ label, text, emphasize }) {
-  if (!text) return null;
-  return (
-    <p
-      className="text-sm"
-      style={{
-        margin: "0 0 8px",
-        color: emphasize ? "var(--color-text)" : "color-mix(in srgb, var(--color-text) 80%, transparent)",
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: 10.5,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "var(--color-accent-700)",
-          marginRight: 8,
-        }}
-      >
-        {label}
-      </span>
-      {text}
-    </p>
-  );
-}
-
-function StrategyCard({ s }) {
-  const [showScenario, setShowScenario] = useState(false);
-  return (
-    <div style={{ borderTop: "1px solid var(--color-divider)", padding: "18px 0" }}>
-      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10 }}>{s.title}</div>
-
-      <StrategyLine label="If" text={s.condition} />
-      <StrategyLine label="You could" text={s.action} emphasize />
-      <StrategyLine label="The benefit" text={s.benefit} />
-
-      {s.scenario && (
-        <div style={{ margin: "8px 0" }}>
-          <button
-            type="button"
-            onClick={() => setShowScenario((v) => !v)}
-            style={{
-              background: "transparent",
-              border: 0,
-              padding: 0,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontFamily: "var(--font-heading)",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--color-accent-700)",
-            }}
-            aria-expanded={showScenario}
-          >
-            Sample scenario
-            <span style={{ fontSize: 11, transform: showScenario ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
-              ▾
-            </span>
-          </button>
-
-          {showScenario && (
-            <div
-              style={{
-                marginTop: 8,
-                padding: "12px 14px",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--color-neutral-200)",
-                border: "1px solid var(--color-divider)",
-              }}
-            >
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 6 }}>
-                Example
-              </div>
-              <p className="text-sm" style={{ margin: "0 0 8px", color: "var(--color-text)" }}>
-                {s.scenario}
-              </p>
-              <p style={{ margin: 0, fontSize: 12, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Illustrative only, using example numbers. Not a calculation of your actual numbers or a prediction of what you'd save.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {s.notFinancialAdviceNote && (
-        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", flexShrink: 0, paddingTop: 1 }}>
-            Not advice
-          </span>
-          <p style={{ margin: 0, fontSize: 12.5, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            {s.notFinancialAdviceNote}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function OptionButton({ selected, onClick, label }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        display: "block",
-        width: "100%",
-        textAlign: "left",
-        padding: "14px 16px",
-        marginBottom: 10,
-        borderRadius: "var(--radius-md)",
-        border: selected ? "1px solid var(--color-accent)" : "1px solid var(--color-divider)",
-        background: selected ? "color-mix(in srgb, var(--color-accent) 12%, var(--color-neutral-100))" : "var(--color-neutral-100)",
-        color: "var(--color-text)",
-        fontFamily: "var(--font-body)",
-        fontSize: 15,
-        cursor: "pointer",
-      }}
-    >
-      <span style={{ marginRight: 10 }}>{selected ? "◉" : "○"}</span>
-      {label}
-    </button>
-  );
-}
+import { OptionButton } from "@/components/quiz/QuizShared";
+import QuizResultsView from "@/components/quiz/QuizResultsView";
 
 export default function TaxSavingsQuizClient() {
   const [answers, setAnswers] = useState({});
@@ -322,57 +180,25 @@ export default function TaxSavingsQuizClient() {
         )}
 
         {results && (
-          <div>
-            <Card style={{ padding: "clamp(20px, 4vw, 32px)", marginBottom: 24 }}>
-              <p className="text-sm" style={{ margin: 0, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                Based on your answers, here are strategies worth researching, grouped by area. Each one follows the same shape: if this applies to you, here's something you could look into, and here's the benefit. These are things to be aware of and look into, not personalized financial advice.
-              </p>
-            </Card>
-
-            {results.results.length === 0 && (
-              <Card style={{ padding: 24 }}>
-                <p className="text-sm" style={{ margin: 0 }}>
-                  We didn't find a strong match based on your answers. Try the quiz again with different answers, or explore PriorityPay's full Tax Strategy Assistant once you're set up.
-                </p>
-              </Card>
-            )}
-
-            {results.results.map((group) => (
-              <Card key={group.category} style={{ padding: "clamp(18px, 4vw, 28px)", marginBottom: 18 }}>
-                <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 400, fontSize: 20, margin: "0 0 4px" }}>
-                  {group.category}
+          <QuizResultsView
+            results={results}
+            onStartOver={startOver}
+            emptyStateNote="We didn't find a strong match based on your answers. Try the quiz again with different answers, or create a free PriorityPay account to set up automatic tax reserving."
+            ctaSlot={
+              <Card style={{ padding: "clamp(20px, 4vw, 28px)", marginBottom: 18, textAlign: "center" }}>
+                <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 400, fontSize: 20, margin: "0 0 8px" }}>
+                  Want to keep a copy, or automate the parts that involve moving money?
                 </h3>
-                {CATEGORY_BLURBS[group.category] && (
-                  <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 16px" }}>
-                    {CATEGORY_BLURBS[group.category]}
-                  </p>
-                )}
-                {group.strategies.map((s) => (
-                  <StrategyCard key={s.id} s={s} />
-                ))}
+                <p className="text-sm" style={{ margin: "0 0 16px", color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                  A free PriorityPay account saves this report to your email and can automatically set aside money
+                  for taxes, retirement, and savings from every deposit, on the percentages you choose.
+                </p>
+                <a href="/signup" style={{ textDecoration: "none" }}>
+                  <PrimaryButton>Try PriorityPay free</PrimaryButton>
+                </a>
               </Card>
-            ))}
-
-            <Card style={{ padding: "clamp(20px, 4vw, 28px)", marginBottom: 18, textAlign: "center" }}>
-              <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 400, fontSize: 20, margin: "0 0 8px" }}>
-                Want this tailored to your real numbers?
-              </h3>
-              <p className="text-sm" style={{ margin: "0 0 16px", color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                PriorityPay's Tax Strategy Assistant uses your actual income, expenses, and entity type to go deeper than a quiz can, and you can ask it follow-up questions directly.
-              </p>
-              <a href="/signup" style={{ textDecoration: "none" }}>
-                <PrimaryButton>Try PriorityPay free</PrimaryButton>
-              </a>
-            </Card>
-
-            <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textAlign: "center", margin: "24px 0" }}>
-              This is general educational information based on your quiz answers, not tax, legal, or financial advice. Confirm anything before acting on it with a CPA or attorney licensed in your state.
-            </p>
-
-            <div style={{ textAlign: "center" }}>
-              <GhostButton onClick={startOver}>Start over</GhostButton>
-            </div>
-          </div>
+            }
+          />
         )}
       </div>
     </div>

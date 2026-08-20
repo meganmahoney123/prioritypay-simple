@@ -1,243 +1,139 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+// Was the "Tax Strategy Assistant" chat UI (see git history / lib/advisorPrompt.js
+// and app/api/advisor/chat/route.js, both left in place but unused). Megan
+// didn't find the chat useful and asked to replace it with the same Tax
+// Savings Quiz used on the public marketing site (prioritypay.co/tax-savings-quiz),
+// reusing lib/quizEngine.js and the shared components in components/quiz/
+// so this can't drift from the public version.
+//
+// Differences from the public quiz, since the visitor here is already a
+// logged-in account holder:
+//   - No email-capture step -- we already have their email.
+//   - Answers are matched client-side via matchStrategies() directly,
+//     not posted to /api/quiz/submit -- that route's rate-limiting,
+//     honeypot, and simple_quiz_leads insert exist specifically to guard
+//     an anonymous public surface and don't apply to an authenticated user.
+//   - No "try PriorityPay free" closing CTA, since they're already a
+//     customer.
+
+import { useMemo, useState } from "react";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
-
-const STARTERS = [
-  "Based on my numbers, would an S-corp election actually save me money?",
-  "Am I setting aside enough for taxes each month?",
-  "What deduction opportunities might I be missing?",
-  "How much more can I put into a Solo 401k or SEP IRA this year?",
-];
-
-const TOOL_LABELS = {
-  get_profile: "your profile",
-  get_income_summary: "your real income & expenses",
-  get_expense_breakdown: "your real spending by merchant",
-  get_business_financials: "your business financials",
-  get_tax_strategies: "PriorityPay's tax strategy library",
-  get_split_rules: "your split rules",
-  get_retirement_contribution_room: "your retirement contribution room",
-  compare_entity_tax_scenarios: "the entity tax comparison",
-  get_tax_reserve_status: "your tax reserve status",
-};
-
-function Bubble({ role, text, toolsUsed }) {
-  const isUser = role === "user";
-  return (
-    <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", marginBottom: 14 }}>
-      <div
-        style={{
-          maxWidth: "82%",
-          padding: "12px 16px",
-          borderRadius: "var(--radius-lg)",
-          background: isUser ? "var(--color-accent-700)" : "var(--color-surface)",
-          color: isUser ? "#fff" : "var(--color-text)",
-          fontSize: 15,
-          lineHeight: 1.55,
-          whiteSpace: "pre-wrap",
-          boxShadow: "var(--shadow-sm)",
-        }}
-      >
-        {text}
-        {!isUser && toolsUsed && toolsUsed.length > 0 && (
-          <div
-            style={{
-              marginTop: 10,
-              paddingTop: 8,
-              borderTop: "1px solid var(--color-divider)",
-              fontSize: 11.5,
-              letterSpacing: 0.3,
-              textTransform: "uppercase",
-              opacity: 0.6,
-            }}
-          >
-            Looked at: {toolsUsed.map((t) => TOOL_LABELS[t] || t).join(", ")}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+import { QUIZ_QUESTIONS, matchStrategies } from "@/lib/quizEngine";
+import { OptionButton } from "@/components/quiz/QuizShared";
+import QuizResultsView from "@/components/quiz/QuizResultsView";
 
 export default function AdvisorPage() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [usage, setUsage] = useState(null);
-  const scrollRef = useRef(null);
+  const [answers, setAnswers] = useState({});
+  const [stepIndex, setStepIndex] = useState(0);
+  const [results, setResults] = useState(null);
 
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, busy]);
+  const visibleQuestions = useMemo(
+    () => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)),
+    [answers]
+  );
 
-  async function send(text) {
-    const trimmed = (text ?? input).trim();
-    if (!trimmed || busy) return;
-    setError("");
-    const nextMessages = [...messages, { role: "user", content: trimmed }];
-    setMessages(nextMessages);
-    setInput("");
-    setBusy(true);
-    try {
-      const res = await fetch("/api/advisor/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong.");
-      setMessages((cur) => [...cur, { role: "assistant", content: data.reply, toolsUsed: data.toolsUsed }]);
-      if (data.usage) setUsage(data.usage);
-    } catch (err) {
-      setError(err.message || "Something went wrong.");
-      setMessages((cur) => cur.slice(0, -1));
-      setInput(trimmed);
-    } finally {
-      setBusy(false);
-    }
+  const currentQuestion = stepIndex < visibleQuestions.length ? visibleQuestions[stepIndex] : null;
+
+  function selectSingle(question, value) {
+    setAnswers((prev) => ({ ...prev, [question.id]: value }));
   }
 
-  function handleKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send();
+  function toggleMulti(question, value) {
+    setAnswers((prev) => {
+      const current = prev[question.id] || [];
+      let next;
+      if (value === "none") {
+        next = current.includes("none") ? [] : ["none"];
+      } else if (current.includes(value)) {
+        next = current.filter((v) => v !== value);
+      } else {
+        next = [...current.filter((v) => v !== "none"), value];
+      }
+      return { ...prev, [question.id]: next };
+    });
+  }
+
+  function canAdvance() {
+    if (!currentQuestion) return true;
+    const val = answers[currentQuestion.id];
+    if (currentQuestion.type === "single") return !!val;
+    return Array.isArray(val) && val.length > 0;
+  }
+
+  function goNext() {
+    if (!canAdvance()) return;
+    if (stepIndex + 1 >= visibleQuestions.length) {
+      setResults(matchStrategies(answers));
+    } else {
+      setStepIndex((i) => i + 1);
     }
+  }
+  function goBack() {
+    setStepIndex((i) => Math.max(i - 1, 0));
+  }
+  function startOver() {
+    setAnswers({});
+    setStepIndex(0);
+    setResults(null);
   }
 
   return (
-    <div style={{ maxWidth: 780, margin: "0 auto" }}>
+    <div style={{ maxWidth: 720, margin: "0 auto" }}>
       <div style={{ marginBottom: 18 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Tax Strategy Assistant</h1>
-          {usage && (
-            <span style={{ fontSize: 12.5, color: "var(--color-neutral-600)", whiteSpace: "nowrap" }}>
-              {usage.remaining} of {usage.cap} questions left this month
-            </span>
-          )}
-        </div>
+        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Tax Savings Quiz</h1>
         <p style={{ margin: 0, color: "var(--color-neutral-700)", fontSize: 15, lineHeight: 1.5 }}>
-          Ask about your own numbers -- income, expenses, entity type, retirement room, and how you're set up in
-          PriorityPay. This points you toward strategies worth researching; it isn't tax or legal advice, and it
-          can't replace a real CPA or attorney who knows your full situation.
+          Answer a few questions about your situation to get a personalized list of tax strategies worth
+          researching, then download a report to bring to your CPA or tax attorney. This points you toward things
+          to look into; it isn't tax or legal advice.
         </p>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-divider)",
-          borderRadius: "var(--radius-md)",
-          padding: "12px 16px",
-          marginBottom: 16,
-          fontSize: 13.5,
-        }}
-      >
-        <span style={{ color: "var(--color-neutral-700)" }}>
-          Running a separate business (LLC, S-corp, C-corp)? Add your business financials for more accurate advice.
-        </span>
-        <a href="/business-financials" style={{ color: "var(--color-accent-700)", fontWeight: 600, whiteSpace: "nowrap" }}>
-          Add financials &rarr;
-        </a>
-      </div>
+      {!results && (
+        <Card style={{ padding: "clamp(20px, 4vw, 32px)" }}>
+          <div style={{ fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 18 }}>
+            Question {stepIndex + 1} of {visibleQuestions.length}
+          </div>
 
-      <Card style={{ padding: 0, display: "flex", flexDirection: "column", height: "62vh", minHeight: 420 }}>
-        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "20px 20px 4px" }}>
-          {messages.length === 0 && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.4, color: "var(--color-neutral-600)", marginBottom: 10 }}>
-                Try asking
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {STARTERS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => send(s)}
-                    style={{
-                      textAlign: "left",
-                      background: "var(--color-surface)",
-                      border: "1px solid var(--color-divider)",
-                      borderRadius: "var(--radius-md)",
-                      padding: "10px 14px",
-                      fontSize: 14,
-                      fontFamily: "var(--font-body)",
-                      cursor: "pointer",
-                      color: "var(--color-text)",
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
+          {currentQuestion && (
+            <div>
+              <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 400, fontSize: 22, margin: "0 0 18px" }}>
+                {currentQuestion.prompt}
+              </h2>
+              {currentQuestion.options.map((opt) => {
+                const val = answers[currentQuestion.id];
+                const selected = currentQuestion.type === "single" ? val === opt.value : Array.isArray(val) && val.includes(opt.value);
+                return (
+                  <OptionButton
+                    key={opt.value}
+                    selected={selected}
+                    label={opt.label}
+                    onClick={() =>
+                      currentQuestion.type === "single"
+                        ? selectSingle(currentQuestion, opt.value)
+                        : toggleMulti(currentQuestion, opt.value)
+                    }
+                  />
+                );
+              })}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+                <GhostButton onClick={goBack} disabled={stepIndex === 0}>Back</GhostButton>
+                <PrimaryButton onClick={goNext} disabled={!canAdvance()}>
+                  {stepIndex + 1 >= visibleQuestions.length ? "Show my results" : "Next"}
+                </PrimaryButton>
               </div>
             </div>
           )}
-          {messages.map((m, i) => (
-            <Bubble key={i} role={m.role} text={m.content} toolsUsed={m.toolsUsed} />
-          ))}
-          {busy && (
-            <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 14 }}>
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: "var(--radius-lg)",
-                  background: "var(--color-surface)",
-                  fontSize: 14,
-                  color: "var(--color-neutral-700)",
-                }}
-              >
-                Looking at your numbers...
-              </div>
-            </div>
-          )}
-        </div>
-
-        {error && (
-          <div style={{ padding: "0 20px", color: "#a3302a", fontSize: 13.5, marginBottom: 6 }}>{error}</div>
-        )}
-
-        <div style={{ borderTop: "1px solid var(--color-divider)", padding: 14, display: "flex", gap: 10, alignItems: "flex-end" }}>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your taxes, entity setup, or retirement room..."
-            rows={1}
-            style={{
-              flex: 1,
-              resize: "none",
-              border: "1px solid var(--color-divider)",
-              borderRadius: "var(--radius-md)",
-              padding: "10px 12px",
-              fontFamily: "var(--font-body)",
-              fontSize: 14.5,
-              background: "var(--color-bg)",
-              color: "var(--color-text)",
-              maxHeight: 140,
-            }}
-          />
-          <PrimaryButton onClick={() => send()} disabled={busy || !input.trim()}>
-            Send
-          </PrimaryButton>
-        </div>
-      </Card>
-
-      {messages.length > 0 && (
-        <div style={{ marginTop: 12, textAlign: "right" }}>
-          <GhostButton onClick={() => setMessages([])}>Start over</GhostButton>
-        </div>
+        </Card>
       )}
 
-      <p style={{ marginTop: 16, fontSize: 12.5, color: "var(--color-neutral-600)", lineHeight: 1.5 }}>
-        This is general educational information based on your PriorityPay data, not tax, legal, or financial advice.
-        Strategies mentioned may or may not apply to your full situation. Confirm anything before acting on it with a
-        CPA or attorney licensed in your state.
-      </p>
+      {results && (
+        <QuizResultsView
+          results={results}
+          onStartOver={startOver}
+          emptyStateNote="We didn't find a strong match based on your answers. Try the quiz again with different answers."
+        />
+      )}
     </div>
   );
 }
