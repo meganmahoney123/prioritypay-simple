@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: "/closeout", label: "Close Out" },
   { href: "/tax-summary", label: "Tax Summary" },
   { href: "/history", label: "History" },
+  { href: "/advisor", label: "Tax Advisor" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -30,6 +31,7 @@ const TITLES = {
   "/closeout": "Monthly Close-Out",
   "/tax-summary": "Tax Summary",
   "/history": "Transaction History",
+  "/advisor": "Tax Strategy Advisor",
   "/settings": "Settings",
 };
 
