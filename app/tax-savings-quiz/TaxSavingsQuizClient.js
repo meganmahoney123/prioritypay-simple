@@ -244,11 +244,44 @@ export default function TaxSavingsQuizClient() {
                   </p>
                 )}
                 {group.strategies.map((s) => (
-                  <div key={s.id} style={{ borderTop: "1px solid var(--color-divider)", padding: "14px 0" }}>
-                    <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>{s.title}</div>
-                    <p className="text-sm" style={{ margin: 0, color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
+                  <div key={s.id} style={{ borderTop: "1px solid var(--color-divider)", padding: "18px 0" }}>
+                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>{s.title}</div>
+
+                    {s.reason && (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 10,
+                          padding: "10px 12px",
+                          marginBottom: 10,
+                          borderRadius: "var(--radius-sm)",
+                          background: "color-mix(in srgb, var(--color-accent) 9%, transparent)",
+                          border: "1px solid color-mix(in srgb, var(--color-accent) 25%, transparent)",
+                        }}
+                      >
+                        <span style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)", flexShrink: 0, paddingTop: 1 }}>
+                          Why this is here
+                        </span>
+                        <p className="text-sm" style={{ margin: 0, color: "var(--color-text)" }}>{s.reason}</p>
+                      </div>
+                    )}
+
+                    <p className="text-sm" style={{ margin: "0 0 10px", color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
                       {s.summary}
                     </p>
+
+                    {s.nextStep && (
+                      <p className="text-sm" style={{ margin: "0 0 8px", color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
+                        <strong style={{ color: "var(--color-text)" }}>Worth figuring out: </strong>
+                        {s.nextStep}
+                      </p>
+                    )}
+
+                    {s.notFinancialAdviceNote && (
+                      <p style={{ margin: 0, fontSize: 12.5, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                        {s.notFinancialAdviceNote}
+                      </p>
+                    )}
                   </div>
                 ))}
               </Card>
