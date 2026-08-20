@@ -4,37 +4,52 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
-import PersonaToggle from "@/components/PersonaToggle";
 import { Card, PrimaryButton, currency } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle, ledgerSelectStyle } from "@/lib/ledgerTheme";
 import { calculateSepIra, calculateSolo401k, AGE_BRACKETS, BUSINESS_TYPES } from "@/lib/retirementCalculator";
 
-// Solo 401k / SEP IRA access requires self-employment or business income --
-// a W2-only employee simply isn't eligible for either plan, so unlike the
-// other calculators this one only ever shows two persona options.
-const PERSONAS = [
-  { value: "self_employed", label: "Self-employed" },
-  { value: "business_owner", label: "Business owner" },
-];
-
+// No persona toggle here (Megan's Aug 2026 note): the "How you're taxed"
+// select (BUSINESS_TYPES) already captures the one distinction that
+// actually changes the math -- self-employed/K-1 vs. S-corp/C-corp W-2
+// wages. A separate self-employed/business-owner toggle on top of that
+// was redundant and only existed to set a default for this same field.
+//
+// "Already deferred elsewhere this year" was dropped as its own input in
+// favor of a note under Expected net income -- otherPlanDeferralYTD is
+// hardcoded to 0 (full deferral room assumed) since this tool is scoped
+// to a single self-employment/business plan, not multi-plan coordination.
 export default function RetirementCalculatorPublicClient() {
   const router = useRouter();
-  const [persona, setPersona] = useState("self_employed");
   const [businessType, setBusinessType] = useState(BUSINESS_TYPES[0].value);
   const [netIncome, setNetIncome] = useState(90000);
   const [ageBracket, setAgeBracket] = useState("under50");
-  const [otherPlanDeferralYTD, setOtherPlanDeferralYTD] = useState(0);
-
-  const handlePersonaChange = (p) => {
-    setPersona(p);
-    setBusinessType(p === "business_owner" ? "corp" : "self_employed");
-  };
+  const [alreadyContributed, setAlreadyContributed] = useState(0);
 
   const sep = useMemo(() => calculateSepIra({ netIncome, businessType }), [netIncome, businessType]);
   const solo401k = useMemo(
-    () => calculateSolo401k({ netIncome, businessType, ageBracket, otherPlanDeferralYTD }),
-    [netIncome, businessType, ageBracket, otherPlanDeferralYTD]
+    () => calculateSolo401k({ netIncome, businessType, ageBracket, otherPlanDeferralYTD: 0 }),
+    [netIncome, businessType, ageBracket]
   );
+
+  // Months left in the current calendar year, including the current one
+  // (visiting in August -> 5 months: Aug through Dec) -- used to turn
+  // "here's your room" into "here's what to send monthly to hit it,"
+  // which is what makes the automate-it CTA below concrete instead of
+  // abstract.
+  const monthsRemaining = useMemo(() => Math.max(1, 12 - new Date().getMonth()), []);
+
+  const planProgress = (target) => {
+    const contributed = Math.max(0, Number(alreadyContributed) || 0);
+    const remaining = target - contributed;
+    return {
+      contributed,
+      remaining,
+      overContributed: remaining < 0,
+      monthlyToHitTarget: remaining > 0 ? remaining / monthsRemaining : 0,
+    };
+  };
+  const sepProgress = planProgress(sep.contribution);
+  const solo401kProgress = planProgress(solo401k.total);
 
   return (
     <div style={LEDGER_TOKENS}>
@@ -49,11 +64,9 @@ export default function RetirementCalculatorPublicClient() {
         </p>
 
         <Card style={{ padding: "24px 26px", marginBottom: 24 }}>
-          <PersonaToggle value={persona} onChange={handlePersonaChange} options={PERSONAS} />
-
           <div className="flex gap-6 flex-wrap items-end mb-2">
             <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Net income, annual
+              Expected net income, annual
               <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
@@ -67,9 +80,13 @@ export default function RetirementCalculatorPublicClient() {
               </span>
             </label>
 
-            <label className="text-xs flex flex-col gap-1" style={{ maxWidth: 260, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            <label className="text-xs flex flex-col gap-1" style={{ flex: "1 1 300px", maxWidth: 340, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
               How you're taxed
-              <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} style={ledgerSelectStyle({ fontSize: 13 })}>
+              <select
+                value={businessType}
+                onChange={(e) => setBusinessType(e.target.value)}
+                style={ledgerSelectStyle({ fontSize: 13, width: "100%", boxSizing: "border-box" })}
+              >
                 {BUSINESS_TYPES.map((b) => (
                   <option key={b.value} value={b.value}>
                     {b.label}
@@ -88,22 +105,30 @@ export default function RetirementCalculatorPublicClient() {
                 ))}
               </select>
             </label>
-
-            <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Already deferred elsewhere this year (e.g. a W2 job's 401k)
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={500}
-                  value={otherPlanDeferralYTD}
-                  onChange={(e) => setOtherPlanDeferralYTD(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontSize: 15, width: 100 })}
-                />
-              </span>
-            </label>
           </div>
+          <p className="text-xs mt-1 mb-5" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+            Just your self-employment or business net income -- if you also have a W2 job, don't include those wages
+            here.
+          </p>
+
+          <label className="text-xs flex flex-col gap-1" style={{ maxWidth: 260, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            Already contributed this year
+            <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+              <input
+                type="number"
+                min={0}
+                step={500}
+                value={alreadyContributed}
+                onChange={(e) => setAlreadyContributed(Math.max(0, Number(e.target.value) || 0))}
+                style={ledgerInputStyle({ fontSize: 15, width: 100 })}
+              />
+            </span>
+          </label>
+          <p className="text-xs mt-1 mb-0" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+            To whichever plan below you end up using -- so it can show how much room is left and roughly what to
+            send each month.
+          </p>
         </Card>
 
         <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
@@ -122,6 +147,25 @@ export default function RetirementCalculatorPublicClient() {
                 Capped by the annual dollar limit -- the uncapped 20-25% formula would allow {currency(sep.uncappedContribution)}.
               </p>
             )}
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
+              {sepProgress.overContributed ? (
+                <p className="text-sm m-0" style={{ color: "#7a2f2a", fontWeight: 600 }}>
+                  {currency(-sepProgress.remaining)} over this estimate -- talk to your plan administrator before
+                  contributing more.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                    Room left: <strong>{currency(sepProgress.remaining)}</strong>
+                  </p>
+                  {sepProgress.remaining > 0 && (
+                    <p className="text-sm mt-1 mb-0" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
+                      About {currency(sepProgress.monthlyToHitTarget)}/mo for the rest of {new Date().getFullYear()} to hit it
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </Card>
 
           <Card style={{ padding: "26px 28px" }}>
@@ -139,10 +183,32 @@ export default function RetirementCalculatorPublicClient() {
                 Capped by the overall annual limit.
               </p>
             )}
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
+              {solo401kProgress.overContributed ? (
+                <p className="text-sm m-0" style={{ color: "#7a2f2a", fontWeight: 600 }}>
+                  {currency(-solo401kProgress.remaining)} over this estimate -- talk to your plan administrator
+                  before contributing more.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                    Room left: <strong>{currency(solo401kProgress.remaining)}</strong>
+                  </p>
+                  {solo401kProgress.remaining > 0 && (
+                    <p className="text-sm mt-1 mb-0" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
+                      About {currency(solo401kProgress.monthlyToHitTarget)}/mo for the rest of {new Date().getFullYear()} to hit it
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </Card>
         </div>
+        <p className="text-xs mt-3" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+          The monthly amounts above are a general estimate to help you plan, not financial or tax advice.
+        </p>
 
-        <p className="text-sm mt-6" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+        <p className="text-sm mt-4" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
           {solo401k.total > sep.contribution
             ? `A Solo 401k gives you ${currency(solo401k.total - sep.contribution)} more room here, mainly because of the separate employee deferral on top of the employer share.`
             : `These come out close to even at this income -- a SEP IRA is simpler to administer if you'd rather skip the extra paperwork a Solo 401k needs.`}
@@ -158,7 +224,7 @@ export default function RetirementCalculatorPublicClient() {
         </Card>
 
         <p className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
-          Estimate only, based on 2026 IRS limits -- not tax advice. Actual eligible contributions depend on plan
+          Estimate only, based on 2026 IRS limits. Not tax advice. Actual eligible contributions depend on plan
           documents and other real-world details a real accountant should confirm.
         </p>
       </div>
