@@ -115,8 +115,10 @@ export default function AppShell({ children }) {
         alignItems: "stretch",
       }}
     >
-      {!narrow && (
-        <aside style={{ flex: "1 1 232px", minWidth: 0, borderRight: "1px solid var(--color-divider)", background: "var(--color-neutral-100)" }}>
+      <aside
+        className="pp-shell-aside"
+        style={{ flex: "1 1 232px", minWidth: 0, borderRight: "1px solid var(--color-divider)", background: "var(--color-neutral-100)" }}
+      >
           <div style={{ position: "sticky", top: 0, padding: "20px 0 22px" }}>
             <div style={{ display: "flex", alignItems: "center", padding: "0 22px 20px" }}>
               <PriorityPayLogo size={19} />
@@ -144,8 +146,7 @@ export default function AppShell({ children }) {
               </button>
             </div>
           </div>
-        </aside>
-      )}
+      </aside>
 
       <div style={{ flex: "999 1 560px", minWidth: 0 }}>
         <header
@@ -156,7 +157,8 @@ export default function AppShell({ children }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 20,
+            flexWrap: "wrap",
+            gap: "10px 20px",
             padding: "22px clamp(20px, 3.5vw, 44px)",
             borderBottom: "1px solid var(--color-divider)",
             background: "color-mix(in srgb, var(--color-bg) 92%, transparent)",
@@ -164,32 +166,32 @@ export default function AppShell({ children }) {
           }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            {narrow && (
-              <button
-                onClick={() => setMenuOpen(true)}
-                aria-label="Open menu"
-                style={{
-                  display: "inline-flex",
-                  flex: "none",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 40,
-                  height: 40,
-                  background: "transparent",
-                  border: "1px solid var(--color-divider)",
-                  borderRadius: "var(--radius-sm)",
-                  cursor: "pointer",
-                  color: "var(--color-text)",
-                }}
-              >
-                <Menu size={18} />
-              </button>
-            )}
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+              className="pp-shell-hamburger"
+              style={{
+                display: "inline-flex",
+                flex: "none",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 40,
+                height: 40,
+                background: "transparent",
+                border: "1px solid var(--color-divider)",
+                borderRadius: "var(--radius-sm)",
+                cursor: "pointer",
+                color: "var(--color-text)",
+              }}
+            >
+              <Menu size={18} />
+            </button>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 400, margin: 0, letterSpacing: "-0.01em" }}>
               {titleFor(pathname)}
             </h1>
           </span>
           <span
+            className="pp-shell-badge"
             style={{
               fontFamily: "var(--font-heading)",
               fontSize: 11,
@@ -200,6 +202,7 @@ export default function AppShell({ children }) {
               borderRadius: 999,
               padding: "6px 14px",
               whiteSpace: "nowrap",
+              flex: "none",
             }}
           >
             Sandbox mode
@@ -263,6 +266,35 @@ export default function AppShell({ children }) {
       )}
 
       <style jsx global>{`
+        /* Sidebar/hamburger split is CSS-driven (not just the JS
+           "narrow" state) so there's no flash of the desktop sidebar
+           squeezing the header on first paint/hydration, and no dead
+           zone if window.innerWidth is ever momentarily stale (e.g. iOS
+           Safari's address-bar collapse). The JS state still exists for
+           the drawer's open/close interaction and to auto-close it if
+           the window is resized wide, but the breakpoint itself is
+           enforced here so it always matches real layout. */
+        .pp-shell-aside {
+          display: block;
+        }
+        .pp-shell-hamburger {
+          display: none !important;
+        }
+        @media (max-width: 880px) {
+          .pp-shell-aside {
+            display: none !important;
+          }
+          .pp-shell-hamburger {
+            display: inline-flex !important;
+          }
+        }
+        @media (max-width: 420px) {
+          .pp-shell-badge {
+            font-size: 10px !important;
+            padding: 5px 10px !important;
+            letter-spacing: 0.12em !important;
+          }
+        }
         .pp-ledger-navlink:hover {
           color: var(--color-accent-700) !important;
         }

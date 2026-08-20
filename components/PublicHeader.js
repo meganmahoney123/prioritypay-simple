@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import Btn from "./PublicBtn";
 import PriorityPayLogo from "./PriorityPayLogo";
 
@@ -37,6 +37,13 @@ const BLOG_HUBS = [
   { hub: "Self Employed", href: "/self-employed" },
   { hub: "Business Owner", href: "/business-owner" },
   { hub: "W2", href: "/w2" },
+];
+
+// The top-level links every nav surface (desktop row + mobile drawer)
+// needs, kept in one place so the two don't drift.
+const TOP_LINKS = [
+  { href: "/calculators/moneysimulator", label: "Income Distribution Simulator" },
+  { href: "/tax-savings-quiz", label: "Tax Savings Quiz" },
 ];
 
 function NavDropdown({ label, open, setOpen, children }) {
@@ -103,9 +110,49 @@ function DropdownLink({ href, label, onClick }) {
   );
 }
 
+// Mobile drawer group heading -- plain uppercase label, not a button
+// (unlike the desktop dropdowns, the drawer just lists everything flat
+// since hover-driven dropdowns don't have a touch equivalent).
+function DrawerGroupLabel({ children }) {
+  return (
+    <div
+      style={{
+        fontFamily: "var(--font-heading)",
+        fontSize: 12,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+        padding: "16px 16px 6px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DrawerLink({ href, label, onClick }) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      style={{
+        display: "block",
+        padding: "12px 16px",
+        fontFamily: "var(--font-body)",
+        fontSize: 16,
+        color: "var(--color-text)",
+        textDecoration: "none",
+      }}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export default function PublicHeader() {
   const [calcOpen, setCalcOpen] = useState(false);
   const [blogOpen, setBlogOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header
@@ -126,7 +173,6 @@ export default function PublicHeader() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          flexWrap: "wrap",
           gap: "14px 24px",
         }}
       >
@@ -134,34 +180,28 @@ export default function PublicHeader() {
           <PriorityPayLogo size={21} />
         </Link>
 
-        <nav style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link
-            href="/calculators/moneysimulator"
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontWeight: 600,
-              fontSize: 14,
-              color: "var(--color-text)",
-              textDecoration: "none",
-              padding: "10px 12px",
-            }}
-          >
-            Income Distribution Simulator
-          </Link>
-
-          <Link
-            href="/tax-savings-quiz"
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontWeight: 600,
-              fontSize: 14,
-              color: "var(--color-text)",
-              textDecoration: "none",
-              padding: "10px 12px",
-            }}
-          >
-            Tax Savings Quiz
-          </Link>
+        {/* Desktop nav row -- hidden below 880px via CSS (see the
+            pp-public-nav / pp-public-hamburger media query), same
+            pattern AppShell uses so there's no JS-hydration flash of an
+            overflowing nav row before the breakpoint kicks in. */}
+        <nav className="pp-public-nav" style={{ alignItems: "center", gap: 8 }}>
+          {TOP_LINKS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 600,
+                fontSize: 14,
+                color: "var(--color-text)",
+                textDecoration: "none",
+                padding: "10px 12px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
 
           <NavDropdown label="Calculators" open={calcOpen} setOpen={setCalcOpen}>
             {CALCULATORS.map((item) => (
@@ -178,7 +218,101 @@ export default function PublicHeader() {
           <Btn href="/login" variant="secondary">Log in</Btn>
           <Btn href="/signup" variant="primary">Get started</Btn>
         </nav>
+
+        {/* Mobile hamburger -- hidden above 880px via the same CSS
+            breakpoint, so exactly one of the two nav surfaces is ever
+            visible at a time. */}
+        <button
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open menu"
+          className="pp-public-hamburger"
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+            width: 40,
+            height: 40,
+            background: "transparent",
+            border: "1px solid var(--color-divider)",
+            borderRadius: "var(--radius-sm)",
+            cursor: "pointer",
+            color: "var(--color-text)",
+            flex: "none",
+          }}
+        >
+          <Menu size={18} />
+        </button>
       </div>
+
+      {menuOpen && (
+        <div
+          onClick={() => setMenuOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 70, background: "color-mix(in srgb, #171614 48%, transparent)", display: "flex", justifyContent: "flex-end" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(86vw, 320px)",
+              height: "100%",
+              overflowY: "auto",
+              background: "var(--color-bg)",
+              borderLeft: "1px solid var(--color-divider)",
+              boxShadow: "var(--shadow-lg)",
+              padding: "18px 0 28px",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0 16px 16px" }}>
+              <PriorityPayLogo size={19} />
+              <button
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+                style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", padding: 4 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ height: 1, background: "var(--color-divider)" }} />
+
+            {TOP_LINKS.map((item) => (
+              <DrawerLink key={item.href} href={item.href} label={item.label} onClick={() => setMenuOpen(false)} />
+            ))}
+
+            <DrawerGroupLabel>Calculators</DrawerGroupLabel>
+            {CALCULATORS.map((item) => (
+              <DrawerLink key={item.href} href={item.href} label={item.label} onClick={() => setMenuOpen(false)} />
+            ))}
+
+            <DrawerGroupLabel>Blog</DrawerGroupLabel>
+            {BLOG_HUBS.map((hub) => (
+              <DrawerLink key={hub.href} href={hub.href} label={hub.hub} onClick={() => setMenuOpen(false)} />
+            ))}
+
+            <div style={{ flex: 1 }} />
+            <div style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 10 }}>
+              <Btn href="/login" variant="secondary" style={{ textAlign: "center" }}>Log in</Btn>
+              <Btn href="/signup" variant="primary" style={{ textAlign: "center" }}>Get started</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        .pp-public-nav {
+          display: flex;
+        }
+        .pp-public-hamburger {
+          display: none;
+        }
+        @media (max-width: 880px) {
+          .pp-public-nav {
+            display: none !important;
+          }
+          .pp-public-hamburger {
+            display: inline-flex !important;
+          }
+        }
+      `}</style>
     </header>
   );
 }

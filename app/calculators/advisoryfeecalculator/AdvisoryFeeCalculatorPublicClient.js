@@ -107,11 +107,13 @@ const FEE_CHECK_CSS = `
 .pp-fee-check .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:12px 16px}
 .pp-fee-check label.f{display:block;font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin-bottom:3px}
 .pp-fee-check .hint{font-size:11px;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin-top:4px;line-height:1.4;font-style:italic}
-.pp-fee-check .err{font-size:11.5px;color:var(--warn);margin-top:5px;line-height:1.4}
+.pp-fee-check .err{font-size:11.5px;color:#a4372c;margin-top:5px;line-height:1.4}
 .pp-fee-check .in{width:100%;border:0;border-bottom:1px solid var(--color-divider);background:transparent;font-family:var(--font-body);
-  font-size:14.5px;color:var(--color-text);padding:5px 2px;outline:none;border-radius:0}
+  /* 16px, not 14.5 -- under 16px, iOS Safari auto-zooms the page on
+     focus, which is disruptive on a form with this many numeric fields. */
+  font-size:16px;color:var(--color-text);padding:5px 2px;outline:none;border-radius:0}
 .pp-fee-check .in:focus{border-bottom-color:var(--color-accent)}
-.pp-fee-check .in.bad{border-bottom-color:var(--warn)}
+.pp-fee-check .in.bad{border-bottom-color:#a4372c}
 .pp-fee-check select.in{padding:5px 0}
 .pp-fee-check .rangepair{display:flex;gap:10px;align-items:flex-end;max-width:330px}
 .pp-fee-check .rangepair span{font-size:12px;color:color-mix(in srgb, var(--color-text) 55%, transparent);padding-bottom:6px}
@@ -166,7 +168,8 @@ const FEE_CHECK_CSS = `
   display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
 .pp-fee-check .tip{position:absolute;pointer-events:none;background:var(--color-neutral-100);border:1px solid var(--color-divider);border-radius:var(--radius-sm);padding:7px 10px;
   font-size:12px;white-space:nowrap;opacity:0;transition:.12s;z-index:9;box-shadow:var(--shadow-md)}
-.pp-fee-check table.tv{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:4px}
+.pp-fee-check .tv-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pp-fee-check table.tv{border-collapse:collapse;width:100%;min-width:420px;font-size:12.5px;margin-top:4px}
 .pp-fee-check table.tv th,.pp-fee-check table.tv td{border-bottom:1px solid var(--color-divider);padding:7px 8px;text-align:left;vertical-align:top}
 .pp-fee-check table.tv th{color:color-mix(in srgb, var(--color-text) 55%, transparent);font-weight:500;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
 .pp-fee-check table.tv td.n,.pp-fee-check table.tv th.n{text-align:right;font-variant-numeric:tabular-nums}
@@ -383,7 +386,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
                   <div>${a.tiers.map((x, i) => `<div class="trow">
                     <div><label class="f">${x.upTo == null ? "Everything above" : "Up to"}</label>
                       ${x.upTo == null
-                        ? `<div class="in" style="border-bottom-color:transparent;color:var(--muted)">— top tier —</div>`
+                        ? `<div class="in" style="border-bottom-color:transparent;color:color-mix(in srgb, var(--color-text) 55%, transparent)">— top tier —</div>`
                         : `<input class="in" type="number" step="50000" data-tier="${i}" data-tk="upTo" value="${x.upTo}">`}</div>
                     <div><label class="f">Rate %/yr</label>
                       <input class="in" type="number" step="0.01" data-tier="${i}" data-tk="rate" value="${x.rate}"></div>
@@ -515,9 +518,9 @@ export default function AdvisoryFeeCalculatorPublicClient() {
       const viz = document.getElementById("viz");
       if (viz) {
         if (S.table) {
-          viz.innerHTML = `<table class="tv"><tr><th>Scenario</th><th class="n">Total fees</th><th class="n">Ending value</th></tr>
+          viz.innerHTML = `<div class="tv-wrap"><table class="tv"><tr><th>Scenario</th><th class="n">Total fees</th><th class="n">Ending value</th></tr>
             ${rows.map((x) => `<tr><td>${x.lab}</td><td class="n">${span(x.r.lo.fees, x.r.hi.fees)}</td>
-              <td class="n">${span(x.r.lo.end, x.r.hi.end)}</td></tr>`).join("")}</table>`;
+              <td class="n">${span(x.r.lo.end, x.r.hi.end)}</td></tr>`).join("")}</table></div>`;
         } else {
           viz.innerHTML = rows.map((x) => `<div class="bar-row" data-f="${span(x.r.lo.fees, x.r.hi.fees)}">
               <div class="bar-lab"><span>${x.lab}</span><b>${span(x.r.lo.end, x.r.hi.end)}</b></div>
@@ -550,16 +553,16 @@ export default function AdvisoryFeeCalculatorPublicClient() {
         perAcctEl.innerHTML = `
           <div class="figtitle">By account, at today's balance</div>
           <div class="figsub">The all-in rate each account is carrying right now.</div>
-          <table class="tv"><tr><th>Account</th><th class="n">Balance</th><th class="n">All-in %</th><th class="n">Yearly cost</th></tr>
+          <div class="tv-wrap"><table class="tv"><tr><th>Account</th><th class="n">Balance</th><th class="n">All-in %</th><th class="n">Yearly cost</th></tr>
           ${ACTIVE.map((a) => {
             const bl = bal(a, "lo"), bh = bal(a, "hi");
             const pc = (b) => (b ? ((b * ((a.managed ? advRate(a, b) : 0) + (a.er || 0) / 100 + (a.otherPct || 0) / 100) + (a.otherFlat || 0)) / b) * 100 : 0);
             const pl = pc(bl), ph = pc(bh);
             const pct = pl.toFixed(2) === ph.toFixed(2) ? `${pl.toFixed(2)}%` : `${ph.toFixed(2)}–${pl.toFixed(2)}%`;
-            return `<tr><td>${a.name || T(a.type).n}${a.managed ? "" : `<div style="font-size:11px;color:var(--muted)">no adviser fee</div>`}</td>
+            return `<tr><td>${a.name || T(a.type).n}${a.managed ? "" : `<div style="font-size:11px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">no adviser fee</div>`}</td>
               <td class="n">${span(bl, bh)}</td><td class="n">${pct}</td>
               <td class="n">${span(bl * pl / 100, bh * ph / 100)}</td></tr>`;
-          }).join("")}</table>`;
+          }).join("")}</table></div>`;
       }
 
       const discEl = document.getElementById("disc");

@@ -6,6 +6,21 @@ import "./globals.css";
 // that don't set their own (mainly the authenticated app screens, which
 // aren't public/indexable anyway). openGraph/twitter defaults give every
 // page a sane social-preview fallback even before it sets its own.
+
+// Next.js keeps viewport out of the `metadata` export on purpose (it
+// warns/deprecates viewport-in-metadata as of 14.x) -- this was missing
+// entirely before, which meant mobile browsers had nothing telling them
+// "render at the device's actual width." Without it, mobile Safari/
+// Chrome fall back to a virtual ~980px desktop layout viewport and just
+// shrink-to-fit the whole page, which is why nothing here has actually
+// been responsive on a real phone: JS breakpoints (window.innerWidth)
+// were reading that fake ~980px width, not the device's real one, so
+// mobile-only UI (like AppShell's hamburger menu) never triggered.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata = {
   metadataBase: new URL("https://www.prioritypay.co"),
   title: "PriorityPay Simple",
