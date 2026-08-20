@@ -25,11 +25,17 @@ const CALCULATORS = [
   { href: "/calculators/retirementcalculator", label: "Solo 401k vs SEP IRA" },
 ];
 
+// Three audience hubs per Megan: "Self Employed" (has content now),
+// "Business Owner" and "W2" (empty for now -- they render as a header
+// with no items until articles get filed under them, same pattern as
+// Self Employed before its first post existed).
 const BLOG_HUBS = [
   {
     hub: "Self Employed",
     items: [{ href: "/self-employed/sole-proprietor-vs-llc-vs-s-corp", label: "Sole Proprietor vs. LLC vs. S-Corp" }],
   },
+  { hub: "Business Owner", items: [] },
+  { hub: "W2", items: [] },
 ];
 
 function NavDropdown({ label, open, setOpen, children }) {
@@ -163,9 +169,23 @@ export default function PublicHeader() {
                 >
                   {hub.hub}
                 </div>
-                {hub.items.map((item) => (
-                  <DropdownLink key={item.href} href={item.href} label={item.label} onClick={() => setBlogOpen(false)} />
-                ))}
+                {hub.items.length > 0 ? (
+                  hub.items.map((item) => (
+                    <DropdownLink key={item.href} href={item.href} label={item.label} onClick={() => setBlogOpen(false)} />
+                  ))
+                ) : (
+                  <div
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 13,
+                      fontStyle: "italic",
+                      color: "color-mix(in srgb, var(--color-text) 45%, transparent)",
+                      padding: "2px 12px 8px",
+                    }}
+                  >
+                    Coming soon
+                  </div>
+                )}
               </div>
             ))}
           </NavDropdown>
