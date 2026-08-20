@@ -7,7 +7,6 @@ import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 import { QUIZ_QUESTIONS } from "@/lib/quizEngine";
 
 const CATEGORY_BLURBS = {
-  "Tax Fundamentals": "The building blocks worth understanding before anything else.",
   "Retirement Accounts": "Ways to shelter income and grow savings tax-advantaged.",
   "Health & Education Accounts": "HSA, 529, and similar earmarked accounts.",
   "Family & Dependents": "Strategies tied to a spouse, kids, or dependents.",
@@ -19,6 +18,37 @@ const CATEGORY_BLURBS = {
   "State & Residency": "State tax exposure, residency, and cross-border issues.",
   "Recent Law Changes": "Provisions from recent tax legislation that may affect you.",
 };
+
+// Renders one line of the If / You could / The benefit framework, a
+// small uppercase label plus the sentence, so the three pieces read as a
+// single structured claim per card instead of a wall of prose. "You could"
+// is bolded slightly heavier since it's the actionable center of the card.
+function StrategyLine({ label, text, emphasize }) {
+  if (!text) return null;
+  return (
+    <p
+      className="text-sm"
+      style={{
+        margin: "0 0 8px",
+        color: emphasize ? "var(--color-text)" : "color-mix(in srgb, var(--color-text) 80%, transparent)",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-heading)",
+          fontSize: 10.5,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--color-accent-700)",
+          marginRight: 8,
+        }}
+      >
+        {label}
+      </span>
+      {text}
+    </p>
+  );
+}
 
 function OptionButton({ selected, onClick, label }) {
   return (
@@ -141,7 +171,7 @@ export default function TaxSavingsQuizClient() {
           Tax Savings Quiz
         </h1>
         <p className="text-sm" style={{ maxWidth: 580, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-          Answer a few questions about your situation and get a personalized list of tax strategies worth researching. Free, no account needed -- this points you toward things to look into, not specific financial advice.
+          Answer a few questions about your situation and get a personalized list of tax strategies worth researching. Free, no account needed. This points you toward things to look into, not specific financial advice.
         </p>
 
         {!results && (
@@ -193,7 +223,7 @@ export default function TaxSavingsQuizClient() {
                   placeholder="you@example.com"
                   style={ledgerInputStyle({ marginBottom: 8 })}
                 />
-                {/* Honeypot -- hidden from real users via off-screen positioning, not display:none (some bots skip display:none fields) */}
+                {/* Honeypot: hidden from real users via off-screen positioning, not display:none (some bots skip display:none fields) */}
                 <input
                   type="text"
                   value={website}
@@ -221,7 +251,7 @@ export default function TaxSavingsQuizClient() {
           <div>
             <Card style={{ padding: "clamp(20px, 4vw, 32px)", marginBottom: 24 }}>
               <p className="text-sm" style={{ margin: 0, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                Based on your answers, here are strategies worth researching -- grouped by area. These are things to be aware of and look into, not personalized financial advice.
+                Based on your answers, here are strategies worth researching, grouped by area. Each one follows the same shape: if this applies to you, here's something you could look into, and here's the benefit. These are things to be aware of and look into, not personalized financial advice.
               </p>
             </Card>
 
@@ -245,42 +275,21 @@ export default function TaxSavingsQuizClient() {
                 )}
                 {group.strategies.map((s) => (
                   <div key={s.id} style={{ borderTop: "1px solid var(--color-divider)", padding: "18px 0" }}>
-                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>{s.title}</div>
+                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10 }}>{s.title}</div>
 
-                    {s.reason && (
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 10,
-                          padding: "10px 12px",
-                          marginBottom: 10,
-                          borderRadius: "var(--radius-sm)",
-                          background: "color-mix(in srgb, var(--color-accent) 9%, transparent)",
-                          border: "1px solid color-mix(in srgb, var(--color-accent) 25%, transparent)",
-                        }}
-                      >
-                        <span style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)", flexShrink: 0, paddingTop: 1 }}>
-                          Why this is here
-                        </span>
-                        <p className="text-sm" style={{ margin: 0, color: "var(--color-text)" }}>{s.reason}</p>
-                      </div>
-                    )}
-
-                    <p className="text-sm" style={{ margin: "0 0 10px", color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
-                      {s.summary}
-                    </p>
-
-                    {s.nextStep && (
-                      <p className="text-sm" style={{ margin: "0 0 8px", color: "color-mix(in srgb, var(--color-text) 78%, transparent)" }}>
-                        <strong style={{ color: "var(--color-text)" }}>Worth figuring out: </strong>
-                        {s.nextStep}
-                      </p>
-                    )}
+                    <StrategyLine label="If" text={s.condition} />
+                    <StrategyLine label="You could" text={s.action} emphasize />
+                    <StrategyLine label="The benefit" text={s.benefit} />
 
                     {s.notFinancialAdviceNote && (
-                      <p style={{ margin: 0, fontSize: 12.5, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                        {s.notFinancialAdviceNote}
-                      </p>
+                      <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                        <span style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", flexShrink: 0, paddingTop: 1 }}>
+                          Not advice
+                        </span>
+                        <p style={{ margin: 0, fontSize: 12.5, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                          {s.notFinancialAdviceNote}
+                        </p>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -292,7 +301,7 @@ export default function TaxSavingsQuizClient() {
                 Want this tailored to your real numbers?
               </h3>
               <p className="text-sm" style={{ margin: "0 0 16px", color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                PriorityPay's Tax Strategy Assistant uses your actual income, expenses, and entity type to go deeper than a quiz can -- and you can ask it follow-up questions directly.
+                PriorityPay's Tax Strategy Assistant uses your actual income, expenses, and entity type to go deeper than a quiz can, and you can ask it follow-up questions directly.
               </p>
               <a href="/signup" style={{ textDecoration: "none" }}>
                 <PrimaryButton>Try PriorityPay free</PrimaryButton>
