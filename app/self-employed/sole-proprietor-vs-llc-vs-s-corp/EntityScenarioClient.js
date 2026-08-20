@@ -59,8 +59,15 @@ const h4Pros = {
 };
 const h4Cons = { ...h4Pros, color: "var(--color-neutral-700)" };
 const h4When = { ...h4Pros, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" };
-const ulStyle = { margin: "0 0 22px", paddingLeft: "1.2em", display: "grid", gap: 9 };
-const olStyle = { margin: "0 0 22px", paddingLeft: "1.4em", display: "grid", gap: 11 };
+// Plain block <ul> -- NOT display:grid/flex. Setting display:grid directly
+// on a <ul> blockifies its <li> children into grid items, and per the CSS
+// Lists spec, list-item marker boxes aren't generated for flex/grid items
+// -- that's what silently dropped the bullets. Spacing between items is
+// done with li margin-bottom instead.
+const ulStyle = { margin: "0 0 22px", paddingLeft: "1.2em" };
+const liStyle = { marginBottom: 9 };
+const olStyle = { margin: "0 0 22px", paddingLeft: "1.4em" };
+const oliStyle = { marginBottom: 11 };
 const note = {
   borderLeft: "1px solid var(--color-accent)",
   padding: "4px 0 4px 20px",
@@ -84,7 +91,7 @@ function List({ items }) {
   return (
     <ul style={ulStyle}>
       {items.map((it, i) => (
-        <li key={i} dangerouslySetInnerHTML={{ __html: it }} />
+        <li key={i} style={i === items.length - 1 ? undefined : liStyle} dangerouslySetInnerHTML={{ __html: it }} />
       ))}
     </ul>
   );
@@ -445,9 +452,9 @@ export default function EntityScenarioClient() {
             <h3 id="breakeven" style={h3Style}>At what income does an S-corp actually make sense?</h3>
             <p style={{ margin: "0 0 14px" }}>Here are the four components to consider:</p>
             <ol style={olStyle}>
-              <li><b>Payroll tax saved</b>: roughly 15.3% of the profit you take as distribution instead of salary. (Precisely: self-employment tax applies to 92.35% of net profit, which slightly reduces the sole-proprietor side.)</li>
-              <li><b>Administrative cost added</b>: Payroll service, 1120-S preparation, any state entity tax. This can be realistically $1,500&ndash;$4,000 a year.</li>
-              <li><b>QBI deduction lost</b>: 20% of the amount you convert from distribution to salary, multiplied by your marginal tax rate.</li>
+              <li style={oliStyle}><b>Payroll tax saved</b>: roughly 15.3% of the profit you take as distribution instead of salary. (Precisely: self-employment tax applies to 92.35% of net profit, which slightly reduces the sole-proprietor side.)</li>
+              <li style={oliStyle}><b>Administrative cost added</b>: Payroll service, 1120-S preparation, any state entity tax. This can be realistically $1,500&ndash;$4,000 a year.</li>
+              <li style={oliStyle}><b>QBI deduction lost</b>: 20% of the amount you convert from distribution to salary, multiplied by your marginal tax rate.</li>
               <li><b>The Social Security wage base</b>: For 2026, the 12.4% Social Security portion applies only to the first $184,500. Above that, only the 2.9% Medicare portion continues (plus 0.9% additional Medicare tax above $200,000 single / $250,000 married filing jointly). So the savings per dollar shrink at higher incomes.</li>
             </ol>
             <p style={{ margin: "0 0 14px", fontSize: 16.5, ...muted(74) }}>The calculator below runs all four of these on your own numbers.</p>
@@ -659,7 +666,7 @@ export default function EntityScenarioClient() {
             <List items={BOI_LEAVES} />
             <p style={{ margin: "0 0 14px" }}><b>Two things to still check:</b></p>
             <ol style={olStyle}>
-              <li><b>Your state may have its own version.</b> A handful of states have enacted or proposed beneficial-ownership disclosure laws that operate independently of the federal rule.</li>
+              <li style={oliStyle}><b>Your state may have its own version.</b> A handful of states have enacted or proposed beneficial-ownership disclosure laws that operate independently of the federal rule.</li>
               <li><b>Be skeptical of BOI filing services.</b> Companies charged fees to file these reports, and some continued marketing the service after the requirement lapsed. There is no federal filing fee, because there is no federal filing.</li>
             </ol>
             <p style={{ margin: "0 0 14px" }}>If you see a letter or email demanding a BOI filing fee with a deadline, treat it as a solicitation, not a government notice.</p>
@@ -669,9 +676,9 @@ export default function EntityScenarioClient() {
                 <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>About this article.</b> This is general educational information about how these rules work, not tax or legal advice for your situation. Entity and tax decisions depend on facts specific to you &mdash; your state, your income, your filing status, the nature of your work &mdash; and the right answer for one self employed individual is often wrong for another. Figures are current for the 2026 tax year as of publication. Rules change; check the date. Talk to a CPA or attorney licensed in your state before making a decision.
               </p>
               <h4 style={h4Pros}>Sources</h4>
-              <ul style={{ margin: 0, paddingLeft: "1.2em", display: "grid", gap: 8, fontSize: 16, lineHeight: 1.6 }}>
-                {SOURCES.map(([org, url, label]) => (
-                  <li key={url}>{org} &mdash; <a href={url} target="_blank" rel="noopener noreferrer">{label}</a></li>
+              <ul style={{ margin: 0, paddingLeft: "1.2em", fontSize: 16, lineHeight: 1.6 }}>
+                {SOURCES.map(([org, url, label], i) => (
+                  <li key={url} style={i === SOURCES.length - 1 ? undefined : { marginBottom: 8 }}>{org} &mdash; <a href={url} target="_blank" rel="noopener noreferrer">{label}</a></li>
                 ))}
               </ul>
             </div>
