@@ -408,10 +408,10 @@ export default function EntityScenarioClient() {
               <ol style={{ margin: 0, paddingLeft: "1.4em", display: "grid", gap: 8, fontSize: 16.5 }}>
                 <li><a href="#opt1">Option 1: Sole proprietor</a></li>
                 <li><a href="#opt2">Option 2: LLC with default tax treatment</a></li>
-                <li><a href="#opt3">Option 3: S-corp election</a></li>
-                <li><a href="#breakeven">At what income does an S-corp actually make sense?</a></li>
                 <li><a href="#sued">Does an LLC actually protect you from being sued?</a></li>
                 <li><a href="#boi">Does your LLC need to file a BOI report?</a></li>
+                <li><a href="#opt3">Option 3: S-corp election</a></li>
+                <li><a href="#breakeven">At what income does an S-corp actually make sense?</a></li>
               </ol>
             </nav>
 
@@ -433,6 +433,36 @@ export default function EntityScenarioClient() {
             <List items={LLC_CONS} />
             <h4 style={h4When}>When it genuinely makes sense</h4>
             <List items={LLC_WHEN} />
+
+            <h3 id="sued" style={h3Style}>Does an LLC actually protect you from being sued?</h3>
+            <div style={note}>
+              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>On this section specifically.</b> Liability is a matter of state law, and it turns on the facts of a particular claim. What follows describes how LLC protection is generally understood to work. It is not legal advice, it is not a complete account, and it is not a prediction about any real situation. Whether an LLC would shield you from a specific claim is a question for an attorney licensed in your state. If you take one thing from this section, make it the point about insurance.
+            </div>
+            <p style={{ margin: "0 0 14px" }}><b>Anyone can sue you regardless of your entity.</b> An LLC doesn't prevent lawsuits. What it can do is limit which <i>assets</i> are available to satisfy a judgment.</p>
+            <p style={{ margin: "0 0 14px" }}><b>What an LLC generally does protect against:</b><br /><span style={{ fontSize: 15.5, fontStyle: "italic", ...muted(55) }}>(However, this is not a complete list and is not legal advice.)</span></p>
+            <List items={LLC_PROTECTS} />
+            <p style={{ margin: "0 0 14px" }}><b>What an LLC generally does NOT protect against:</b><br /><span style={{ fontSize: 15.5, fontStyle: "italic", ...muted(55) }}>(But not limited to the below. Not legal advice.)</span></p>
+            <List items={LLC_DOES_NOT} />
+            <h4 style={h4When}>What actually handles a self employed individual&rsquo;s real risk</h4>
+            <p style={{ margin: "0 0 14px" }}>For most solo self employed individuals, the exposures that would genuinely hurt are professional mistakes and contract disputes, and the LLC addresses neither well. The tools that do:</p>
+            <List items={RISK_TOOLS} />
+            <p style={{ margin: "0 0 14px" }}>None of this means don't form an LLC. It means form it for the right reason, and don't let it substitute for insurance and decent contracts.</p>
+
+            <h3 id="boi" style={h3Style}>Does your LLC need to file a BOI report? (2026: No)</h3>
+            <p style={{ margin: "0 0 14px" }}><b>Short answer: if your LLC is a US company, no. You have nothing to file.</b></p>
+            <div style={note}>
+              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>Check the date on this one.</b> This reflects FinCEN's final rule as of 20 August 2026. Beneficial ownership reporting changed several times between 2024 and 2026 and could change again. Confirm the current position with FinCEN or your accountant before relying on it.
+            </div>
+            <p style={{ margin: "0 0 14px" }}>This one confused a lot of people for two years, and much of the content still online is out of date.</p>
+            <p style={{ margin: "0 0 14px" }}><b>What happened.</b> The Corporate Transparency Act required most small entities to report beneficial ownership information to FinCEN, with filings starting in January 2024. After extensive litigation, FinCEN issued an interim final rule on <b>March 26, 2025</b> redefining "reporting company" to cover only foreign entities. Then on <b>August 11, 2026</b>, FinCEN issued a <b>final rule</b> permanently removing the requirement for US companies and US persons to report.</p>
+            <p style={{ margin: "0 0 14px" }}><b>Where that leaves you:</b></p>
+            <List items={BOI_LEAVES} />
+            <p style={{ margin: "0 0 14px" }}><b>Two things to still check:</b></p>
+            <ol style={olStyle}>
+              <li style={oliStyle}><b>Your state may have its own version.</b> A handful of states have enacted or proposed beneficial-ownership disclosure laws that operate independently of the federal rule.</li>
+              <li><b>Be skeptical of BOI filing services.</b> Companies charged fees to file these reports, and some continued marketing the service after the requirement lapsed. There is no federal filing fee, because there is no federal filing.</li>
+            </ol>
+            <p style={{ margin: "0 0 14px" }}>If you see a letter or email demanding a BOI filing fee with a deadline, treat it as a solicitation, not a government notice.</p>
 
             <h3 id="opt3" style={h3Style}>Option 3: S-corp election</h3>
             <div style={note}>
@@ -642,36 +672,6 @@ export default function EntityScenarioClient() {
                 )}
               </div>
             </div>
-
-            <h3 id="sued" style={h3Style}>Does an LLC actually protect you from being sued?</h3>
-            <div style={note}>
-              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>On this section specifically.</b> Liability is a matter of state law, and it turns on the facts of a particular claim. What follows describes how LLC protection is generally understood to work. It is not legal advice, it is not a complete account, and it is not a prediction about any real situation. Whether an LLC would shield you from a specific claim is a question for an attorney licensed in your state. If you take one thing from this section, make it the point about insurance.
-            </div>
-            <p style={{ margin: "0 0 14px" }}><b>Anyone can sue you regardless of your entity.</b> An LLC doesn't prevent lawsuits. What it can do is limit which <i>assets</i> are available to satisfy a judgment.</p>
-            <p style={{ margin: "0 0 14px" }}><b>What an LLC generally does protect against:</b><br /><span style={{ fontSize: 15.5, fontStyle: "italic", ...muted(55) }}>(However, this is not a complete list and is not legal advice.)</span></p>
-            <List items={LLC_PROTECTS} />
-            <p style={{ margin: "0 0 14px" }}><b>What an LLC generally does NOT protect against:</b><br /><span style={{ fontSize: 15.5, fontStyle: "italic", ...muted(55) }}>(But not limited to the below. Not legal advice.)</span></p>
-            <List items={LLC_DOES_NOT} />
-            <h4 style={h4When}>What actually handles a self employed individual&rsquo;s real risk</h4>
-            <p style={{ margin: "0 0 14px" }}>For most solo self employed individuals, the exposures that would genuinely hurt are professional mistakes and contract disputes, and the LLC addresses neither well. The tools that do:</p>
-            <List items={RISK_TOOLS} />
-            <p style={{ margin: "0 0 14px" }}>None of this means don't form an LLC. It means form it for the right reason, and don't let it substitute for insurance and decent contracts.</p>
-
-            <h3 id="boi" style={h3Style}>Does your LLC need to file a BOI report? (2026: No)</h3>
-            <p style={{ margin: "0 0 14px" }}><b>Short answer: if your LLC is a US company, no. You have nothing to file.</b></p>
-            <div style={note}>
-              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>Check the date on this one.</b> This reflects FinCEN's final rule as of 20 August 2026. Beneficial ownership reporting changed several times between 2024 and 2026 and could change again. Confirm the current position with FinCEN or your accountant before relying on it.
-            </div>
-            <p style={{ margin: "0 0 14px" }}>This one confused a lot of people for two years, and much of the content still online is out of date.</p>
-            <p style={{ margin: "0 0 14px" }}><b>What happened.</b> The Corporate Transparency Act required most small entities to report beneficial ownership information to FinCEN, with filings starting in January 2024. After extensive litigation, FinCEN issued an interim final rule on <b>March 26, 2025</b> redefining "reporting company" to cover only foreign entities. Then on <b>August 11, 2026</b>, FinCEN issued a <b>final rule</b> permanently removing the requirement for US companies and US persons to report.</p>
-            <p style={{ margin: "0 0 14px" }}><b>Where that leaves you:</b></p>
-            <List items={BOI_LEAVES} />
-            <p style={{ margin: "0 0 14px" }}><b>Two things to still check:</b></p>
-            <ol style={olStyle}>
-              <li style={oliStyle}><b>Your state may have its own version.</b> A handful of states have enacted or proposed beneficial-ownership disclosure laws that operate independently of the federal rule.</li>
-              <li><b>Be skeptical of BOI filing services.</b> Companies charged fees to file these reports, and some continued marketing the service after the requirement lapsed. There is no federal filing fee, because there is no federal filing.</li>
-            </ol>
-            <p style={{ margin: "0 0 14px" }}>If you see a letter or email demanding a BOI filing fee with a deadline, treat it as a solicitation, not a government notice.</p>
 
             <div style={{ marginTop: 48, paddingTop: 26, borderTop: "1px solid var(--color-divider)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.72, margin: "0 0 14px", ...muted(74) }}>
