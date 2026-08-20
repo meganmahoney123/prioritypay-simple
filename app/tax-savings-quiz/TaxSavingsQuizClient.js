@@ -50,6 +50,80 @@ function StrategyLine({ label, text, emphasize }) {
   );
 }
 
+function StrategyCard({ s }) {
+  const [showScenario, setShowScenario] = useState(false);
+  return (
+    <div style={{ borderTop: "1px solid var(--color-divider)", padding: "18px 0" }}>
+      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10 }}>{s.title}</div>
+
+      <StrategyLine label="If" text={s.condition} />
+      <StrategyLine label="You could" text={s.action} emphasize />
+      <StrategyLine label="The benefit" text={s.benefit} />
+
+      {s.scenario && (
+        <div style={{ margin: "8px 0" }}>
+          <button
+            type="button"
+            onClick={() => setShowScenario((v) => !v)}
+            style={{
+              background: "transparent",
+              border: 0,
+              padding: 0,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontFamily: "var(--font-heading)",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--color-accent-700)",
+            }}
+            aria-expanded={showScenario}
+          >
+            Sample scenario
+            <span style={{ fontSize: 11, transform: showScenario ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>
+              ▾
+            </span>
+          </button>
+
+          {showScenario && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: "12px 14px",
+                borderRadius: "var(--radius-sm)",
+                background: "var(--color-neutral-200)",
+                border: "1px solid var(--color-divider)",
+              }}
+            >
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 6 }}>
+                Example
+              </div>
+              <p className="text-sm" style={{ margin: "0 0 8px", color: "var(--color-text)" }}>
+                {s.scenario}
+              </p>
+              <p style={{ margin: 0, fontSize: 12, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                Illustrative only, using example numbers. Not a calculation of your actual numbers or a prediction of what you'd save.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {s.notFinancialAdviceNote && (
+        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+          <span style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", flexShrink: 0, paddingTop: 1 }}>
+            Not advice
+          </span>
+          <p style={{ margin: 0, fontSize: 12.5, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            {s.notFinancialAdviceNote}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OptionButton({ selected, onClick, label }) {
   return (
     <button
@@ -274,24 +348,7 @@ export default function TaxSavingsQuizClient() {
                   </p>
                 )}
                 {group.strategies.map((s) => (
-                  <div key={s.id} style={{ borderTop: "1px solid var(--color-divider)", padding: "18px 0" }}>
-                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10 }}>{s.title}</div>
-
-                    <StrategyLine label="If" text={s.condition} />
-                    <StrategyLine label="You could" text={s.action} emphasize />
-                    <StrategyLine label="The benefit" text={s.benefit} />
-
-                    {s.notFinancialAdviceNote && (
-                      <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                        <span style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", flexShrink: 0, paddingTop: 1 }}>
-                          Not advice
-                        </span>
-                        <p style={{ margin: 0, fontSize: 12.5, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                          {s.notFinancialAdviceNote}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  <StrategyCard key={s.id} s={s} />
                 ))}
               </Card>
             ))}
