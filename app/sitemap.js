@@ -16,6 +16,7 @@ export default function sitemap() {
     { path: "/calculators/debtpayoff", priority: 0.8, changeFrequency: "monthly" },
     { path: "/calculators/retirementcalculator", priority: 0.8, changeFrequency: "monthly" },
     { path: "/calculators/compoundinterest", priority: 0.8, changeFrequency: "monthly" },
+    { path: "/calculators/advisoryfeecalculator", priority: 0.8, changeFrequency: "monthly" },
     { path: "/self-employed", priority: 0.7, changeFrequency: "weekly" },
     { path: "/business-owner", priority: 0.6, changeFrequency: "weekly" },
     { path: "/w2", priority: 0.6, changeFrequency: "weekly" },
