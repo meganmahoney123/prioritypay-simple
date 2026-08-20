@@ -37,7 +37,7 @@ export default function MoneySimulatorPublicClient() {
       <PublicHeader />
       <div style={{ maxWidth: 1024, margin: "0 auto", padding: "48px clamp(18px, 4vw, 40px) 80px" }}>
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 400, margin: "0 0 10px" }}>
-          Money Simulator
+          Income Distribution Simulator
         </h1>
         <p className="text-sm" style={{ maxWidth: 560, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 28px" }}>
           Enter what you make, set percentages for taxes, savings, and everything else, and add a real goal with a

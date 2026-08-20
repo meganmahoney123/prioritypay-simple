@@ -145,7 +145,7 @@ export default function PublicHeader() {
               padding: "10px 12px",
             }}
           >
-            Money Simulator
+            Income Distribution Simulator
           </Link>
 
           <NavDropdown label="Calculators" open={calcOpen} setOpen={setCalcOpen}>
