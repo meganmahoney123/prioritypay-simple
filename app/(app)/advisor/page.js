@@ -7,13 +7,14 @@ import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 const STARTERS = [
   "Based on my numbers, would an S-corp election actually save me money?",
   "Am I setting aside enough for taxes each month?",
+  "What deduction opportunities might I be missing?",
   "How much more can I put into a Solo 401k or SEP IRA this year?",
-  "What tax strategies might I be missing given my setup?",
 ];
 
 const TOOL_LABELS = {
   get_profile: "your profile",
   get_income_summary: "your real income & expenses",
+  get_expense_breakdown: "your real spending by merchant",
   get_split_rules: "your split rules",
   get_retirement_contribution_room: "your retirement contribution room",
   compare_entity_tax_scenarios: "the entity tax comparison",
