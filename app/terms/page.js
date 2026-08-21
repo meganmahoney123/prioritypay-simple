@@ -73,12 +73,40 @@ export default function TermsPage() {
         Plaid, which connects directly to your bank with your explicit authorization.
       </p>
 
-      <h2>5. Split Rules Are Your Responsibility</h2>
+      <h2>5. How Split Rules Work, Notice &amp; Cancellation</h2>
       <p>
-        You control the percentages, caps, and destination accounts in your split rules. PriorityPay executes them as
-        configured. We are not responsible for outcomes resulting from split rules you set up incorrectly, forgot to
-        update, or intentionally configured in a way you later regret.
+        You control the percentages, caps, and destination accounts in your split rules. Each rule you create or
+        change applies automatically to every qualifying deposit into your linked account from that point forward.
+        There is no fixed dollar amount and no fixed calendar schedule -- the amount routed under a rule is a
+        percentage of whatever deposit triggers it, and the transfer initiates as soon as that deposit is detected.
       </p>
+      <p>
+        By creating or changing a split rule, you are giving your express authorization for PriorityPay to initiate
+        transfers from your linked bank account (the funding source for every split) according to that rule&apos;s
+        percentages and destination accounts, for every future deposit, until you change or cancel the rule. Because
+        each transfer is triggered by a deposit whose timing and amount we don&apos;t control, we can&apos;t give you
+        10 days&apos; advance notice of the amount and date of each individual transfer before it happens. Instead:
+        (a) you see and approve the exact percentages and destination accounts before a rule takes effect, (b) any
+        change you make takes effect only for deposits received after you save it, and (c) we notify you in the app
+        when each transfer completes, is delayed, or fails, so you have a real-time record of what moved and when
+        (see Section 3).
+      </p>
+      <p>
+        You can pause, edit, or delete any split rule at any time from your Splits page. A change takes effect
+        immediately for future deposits; it does not affect transfers that have already been initiated.
+      </p>
+      <p>
+        We are not responsible for outcomes resulting from split rules you set up incorrectly, forgot to update, or
+        intentionally configured in a way you later regret.
+      </p>
+      {/* NOTE FOR ATTORNEY REVIEW: This section is a good-faith attempt to satisfy Dwolla Platform Agreement Sec.
+          2.8.5 ("Recurring Payments") for split rules, which fire automatically per-deposit rather than on a fixed
+          amount/schedule. Sec. 2.8.5(ii)/(v) call for 10 days' advance notice of the amount and date of each
+          payment -- which is structurally impossible here since transfers are triggered by deposit timing we don't
+          control. We've substituted (a) upfront visibility into and consent to a rule's percentages/destinations
+          before it takes effect and (b) real-time notice when each transfer executes. Please confirm this
+          substitute-notice approach is defensible as substantial compliance with 2.8.5, or tell us what needs to
+          change -- this is the one open item from our own pre-Dwolla-submission review. */}
 
       <h2>6. Fees</h2>
       <p>
@@ -157,14 +185,6 @@ export default function TermsPage() {
         <a href="mailto:megan@ignitemysite.com">megan@ignitemysite.com</a> and we&apos;ll help you resolve it,
         including working with Dwolla on your behalf where needed.
       </p>
-      {/* NOTE FOR ATTORNEY REVIEW: Dwolla's Platform Agreement (Sec. 2.8.5) has a separate, detailed disclosure/
-          consent regime specifically for "recurring payments" to individual end users -- advance notice of
-          amount/schedule, a right to 10 days' notice before a change, a specified cancellation method, etc. Splits
-          here fire automatically on every deposit rather than on a fixed schedule/amount, so it's not obviously the
-          same thing Dwolla means by "recurring payment," but it's close enough that it's worth your read on whether
-          it applies before this goes live to real users. Deliberately not drafting that language myself since
-          getting it wrong (either omitting a required disclosure or adding one that doesn't actually fit how this
-          product works) is worse than leaving it for you to decide. */}
 
       <h2>14. Contact</h2>
       <p>
