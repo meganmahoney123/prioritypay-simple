@@ -8,8 +8,12 @@ import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
-import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
+
+// Temporarily disabled while we finalize our banking partner integration
+// (Dwolla production access + bank account setup). Flip back to true to
+// re-enable the real onboarding flow. See PROJECT_HANDOFF.md Section 6.
+const ONBOARDING_LIVE = false;
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
 // you are, verified identity (required before any money can move), every
@@ -265,6 +269,32 @@ function OnboardingPageInner() {
   const stepCounter = step === 0 ? "Getting started" : `Step ${step} of 5`;
   const progress = step === 0 ? 2 : Math.min(100, step * 20);
 
+  if (!ONBOARDING_LIVE) {
+    return (
+      <div style={{ ...LEDGER_TOKENS, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+        <div style={{ maxWidth: "28em" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 30 }}>
+            <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+              Coming soon
+            </span>
+            <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
+          </div>
+          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 400, lineHeight: 1.1, margin: "0 0 16px" }}>
+            We&apos;re almost ready.
+          </h1>
+          <p style={{ fontSize: 16, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 30px" }}>
+            We&apos;re finalizing our banking partner integration to make sure your money moves securely. Account
+            setup will open again shortly — check back soon.
+          </p>
+          <a href="/" className="pp-btn pp-btn-primary" style={{ display: "inline-flex", padding: "13px 30px", textDecoration: "none" }}>
+            ← &nbsp;Back home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ ...LEDGER_TOKENS, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <header
@@ -495,9 +525,8 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              PriorityPay Simple can only split a deposit it actually sees. Connect every account you could
-              receive a client payment from, including Venmo, Cash App, PayPal, and anywhere else money might
-              land. You can always add more inside the dashboard.
+              PriorityPay Simple can only split a deposit it actually sees. Connect every bank account you
+              could receive a client payment into. You can always add more inside the dashboard.
             </p>
             <PlaidLinkButton
               label="Connect Account"
@@ -517,48 +546,6 @@ function OnboardingPageInner() {
               }}
             />
 
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 58%, transparent)", marginBottom: 14, marginTop: 8 }}>
-              Connect these apps
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-              {APP_CONNECT_OPTIONS.map((app) => (
-                <PlaidLinkButton
-                  key={app.key}
-                  label={app.name}
-                  onLinked={(account) => {
-                    onAccountLinked(account);
-                    if (account) setShowAddMorePopup(true);
-                  }}
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 600,
-                    fontSize: 13,
-                    color: "#fff",
-                    background: app.color,
-                    border: `1px solid ${app.color}`,
-                    borderRadius: "var(--radius-md)",
-                    padding: "10px 18px",
-                  }}
-                />
-              ))}
-              <PlaidLinkButton
-                label="Connect More Apps"
-                onLinked={(account) => {
-                  onAccountLinked(account);
-                  if (account) setShowAddMorePopup(true);
-                }}
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  color: "var(--color-text)",
-                  background: "transparent",
-                  border: "1px dashed var(--color-divider)",
-                  borderRadius: 999,
-                  padding: "10px 18px",
-                }}
-              />
-            </div>
             {accounts.length > 0 && (
               <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", overflow: "hidden", marginBottom: 34 }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "14px 22px", borderBottom: "1px solid var(--color-divider)" }}>
