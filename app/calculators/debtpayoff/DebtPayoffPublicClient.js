@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Plus, Trash2 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 
@@ -409,6 +410,7 @@ export default function DebtPayoffPublicClient() {
           promotional rates, or fees.
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

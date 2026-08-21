@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 import { QUIZ_QUESTIONS } from "@/lib/quizEngine";
@@ -201,6 +202,7 @@ export default function TaxSavingsQuizClient() {
           />
         )}
       </div>
+      <PublicFooter />
     </div>
   );
 }

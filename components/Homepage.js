@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Btn from "./PublicBtn";
 import PublicHeader from "./PublicHeader";
-import PriorityPayLogo from "./PriorityPayLogo";
+import PublicFooter from "./PublicFooter";
 // Design: "Ledger" — one of three homepage concepts Megan designed in
 // Claude Design (Atelier / Ledger / Statement), exported as static HTML
 // and ported here 1:1. Colors, spacing, and type scale below are the
@@ -1011,17 +1011,7 @@ export default function Homepage() {
         </div>
       </section>
 
-      <footer style={{ background: "#171614", color: "color-mix(in srgb, #f3f2f2 55%, transparent)", borderTop: "1px solid color-mix(in srgb, #f3f2f2 14%, transparent)" }}>
-        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px clamp(18px, 4vw, 40px)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "22px 48px", alignItems: "start" }}>
-          <div style={{ color: "#f3f2f2" }}>
-            <PriorityPayLogo size={19} markColor="var(--color-accent-400)" payColor="var(--color-accent-400)" />
-          </div>
-          <p style={{ fontSize: 12.5, lineHeight: 1.7, margin: 0, maxWidth: "60em" }}>
-            PriorityPay routes money between accounts you connect and control. It is not a bank, broker-dealer,
-            or investment adviser, and does not hold or invest your funds.
-          </p>
-        </div>
-      </footer>
+      <PublicFooter />
 
       <style jsx>{`
         a {

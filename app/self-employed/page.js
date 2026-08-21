@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 
 // Hub landing page for the "Self Employed" Blog category -- linked from
@@ -64,6 +65,7 @@ export default function SelfEmployedHubPage() {
           </div>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

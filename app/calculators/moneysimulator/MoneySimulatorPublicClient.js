@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import MoneySimulator from "@/components/MoneySimulator";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import { encodeSim, DEMO_GOALS } from "@/lib/simSharing";
@@ -53,6 +54,7 @@ export default function MoneySimulatorPublicClient() {
           onSetUpReal={goToSignupWith}
         />
       </div>
+      <PublicFooter />
     </div>
   );
 }

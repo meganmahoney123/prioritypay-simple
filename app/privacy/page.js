@@ -21,7 +21,8 @@ export default function PrivacyPage() {
 
       <p>
         This Privacy Policy explains what information PriorityPay collects, how it&apos;s used, and who it&apos;s
-        shared with when you use PriorityPay (the &quot;Service&quot;).
+        shared with when you use PriorityPay (the &quot;Service&quot;), operated by PriorityPay LLC, a Virginia
+        limited liability company.
       </p>
 
       <h2>1. Information We Collect</h2>

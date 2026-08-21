@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 
 export const metadata = {
@@ -44,6 +45,7 @@ export default function W2HubPage() {
           </div>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { Card, PrimaryButton, currency } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 
@@ -247,6 +248,7 @@ export default function CompoundInterestPublicClient() {
           markets don't move in a straight line, and this isn't investment advice. Not adjusted for taxes or fees.
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

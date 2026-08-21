@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { Card, PrimaryButton, currency } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle, ledgerSelectStyle } from "@/lib/ledgerTheme";
 import { calculateSepIra, calculateSolo401k, AGE_BRACKETS, BUSINESS_TYPES } from "@/lib/retirementCalculator";
@@ -247,6 +248,7 @@ export default function RetirementCalculatorPublicClient() {
           documents and other real-world details a real accountant should confirm.
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

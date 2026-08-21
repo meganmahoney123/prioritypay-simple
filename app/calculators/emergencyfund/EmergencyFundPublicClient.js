@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import PersonaToggle from "@/components/PersonaToggle";
 import { Card, PrimaryButton, currency } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
@@ -285,6 +286,7 @@ export default function EmergencyFundPublicClient() {
           dependents, and risk tolerance.
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

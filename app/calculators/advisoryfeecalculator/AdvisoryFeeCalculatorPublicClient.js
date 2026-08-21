@@ -31,6 +31,7 @@
 
 import { useEffect, useRef } from "react";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 
 const FEE_CHECK_CSS = `
@@ -889,6 +890,7 @@ ${name}`;
           </div>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

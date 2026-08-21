@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import { computeEntityScenarios, WHO_OPTIONS } from "@/lib/entityScenarioCalculator";
 
@@ -692,6 +693,7 @@ export default function EntityScenarioClient() {
           </footer>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }
