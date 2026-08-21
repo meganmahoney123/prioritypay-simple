@@ -99,14 +99,6 @@ export default function TermsPage() {
         We are not responsible for outcomes resulting from split rules you set up incorrectly, forgot to update, or
         intentionally configured in a way you later regret.
       </p>
-      {/* NOTE FOR ATTORNEY REVIEW: This section is a good-faith attempt to satisfy Dwolla Platform Agreement Sec.
-          2.8.5 ("Recurring Payments") for split rules, which fire automatically per-deposit rather than on a fixed
-          amount/schedule. Sec. 2.8.5(ii)/(v) call for 10 days' advance notice of the amount and date of each
-          payment -- which is structurally impossible here since transfers are triggered by deposit timing we don't
-          control. We've substituted (a) upfront visibility into and consent to a rule's percentages/destinations
-          before it takes effect and (b) real-time notice when each transfer executes. Please confirm this
-          substitute-notice approach is defensible as substantial compliance with 2.8.5, or tell us what needs to
-          change -- this is the one open item from our own pre-Dwolla-submission review. */}
 
       <h2>6. Fees</h2>
       <p>
