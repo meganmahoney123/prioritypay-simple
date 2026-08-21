@@ -35,7 +35,17 @@ export async function POST(request) {
       state,
       postalCode,
       dateOfBirth, // YYYY-MM-DD
-      ssn, // last 4 digits, or full SSN depending on your Dwolla risk tier -- confirm with Dwolla before production
+      // Confirmed against Dwolla's docs (developers.dwolla.com/docs/balance/
+      // personal-verified-customer): last 4 digits is sufficient and
+      // recommended for this, the *initial* Customer-creation attempt --
+      // full 9 digits is only required if Dwolla returns a "retry" status
+      // and we resubmit. IdentityForm currently collects up to 9 digits
+      // with no guidance to the user, so in practice most people will type
+      // their full SSN here even though only the last 4 is needed today.
+      // See the retry-status TODO below -- once that's built, the initial
+      // form should ask for last-4 only, and only prompt for the full SSN
+      // if Dwolla actually comes back with "retry".
+      ssn,
     });
 
     const customerUrl = response.headers.get("location");
