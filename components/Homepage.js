@@ -79,9 +79,9 @@ const BUCKETS = [
 ];
 
 const INSTITUTIONS = [
-  { name: "Venmo", kind: "Payment app" },
-  { name: "PayPal", kind: "Payment app" },
-  { name: "Cash App", kind: "Payment app" },
+  { name: "Capital One", kind: "Business checking" },
+  { name: "Ally Bank", kind: "Savings" },
+  { name: "Chime", kind: "Personal checking" },
   { name: "Chase", kind: "Business checking" },
   { name: "Bank of America", kind: "Personal checking" },
   { name: "Wells Fargo", kind: "Savings" },
@@ -98,7 +98,7 @@ const PERCENTAGES = [
 ];
 
 const BANK_NAMES = [
-  "Venmo", "PayPal", "Cash App", "Chase", "Bank of America", "Wells Fargo",
+      "Chase", "Bank of America", "Wells Fargo",
   "Capital One", "Citibank", "U.S. Bank", "PNC Bank", "Truist", "Ally Bank",
   "Discover", "American Express", "Chime", "SoFi",
 ];
@@ -122,7 +122,7 @@ const FAQS = [
   },
   {
     q: "What accounts and apps can I connect?",
-    a: "Any US bank or credit union checking or savings account through Plaid — including all the major banks and roughly 12,000 smaller banks and credit unions, plus Venmo, PayPal, and Cash App directly.",
+    a: "Any US bank or credit union checking or savings account through Plaid — including all the major banks and roughly 12,000 smaller banks and credit unions.",
   },
   {
     q: "Does PriorityPay manage or invest my money?",
@@ -446,7 +446,7 @@ export default function Homepage() {
                 <text x="20" y="79" fontFamily="Lora, serif" fontSize="11.5" fill="var(--color-text)">Deposit · Bridgeway Studio</text>
                 <text x="240" y="79" textAnchor="end" fontFamily="Cormorant Garamond, serif" fontSize="14" fill="var(--color-accent-700)">+$4,200.00</text>
                 <path d="M6 90 H254" stroke="var(--color-divider)" strokeWidth="1" />
-                <text x="20" y="108" fontFamily="Lora, serif" fontSize="11.5" fill="var(--color-neutral-600)">Invoice 118 · Venmo</text>
+                          <text x="20" y="108" fontFamily="Lora, serif" fontSize="11.5" fill="var(--color-neutral-600)">Invoice 118</text>
                 <text x="240" y="108" textAnchor="end" fontFamily="Cormorant Garamond, serif" fontSize="12" fill="var(--color-neutral-600)">+$860.00</text>
                 <path d="M20 118 H240" stroke="var(--color-divider)" strokeWidth="1" />
                 <text x="20" y="136" fontFamily="Cormorant Garamond, serif" fontSize="10.5" fill="var(--color-neutral-600)" letterSpacing="1.4">BALANCE</text>
@@ -454,7 +454,7 @@ export default function Homepage() {
               </svg>
               <h3 style={{ fontSize: "clamp(22px, 3.8vw, 26px)", fontWeight: 400, lineHeight: 1.14, margin: "0 0 14px" }}>A deposit lands</h3>
               <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: 0 }}>
-                Client payment, Venmo, Cash App, PayPal, a check you deposited. Any money hitting a connected
+                              A client payment, a check you deposited, or cash from a payment app -- any money hitting a connected
                 account triggers PriorityPay.
               </p>
             </Reveal>
@@ -656,9 +656,9 @@ export default function Homepage() {
               Connect how you actually get paid
             </h3>
             <p style={{ fontSize: 15.5, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: 0 }}>
-              Connect all of your income-receiving accounts and apps so that every deposit is accounted for. We
-              connect with over 12,000 banks and credit unions as well as your favorite apps like Venmo, PayPal,
-              and Cash App.
+                            Connect all of your income-receiving bank accounts so that every deposit is accounted for. We
+                            connect with over 12,000 banks and credit unions across the US.
+              
             </p>
           </div>
           <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-neutral-100)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
