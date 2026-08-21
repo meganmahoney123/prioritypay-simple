@@ -37,6 +37,12 @@ export default function TermsPage() {
         through <strong>Plaid Inc.</strong>, a third-party account-linking service. Your use of these money-movement
         features is also governed by Dwolla&apos;s and Plaid&apos;s own terms, linked below.
       </p>
+      <p>
+        While a transfer is in progress, the funds are held by <strong>Dwolla&apos;s financial institution
+        partners</strong>, not by PriorityPay. Transfers from your bank into Dwolla typically take 3&ndash;4 business
+        days, and transfers from Dwolla into a destination bank account typically take 1&ndash;2 business days. These
+        timeframes are estimates, not guarantees, and can vary by financial institution.
+      </p>
 
       <h2>2. Not Financial or Investment Advice</h2>
       <p>
@@ -52,6 +58,11 @@ export default function TermsPage() {
         You must provide accurate information when creating an account and when completing identity verification
         with Dwolla. You&apos;re responsible for keeping your login credentials confidential and for all activity
         under your account. Tell us right away if you suspect unauthorized access.
+      </p>
+      <p>
+        You manage your Dwolla-enabled Customer Account entirely through PriorityPay -- you won&apos;t separately log
+        into Dwolla to view or manage it. We&apos;ll notify you of Customer Account and payment activity relevant to
+        your transfers, including when a transfer completes, is delayed, or fails.
       </p>
 
       <h2>4. Identity Verification &amp; Linked Accounts</h2>
@@ -138,7 +149,24 @@ export default function TermsPage() {
         jurisdiction of the state and federal courts located in Virginia.
       </p>
 
-      <h2>13. Contact</h2>
+      <h2>13. Customer Support &amp; Disputes</h2>
+      <p>
+        If you have a question or issue with a transfer, your Customer Account, or any payment activity connected to
+        your use of the Service -- including a transfer that didn&apos;t go through, went to the wrong place, or
+        needs to be disputed -- contact us at{" "}
+        <a href="mailto:megan@ignitemysite.com">megan@ignitemysite.com</a> and we&apos;ll help you resolve it,
+        including working with Dwolla on your behalf where needed.
+      </p>
+      {/* NOTE FOR ATTORNEY REVIEW: Dwolla's Platform Agreement (Sec. 2.8.5) has a separate, detailed disclosure/
+          consent regime specifically for "recurring payments" to individual end users -- advance notice of
+          amount/schedule, a right to 10 days' notice before a change, a specified cancellation method, etc. Splits
+          here fire automatically on every deposit rather than on a fixed schedule/amount, so it's not obviously the
+          same thing Dwolla means by "recurring payment," but it's close enough that it's worth your read on whether
+          it applies before this goes live to real users. Deliberately not drafting that language myself since
+          getting it wrong (either omitting a required disclosure or adding one that doesn't actually fit how this
+          product works) is worse than leaving it for you to decide. */}
+
+      <h2>14. Contact</h2>
       <p>
         Questions about these Terms? Reach us at{" "}
         <a href="mailto:megan@ignitemysite.com">megan@ignitemysite.com</a>.
