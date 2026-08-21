@@ -14,8 +14,8 @@ import PriorityPayLogo from "@/components/PriorityPayLogo";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/accounts", label: "Accounts" },
-  { href: "/splits", label: "Split Rules" },
-  { href: "/simulator", label: "Income Distribution Simulator" },
+  { href: "/splits", label: "Income Split Rules" },
+  { href: "/simulator", label: "Income Split Simulator" },
   { href: "/closeout", label: "Close Out" },
   { href: "/tax-summary", label: "Tax Summary" },
   { href: "/history", label: "History" },
@@ -26,8 +26,8 @@ const NAV_ITEMS = [
 const TITLES = {
   "/dashboard": "Dashboard",
   "/accounts": "Linked Accounts",
-  "/splits": "Split Rules",
-  "/simulator": "Income Distribution Simulator",
+  "/splits": "Income Split Rules",
+  "/simulator": "Income Split Simulator",
   "/closeout": "Monthly Close-Out",
   "/tax-summary": "Tax Summary",
   "/history": "Transaction History",
@@ -37,7 +37,7 @@ const TITLES = {
 
 // /splits/minimums and /splits/percentage-splits are now just redirects
 // back to the single /splits page -- this still resolves any of the three
-// paths to the same "Split Rules" header title and nav highlight.
+// paths to the same "Income Split Rules" header title and nav highlight.
 function titleFor(pathname) {
   if (pathname.startsWith("/splits")) return TITLES["/splits"];
   return TITLES[pathname] || "PriorityPay Simple";
@@ -309,7 +309,7 @@ export default function AppShell({ children }) {
         body {
           background: var(--color-bg, #f3f2f2);
         }
-        /* Section headings across Dashboard/Accounts/Split Rules/Close
+        /* Section headings across Dashboard/Accounts/Income Split Rules/Close
            Out/Settings inherit the Ledger serif heading font -- weight
            still comes from each element's own Tailwind font-* class, this
            only swaps the typeface. */
@@ -328,7 +328,7 @@ export default function AppShell({ children }) {
         /* Broad sweep for the remaining plain Tailwind neutral-gray
            borders/backgrounds/text left inside page-specific markup (card
            containers, info banners, muted copy) across Dashboard/
-           Accounts/Split Rules/Close Out/Settings -- keeps every leftover
+           Accounts/Income Split Rules/Close Out/Settings -- keeps every leftover
            spot visually consistent with the Ledger palette without
            needing to hand-convert every className. */
         .pp-ledger-shell .border-neutral-200,
