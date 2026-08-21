@@ -14,14 +14,6 @@ export default function TermsPage() {
   return (
     <LegalPage title="Terms of Service" updated="August 17, 2026">
       <p>
-        <em>
-          This is a starting-point Terms of Service template prepared for PriorityPay. It has not been reviewed by an
-          attorney and should be reviewed by qualified legal counsel -- and updated with your specific business
-          details -- before it is relied on as a binding agreement with real customers.
-        </em>
-      </p>
-
-      <p>
         These Terms of Service (&quot;Terms&quot;) govern your access to and use of PriorityPay (the
         &quot;Service&quot;), operated by PriorityPay LLC, a Virginia limited liability company (&quot;PriorityPay,&quot;
         &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By creating an account or using the Service, you agree to be

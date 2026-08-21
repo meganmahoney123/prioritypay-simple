@@ -11,15 +11,6 @@ export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" updated="August 17, 2026">
       <p>
-        <em>
-          This is a starting-point Privacy Policy template prepared for PriorityPay. It has not been reviewed by an
-          attorney and should be reviewed by qualified legal counsel before it is relied on as a binding policy with
-          real customers, particularly for compliance with applicable state and federal privacy and financial-data
-          laws (for example GLBA, CCPA/CPRA, and similar).
-        </em>
-      </p>
-
-      <p>
         This Privacy Policy explains what information PriorityPay collects, how it&apos;s used, and who it&apos;s
         shared with when you use PriorityPay (the &quot;Service&quot;), operated by PriorityPay LLC, a Virginia
         limited liability company.
