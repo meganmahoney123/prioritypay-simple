@@ -140,7 +140,7 @@ export default function DashboardPage() {
             {unconnected.length} categor{unconnected.length === 1 ? "y needs" : "ies need"} an account before money can move:
           </span>{" "}
           {unconnected.map((r) => r.label).join(", ")}. Head to{" "}
-          <Link href="/splits" style={{ fontWeight: 600, textDecoration: "underline" }}>Split Rules</Link> to connect or create
+          <Link href="/splits" style={{ fontWeight: 600, textDecoration: "underline" }}>Income Split Rules</Link> to connect or create
           one for each -- until then, that percentage just stays wherever a deposit lands.
         </Card>
       )}

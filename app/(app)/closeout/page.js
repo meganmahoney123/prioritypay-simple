@@ -683,7 +683,7 @@ export default function CloseoutPage() {
               accurate, and it&apos;s not tax advice. Talk to a tax professional about your real effective rate.
             </p>
             <p className="text-xs text-neutral-400 mb-3">
-              All of this stays in whichever account you already chose for Tax Reserve on Split Rules -- this is
+              All of this stays in whichever account you already chose for Tax Reserve on Income Split Rules -- this is
               just a number to compare against what&apos;s already there. Want to add more?
             </p>
             {!topUp.open ? (
