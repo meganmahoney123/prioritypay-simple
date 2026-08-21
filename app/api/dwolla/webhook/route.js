@@ -35,6 +35,33 @@ export async function POST(request) {
   const event = JSON.parse(raw);
   const admin = supabaseAdmin();
 
+  // Customer identity-verification lifecycle events. Without this, a
+  // Customer's status in our own DB is frozen at whatever create-customer
+  // (or the last retry) synchronously observed -- so a customer_verified
+  // event arriving later (verification can be async), or a Customer who
+  // gets suspended after the fact, would never be reflected here. The
+  // event's resourceId is the Dwolla customer id, matching what we store
+  // as dwolla_customer_id.
+  const CUSTOMER_EVENT_STATUS = {
+    customer_verified: "verified",
+    customer_reverification_needed: "retry",
+    customer_kba_verification_needed: "kba",
+    customer_verification_document_needed: "document",
+    customer_verification_document_uploaded: "document",
+    customer_verification_document_failed: "document",
+    customer_verification_document_approved: "verified",
+    customer_suspended: "suspended",
+  };
+  if (event.topic in CUSTOMER_EVENT_STATUS) {
+    const { error } = await admin
+      .from("simple_dwolla_customers")
+      .update({ verification_status: CUSTOMER_EVENT_STATUS[event.topic] })
+      .eq("dwolla_customer_id", event.resourceId);
+    if (error) {
+      console.error(`Dwolla webhook: failed to update verification_status for customer ${event.resourceId}:`, error);
+    }
+  }
+
   if (event.topic === "transfer_completed" || event.topic === "transfer_failed" || event.topic === "transfer_cancelled") {
     const dwollaTransferId = event.resourceId;
     const status = event.topic === "transfer_completed" ? "completed" : "failed";

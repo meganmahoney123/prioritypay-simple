@@ -51,9 +51,29 @@ export async function POST(request) {
     const customerUrl = response.headers.get("location");
     const customerId = customerUrl.split("/").pop();
 
-    await persistCustomer({ userId: user.id, customerId, customerUrl, verificationStatus: "pending" });
+    // The 201 response to customer creation doesn't reliably include the
+    // verification outcome in its body -- Dwolla's own docs have you GET
+    // the customer right after creating it to find out whether they came
+    // back verified, or landed in retry/kba/document/suspended. Fetching
+    // it here means our DB reflects the real outcome immediately, instead
+    // of everyone showing "pending" until a webhook happens to arrive
+    // (webhook delivery also now updates this same status -- see
+    // app/api/dwolla/webhook/route.js -- but we don't want to depend on
+    // webhook timing for the very first read).
+    let verificationStatus = "pending";
+    try {
+      const fetched = await dwollaClient().get(customerUrl);
+      verificationStatus = fetched.body?.status || "pending";
+    } catch (statusErr) {
+      console.error(
+        "Dwolla create-customer: created OK but failed to fetch status:",
+        statusErr?.body || statusErr?.message || String(statusErr)
+      );
+    }
 
-    return Response.json({ ok: true, customerId });
+    await persistCustomer({ userId: user.id, customerId, customerUrl, verificationStatus });
+
+    return Response.json({ ok: true, customerId, status: verificationStatus });
   } catch (err) {
     // dwolla-v2 throws with the parsed JSON error body on `err.body` --
     // the top-level `message` is usually just "Validation error(s)

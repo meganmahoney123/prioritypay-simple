@@ -17,7 +17,13 @@ const US_STATES = [
 //
 // `theme="ledger"` only swaps the input styling (see LEDGER_TOKENS) --
 // every field, validation, and the submit call below is unchanged.
-export default function IdentityForm({ onDone, theme }) {
+//
+// `mode="retry"` handles Dwolla's documented retry path for a Customer
+// whose first verification attempt scored too low: same fields, but it
+// posts to /api/dwolla/retry-customer (an update to the existing Dwolla
+// customer, not a new one) and requires the full 9-digit SSN, which
+// Dwolla only asks for at this stage.
+export default function IdentityForm({ onDone, theme, mode = "create" }) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -33,11 +39,17 @@ export default function IdentityForm({ onDone, theme }) {
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
+  const isRetry = mode === "retry";
+
   const submit = async (e) => {
     e.preventDefault();
+    if (isRetry && form.ssn.replace(/\D/g, "").length !== 9) {
+      setError("Please enter your full 9-digit SSN -- only the last 4 was needed the first time, but Dwolla requires the full number to retry.");
+      return;
+    }
     setLoading(true);
     setError(null);
-    const res = await fetch("/api/dwolla/create-customer", {
+    const res = await fetch(isRetry ? "/api/dwolla/retry-customer" : "/api/dwolla/create-customer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -48,7 +60,7 @@ export default function IdentityForm({ onDone, theme }) {
       setError(data.error || "Something went wrong.");
       return;
     }
-    onDone?.();
+    onDone?.(data.status);
   };
 
   if (theme === "ledger") {
@@ -69,7 +81,14 @@ export default function IdentityForm({ onDone, theme }) {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <input required type="date" value={form.dateOfBirth} onChange={update("dateOfBirth")} style={inp} />
-          <input required placeholder="SSN" maxLength={9} value={form.ssn} onChange={update("ssn")} style={{ ...inp, fontFamily: "var(--font-heading)" }} />
+          <input
+            required
+            placeholder={isRetry ? "Full SSN (9 digits)" : "SSN (last 4 is fine)"}
+            maxLength={9}
+            value={form.ssn}
+            onChange={update("ssn")}
+            style={{ ...inp, fontFamily: "var(--font-heading)" }}
+          />
         </div>
         {error && <p style={{ fontSize: 13, color: "var(--color-accent-700)", margin: 0 }}>{error}</p>}
         <button
@@ -88,7 +107,7 @@ export default function IdentityForm({ onDone, theme }) {
             opacity: loading ? 0.6 : 1,
           }}
         >
-          {loading ? "Verifying…" : "Verify identity"}
+          {loading ? "Verifying…" : isRetry ? "Resubmit for verification" : "Verify identity"}
         </button>
       </form>
     );
@@ -110,11 +129,18 @@ export default function IdentityForm({ onDone, theme }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <input required type="date" value={form.dateOfBirth} onChange={update("dateOfBirth")} className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5" />
-        <input required placeholder="SSN" maxLength={9} value={form.ssn} onChange={update("ssn")} className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5 font-mono" />
+        <input
+          required
+          placeholder={isRetry ? "Full SSN (9 digits)" : "SSN (last 4 is fine)"}
+          maxLength={9}
+          value={form.ssn}
+          onChange={update("ssn")}
+          className="text-sm border border-neutral-200 rounded-xl px-3 py-2.5 font-mono"
+        />
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <PrimaryButton type="submit" disabled={loading} className="w-full">
-        {loading ? "Verifying…" : "Verify identity"}
+        {loading ? "Verifying…" : isRetry ? "Resubmit for verification" : "Verify identity"}
       </PrimaryButton>
     </form>
   );
