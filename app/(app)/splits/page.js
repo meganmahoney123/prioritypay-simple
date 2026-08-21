@@ -6,7 +6,7 @@ import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
-import { SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
+import { SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -58,7 +58,7 @@ function SplitRulesPageInner() {
   }, [lastDeleted]);
 
   const totalPct = useMemo(() => pctTotal(percent), [percent]);
-  const remainingPct = Math.max(0, 100 - totalPct);
+  const remainingPct = roundPct(Math.max(0, 100 - totalPct));
 
   const saveNow = async (nextPercent) => {
     await fetch("/api/split-rules", {

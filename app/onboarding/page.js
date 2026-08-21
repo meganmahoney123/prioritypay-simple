@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, pctTotal, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
@@ -211,7 +211,7 @@ function OnboardingPageInner() {
   const availableSuggestions = SUGGESTED_EXTRA_CATEGORIES.filter((s) => !usedLabels.has(s.label));
 
   const totalPct = pctTotal(percent);
-  const remainingPct = Math.max(0, 100 - totalPct);
+  const remainingPct = roundPct(Math.max(0, 100 - totalPct));
 
   // Same criterion the Dashboard nudge uses post-onboarding (see
   // app/(app)/dashboard/page.js) -- a row claiming a real percentage with
