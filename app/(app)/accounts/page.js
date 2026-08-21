@@ -5,7 +5,6 @@ import { Landmark, CreditCard, Briefcase } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
 import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
-import { APP_CONNECT_OPTIONS } from "@/lib/appConnectOptions";
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
@@ -74,29 +73,6 @@ export default function AccountsPage() {
           <p className="text-xs text-neutral-500 mt-2">
             Credit cards are for close-out expense tracking only -- they're never used for splits or transfers.
           </p>
-          <p
-            className="mt-5 mb-2"
-            style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 58%, transparent)" }}
-          >
-            Connect these apps:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {APP_CONNECT_OPTIONS.map((app) => (
-              <PlaidLinkButton
-                key={app.key}
-                label={app.name}
-                className="text-xs px-4 py-2"
-                style={{ backgroundColor: app.color }}
-                onLinked={load}
-              />
-            ))}
-            <PlaidLinkButton
-              label="Connect More Apps"
-              className="text-xs px-4 py-2"
-              style={{ backgroundColor: "#525252" }}
-              onLinked={load}
-            />
-          </div>
         </div>
       )}
 
