@@ -11,11 +11,25 @@ export async function POST(request) {
   const signature = request.headers.get("x-request-signature-sha-256");
   const secret = process.env.DWOLLA_WEBHOOK_SECRET;
 
-  if (secret && signature) {
-    const expected = crypto.createHmac("sha256", secret).update(raw).digest("hex");
-    if (expected !== signature) {
-      return Response.json({ error: "Invalid signature." }, { status: 401 });
-    }
+  // Fail CLOSED, not open: this endpoint updates transfer status straight
+  // from the payload's topic/resourceId with no other check, so an
+  // unverified request lets anyone mark a real transfer "completed" (or
+  // "failed") from the outside. The previous `if (secret && signature)`
+  // guard skipped verification entirely whenever either was missing --
+  // meaning if DWOLLA_WEBHOOK_SECRET was ever unset in production, this
+  // endpoint would silently accept and trust any payload. Matches how
+  // app/api/stripe/webhook/route.js already does this (constructEvent
+  // throws on a bad/missing signature) -- same standard, applied here.
+  if (!secret) {
+    console.error("Dwolla webhook: DWOLLA_WEBHOOK_SECRET is not configured -- rejecting request.");
+    return Response.json({ error: "Webhook not configured." }, { status: 500 });
+  }
+  if (!signature) {
+    return Response.json({ error: "Missing signature." }, { status: 401 });
+  }
+  const expected = crypto.createHmac("sha256", secret).update(raw).digest("hex");
+  if (expected !== signature) {
+    return Response.json({ error: "Invalid signature." }, { status: 401 });
   }
 
   const event = JSON.parse(raw);
