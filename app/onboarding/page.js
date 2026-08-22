@@ -10,10 +10,14 @@ import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRe
 import { decodeSim } from "@/lib/simSharing";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
 
-// Temporarily disabled while we finalize our banking partner integration
-// (Dwolla production access + bank account setup). Flip back to true to
-// re-enable the real onboarding flow. See PROJECT_HANDOFF.md Section 6.
-const ONBOARDING_LIVE = false;
+// Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
+// to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
+// -- manual_approval mode calculates the split and lets the user send each
+// transfer themselves, with zero standing transfer authority required).
+// The old gate below assumed onboarding was blocked on Dwolla production
+// access; that assumption no longer holds. Flip back to false only if
+// onboarding needs to be paused for some other reason.
+const ONBOARDING_LIVE = true;
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
 // you are, verified identity (required before any money can move), every
@@ -348,11 +352,11 @@ function OnboardingPageInner() {
               <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
             </div>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(38px, 7vw, 66px)", fontWeight: 400, lineHeight: 1.02, letterSpacing: "-0.02em", margin: "0 0 26px" }}>
-              Route your money<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
+              Know your split<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
-              Allocate a percentage of every deposit to investments, savings, and other accounts automatically and
-              immediately (BEFORE you spend it).
+              Set a percentage of every deposit for investments, savings, and other accounts -- PriorityPay
+              calculates it the moment a deposit lands (BEFORE you spend it).
             </p>
             <button onClick={next} className="pp-btn pp-btn-primary" style={{ fontSize: 15, padding: "15px 34px" }}>
               Get started &nbsp;→
@@ -611,16 +615,17 @@ function OnboardingPageInner() {
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <div style={{ display: "grid", gap: 14, marginBottom: 36, maxWidth: "34em" }}>
               <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                Each deposit you receive will be split and automatically sent to the following accounts. Here, set
-                the percentages you want sent to each account.
+                Each deposit you receive will be split by percentage into the following accounts, and you&apos;ll
+                get a checklist to confirm and send each transfer yourself. Here, set the percentages you want sent
+                to each account.
               </p>
               <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, $10
-                will be automatically routed to the savings account connected.
+                For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit,
+                it&apos;ll tell you to send $10 to the savings account connected.
               </p>
               <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
                 If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no
-                money will be routed to that account.
+                money will be set aside for that account.
               </p>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, fontFamily: "var(--font-heading)", color: "color-mix(in srgb, var(--color-text) 66%, transparent)", borderLeft: "1px solid var(--color-accent-300)", paddingLeft: 16, margin: "6px 0 0" }}>
                 Note: Any money not routed to one of the accounts below will remain where it was deposited.
