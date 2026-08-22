@@ -102,7 +102,7 @@ export default function AccountsPage() {
             ) : acc.account_type === "business" ? (
               <p className="text-xs text-neutral-500">Balance shown for visibility only -- never used for splits or transfers.</p>
             ) : acc.autoDetectEnabled ? (
-              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here split automatically</p>
+              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically -- you'll get a checklist to confirm and send each transfer</p>
             ) : (
               <div>
                 <p className="text-xs text-amber-700 mb-2">

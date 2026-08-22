@@ -144,16 +144,17 @@ function SplitRulesPageInner() {
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
         <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-          Each deposit you receive will be split and automatically sent to the following accounts. Here, set the
-          percentages you want sent to each account.
+          Each deposit you receive will be split by percentage into the following accounts, and you&apos;ll get a
+          checklist to confirm and send each transfer yourself. Here, set the percentages you want sent to each
+          account.
         </p>
         <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-          For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, $10 will
-          be automatically routed to the savings account connected.
+          For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, it&apos;ll
+          tell you to send $10 to the savings account connected.
         </p>
         <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
           If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no money
-          will be routed to that account.
+          will be set aside for that account.
         </p>
         <p
           className="text-sm"
