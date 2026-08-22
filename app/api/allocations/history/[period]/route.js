@@ -40,6 +40,9 @@ export async function GET(request, { params }) {
     .select("label, amount, category_type, simple_transfers!inner(user_id, created_at, status)")
     .eq("simple_transfers.user_id", user.id)
     .neq("status", "failed")
+    // See the identical comment in app/api/allocations/history/range/route.js
+    // -- a 'needs_approval' allocation hasn't actually moved yet.
+    .neq("status", "needs_approval")
     .gte("simple_transfers.created_at", startIso)
     .lt("simple_transfers.created_at", endIso);
   if (categoryType) query = query.eq("category_type", categoryType);

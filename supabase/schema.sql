@@ -338,3 +338,34 @@ create table if not exists simple_quiz_leads (
 
 alter table simple_quiz_leads enable row level security;
 create index if not exists simple_quiz_leads_ip_created_idx on simple_quiz_leads (ip_address, created_at);
+
+-- PHASE G: Manual-approval transfers -- see TRANSFER_EXECUTION_MODE in
+-- lib/runSplit.js. Dwolla (or any ACH originator) approval is a real
+-- bottleneck that gates on transaction-history/volume the app doesn't have
+-- yet, and requires PriorityPay itself to hold standing authority to pull
+-- money out of accounts it doesn't own. Rather than sit blocked on that
+-- approval, this mode has PriorityPay calculate the split and tell the
+-- user exactly what to send and where, without ever touching the money --
+-- the user makes each transfer themselves in their own bank/app, then
+-- confirms it here. `status = 'needs_approval'` is the new value this adds
+-- to simple_transfer_allocations.status (alongside the existing
+-- 'reserved' / 'processing' / 'failed'); `dest_account_id` is what lets the
+-- UI say "send $68 to Chase Checking •••• 1234" without a second query,
+-- and `confirmed_at` is when the user actually checked it off (see
+-- app/api/transfer-allocations/[id]/confirm/route.js). `on delete set
+-- null` matches account_id's own behavior elsewhere in this schema --
+-- deleting a connected account shouldn't cascade-delete transfer history.
+alter table simple_transfer_allocations add column if not exists dest_account_id uuid references simple_accounts(id) on delete set null;
+alter table simple_transfer_allocations add column if not exists confirmed_at timestamptz;
+
+-- PHASE H: deposit-threshold SMS alerts. A user opts in with a phone number
+-- and a dollar threshold; runSplit() (see lib/runSplit.js) texts them via
+-- Twilio the moment a single deposit's total is at or above that threshold,
+-- linking straight to the "waiting on you" checklist. sms_threshold is
+-- nullable -- null/0 with sms_notifications_enabled=false is the default
+-- "off" state, distinct from a genuine $0 threshold (text on every deposit),
+-- so the app can tell "never configured" apart from "configured to always
+-- notify."
+alter table simple_profiles add column if not exists phone_number text;
+alter table simple_profiles add column if not exists sms_notifications_enabled boolean not null default false;
+alter table simple_profiles add column if not exists sms_threshold numeric;

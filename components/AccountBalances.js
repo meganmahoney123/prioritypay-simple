@@ -172,7 +172,7 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
           {currency(allTimeTotal)}
         </div>
         <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 62%, transparent)", marginTop: 16 }}>
-          Every dollar PriorityPay has automatically routed out of a deposit, ever.
+          Every dollar PriorityPay has calculated and confirmed out of a deposit, ever.
         </div>
       </Card>
 

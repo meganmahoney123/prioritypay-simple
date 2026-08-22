@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AccountBalances from "@/components/AccountBalances";
+import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
 import MoneyDistributionChart from "@/components/MoneyDistributionChart";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS } from "@/lib/allocations";
@@ -37,16 +38,18 @@ export default function DashboardPage() {
   const [ytdByLabel, setYtdByLabel] = useState({});
   const [allTimeTotal, setAllTimeTotal] = useState(0);
   const [billing, setBilling] = useState(null);
+  const [pendingTransfers, setPendingTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadAll = async () => {
-    const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes, profileRes] = await Promise.all([
+    const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes, profileRes, pendingRes] = await Promise.all([
       fetch("/api/split-rules").then((r) => r.json()),
       fetch("/api/accounts").then((r) => r.json()),
       fetch(`/api/allocations/history/${currentPeriod()}?categoryType=percent`).then((r) => r.json()),
       fetch(`/api/allocations/history/range?since=${startOfYearIso()}&categoryType=percent`).then((r) => r.json()),
       fetch(`/api/allocations/history/range?all=true`).then((r) => r.json()),
       fetch("/api/profile").then((r) => r.json()),
+      fetch("/api/transfers/pending").then((r) => r.json()),
     ]);
     if (rulesRes.splitRules) setSplitRules(rulesRes.splitRules);
     if (accountsRes.accounts) setAccounts(accountsRes.accounts);
@@ -54,6 +57,7 @@ export default function DashboardPage() {
     setYtdByLabel(toByLabel(ytdRes.categories));
     setAllTimeTotal(allTimeRes.total || 0);
     setBilling(profileRes.profile?.billing || null);
+    setPendingTransfers(pendingRes.transfers || []);
     setLoading(false);
   };
 
@@ -95,6 +99,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <PendingTransfers transfers={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
+
       {billing?.readOnly && (
         <Card className="p-4 text-sm flex items-start gap-2" style={ledgerWarningCardStyle()}>
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />

@@ -47,6 +47,14 @@ export async function GET(request) {
     .select("label, amount, category_type, simple_transfers!inner(user_id, created_at, status)")
     .eq("simple_transfers.user_id", user.id)
     .neq("status", "failed")
+    // Also exclude 'needs_approval' -- a manual-approval-mode allocation
+    // the user hasn't actually confirmed sending yet (see
+    // TRANSFER_EXECUTION_MODE in lib/runSplit.js). AccountBalances
+    // literally captions this total "every dollar PriorityPay has
+    // automatically routed... ever" -- a calculated-but-unconfirmed
+    // transfer hasn't happened yet and shouldn't count until the user
+    // checks it off (see app/api/transfer-allocations/[id]/confirm).
+    .neq("status", "needs_approval")
     .gte("simple_transfers.created_at", startIso)
     .lt("simple_transfers.created_at", endIso);
   if (categoryType) query = query.eq("category_type", categoryType);

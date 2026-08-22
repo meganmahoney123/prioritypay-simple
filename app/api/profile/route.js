@@ -27,6 +27,11 @@ export async function GET() {
         trialEndsAt: data.trial_ends_at,
         readOnly: isReadOnly(data),
       },
+      notifications: {
+        phoneNumber: data.phone_number,
+        smsEnabled: data.sms_notifications_enabled,
+        smsThreshold: data.sms_threshold === null ? null : Number(data.sms_threshold),
+      },
     },
   });
 }
@@ -36,6 +41,7 @@ export async function PUT(request) {
   if (!user) return unauthorized();
   const body = await request.json();
   const rp = body.retirementProfile || {};
+  const notif = body.notifications || {};
 
   const { error } = await supabaseAdmin()
     .from("simple_profiles")
@@ -48,6 +54,9 @@ export async function PUT(request) {
       w2_elective_deferral_ytd: rp.w2ElectiveDeferralYTD,
       age_bracket: rp.ageBracket,
       estimated_employee_payroll: rp.estimatedEmployeePayroll ?? null,
+      phone_number: notif.phoneNumber || null,
+      sms_notifications_enabled: Boolean(notif.smsEnabled),
+      sms_threshold: notif.smsThreshold === "" || notif.smsThreshold === undefined ? null : notif.smsThreshold,
     })
     .eq("id", user.id);
 

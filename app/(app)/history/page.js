@@ -21,7 +21,15 @@ function formatDate(iso) {
 function statusTone(status) {
   if (status === "completed" || status === "processed") return "emerald";
   if (status === "failed" || status === "cancelled") return "neutral";
-  return "amber"; // pending / reserved / processing
+  return "amber"; // pending / reserved / processing / needs_approval
+}
+
+// 'needs_approval' is a manual-approval-mode allocation the user hasn't
+// confirmed sending yet (see TRANSFER_EXECUTION_MODE in lib/runSplit.js) --
+// worth a plainer label here than the raw status string.
+function statusLabel(status) {
+  if (status === "needs_approval") return "awaiting you";
+  return status;
 }
 
 function TriggerLabel({ trigger }) {
@@ -78,7 +86,7 @@ export default function HistoryPage() {
                 {formatDate(t.created_at)} · <TriggerLabel trigger={t.trigger} />
               </div>
             </div>
-            <Badge tone={statusTone(t.status)}>{t.status}</Badge>
+            <Badge tone={statusTone(t.status)}>{statusLabel(t.status)}</Badge>
           </div>
 
           {Array.isArray(t.simple_transfer_allocations) && t.simple_transfer_allocations.length > 0 && (
@@ -97,7 +105,7 @@ export default function HistoryPage() {
                   <span>{a.label}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span>{currency(a.amount)}</span>
-                    <Badge tone={statusTone(a.status)}>{a.reserved_only ? "reserved" : a.status}</Badge>
+                    <Badge tone={statusTone(a.status)}>{a.reserved_only ? "reserved" : statusLabel(a.status)}</Badge>
                   </span>
                 </div>
               ))}
