@@ -382,3 +382,50 @@ alter table simple_profiles add column if not exists sms_threshold numeric;
 alter table simple_profiles add column if not exists min_deposit_threshold numeric not null default 100;
 alter table simple_profiles drop constraint if exists simple_profiles_min_deposit_threshold_floor;
 alter table simple_profiles add constraint simple_profiles_min_deposit_threshold_floor check (min_deposit_threshold >= 100);
+
+-- PHASE J: cache Plaid Balance calls instead of re-fetching on every page
+-- load. GET /api/accounts used to call plaidClient.accountsBalanceGet for
+-- every linked account on every single request -- and that route is
+-- fetched from five different pages (Accounts, Splits, Dashboard, Close
+-- Out, Pending Transfers), so an active user checking the app after every
+-- deposit could rack up far more Balance calls ($0.10 each) than the
+-- Transactions line ($0.30/account, flat, regardless of how many deposits
+-- flow through it) ever would. balance_updated_at lets that route skip the
+-- live call when the cached value is still fresh (see BALANCE_CACHE_TTL_MS
+-- in app/api/accounts/route.js); subtype is cached alongside it since it
+-- used to only ever come from that same live call (see AccountSelect's
+-- excludeSubtypes, which needs it to keep checking accounts out of the
+-- Investments picker) and would otherwise silently go stale/null between
+-- refreshes.
+alter table simple_accounts add column if not exists balance_updated_at timestamptz;
+alter table simple_accounts add column if not exists subtype text;
+
+-- PHASE K: stop polling Plaid's live Balance endpoint on every page load,
+-- even on a cache timer -- PHASE J's 24-hour TTL still meant a
+-- daily-active user racked up one live Balance call per account per
+-- calendar day, which scales with how often someone opens the app, not
+-- with anything PriorityPay actually needs balance for. Instead,
+-- current_balance is now a running ledger: seeded once from a real Plaid
+-- call, then adjusted in place by app/api/plaid/webhook as each new
+-- transaction (not just deposits -- every posted transaction, so
+-- non-deposit activity like a card swipe or a fee is reflected too)
+-- syncs in, which the app is already paying for via Transactions and
+-- already fetching for auto-split. balance_reconciled_at is a NEW,
+-- separate timestamp from balance_updated_at: it only advances on a real
+-- live Plaid Balance call (the initial seed, plus a periodic
+-- reconciliation -- see RECONCILE_INTERVAL_MS in app/api/accounts/route.js)
+-- and is what decides when the next live call is due. balance_updated_at
+-- keeps its existing meaning (freshest known value as of this timestamp,
+-- whether that came from a live call or a webhook-driven ledger
+-- adjustment) so the UI's "as of" display doesn't change.
+--
+-- The trade-off, by design: the ledger can drift slightly from the real
+-- bank balance between reconciliations -- a pending charge that settles
+-- for a different amount than it authorized for, a bank fee, an odd
+-- hold -- since only `added` transactions from Plaid's sync are applied
+-- here (modified/removed are deliberately not, same reasoning as
+-- lib/plaidSync.js's existing comment on why syncNewTransactions only
+-- returns `added`). The periodic reconciliation call corrects any drift.
+-- This never affects deposit detection or the actual split math, which
+-- both already run entirely off Transactions, not Balance.
+alter table simple_accounts add column if not exists balance_reconciled_at timestamptz;

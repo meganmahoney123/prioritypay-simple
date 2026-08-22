@@ -41,7 +41,7 @@ export async function POST(request) {
 
   const { data: accounts } = await admin
     .from("simple_accounts")
-    .select("id, user_id, plaid_access_token, plaid_account_id, plaid_cursor")
+    .select("id, user_id, plaid_access_token, plaid_account_id, plaid_cursor, current_balance, balance_reconciled_at")
     .eq("plaid_item_id", item_id);
 
   if (!accounts || accounts.length === 0) {
@@ -61,6 +61,37 @@ export async function POST(request) {
           }.`
         );
       } else {
+        // Ledger balance maintenance (see PHASE K, supabase/schema.sql):
+        // apply every newly-POSTED transaction on this account -- not just
+        // deposits, every direction -- to current_balance, so the figure
+        // shown in the UI stays live without a separate Balance API call.
+        // Only runs once an account has a real seeded baseline
+        // (balance_reconciled_at set by GET /api/accounts's first live
+        // check); before that, there's nothing correct to adjust from, so
+        // it's left alone until that first live call happens.
+        //
+        // Deliberately only `added`, matching syncNewTransactions' own
+        // scope -- a transaction that later gets modified (a pending
+        // charge settling for a different amount) or removed won't be
+        // reflected here. That's the accepted trade-off: the periodic
+        // reconciliation in app/api/accounts/route.js corrects any drift
+        // this causes. Pending transactions ARE included in this sum
+        // (unlike the deposit-split filter below), since Plaid's own
+        // available balance already reflects pending holds -- excluding
+        // them here would make the ledger drift the other direction.
+        if (account.balance_reconciled_at && account.current_balance !== null) {
+          const accountTxns = added.filter((t) => t.account_id === account.plaid_account_id);
+          if (accountTxns.length) {
+            const netOut = accountTxns.reduce((sum, t) => sum + t.amount, 0);
+            const newBalance = Number(account.current_balance) - netOut;
+            await admin
+              .from("simple_accounts")
+              .update({ current_balance: newBalance, balance_updated_at: new Date().toISOString() })
+              .eq("id", account.id);
+            account.current_balance = newBalance;
+          }
+        }
+
         // Plaid's convention for depository accounts: negative amount =
         // money moving in (a deposit). Positive = money moving out.
         // Pending transactions get skipped -- we wait for them to post so
@@ -87,6 +118,14 @@ export async function POST(request) {
             console.log(`Auto-split ran for deposit ${txn.transaction_id}: $${Math.abs(txn.amount)}`);
           }
         }
+
+        // Note: deposit detection, split calculation, and the "send $X to
+        // Y" checklist above are entirely driven by Transactions, not
+        // Balance -- none of that depends on the ledger update above being
+        // perfectly accurate. That update exists purely so the cosmetic
+        // "current balance" figure in the UI stays live without a
+        // dedicated Balance API call per account per page view (see PHASE
+        // K, supabase/schema.sql, and app/api/accounts/route.js).
       }
 
       await admin.from("simple_accounts").update({ plaid_cursor: cursor }).eq("id", account.id);
