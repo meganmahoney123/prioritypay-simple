@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
-import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
@@ -37,7 +36,7 @@ const ONBOARDING_LIVE = true;
 // opt into the same look via a `theme="ledger"` prop rather than being
 // forked, so the standalone Split Rules page (which reuses several of the
 // same components) keeps its original appearance untouched.
-const STEPS = ["Welcome", "Business", "Identity", "Connect Accounts", "Percentage Splits", "Review"];
+const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Review"];
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -102,30 +101,13 @@ function OnboardingPageInner() {
   const [employeePayroll, setEmployeePayroll] = useState("");
   const [incomeHandling, setIncomeHandling] = useState(null);
   const isBusinessOwnerWithEmployees = businessType === HAS_EMPLOYEES_TYPE;
-  // Checked against the real Dwolla record on mount instead of assuming
-  // nothing exists -- someone who already verified in an earlier session
-  // (or hit this step twice) would otherwise always see a blank form
-  // again, and submitting it a second time gets rejected by Dwolla as a
-  // duplicate customer for the same email.
-  //
-  // `dwollaStatus` holds Dwolla's actual verification_status string
-  // ("verified" | "retry" | "kba" | "document" | "suspended"), or `null`
-  // for "no Dwolla customer yet" / "checked, nothing found." `undefined`
-  // means "still checking." Previously this only tracked a boolean for
-  // "does a Dwolla customer record exist at all," which meant a customer
-  // stuck in retry/kba/document/suspended -- all real, expected Dwolla
-  // outcomes, not edge cases -- was shown "Identity verified" and allowed
-  // to continue, only to have every future transfer silently fail, since
-  // Dwolla only lets a truly `verified` Customer send funds.
-  const [dwollaStatus, setDwollaStatus] = useState(undefined);
-  const dwollaVerified = dwollaStatus === "verified";
-
-  useEffect(() => {
-    fetch("/api/dwolla/status")
-      .then((r) => r.json())
-      .then((d) => setDwollaStatus(d.status || null))
-      .catch(() => setDwollaStatus(null));
-  }, []);
+  // Identity verification (Dwolla KYB/KYC) was required here back when
+  // Dwolla originated real transfers on someone's behalf -- see the
+  // removed Identity step below. Manual-approval mode (lib/runSplit.js)
+  // means PriorityPay never touches money itself, so there's nothing left
+  // that actually requires verifying identity before connecting accounts.
+  // Removed rather than just skipped, so this doesn't quietly collect SSNs
+  // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
   // Carried over from the Money Simulator's "Start saving for this" /
@@ -270,8 +252,8 @@ function OnboardingPageInner() {
     router.refresh();
   };
 
-  const stepCounter = step === 0 ? "Getting started" : `Step ${step} of 5`;
-  const progress = step === 0 ? 2 : Math.min(100, step * 20);
+  const stepCounter = step === 0 ? "Getting started" : `Step ${step} of 4`;
+  const progress = step === 0 ? 2 : Math.min(100, step * 25);
 
   if (!ONBOARDING_LIVE) {
     return (
@@ -459,70 +441,6 @@ function OnboardingPageInner() {
         )}
 
         {step === 2 && (
-          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Verify your identity
-            </h1>
-            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 34px" }} />
-            {dwollaStatus === undefined ? (
-              <p style={{ fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 24px" }}>
-                Checking your identity status…
-              </p>
-            ) : dwollaStatus === "verified" ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  border: "1px solid var(--color-accent-300)",
-                  borderRadius: "var(--radius-md)",
-                  background: "color-mix(in srgb, var(--color-accent) 6%, transparent)",
-                  padding: "20px 24px",
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 20, color: "var(--color-accent-700)" }}>Identity verified.</span>
-              </div>
-            ) : dwollaStatus === "retry" ? (
-              <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", padding: 24 }}>
-                <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: "0 0 20px" }}>
-                  We weren&apos;t able to verify your identity with the information provided. Double-check everything
-                  below is accurate and complete -- this time we also need your <strong>full 9-digit SSN</strong> to
-                  try again. This is your last automatic attempt; if it doesn&apos;t go through, contact us at{" "}
-                  <a href="mailto:megan@ignitemysite.com" style={{ color: "var(--color-accent-700)" }}>megan@ignitemysite.com</a>.
-                </p>
-                <IdentityForm onDone={(status) => setDwollaStatus(status)} theme="ledger" mode="retry" />
-              </div>
-            ) : dwollaStatus === "kba" || dwollaStatus === "document" || dwollaStatus === "suspended" ? (
-              <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", padding: 24 }}>
-                <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: 0 }}>
-                  {dwollaStatus === "suspended"
-                    ? "Your identity verification was suspended and can't be resolved automatically."
-                    : "We need a bit more to verify your identity than this form can collect automatically."}{" "}
-                  Email us at{" "}
-                  <a href="mailto:megan@ignitemysite.com" style={{ color: "var(--color-accent-700)" }}>megan@ignitemysite.com</a>{" "}
-                  and we&apos;ll help you finish verification directly.
-                </p>
-              </div>
-            ) : (
-              <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", padding: 24 }}>
-                <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: "0 0 20px" }}>
-                  We confirm your identity before any money can move. This takes a moment and never affects your
-                  credit.
-                </p>
-                <IdentityForm onDone={(status) => setDwollaStatus(status || "pending")} theme="ledger" />
-              </div>
-            )}
-            <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
-              <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} disabled={!dwollaVerified} flex>Continue &nbsp;→</PrimaryBtn>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
           <div style={{ maxWidth: "36em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Connect everywhere money reaches you
@@ -607,7 +525,7 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 3 && (
           <div style={{ maxWidth: "40em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Set your percentage splits
@@ -713,7 +631,7 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === 5 && (
+        {step === 4 && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Review and finish

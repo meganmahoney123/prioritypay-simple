@@ -3,28 +3,22 @@
 import { useEffect, useState } from "react";
 import { Landmark, CreditCard, Briefcase } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
-import IdentityForm from "@/components/IdentityForm";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 
+// Identity verification (Dwolla KYC) used to gate this whole page -- see
+// the removed dwollaStatus check below and the equivalent removal in
+// app/onboarding/page.js. That was required because Dwolla originated
+// real transfers on someone's behalf; manual-approval mode
+// (lib/runSplit.js) means PriorityPay never touches money itself, so
+// there's nothing left that actually needs identity verified before
+// connecting an account.
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
-  // Holds Dwolla's actual verification_status string, not just "does a
-  // Dwolla customer record exist" -- a customer stuck in retry/kba/
-  // document/suspended isn't actually able to send funds yet, so showing
-  // them the "connect accounts" UI instead of a way to finish
-  // verification would let them link banks and build split rules that
-  // can never actually execute. See app/onboarding/page.js for the fuller
-  // writeup of why this changed.
-  const [dwollaStatus, setDwollaStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const [accountsRes, statusRes] = await Promise.all([
-      fetch("/api/accounts").then((r) => r.json()),
-      fetch("/api/dwolla/status").then((r) => r.json()),
-    ]);
+    const accountsRes = await fetch("/api/accounts").then((r) => r.json());
     setAccounts(accountsRes.accounts || []);
-    setDwollaStatus(statusRes.status || null);
     setLoading(false);
   };
 
@@ -36,45 +30,19 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      {dwollaStatus !== "verified" ? (
-        <Card className="p-5">
-          <h2 className="text-sm font-semibold mb-3">Verify your identity first</h2>
-          {dwollaStatus === "retry" ? (
-            <>
-              <p className="text-xs text-neutral-500 mb-3">
-                We weren&apos;t able to verify your identity with the information provided. This time, we also need
-                your full 9-digit SSN.
-              </p>
-              <IdentityForm onDone={load} theme="ledger" mode="retry" />
-            </>
-          ) : dwollaStatus === "kba" || dwollaStatus === "document" || dwollaStatus === "suspended" ? (
-            <p className="text-xs text-neutral-500">
-              {dwollaStatus === "suspended"
-                ? "Your identity verification was suspended and can't be resolved automatically."
-                : "We need a bit more to verify your identity than this form can collect automatically."}{" "}
-              Email us at{" "}
-              <a href="mailto:megan@ignitemysite.com" className="underline">megan@ignitemysite.com</a> and
-              we&apos;ll help you finish verification directly.
-            </p>
-          ) : (
-            <IdentityForm onDone={load} theme="ledger" />
-          )}
-        </Card>
-      ) : (
-        <div>
-          <PlaidLinkButton label="Connect a bank account or app" onLinked={load} />
-          <PlaidLinkButton
-            label="Add a credit card"
-            creditCard
-            onLinked={load}
-            className="text-xs px-4 py-2 mt-2 ml-2"
-            style={{ backgroundColor: "#525252" }}
-          />
-          <p className="text-xs text-neutral-500 mt-2">
-            Credit cards are for close-out expense tracking only -- they're never used for splits or transfers.
-          </p>
-        </div>
-      )}
+      <div>
+        <PlaidLinkButton label="Connect a bank account or app" onLinked={load} />
+        <PlaidLinkButton
+          label="Add a credit card"
+          creditCard
+          onLinked={load}
+          className="text-xs px-4 py-2 mt-2 ml-2"
+          style={{ backgroundColor: "#525252" }}
+        />
+        <p className="text-xs text-neutral-500 mt-2">
+          Credit cards are for close-out expense tracking only -- they're never used for splits or transfers.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {accounts.map((acc) => (
