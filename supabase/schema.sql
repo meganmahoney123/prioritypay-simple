@@ -369,3 +369,16 @@ alter table simple_transfer_allocations add column if not exists confirmed_at ti
 alter table simple_profiles add column if not exists phone_number text;
 alter table simple_profiles add column if not exists sms_notifications_enabled boolean not null default false;
 alter table simple_profiles add column if not exists sms_threshold numeric;
+
+-- PHASE I: minimum deposit-split threshold. A small deposit (a refund, a
+-- reimbursement) shouldn't kick off the full "here's your split, go send
+-- these transfers" checklist -- runSplit() (see lib/runSplit.js) only
+-- gates the AUTOMATIC Plaid-deposit path on this; the manual "Split $X now"
+-- button always runs, since a person clicking it has already decided this
+-- amount is worth splitting. $100 is a hard floor, not just a UI default --
+-- enforced both here (check constraint) and in the API layer
+-- (app/api/profile, app/api/onboarding/complete), so it can't be set below
+-- $100 through any path, including a future direct-DB or admin tool.
+alter table simple_profiles add column if not exists min_deposit_threshold numeric not null default 100;
+alter table simple_profiles drop constraint if exists simple_profiles_min_deposit_threshold_floor;
+alter table simple_profiles add constraint simple_profiles_min_deposit_threshold_floor check (min_deposit_threshold >= 100);

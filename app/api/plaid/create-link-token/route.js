@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { plaidClient } from "@/lib/plaid";
 import { CountryCode, Products } from "plaid";
+import { TRANSFER_EXECUTION_MODE } from "@/lib/executionMode";
 
 export async function POST(request) {
   const user = await requireUser();
@@ -22,10 +23,18 @@ export async function POST(request) {
   }
 
   try {
+    // Auth ($1.50/account, one-time) only matters once PriorityPay actually
+    // originates a Dwolla transfer to/from this account -- in
+    // manual_approval mode it never does (the user sends every transfer
+    // themselves), so requesting it here is pure unused cost. Accounts
+    // linked without it pick up Auth later the same way they already pick
+    // up Transactions today, via create-update-link-token's
+    // additional_consented_products -- see lib/executionMode.js.
+    const products = TRANSFER_EXECUTION_MODE === "dwolla_auto" ? [Products.Auth, Products.Transactions] : [Products.Transactions];
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
       client_name: "PriorityPay Simple",
-      products: [Products.Auth, Products.Transactions],
+      products,
       country_codes: [CountryCode.Us],
       language: "en",
       ...(savingsOnly ? { account_filters: { depository: { account_subtypes: ["savings"] } } } : {}),

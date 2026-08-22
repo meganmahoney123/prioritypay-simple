@@ -6,9 +6,14 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const { persona, businessName, entityType, retirementProfile, splitRules } = await request.json();
+  const { persona, businessName, entityType, retirementProfile, splitRules, minDepositThreshold } = await request.json();
   const admin = supabaseAdmin();
   const rp = retirementProfile || {};
+
+  // $100 is a hard floor (see PHASE I, supabase/schema.sql) -- clamped here
+  // too, not just the DB constraint, so onboarding never surfaces a raw
+  // Postgres constraint-violation error to someone finishing signup.
+  const clampedMinDepositThreshold = Math.max(100, Number(minDepositThreshold) || 100);
 
   const { error: profileError } = await admin
     .from("simple_profiles")
@@ -21,6 +26,7 @@ export async function POST(request) {
       w2_elective_deferral_ytd: rp.w2ElectiveDeferralYTD,
       age_bracket: rp.ageBracket,
       estimated_employee_payroll: rp.estimatedEmployeePayroll ?? null,
+      min_deposit_threshold: clampedMinDepositThreshold,
       onboarded: true,
     })
     .eq("id", user.id);

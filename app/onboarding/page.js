@@ -110,6 +110,13 @@ function OnboardingPageInner() {
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
+  // $100 is a hard floor (see PHASE I, supabase/schema.sql) -- enforced
+  // both here (input can't go below it) and again server-side in
+  // app/api/onboarding/complete, so it can't be bypassed by editing the
+  // request directly. Below this amount, an automatic deposit is skipped
+  // entirely rather than triggering a checklist for a few dollars.
+  const MIN_DEPOSIT_THRESHOLD_FLOOR = 100;
+  const [minDepositThreshold, setMinDepositThreshold] = useState(MIN_DEPOSIT_THRESHOLD_FLOOR);
   // Carried over from the Money Simulator's "Start saving for this" /
   // "Set up my real accounts" buttons (see app/(app)/simulator/page.js),
   // which base64-encode the simulated split into ?sim=. Runs once on
@@ -246,6 +253,7 @@ function OnboardingPageInner() {
           estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
         },
         splitRules: { percent },
+        minDepositThreshold,
       }),
     });
     router.push("/dashboard");
@@ -622,6 +630,31 @@ function OnboardingPageInner() {
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontVariantNumeric: "lining-nums tabular-nums" }}>
                 {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
               </span>
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
+              <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                Minimum deposit to split
+              </label>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 14px" }}>
+                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all -- $100 is
+                the lowest you can set it. Adjustable anytime from Settings.
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 220 }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>$</span>
+                <input
+                  type="number"
+                  min={MIN_DEPOSIT_THRESHOLD_FLOOR}
+                  step="1"
+                  value={minDepositThreshold}
+                  onChange={(e) => setMinDepositThreshold(e.target.value)}
+                  onBlur={(e) => {
+                    const v = Math.max(MIN_DEPOSIT_THRESHOLD_FLOOR, Number(e.target.value) || MIN_DEPOSIT_THRESHOLD_FLOOR);
+                    setMinDepositThreshold(v);
+                  }}
+                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                />
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: 12, marginTop: 40 }}>

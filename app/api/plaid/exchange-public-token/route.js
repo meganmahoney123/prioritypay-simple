@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
 import { dwollaClient } from "@/lib/dwolla";
 import { isReadOnly, getBillingProfile, readOnlyError } from "@/lib/subscription";
+import { TRANSFER_EXECUTION_MODE } from "@/lib/executionMode";
 
 // Runs after Plaid Link succeeds in the browser. Three steps:
 //  1. Exchange the public_token for a real access_token (server-only, never
@@ -31,7 +32,18 @@ export async function POST(request) {
   // reasoning as credit cards, never a transfer source/destination, so
   // identity verification/Dwolla is skipped for these too.
   const isBusiness = account_type === "business";
-  const skipDwolla = isCredit || isBusiness;
+  // In manual_approval mode PriorityPay never originates a transfer to or
+  // from ANY account -- the user sends every transfer themselves -- so
+  // there's nothing for a Dwolla funding source to do yet, on any account
+  // type. This also matters for correctness, not just cost: identity
+  // verification (Dwolla KYC) was intentionally removed from onboarding
+  // and the Accounts page (see those pages' comments), so no one has a
+  // simple_dwolla_customers row anymore. Without this check, every regular
+  // account link would 400 below with "Complete identity verification"
+  // for a step that no longer exists anywhere in the product. Flips back
+  // to attaching real funding sources automatically once
+  // TRANSFER_EXECUTION_MODE is 'dwolla_auto'.
+  const skipDwolla = isCredit || isBusiness || TRANSFER_EXECUTION_MODE !== "dwolla_auto";
 
   const admin = supabaseAdmin();
 

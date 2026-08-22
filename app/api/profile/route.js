@@ -32,8 +32,19 @@ export async function GET() {
         smsEnabled: data.sms_notifications_enabled,
         smsThreshold: data.sms_threshold === null ? null : Number(data.sms_threshold),
       },
+      minDepositThreshold: Number(data.min_deposit_threshold ?? 100),
     },
   });
+}
+
+// $100 is a hard floor (see PHASE I, supabase/schema.sql) -- enforced here
+// too, not just the DB constraint, so a bad request gets a clear error
+// instead of a raw Postgres constraint-violation message.
+const MIN_DEPOSIT_THRESHOLD_FLOOR = 100;
+function clampMinDepositThreshold(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return MIN_DEPOSIT_THRESHOLD_FLOOR;
+  return Math.max(MIN_DEPOSIT_THRESHOLD_FLOOR, n);
 }
 
 export async function PUT(request) {
@@ -57,6 +68,9 @@ export async function PUT(request) {
       phone_number: notif.phoneNumber || null,
       sms_notifications_enabled: Boolean(notif.smsEnabled),
       sms_threshold: notif.smsThreshold === "" || notif.smsThreshold === undefined ? null : notif.smsThreshold,
+      ...(body.minDepositThreshold === undefined
+        ? {}
+        : { min_deposit_threshold: clampMinDepositThreshold(body.minDepositThreshold) }),
     })
     .eq("id", user.id);
 

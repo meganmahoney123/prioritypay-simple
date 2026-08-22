@@ -166,6 +166,38 @@ function SettingsPageInner() {
       </Card>
 
       <Card className="p-6" style={{ maxWidth: "40em" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit splitting</h2>
+        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
+          Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all -- $100 is the
+          lowest you can set it.
+        </p>
+        <div style={{ maxWidth: 220 }}>
+          <label
+            style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
+          >
+            Minimum deposit to split ($)
+          </label>
+          <input
+            type="number"
+            min="100"
+            step="1"
+            value={profile.minDepositThreshold ?? 100}
+            onChange={(e) => {
+              setSaved(false);
+              const v = e.target.value === "" ? "" : Number(e.target.value);
+              setProfile((p) => ({ ...p, minDepositThreshold: v }));
+            }}
+            onBlur={(e) => {
+              const v = Math.max(100, Number(e.target.value) || 100);
+              setProfile((p) => ({ ...p, minDepositThreshold: v }));
+            }}
+            style={ledgerInputStyle({ fontSize: 16, padding: "11px 2px" })}
+          />
+        </div>
+      </Card>
+
+      <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit text alerts</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
