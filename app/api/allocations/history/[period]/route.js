@@ -22,7 +22,7 @@ function monthKey(d) {
 export async function GET(request, { params }) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  const period = params.period;
+  const { period } = await params;
   const admin = supabaseAdmin();
   // Optional -- Fixed and Percent categories can share the same label text
   // (both have a "Tax Reserve" row, for instance), so anything that needs a

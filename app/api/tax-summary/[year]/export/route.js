@@ -40,7 +40,8 @@ function csvField(value) {
 export async function GET(request, { params }) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  const year = Number(params.year);
+  const { year: yearParam } = await params;
+  const year = Number(yearParam);
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
     return Response.json({ error: "Invalid year." }, { status: 400 });
   }

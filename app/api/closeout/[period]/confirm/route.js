@@ -28,7 +28,7 @@ function periodEndIso(period) {
 export async function POST(request, { params }) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  const period = params.period;
+  const { period } = await params;
   const periodDate = periodToDate(period);
   const body = await request.json().catch(() => ({}));
   const taxRatePct = body.taxRatePct === undefined || body.taxRatePct === null || body.taxRatePct === ""

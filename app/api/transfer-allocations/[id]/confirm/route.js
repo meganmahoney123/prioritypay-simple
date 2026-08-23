@@ -15,7 +15,8 @@ export async function POST(request, { params }) {
   const user = await requireUser();
   if (!user) return unauthorized();
   const admin = supabaseAdmin();
-  const allocationId = params.id;
+  // Dynamic route params are a Promise as of Next.js 15 -- must be awaited.
+  const { id: allocationId } = await params;
 
   const { data: allocation, error: fetchError } = await admin
     .from("simple_transfer_allocations")

@@ -23,10 +23,11 @@ export async function PATCH(request, { params }) {
   }
 
   const admin = supabaseAdmin();
+  const { id } = await params;
   const { error } = await admin
     .from("simple_closeout_transactions")
     .update({ confirmed_category: confirmedCategory })
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) return Response.json({ error: error.message }, { status: 500 });

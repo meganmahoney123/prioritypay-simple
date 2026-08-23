@@ -14,7 +14,7 @@ import { ensureCloseoutForPeriod } from "@/lib/closeoutSync";
 export async function GET(request, { params }) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  const period = params.period;
+  const { period } = await params;
   const admin = supabaseAdmin();
 
   try {

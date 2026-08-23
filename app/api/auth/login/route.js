@@ -33,7 +33,7 @@ export async function POST(request) {
     return NextResponse.json({ error: LOCKOUT_MESSAGE_ACTIVE }, { status: 423 });
   }
 
-  const supabase = supabaseServer();
+  const supabase = await supabaseServer();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
