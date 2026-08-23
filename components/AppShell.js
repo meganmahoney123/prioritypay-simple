@@ -81,7 +81,7 @@ function NavLink({ href, label, active, onClick }) {
   );
 }
 
-export default function AppShell({ children }) {
+export default function AppShell({ children, isSandbox = false }) {
   const pathname = usePathname();
   const router = useRouter();
   const [narrow, setNarrow] = useState(false);
@@ -190,23 +190,25 @@ export default function AppShell({ children }) {
               {titleFor(pathname)}
             </h1>
           </span>
-          <span
-            className="pp-shell-badge"
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--color-accent-700)",
-              border: "1px solid var(--color-accent)",
-              borderRadius: 999,
-              padding: "6px 14px",
-              whiteSpace: "nowrap",
-              flex: "none",
-            }}
-          >
-            Sandbox mode
-          </span>
+          {isSandbox && (
+            <span
+              className="pp-shell-badge"
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: 11,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "var(--color-accent-700)",
+                border: "1px solid var(--color-accent)",
+                borderRadius: 999,
+                padding: "6px 14px",
+                whiteSpace: "nowrap",
+                flex: "none",
+              }}
+            >
+              Sandbox mode
+            </span>
+          )}
         </header>
 
         <main style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>{children}</main>
