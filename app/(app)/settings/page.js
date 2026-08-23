@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton } from "@/components/ui";
 import { LEDGER_TOKENS, ledgerInputStyle, ledgerSelectStyle } from "@/lib/ledgerTheme";
+import MfaSettings from "@/components/MfaSettings";
 
 function daysLeft(trialEndsAt) {
   if (!trialEndsAt) return null;
@@ -121,6 +122,8 @@ function SettingsPageInner() {
           </>
         )}
       </Card>
+
+      <MfaSettings />
 
       <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Business profile</h2>
