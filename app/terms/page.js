@@ -2,7 +2,8 @@ import LegalPage from "@/components/LegalPage";
 
 export const metadata = {
   title: "Terms of Service | PriorityPay",
-  description: "The terms that govern using PriorityPay, including how split rules, identity verification, and money movement through Dwolla and Plaid work.",
+  description:
+    "The terms that govern using PriorityPay, including how split calculations work, how Plaid account linking works, and that you -- not PriorityPay -- complete every transfer.",
   alternates: { canonical: "https://www.prioritypay.co/terms" },
   // Boilerplate legal page -- noindexed so it doesn't compete for crawl
   // budget or get treated as thin/duplicate content; still fully
@@ -12,7 +13,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" updated="August 17, 2026">
+    <LegalPage title="Terms of Service" updated="August 22, 2026">
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your access to and use of PriorityPay (the
         &quot;Service&quot;), operated by PriorityPay LLC, a Virginia limited liability company (&quot;PriorityPay,&quot;
@@ -22,18 +23,24 @@ export default function TermsPage() {
 
       <h2>1. What PriorityPay Does</h2>
       <p>
-        PriorityPay lets you define percentage-based rules for how deposits into a linked bank account should be
-        automatically routed to other accounts you connect (for example: savings, tax reserve, retirement, or
-        investment accounts). PriorityPay itself does not hold your funds. Money movement between accounts is
-        performed by <strong>Dwolla, Inc.</strong>, a licensed payment processor, and account connections are made
-        through <strong>Plaid Inc.</strong>, a third-party account-linking service. Your use of these money-movement
-        features is also governed by Dwolla&apos;s and Plaid&apos;s own terms, linked below.
+        PriorityPay lets you define percentage-based split rules for deposits into a bank account you connect (for
+        example: savings, tax reserve, retirement, or investment accounts). When a qualifying deposit lands,
+        PriorityPay calculates exactly how much should go to each category under your rules and shows you a
+        checklist of transfers to make.
       </p>
       <p>
-        While a transfer is in progress, the funds are held by <strong>Dwolla&apos;s financial institution
-        partners</strong>, not by PriorityPay. Transfers from your bank into Dwolla typically take 3&ndash;4 business
-        days, and transfers from Dwolla into a destination bank account typically take 1&ndash;2 business days. These
-        timeframes are estimates, not guarantees, and can vary by financial institution.
+        <strong>PriorityPay does not move your money.</strong> We do not hold your funds, initiate transfers, or have
+        the ability to withdraw from or deposit into any account you connect. Every transfer PriorityPay calculates
+        is one you complete yourself, using your own bank&apos;s app, website, or other transfer method. Account
+        connections are made through <strong>Plaid Inc.</strong>, a third-party account-linking service, which gives
+        PriorityPay read-only access to balances and transaction data -- never the ability to move funds. Your use of
+        Plaid&apos;s linking feature is also governed by Plaid&apos;s own terms, linked below.
+      </p>
+      <p>
+        If we later add an optional feature that lets PriorityPay initiate transfers on your behalf through a
+        licensed payment processor, that feature will be off by default, will require your separate and explicit
+        authorization before it&apos;s turned on for your account, and these Terms will be updated first to describe
+        exactly how it works.
       </p>
 
       <h2>2. Not Financial or Investment Advice</h2>
@@ -47,49 +54,41 @@ export default function TermsPage() {
 
       <h2>3. Your Account</h2>
       <p>
-        You must provide accurate information when creating an account and when completing identity verification
-        with Dwolla. You&apos;re responsible for keeping your login credentials confidential and for all activity
-        under your account. Tell us right away if you suspect unauthorized access.
-      </p>
-      <p>
-        You manage your Dwolla-enabled Customer Account entirely through PriorityPay -- you won&apos;t separately log
-        into Dwolla to view or manage it. We&apos;ll notify you of Customer Account and payment activity relevant to
-        your transfers, including when a transfer completes, is delayed, or fails.
+        You must provide accurate information when creating an account. You&apos;re responsible for keeping your
+        login credentials confidential and for all activity under your account. Tell us right away if you suspect
+        unauthorized access.
       </p>
 
-      <h2>4. Identity Verification &amp; Linked Accounts</h2>
+      <h2>4. Linked Accounts</h2>
       <p>
-        To move real money, Dwolla requires identity verification (name, address, date of birth, and Social Security
-        number). PriorityPay forwards this information directly to Dwolla to create your Dwolla customer account and
-        does not store your Social Security number or date of birth in its own database. Linking a bank account uses
-        Plaid, which connects directly to your bank with your explicit authorization.
+        Connecting a bank account or other financial account uses Plaid, which links directly to your institution
+        with your explicit authorization and gives PriorityPay read-only access to that account&apos;s balance and
+        transaction history. PriorityPay uses this data solely to detect deposits, calculate your split rules, and
+        display your balances and history back to you. You can disconnect a linked account at any time from the
+        Accounts page.
       </p>
 
-      <h2>5. How Split Rules Work, Notice &amp; Cancellation</h2>
+      <h2>5. How Split Rules Work -- A Checklist, Not Automatic Transfers</h2>
       <p>
-        You control the percentages, caps, and destination accounts in your split rules. Each rule you create or
-        change applies automatically to every qualifying deposit into your linked account from that point forward.
-        There is no fixed dollar amount and no fixed calendar schedule -- the amount routed under a rule is a
-        percentage of whatever deposit triggers it, and the transfer initiates as soon as that deposit is detected.
+        You control the percentages, caps, and destination categories in your split rules. Each rule you create or
+        change applies automatically to every qualifying deposit into your linked account from that point forward --
+        but &quot;applies&quot; means PriorityPay recalculates and updates your checklist, not that money moves on its
+        own. There is no fixed dollar amount and no fixed calendar schedule: the amount shown for each category is a
+        percentage of whatever deposit triggered the calculation, computed the moment that deposit is detected.
       </p>
       <p>
-        By creating or changing a split rule, you are giving your express authorization for PriorityPay to initiate
-        transfers from your linked bank account (the funding source for every split) according to that rule&apos;s
-        percentages and destination accounts, for every future deposit, until you change or cancel the rule. Because
-        each transfer is triggered by a deposit whose timing and amount we don&apos;t control, we can&apos;t give you
-        10 days&apos; advance notice of the amount and date of each individual transfer before it happens. Instead:
-        (a) you see and approve the exact percentages and destination accounts before a rule takes effect, (b) any
-        change you make takes effect only for deposits received after you save it, and (c) we notify you in the app
-        when each transfer completes, is delayed, or fails, so you have a real-time record of what moved and when
-        (see Section 3).
+        You are responsible for actually completing each transfer on your checklist, using whatever method your own
+        bank supports. PriorityPay marks a transfer as done only after you confirm you&apos;ve sent it -- we have no
+        independent way to verify that a transfer you mark complete actually reached its destination, since we never
+        touch the transfer itself.
       </p>
       <p>
         You can pause, edit, or delete any split rule at any time from your Splits page. A change takes effect
-        immediately for future deposits; it does not affect transfers that have already been initiated.
+        immediately for future deposits; it has no effect on checklist items already generated for past deposits.
       </p>
       <p>
-        We are not responsible for outcomes resulting from split rules you set up incorrectly, forgot to update, or
-        intentionally configured in a way you later regret.
+        We are not responsible for outcomes resulting from split rules you set up incorrectly, forgot to update,
+        intentionally configured in a way you later regret, or checklist items you never actually completed.
       </p>
 
       <h2>6. Fees</h2>
@@ -97,32 +96,29 @@ export default function TermsPage() {
         PriorityPay offers a 30-day free trial starting from the date you create an account. After the trial ends,
         continued use of the Service requires a paid subscription, currently <strong>$19 per month</strong>, billed
         through Stripe to the payment method you provide. If your trial ends without an active subscription, your
-        account moves to a read-only mode: you can still view your split rules, dashboard, and transfer history, but
-        connecting new accounts and executing new transfers are paused until you subscribe. We may change the
-        subscription price going forward, but any change will be disclosed to you before it takes effect for your
-        account. Dwolla and your financial institution may charge their own fees separately, which are disclosed by
-        them.
+        account moves to a read-only mode: you can still view your split rules, dashboard, and history, but
+        connecting new accounts is paused until you subscribe. We may change the subscription price going forward,
+        but any change will be disclosed to you before it takes effect for your account.
       </p>
 
       <h2>7. Prohibited Use</h2>
       <p>
-        You agree not to use the Service for any unlawful purpose, to violate Dwolla&apos;s or Plaid&apos;s terms, to
-        attempt to move funds you&apos;re not authorized to move, or to interfere with the Service&apos;s normal
-        operation.
+        You agree not to use the Service for any unlawful purpose, to violate Plaid&apos;s terms, to misrepresent
+        account ownership when linking an account, or to interfere with the Service&apos;s normal operation.
       </p>
 
       <h2>8. Disclaimers &amp; Limitation of Liability</h2>
       <p>
         The Service is provided &quot;as is&quot; without warranties of any kind. To the fullest extent permitted by
         law, PriorityPay is not liable for indirect, incidental, or consequential damages arising from your use of
-        the Service, including delays, failures, or errors in transfers initiated through Dwolla or account data
-        provided through Plaid.
+        the Service, including inaccurate account data provided through Plaid, or delays, failures, or errors in
+        transfers that you initiate yourself based on PriorityPay&apos;s calculations.
       </p>
 
       <h2>9. Termination</h2>
       <p>
         You may stop using the Service and close your account at any time. We may suspend or terminate accounts that
-        violate these Terms or that Dwolla or Plaid require us to restrict.
+        violate these Terms or that Plaid requires us to restrict.
       </p>
 
       <h2>10. Changes to These Terms</h2>
@@ -133,20 +129,10 @@ export default function TermsPage() {
 
       <h2>11. Third-Party Terms</h2>
       <p>
-        Because PriorityPay relies on Dwolla and Plaid to move money and link accounts, using PriorityPay also means
-        agreeing to their terms and privacy policies:
+        Because PriorityPay relies on Plaid to link and read your accounts, using PriorityPay also means agreeing to
+        Plaid&apos;s own terms and privacy policy:
       </p>
       <ul>
-        <li>
-          <a href="https://www.dwolla.com/legal/dwolla-account-terms-of-service" target="_blank" rel="noreferrer">
-            Dwolla Terms of Service
-          </a>
-        </li>
-        <li>
-          <a href="https://www.dwolla.com/legal/privacy" target="_blank" rel="noreferrer">
-            Dwolla Privacy Policy
-          </a>
-        </li>
         <li>
           <a href="https://plaid.com/legal/" target="_blank" rel="noreferrer">
             Plaid End User Privacy Policy &amp; Terms
@@ -161,13 +147,13 @@ export default function TermsPage() {
         jurisdiction of the state and federal courts located in Virginia.
       </p>
 
-      <h2>13. Customer Support &amp; Disputes</h2>
+      <h2>13. Customer Support</h2>
       <p>
-        If you have a question or issue with a transfer, your Customer Account, or any payment activity connected to
-        your use of the Service -- including a transfer that didn&apos;t go through, went to the wrong place, or
-        needs to be disputed -- contact us at{" "}
-        <a href="mailto:megan@ignitemysite.com">megan@ignitemysite.com</a> and we&apos;ll help you resolve it,
-        including working with Dwolla on your behalf where needed.
+        If you have a question or issue with your split calculations, account linking, or anything else about the
+        Service, contact us at <a href="mailto:megan@ignitemysite.com">megan@ignitemysite.com</a> and we&apos;ll help
+        you resolve it. Because PriorityPay never initiates a transfer, a dispute about a specific transfer you sent
+        is between you and your bank -- we&apos;re glad to help you track down what our checklist showed at the time,
+        but we can&apos;t reverse or trace the transfer itself.
       </p>
 
       <h2>14. Contact</h2>
