@@ -554,7 +554,7 @@ function OnboardingPageInner() {
                 money will be set aside for that account.
               </p>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, fontFamily: "var(--font-heading)", color: "color-mix(in srgb, var(--color-text) 66%, transparent)", borderLeft: "1px solid var(--color-accent-300)", paddingLeft: 16, margin: "6px 0 0" }}>
-                Note: Any money not routed to one of the accounts below will remain where it was deposited.
+                Note: Any percentage not assigned to one of the accounts below stays wherever the deposit landed.
               </p>
             </div>
 
@@ -756,7 +756,8 @@ function OnboardingPageInner() {
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 20px" }} />
             <p style={{ fontSize: 15.5, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 28px" }}>
               You haven&apos;t connected an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} yet.
-              Until you connect one, money will not be routed and will stay wherever the deposit landed.
+              Until you connect one, there&apos;s nowhere to send that share on your checklist, so it stays wherever
+              the deposit landed.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <button onClick={() => setShowUnconnectedModal(false)} className="pp-btn pp-btn-secondary" style={{ padding: "12px 22px" }}>

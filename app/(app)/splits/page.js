@@ -175,7 +175,7 @@ function SplitRulesPageInner() {
             paddingLeft: 16,
           }}
         >
-          Note: Any money not routed to one of the accounts below will remain where it was deposited.
+          Note: Any percentage not assigned to one of the accounts below stays wherever the deposit landed.
         </p>
       </div>
 

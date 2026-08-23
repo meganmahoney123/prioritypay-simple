@@ -215,8 +215,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--color-accent-700)", margin: "10px 0 0" }}>
-            No account connected yet. Until you connect one, this {rule.pct}% won&apos;t be routed anywhere and
-            stays wherever the deposit landed.
+            No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
+            checklist, so it stays wherever the deposit landed.
           </p>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
@@ -370,8 +370,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         <div className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <span>
-            No account connected yet. Until you connect one, this {rule.pct}% won&apos;t be routed anywhere and
-            stays wherever the deposit landed.
+            No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
+            checklist, so it stays wherever the deposit landed.
           </span>
         </div>
       )}
