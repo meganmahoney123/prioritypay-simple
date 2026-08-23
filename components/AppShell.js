@@ -40,7 +40,7 @@ const TITLES = {
 // paths to the same "Income Split Rules" header title and nav highlight.
 function titleFor(pathname) {
   if (pathname.startsWith("/splits")) return TITLES["/splits"];
-  return TITLES[pathname] || "PriorityPay Simple";
+  return TITLES[pathname] || "PriorityPay";
 }
 
 function NavLink({ href, label, active, onClick }) {

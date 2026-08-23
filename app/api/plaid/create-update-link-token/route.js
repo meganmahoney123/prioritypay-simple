@@ -37,7 +37,7 @@ export async function POST(request) {
   try {
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
-      client_name: "PriorityPay Simple",
+      client_name: "PriorityPay",
       country_codes: [CountryCode.Us],
       language: "en",
       access_token: decryptToken(account.plaid_access_token),

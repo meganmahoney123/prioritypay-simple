@@ -23,7 +23,7 @@ export const viewport = {
 
 export const metadata = {
   metadataBase: new URL("https://www.prioritypay.co"),
-  title: "PriorityPay Simple",
+  title: "PriorityPay",
   description: "Route your money before you spend it.",
   openGraph: {
     siteName: "PriorityPay",

@@ -452,3 +452,12 @@ alter table simple_accounts add column if not exists balance_reconciled_at times
 -- actually send either way.
 alter table simple_profiles alter column sms_notifications_enabled set default true;
 update simple_profiles set sms_notifications_enabled = true where sms_notifications_enabled = false;
+
+-- PHASE N: lower the minimum deposit-split threshold floor from $100 to
+-- $50 (Megan's call -- some clients pay as little as $50, and the old
+-- floor meant those deposits could never trigger a split at all). Just
+-- relaxes the floor -- every existing value is already >= 100, so nothing
+-- needs backfilling; this only changes what NEW values are allowed to be.
+alter table simple_profiles alter column min_deposit_threshold set default 50;
+alter table simple_profiles drop constraint if exists simple_profiles_min_deposit_threshold_floor;
+alter table simple_profiles add constraint simple_profiles_min_deposit_threshold_floor check (min_deposit_threshold >= 50);

@@ -110,12 +110,13 @@ function OnboardingPageInner() {
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
-  // $100 is a hard floor (see PHASE I, supabase/schema.sql) -- enforced
+  // $50 is a hard floor (see PHASE N, supabase/schema.sql) -- enforced
   // both here (input can't go below it) and again server-side in
   // app/api/onboarding/complete, so it can't be bypassed by editing the
   // request directly. Below this amount, an automatic deposit is skipped
-  // entirely rather than triggering a checklist for a few dollars.
-  const MIN_DEPOSIT_THRESHOLD_FLOOR = 100;
+  // entirely rather than triggering a checklist for a few dollars. Lowered
+  // from the original $100 floor since some clients pay as little as $50.
+  const MIN_DEPOSIT_THRESHOLD_FLOOR = 50;
   const [minDepositThreshold, setMinDepositThreshold] = useState(MIN_DEPOSIT_THRESHOLD_FLOOR);
   // Deposit text alerts default to on (see PHASE M, supabase/schema.sql --
   // sms_notifications_enabled defaults true at the DB level for every new
@@ -140,6 +141,49 @@ function OnboardingPageInner() {
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  // Stripe Checkout is a real off-domain redirect, so the whole page
+  // (and every bit of the state above) reloads from scratch by the time
+  // someone's back -- everything they entered was already saved
+  // server-side via /api/onboarding/complete (finalize: false) right
+  // before they left, so nothing here needs to be restored, just the
+  // Review step needs to jump straight to confirming the payment instead
+  // of starting over from Welcome. See finish() below for the send-off
+  // half of this round trip.
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  useEffect(() => {
+    const paid = searchParams.get("paid");
+    if (paid === "1") {
+      const sessionId = searchParams.get("session_id");
+      setStep(STEPS.length - 1);
+      setConfirmingPayment(true);
+      fetch("/api/onboarding/confirm-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.ok) {
+            router.push("/dashboard");
+            router.refresh();
+            return;
+          }
+          setConfirmingPayment(false);
+          setPaymentError(data.error || "Could not confirm your payment. Please try again.");
+        })
+        .catch(() => {
+          setConfirmingPayment(false);
+          setPaymentError("Could not confirm your payment. Please try again.");
+        });
+    } else if (paid === "cancelled") {
+      setStep(STEPS.length - 1);
+      setPaymentError("Checkout was cancelled — no charge was made. Try again when you're ready.");
+    }
+    // Only ever meant to run once, against whatever ?paid= was on the URL
+    // Stripe redirected back to -- not on every searchParams change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Step 3: after any account links, ask "got more?" instead of leaving it
   // to a static button label.
   const [showAddMorePopup, setShowAddMorePopup] = useState(false);
@@ -244,8 +288,20 @@ function OnboardingPageInner() {
     next();
   };
 
+  // No more 30-day free trial for anyone signing up from here on -- $7/mo
+  // is collected via Stripe Checkout right here, before onboarding
+  // actually finishes, since PriorityPay now incurs real costs (Plaid,
+  // Twilio, Anthropic) the moment someone starts using it. Existing
+  // trialing users are entirely unaffected -- this only ever runs for a
+  // brand-new signup finishing onboarding for the first time.
+  //
+  // Everything is saved with `finalize: false` (so `onboarded` stays
+  // false) BEFORE the redirect, since Checkout is a real off-domain page
+  // and this whole tab reloads by the time someone's back -- see the
+  // ?paid= handling in the useEffect above for the other half of this.
   const finish = async () => {
     setSubmitting(true);
+    setPaymentError(null);
     await fetch("/api/onboarding/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -266,10 +322,17 @@ function OnboardingPageInner() {
         splitRules: { percent },
         minDepositThreshold,
         notifications: { phoneNumber, smsEnabled },
+        finalize: false,
       }),
     });
-    router.push("/dashboard");
-    router.refresh();
+    const res = await fetch("/api/onboarding/checkout", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok || !data.url) {
+      setSubmitting(false);
+      setPaymentError(data.error || "Could not start checkout. Please try again.");
+      return;
+    }
+    window.location.href = data.url;
   };
 
   const stepCounter = step === 0 ? "Getting started" : `Step ${step} of 4`;
@@ -467,26 +530,46 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              PriorityPay Simple can only split a deposit it actually sees. Connect every bank account you
-              could receive a client payment into. You can always add more inside the dashboard.
+              PriorityPay can only alert you to split a deposit it actually sees. Connect every bank account
+              you could receive a client payment into. You can always add more inside the dashboard.
             </p>
-            <PlaidLinkButton
-              label="Connect Account"
-              onLinked={(account) => {
-                onAccountLinked(account);
-                if (account) setShowAddMorePopup(true);
-              }}
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontWeight: 600,
-                color: "var(--color-accent)",
-                background: "transparent",
-                border: "1px solid var(--color-accent)",
-                borderRadius: "var(--radius-md)",
-                padding: "13px 26px",
-                marginBottom: 34,
-              }}
-            />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+              <PlaidLinkButton
+                label="Connect Account"
+                onLinked={(account) => {
+                  onAccountLinked(account);
+                  if (account) setShowAddMorePopup(true);
+                }}
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 600,
+                  color: "var(--color-accent)",
+                  background: "transparent",
+                  border: "1px solid var(--color-accent)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "13px 26px",
+                }}
+              />
+              <PlaidLinkButton
+                label="Add a credit card"
+                creditCard
+                onLinked={(account) => onAccountLinked(account)}
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                  background: "transparent",
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "13px 22px",
+                }}
+              />
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 34px" }}>
+              Credit cards are for close-out expense tracking only — they&apos;re never used for splits or
+              transfers.
+            </p>
 
             {accounts.length > 0 && (
               <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", overflow: "hidden", marginBottom: 34 }}>
@@ -523,6 +606,7 @@ function OnboardingPageInner() {
                       </span>
                       <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1, minWidth: 0 }}>
                         {a.institution_name} — {a.account_name} •••• {a.mask}
+                        {a.account_type === "credit" ? " (credit card)" : ""}
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)" }} />
@@ -553,9 +637,7 @@ function OnboardingPageInner() {
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <div style={{ display: "grid", gap: 14, marginBottom: 36, maxWidth: "34em" }}>
               <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                Each deposit you receive will be split by percentage into the following accounts, and you&apos;ll
-                get a checklist to confirm and send each transfer yourself. Here, set the percentages you want sent
-                to each account.
+                Decide what percentage of each deposit received you want sent to each account.
               </p>
               <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
                 For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit,
@@ -564,9 +646,6 @@ function OnboardingPageInner() {
               <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
                 If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no
                 money will be set aside for that account.
-              </p>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, fontFamily: "var(--font-heading)", color: "color-mix(in srgb, var(--color-text) 66%, transparent)", borderLeft: "1px solid var(--color-accent-300)", paddingLeft: 16, margin: "6px 0 0" }}>
-                Note: Any percentage not assigned to one of the accounts below stays wherever the deposit landed.
               </p>
             </div>
 
@@ -649,8 +728,8 @@ function OnboardingPageInner() {
                 Minimum deposit to split
               </label>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 14px" }}>
-                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all — $100 is
-                the lowest you can set it. Adjustable anytime from Settings.
+                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a message to initiate
+                split. $50 is the lowest you can set it. Adjustable anytime from Settings.
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 220 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>$</span>
@@ -675,7 +754,7 @@ function OnboardingPageInner() {
               </label>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
                 PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
-                checklist — this is on by default once you add a phone number below, but you can turn it off
+                checklist. This is on by default once you add a phone number below, but you can turn it off
                 anytime in Settings.
               </p>
               <input
@@ -705,7 +784,18 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 4 && confirmingPayment && (
+          <div style={{ maxWidth: "34em", margin: "0 auto", textAlign: "center" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
+              Confirming your payment…
+            </h1>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+              One moment — you&apos;ll land in your dashboard as soon as this is done.
+            </p>
+          </div>
+        )}
+
+        {step === 4 && !confirmingPayment && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Review and finish
@@ -726,10 +816,20 @@ function OnboardingPageInner() {
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
+                PriorityPay is $7/month, billed today to get started — there&apos;s no free trial for new
+                accounts. You&apos;ll enter payment details on Stripe&apos;s secure checkout page next, and can
+                cancel anytime from Settings.
+              </p>
+            </div>
+            {paymentError && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "20px 0 0" }}>{paymentError}</p>
+            )}
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <BackBtn onClick={back} />
               <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                {submitting ? "Setting up…" : "Enter dashboard"} &nbsp;→
+                {submitting ? "Redirecting to checkout…" : "Continue to payment — $7/month"} &nbsp;→
               </PrimaryBtn>
             </div>
           </div>
