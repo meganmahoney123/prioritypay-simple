@@ -216,7 +216,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--color-accent-700)", margin: "10px 0 0" }}>
             No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
-            checklist, so it stays wherever the deposit landed.
+            checklist.
           </p>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
