@@ -106,16 +106,16 @@ export default function BusinessFinancialsPage() {
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Business Financials</h1>
         <p style={{ margin: 0, color: "var(--color-neutral-700)", fontSize: 15, lineHeight: 1.5 }}>
           If you run a separate business entity (LLC, S-corp, or C-corp), PriorityPay only sees what moves through
-          your personal accounts -- not your real business revenue and expenses. Fill in these totals from your
+          your personal accounts — not your real business revenue and expenses. Fill in these totals from your
           bookkeeping or last year's return (they follow Schedule C's own categories) so your Tax Summary and tax
           reserve calculations reflect your complete picture. Sole proprietors with no separate entity can skip
-          this -- your personal account data already is the complete picture.
+          this — your personal account data already is the complete picture.
         </p>
       </div>
 
       <Card style={{ padding: 28, marginBottom: 20 }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 400, margin: "0 0 4px" }}>
-          Income -- {taxYear}
+          Income — {taxYear}
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "10px 0 22px" }} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

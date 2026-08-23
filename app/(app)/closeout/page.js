@@ -8,7 +8,8 @@ import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
 import ContributionCalculatorModal from "@/components/ContributionCalculatorModal";
-import { RETIREMENT_LABELS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS } from "@/lib/allocations";
+import Link from "next/link";
+import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS } from "@/lib/allocations";
 
 function defaultPeriod() {
   const now = new Date();
@@ -245,7 +246,7 @@ export default function CloseoutPage() {
       // immediately) but silently 400'd underneath, so the real value in
       // the database never changed.
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: previous ?? null } : t)));
-      alert("Couldn't save that category -- please try again.");
+      alert("Couldn't save that category — please try again.");
       return;
     }
     // Editing a category on an already-confirmed month: re-run the same
@@ -334,7 +335,7 @@ export default function CloseoutPage() {
     });
     setSavingObligations(false);
     if (!res.ok) {
-      alert("Couldn't save this reserve -- please try again.");
+      alert("Couldn't save this reserve — please try again.");
       return;
     }
     setSplitRulesPercent(nextPercent);
@@ -428,7 +429,7 @@ export default function CloseoutPage() {
                 : ""}
               . Categories are locked by default to avoid accidental changes
               {editingConfirmed
-                ? " -- you're editing now. Retirement room, tax reserve, and Tax Summary all recalculate the moment you change a category. Money already sent isn't undone, only what's left to send adjusts."
+                ? " — you're editing now. Retirement room, tax reserve, and Tax Summary all recalculate the moment you change a category. Money already sent isn't undone, only what's left to send adjusts."
                 : ". Made a mistake? You can still fix it."}
             </span>
             <GhostButton onClick={() => setEditingConfirmed((v) => !v)} className="text-[11px] px-2.5 py-1 shrink-0">
@@ -493,7 +494,7 @@ export default function CloseoutPage() {
         )}
         {displayBusiness > 0 && (
           <div className="flex items-center justify-between text-xs text-neutral-400 mt-1">
-            <span>Flagged as business this month (excluded -- belongs to the business side, see Tax Summary)</span>
+            <span>Flagged as business this month (excluded — belongs to the business side, see Tax Summary)</span>
             <span className="font-mono">{currency(displayBusiness)}</span>
           </div>
         )}
@@ -516,7 +517,64 @@ export default function CloseoutPage() {
               {currency(electiveDeferralLimit(recommendations.ageBracket))} as your own employee-style deferral.
             </p>
             {recommendations.retirement.length === 0 ? (
-              <p className="text-sm text-neutral-400">No Solo 401k/SEP IRA category set up yet.</p>
+              <div className="space-y-5">
+                <p className="text-sm text-neutral-500">
+                  You haven&apos;t added a Solo 401k or SEP IRA category to your Income Split Rules yet. You can
+                  still calculate what you&apos;d be able to contribute below, and see how to open either account,
+                  before deciding what to route toward retirement.
+                </p>
+
+                {!isBusinessOwnerWithEmployees && (
+                  <div className="border border-neutral-200 rounded-xl p-4">
+                    <div className="text-sm font-semibold mb-1">Solo 401k</div>
+                    <p className="text-xs text-neutral-500 mb-3">
+                      A specialized retirement plan for self-employed individuals and business owners with no
+                      employees other than a spouse.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <GhostButton onClick={() => setCalculatorPlanType("solo_401k")} className="text-xs px-3 py-1.5">
+                        <Calculator size={14} /> Calculate Your Contribution Amount
+                      </GhostButton>
+                      <a
+                        href={RETIREMENT_SETUP_LINKS.solo_401k}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs px-3 py-1.5 inline-flex items-center"
+                        style={{ color: "var(--color-accent-700)", fontWeight: 600 }}
+                      >
+                        How do I open one?
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border border-neutral-200 rounded-xl p-4">
+                  <div className="text-sm font-semibold mb-1">SEP IRA</div>
+                  <p className="text-xs text-neutral-500 mb-3">
+                    A Simplified Employee Pension (SEP) IRA lets business owners and self-employed individuals
+                    make tax-deductible contributions for themselves and their eligible employees.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <GhostButton onClick={() => setCalculatorPlanType("sep_ira")} className="text-xs px-3 py-1.5">
+                      <Calculator size={14} /> Calculate Your Contribution Amount
+                    </GhostButton>
+                    <a
+                      href={RETIREMENT_SETUP_LINKS.sep_ira}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs px-3 py-1.5 inline-flex items-center"
+                      style={{ color: "var(--color-accent-700)", fontWeight: 600 }}
+                    >
+                      How do I open one?
+                    </a>
+                  </div>
+                </div>
+
+                <p className="text-xs text-neutral-500">
+                  Ready to actually start funding one? <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Add it to your Income Split Rules</Link> so
+                  a share of every deposit gets set aside for it automatically.
+                </p>
+              </div>
             ) : (
               <div className="space-y-5">
                 {recommendations.retirement.map((r) => {
@@ -528,10 +586,10 @@ export default function CloseoutPage() {
                         <div>
                           <div className="text-sm font-semibold text-amber-800 mb-1">Solo 401k isn&apos;t available to you</div>
                           <p className="text-xs text-amber-700">
-                            Solo 401k plans only cover a business owner and their spouse -- with other employees on
+                            Solo 401k plans only cover a business owner and their spouse — with other employees on
                             payroll, the business isn&apos;t eligible for this specific plan, no exceptions. A SEP
                             IRA (below, if set up) or a standard employer 401(k) are the options to look into
-                            instead -- worth a conversation with a tax professional about which fits.
+                            instead — worth a conversation with a tax professional about which fits.
                           </p>
                         </div>
                       </div>
@@ -549,7 +607,7 @@ export default function CloseoutPage() {
                       ) : (
                         <p className="text-xs text-neutral-500 mb-2">
                           {currency(r.room)} of room left this year ({currency(r.ytdContributed)} sent through
-                          PriorityPay so far this year -- doesn&apos;t include anything contributed outside
+                          PriorityPay so far this year — doesn&apos;t include anything contributed outside
                           PriorityPay). Holding in {r.holdingAccountLabel || "no account set"}
                           {r.holdingAccountBalance !== null ? ` (${currency(r.holdingAccountBalance)} available)` : ""}.
                         </p>
@@ -647,7 +705,7 @@ export default function CloseoutPage() {
             <div className="border border-neutral-200 rounded-xl p-4 mb-4">
               <div className="text-sm font-semibold mb-2">Annual calculator</div>
               <p className="text-[11px] text-neutral-400 mb-2">
-                Some people haven&apos;t set aside anything for taxes yet this year -- use this to see roughly what
+                Some people haven&apos;t set aside anything for taxes yet this year — use this to see roughly what
                 the whole year&apos;s target should be, not just this month&apos;s.
               </p>
               <div className="flex items-center gap-2 mb-2">
@@ -683,7 +741,7 @@ export default function CloseoutPage() {
               accurate, and it&apos;s not tax advice. Talk to a tax professional about your real effective rate.
             </p>
             <p className="text-xs text-neutral-400 mb-3">
-              All of this stays in whichever account you already chose for Tax Reserve on Income Split Rules -- this is
+              All of this stays in whichever account you already chose for Tax Reserve on Income Split Rules — this is
               just a number to compare against what&apos;s already there. Want to add more?
             </p>
             {!topUp.open ? (
@@ -734,7 +792,7 @@ export default function CloseoutPage() {
                 For employer payroll tax, unemployment insurance, workers&apos; comp, or a standard 401(k) match --
                 anything your accountant or plan administrator calculates a number for. This routes money toward it
                 automatically, same as everything else above, but it&apos;s money staged and ready, not the actual
-                contribution or filing itself -- that still goes through your payroll provider or TPA when it&apos;s
+                contribution or filing itself — that still goes through your payroll provider or TPA when it&apos;s
                 due.
               </p>
 
@@ -827,7 +885,7 @@ export default function CloseoutPage() {
               <h2 className="text-sm font-semibold mb-1">Business Account</h2>
               <p className="text-xs text-neutral-500 mb-4">
                 Link your business checking or savings account to see its balance right here, next to what&apos;s
-                staged in Team & Plan Obligations above -- a quick gut check that there&apos;s actually enough
+                staged in Team & Plan Obligations above — a quick gut check that there&apos;s actually enough
                 sitting there before you send anything. Read-only: never used for splits or transfers, and never
                 pulled into close-out&apos;s income/expense review.
               </p>
@@ -909,7 +967,7 @@ export default function CloseoutPage() {
                 </p>
                 {incomeTransactions.length === 0 ? (
                   <p className="text-sm text-neutral-400 mb-4">
-                    No income transactions found for {periodLabel(period)} yet -- nothing to flag right now.
+                    No income transactions found for {periodLabel(period)} yet — nothing to flag right now.
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-80 overflow-y-auto mb-4">

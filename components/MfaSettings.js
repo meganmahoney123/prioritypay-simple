@@ -106,7 +106,7 @@ export default function MfaSettings() {
         <>
           <p style={{ fontSize: 15, lineHeight: 1.6, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
             <ShieldCheck size={18} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
-            Enabled -- you'll be asked for a code from your authenticator app each time you sign in.
+            Enabled — you'll be asked for a code from your authenticator app each time you sign in.
           </p>
           {confirmingRemove ? (
             <div>

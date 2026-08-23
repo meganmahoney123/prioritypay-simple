@@ -44,7 +44,7 @@ export default function IdentityForm({ onDone, theme, mode = "create" }) {
   const submit = async (e) => {
     e.preventDefault();
     if (isRetry && form.ssn.replace(/\D/g, "").length !== 9) {
-      setError("Please enter your full 9-digit SSN -- only the last 4 was needed the first time, but Dwolla requires the full number to retry.");
+      setError("Please enter your full 9-digit SSN — only the last 4 was needed the first time, but Dwolla requires the full number to retry.");
       return;
     }
     setLoading(true);

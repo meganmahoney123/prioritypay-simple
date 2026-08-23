@@ -203,7 +203,7 @@ export default function MoneySimulator({
           <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, display: "block", marginBottom: 12 }}>Goals</span>
           {goals.length === 0 && (
             <p className="text-sm mb-3" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Add a goal -- a wedding by a target date, or a recurring cost like a new mortgage payment -- and see
+              Add a goal — a wedding by a target date, or a recurring cost like a new mortgage payment — and see
               what it takes each month.
             </p>
           )}

@@ -3,7 +3,7 @@ import LegalPage from "@/components/LegalPage";
 export const metadata = {
   title: "Privacy Policy | PriorityPay",
   description:
-    "What information PriorityPay collects, how it's used, and who it's shared with -- including Plaid, Stripe, Supabase, Vercel, and, if you use optional features, Twilio and Anthropic.",
+    "What information PriorityPay collects, how it's used, and who it's shared with — including Plaid, Stripe, Supabase, Vercel, and, if you use optional features, Twilio and Anthropic.",
   alternates: { canonical: "https://www.prioritypay.co/privacy" },
   robots: { index: false, follow: true },
 };
@@ -20,10 +20,10 @@ export default function PrivacyPage() {
       <h2>1. Information We Collect</h2>
       <p>We collect:</p>
       <ul>
-        <li><strong>Account information:</strong> your email address and password (stored securely, hashed -- we never see or store your password in plain text).</li>
+        <li><strong>Account information:</strong> your email address and password (stored securely, hashed — we never see or store your password in plain text).</li>
         <li><strong>Profile information:</strong> details you provide during onboarding, such as your business type and how you handle income.</li>
         <li><strong>Linked account and transaction data:</strong> via Plaid, we receive read-only account balances and transaction data for accounts you choose to connect, used to detect deposits and calculate your split rules. PriorityPay never receives the ability to move money in or out of these accounts.</li>
-        <li><strong>Split rules and checklist history:</strong> the percentages, caps, and categories you configure, and records of what PriorityPay calculated for each deposit -- which you then complete yourself as a transfer.</li>
+        <li><strong>Split rules and checklist history:</strong> the percentages, caps, and categories you configure, and records of what PriorityPay calculated for each deposit — which you then complete yourself as a transfer.</li>
         <li><strong>Billing information:</strong> if you subscribe, Stripe processes your payment method directly; PriorityPay does not receive or store your full card number.</li>
         <li><strong>Optional feature data:</strong> if you enable deposit text alerts, your phone number; if you use the in-app Tax Strategy Advisor chat, the questions you ask it.</li>
       </ul>
@@ -49,10 +49,10 @@ export default function PrivacyPage() {
       <ul>
         <li><strong>Plaid Inc.</strong> -- bank account linking and read-only transaction data. See the <a href="https://plaid.com/legal/" target="_blank" rel="noreferrer">Plaid Privacy Policy</a>.</li>
         <li><strong>Stripe</strong> -- payment processing for your subscription. See the <a href="https://stripe.com/privacy" target="_blank" rel="noreferrer">Stripe Privacy Policy</a>.</li>
-        <li><strong>Supabase</strong> -- our database and authentication provider, which stores your account and app data.</li>
-        <li><strong>Vercel</strong> -- hosts the PriorityPay application.</li>
-        <li><strong>Twilio</strong> -- sends deposit-alert text messages, only if you provide a phone number and enable that feature.</li>
-        <li><strong>Anthropic</strong> -- powers the optional Tax Strategy Advisor chat feature, only if you use it; your questions are sent to Anthropic&apos;s API to generate a response.</li>
+        <li><strong>Supabase</strong> — our database and authentication provider, which stores your account and app data.</li>
+        <li><strong>Vercel</strong> — hosts the PriorityPay application.</li>
+        <li><strong>Twilio</strong> — sends deposit-alert text messages once you provide a phone number in Settings; enabled by default, but you can turn it off anytime in Settings.</li>
+        <li><strong>Anthropic</strong> — powers the optional Tax Strategy Advisor chat feature, only if you use it; your questions are sent to Anthropic&apos;s API to generate a response.</li>
       </ul>
       <p>We may also disclose information if required by law, or to investigate fraud or protect the security of the Service.</p>
 

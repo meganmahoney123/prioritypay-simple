@@ -438,3 +438,17 @@ alter table simple_accounts add column if not exists balance_reconciled_at times
 -- (decryptToken tolerates the legacy format) and self-heal to encrypted
 -- form the next time each row is read by GET /api/accounts or the Plaid
 -- webhook -- no backfill script needed, nothing to run here.
+
+-- PHASE M: deposit-threshold SMS alerts flip from opt-in to on-by-default
+-- (Megan's call -- this is the notification that actually gets someone
+-- back into the app to act on their split checklist, so it shouldn't be
+-- an easy-to-miss checkbox someone leaves unchecked). Still a real,
+-- respected toggle -- Settings keeps the on/off checkbox, and
+-- lib/runSplit.js still gates on sms_notifications_enabled -- this just
+-- changes what a person starts with. Default flips to true for anyone who
+-- signs up from here on, and every existing row is backfilled to true so
+-- this takes effect for the whole user base immediately, not just new
+-- signups. Someone still needs a phone number on file for anything to
+-- actually send either way.
+alter table simple_profiles alter column sms_notifications_enabled set default true;
+update simple_profiles set sms_notifications_enabled = true where sms_notifications_enabled = false;

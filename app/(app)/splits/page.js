@@ -6,7 +6,7 @@ import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
-import { SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -39,11 +39,20 @@ function SplitRulesPageInner() {
       // A person arriving from the Money Simulator (dashboard tab or the
       // public one under Resources -> via signup+onboarding first) via
       // "Update my real split rules" carries their simulated split in
-      // ?sim= -- that takes priority over whatever's already saved, since
+      // ?sim= — that takes priority over whatever's already saved, since
       // it's the whole reason they clicked through. Still requires
       // pressing Save below before it's actually persisted.
       const simmed = decodeSim(searchParams.get("sim"));
-      setPercent(simmed || rulesRes.splitRules?.percent || []);
+      const savedPercent = rulesRes.splitRules?.percent;
+      // Nobody has an empty split -- either they saved real rows, or they
+      // never finished onboarding (dropped off before Step 5, or connected
+      // zero accounts along the way) and simple_split_rules_percent has
+      // nothing for them yet. Falling back to the same seven starting
+      // categories onboarding shows means Split Rules always has something
+      // to look at and build from, instead of a blank page that gives no
+      // hint what to set up. These aren't saved until the user hits Save
+      // or connects an account on a row, exactly like a fresh onboarding.
+      setPercent(simmed || (savedPercent && savedPercent.length ? savedPercent : DEFAULT_SPLIT_RULES.percent));
       if (simmed) setSaved(false);
       setAccounts(accountsRes.accounts || []);
       setLoading(false);
@@ -209,7 +218,7 @@ function SplitRulesPageInner() {
             className="mb-2"
             style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
           >
-            Suggestions -- click to add, starts at 0%:
+            Suggestions — click to add, starts at 0%:
           </p>
           <div className="flex flex-wrap gap-2">
             {availableSuggestions.map((s) => (

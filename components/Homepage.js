@@ -454,7 +454,7 @@ export default function Homepage() {
               </svg>
               <h3 style={{ fontSize: "clamp(22px, 3.8vw, 26px)", fontWeight: 400, lineHeight: 1.14, margin: "0 0 14px" }}>A deposit lands</h3>
               <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: 0 }}>
-                              A client payment, a check you deposited, or cash from a payment app -- any money hitting a connected
+                              A client payment, a check you deposited, or cash from a payment app — any money hitting a connected
                 account triggers PriorityPay.
               </p>
             </Reveal>
@@ -897,7 +897,7 @@ export default function Homepage() {
             </h2>
             <p style={{ fontSize: 15.5, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", margin: "0 0 26px", maxWidth: "34em" }}>
               Take our free 2-minute quiz. Answer a few questions about your income, family, and business setup, and
-              get a personalized list of tax strategies worth researching -- no account needed.
+              get a personalized list of tax strategies worth researching — no account needed.
             </p>
             <Btn href="/tax-savings-quiz" variant="primary" style={{ fontSize: 15 }}>
               Take the free quiz

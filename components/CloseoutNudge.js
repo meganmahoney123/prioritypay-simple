@@ -34,7 +34,7 @@ export default function CloseoutNudge() {
           {info.status === "draft"
             ? "You've started but haven't finished closing out"
             : "You haven't closed out"}{" "}
-          {periodLabel(info.period)} yet -- confirm your income to see this month&apos;s retirement and tax
+          {periodLabel(info.period)} yet — confirm your income to see this month&apos;s retirement and tax
           recommendations.
         </span>
       </div>

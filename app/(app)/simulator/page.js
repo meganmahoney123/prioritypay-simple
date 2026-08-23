@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import MoneySimulator from "@/components/MoneySimulator";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
-import { isCoreRow } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, isCoreRow } from "@/lib/allocations";
 import { toPercentRules, DEMO_GOALS } from "@/lib/simSharing";
 
 // Dashboard tab version -- unlike the public one under Resources (see
@@ -79,7 +79,13 @@ export default function MoneySimulatorDashboardPage() {
       const statusPromise = fetch("/api/closeout/status").then((r) => r.json());
 
       const [rulesRes, statusRes] = await Promise.all([rulesPromise, statusPromise]);
-      setRows(toSimRows(rulesRes.splitRules?.percent));
+      // Same fallback as Split Rules (app/(app)/splits/page.js): someone
+      // who never finished onboarding has zero rows saved yet. Seed the
+      // simulator with the same seven starting categories instead of an
+      // empty list, so there's always something real to try "what if"
+      // changes against.
+      const savedPercent = rulesRes.splitRules?.percent;
+      setRows(toSimRows(savedPercent && savedPercent.length ? savedPercent : DEFAULT_SPLIT_RULES.percent));
 
       let gotConfirmedIncome = false;
       if (statusRes?.status === "confirmed" && statusRes?.period) {
@@ -128,7 +134,7 @@ export default function MoneySimulatorDashboardPage() {
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 16px" }} />
         <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-          Started from your real split rules and last month's income. Try changes here first -- nothing updates
+          Started from your real split rules and last month's income. Try changes here first — nothing updates
           your actual accounts until you confirm it below.
         </p>
       </div>

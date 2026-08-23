@@ -40,7 +40,7 @@ export default function AccountsPage() {
           style={{ backgroundColor: "#525252" }}
         />
         <p className="text-xs text-neutral-500 mt-2">
-          Credit cards are for close-out expense tracking only -- they're never used for splits or transfers.
+          Credit cards are for close-out expense tracking only — they're never used for splits or transfers.
         </p>
       </div>
 
@@ -68,13 +68,13 @@ export default function AccountsPage() {
             {acc.account_type === "credit" ? (
               <p className="text-xs text-neutral-500">Spending here shows up in close-out. Not used for splits.</p>
             ) : acc.account_type === "business" ? (
-              <p className="text-xs text-neutral-500">Balance shown for visibility only -- never used for splits or transfers.</p>
+              <p className="text-xs text-neutral-500">Balance shown for visibility only — never used for splits or transfers.</p>
             ) : acc.autoDetectEnabled ? (
-              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically -- you'll get a checklist to confirm and send each transfer</p>
+              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically — you'll get a checklist to confirm and send each transfer</p>
             ) : (
               <div>
                 <p className="text-xs text-amber-700 mb-2">
-                  Linked before auto-detect existed -- deposits here still need the manual Split button.
+                  Linked before auto-detect existed — deposits here still need the manual Split button.
                 </p>
                 <PlaidLinkButton
                   mode="update"

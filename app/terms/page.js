@@ -3,7 +3,7 @@ import LegalPage from "@/components/LegalPage";
 export const metadata = {
   title: "Terms of Service | PriorityPay",
   description:
-    "The terms that govern using PriorityPay, including how split calculations work, how Plaid account linking works, and that you -- not PriorityPay -- complete every transfer.",
+    "The terms that govern using PriorityPay, including how split calculations work, how Plaid account linking works, and that you — not PriorityPay — complete every transfer.",
   alternates: { canonical: "https://www.prioritypay.co/terms" },
   // Boilerplate legal page -- noindexed so it doesn't compete for crawl
   // budget or get treated as thin/duplicate content; still fully
@@ -33,7 +33,7 @@ export default function TermsPage() {
         the ability to withdraw from or deposit into any account you connect. Every transfer PriorityPay calculates
         is one you complete yourself, using your own bank&apos;s app, website, or other transfer method. Account
         connections are made through <strong>Plaid Inc.</strong>, a third-party account-linking service, which gives
-        PriorityPay read-only access to balances and transaction data -- never the ability to move funds. Your use of
+        PriorityPay read-only access to balances and transaction data — never the ability to move funds. Your use of
         Plaid&apos;s linking feature is also governed by Plaid&apos;s own terms, linked below.
       </p>
       <p>
@@ -46,8 +46,8 @@ export default function TermsPage() {
       <h2>2. Not Financial or Investment Advice</h2>
       <p>
         PriorityPay is a money-organization tool, not a financial advisor, broker-dealer, tax preparer, or investment
-        adviser. Nothing in the Service -- including suggested percentages, category names like &quot;Retirement&quot;
-        or &quot;Investments,&quot; or any prompts to set up outside accounts -- constitutes financial, investment,
+        adviser. Nothing in the Service — including suggested percentages, category names like &quot;Retirement&quot;
+        or &quot;Investments,&quot; or any prompts to set up outside accounts — constitutes financial, investment,
         tax, or legal advice. You are solely responsible for your own financial decisions and should consult a
         licensed professional before making them.
       </p>
@@ -68,7 +68,7 @@ export default function TermsPage() {
         Accounts page.
       </p>
 
-      <h2>5. How Split Rules Work -- A Checklist, Not Automatic Transfers</h2>
+      <h2>5. How Split Rules Work — A Checklist, Not Automatic Transfers</h2>
       <p>
         You control the percentages, caps, and destination categories in your split rules. Each rule you create or
         change applies automatically to every qualifying deposit into your linked account from that point forward --
@@ -78,7 +78,7 @@ export default function TermsPage() {
       </p>
       <p>
         You are responsible for actually completing each transfer on your checklist, using whatever method your own
-        bank supports. PriorityPay marks a transfer as done only after you confirm you&apos;ve sent it -- we have no
+        bank supports. PriorityPay marks a transfer as done only after you confirm you&apos;ve sent it — we have no
         independent way to verify that a transfer you mark complete actually reached its destination, since we never
         touch the transfer itself.
       </p>
@@ -152,7 +152,7 @@ export default function TermsPage() {
         If you have a question or issue with your split calculations, account linking, or anything else about the
         Service, contact us at <a href="mailto:megan@ignitemysite.com">megan@ignitemysite.com</a> and we&apos;ll help
         you resolve it. Because PriorityPay never initiates a transfer, a dispute about a specific transfer you sent
-        is between you and your bank -- we&apos;re glad to help you track down what our checklist showed at the time,
+        is between you and your bank — we&apos;re glad to help you track down what our checklist showed at the time,
         but we can&apos;t reverse or trace the transfer itself.
       </p>
 

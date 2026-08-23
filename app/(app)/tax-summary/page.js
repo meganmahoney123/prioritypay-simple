@@ -98,7 +98,7 @@ export default function TaxSummaryPage() {
               <p className="text-xs text-neutral-500 mb-1">Flagged as business (excluded above)</p>
               <p className="text-xl font-semibold">{currency(data.totals.business)}</p>
               <p className="text-xs text-neutral-400 mt-1">
-                Transactions marked &quot;Business&quot; in Close-Out -- landed on a personal account but flagged
+                Transactions marked &quot;Business&quot; in Close-Out — landed on a personal account but flagged
                 as belonging to the business side. Not counted in income/expenses/net above; included in the CSV
                 below for your accountant.
               </p>
@@ -114,7 +114,7 @@ export default function TaxSummaryPage() {
             </div>
             {!allReviewed && (
               <p className="text-xs text-neutral-500 mb-4">
-                Months not yet confirmed in Close-Out use PriorityPay&apos;s best-guess categorization -- review
+                Months not yet confirmed in Close-Out use PriorityPay&apos;s best-guess categorization — review
                 them there before treating these numbers as final.
               </p>
             )}
@@ -140,8 +140,8 @@ export default function TaxSummaryPage() {
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-1">Download for your accountant</h2>
             <p className="text-xs text-neutral-500 mb-4">
-              Every transaction PriorityPay saw for {year} -- date, description, account, category, and whether
-              you confirmed it -- as a CSV. Not tax advice; a starting point to hand off or import into tax
+              Every transaction PriorityPay saw for {year} — date, description, account, category, and whether
+              you confirmed it — as a CSV. Not tax advice; a starting point to hand off or import into tax
               software.
             </p>
             <PrimaryButton onClick={() => window.open(`/api/tax-summary/${year}/export`, "_blank")}>

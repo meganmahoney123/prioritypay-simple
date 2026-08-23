@@ -107,7 +107,7 @@ export default function DashboardPage() {
           <span>
             <span style={{ fontWeight: 600 }}>Your free trial has ended.</span> You can still see your split rules
             and history, but connecting new accounts and moving money are paused until you subscribe.{" "}
-            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe -- $7/month</Link>
+            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe — $7/month</Link>
           </span>
         </Card>
       )}
@@ -147,7 +147,7 @@ export default function DashboardPage() {
           </span>{" "}
           {unconnected.map((r) => r.label).join(", ")}. Head to{" "}
           <Link href="/splits" style={{ fontWeight: 600, textDecoration: "underline" }}>Income Split Rules</Link> to connect or create
-          one for each -- until then, that percentage just stays wherever a deposit lands.
+          one for each — until then, that percentage just stays wherever a deposit lands.
         </Card>
       )}
 
@@ -156,7 +156,7 @@ export default function DashboardPage() {
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
-            We highly recommend that you set up a Solo 401k and/or SEP IRA to start contributing to retirement.{" "}
+            Consider setting up a Solo 401k and/or SEP IRA to start contributing to retirement.{" "}
             <a
               href={RETIREMENT_SETUP_LINKS.sep_ira}
               target="_blank"
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t investing any money. This
-            means you&apos;re missing out on compounding growth. We highly recommend that you set up investment
+            means you&apos;re missing out on compounding growth. Consider setting up investment
             accounts.{" "}
             <a
               href={INVESTMENT_SETUP_LINKS.brokerage}

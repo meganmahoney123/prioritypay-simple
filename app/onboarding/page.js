@@ -345,7 +345,7 @@ function OnboardingPageInner() {
               Know your split<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
-              Set a percentage of every deposit for investments, savings, and other accounts -- PriorityPay
+              Set a percentage of every deposit for investments, savings, and other accounts — PriorityPay
               calculates it the moment a deposit lands (BEFORE you spend it).
             </p>
             <button onClick={next} className="pp-btn pp-btn-primary" style={{ fontSize: 15, padding: "15px 34px" }}>
@@ -400,7 +400,7 @@ function OnboardingPageInner() {
                       style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
                     />
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
-                      A ballpark is fine -- this only shapes what a SEP IRA would cost you once your team&apos;s
+                      A ballpark is fine — this only shapes what a SEP IRA would cost you once your team&apos;s
                       required share is included. Adjustable anytime.
                     </p>
                   </div>
@@ -434,7 +434,7 @@ function OnboardingPageInner() {
                       ))}
                     </div>
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
-                      Either way, every transaction stays individually correctable later -- this just sets a
+                      Either way, every transaction stays individually correctable later — this just sets a
                       sensible starting default.
                     </p>
                   </div>
@@ -637,7 +637,7 @@ function OnboardingPageInner() {
                 Minimum deposit to split
               </label>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 14px" }}>
-                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all -- $100 is
+                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all — $100 is
                 the lowest you can set it. Adjustable anytime from Settings.
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 220 }}>

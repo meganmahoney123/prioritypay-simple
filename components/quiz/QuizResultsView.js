@@ -63,7 +63,7 @@ export default function QuizResultsView({ results, onStartOver, ctaSlot, emptySt
                 {downloading ? "Building PDF..." : "Download report (PDF)"}
               </button>
               <p style={{ margin: "6px 0 0", fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
-                Built in your browser -- to hand to a CPA or tax attorney.
+                Built in your browser — to hand to a CPA or tax attorney.
               </p>
               {downloadError && (
                 <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#b3452c" }}>{downloadError}</p>

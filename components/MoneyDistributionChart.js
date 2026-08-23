@@ -137,7 +137,7 @@ export default function MoneyDistributionChart({ rules = [] }) {
       <p className="text-xs text-neutral-500 mb-4">
         {mode === "month"
           ? "Real deposits that have split this month, by category. Updates as more deposits land."
-          : `Real deposits that split over the ${rangeLabel}, by category -- not a projection.`}
+          : `Real deposits that split over the ${rangeLabel}, by category — not a projection.`}
       </p>
 
       {loading ? (
