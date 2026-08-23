@@ -56,7 +56,11 @@ export default function AccountsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <PlaidLinkButton label="Connect a bank account or app" onLinked={load} />
+        {/* "...or app" was dropped here on purpose -- Plaid's Transactions
+            product links real bank/credit union accounts, not P2P apps
+            like Venmo or Cash App, so the old copy overpromised what this
+            button can actually connect. */}
+        <PlaidLinkButton label="Connect a bank account" onLinked={load} />
         <PlaidLinkButton
           label="Add a credit card"
           creditCard
