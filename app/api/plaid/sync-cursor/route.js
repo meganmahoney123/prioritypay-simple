@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { syncNewTransactions } from "@/lib/plaidSync";
+import { decryptToken } from "@/lib/tokenCrypto";
 
 // Runs right after either a fresh link (exchange-public-token) or an
 // update-mode re-consent (create-update-link-token) finishes -- does a
@@ -27,7 +28,7 @@ export async function POST(request) {
   }
 
   try {
-    const { cursor } = await syncNewTransactions(account.plaid_access_token, null);
+    const { cursor } = await syncNewTransactions(decryptToken(account.plaid_access_token), null);
     await admin.from("simple_accounts").update({ plaid_cursor: cursor }).eq("id", account.id);
     return Response.json({ ok: true });
   } catch (err) {

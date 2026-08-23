@@ -429,3 +429,12 @@ alter table simple_accounts add column if not exists subtype text;
 -- This never affects deposit detection or the actual split math, which
 -- both already run entirely off Transactions, not Balance.
 alter table simple_accounts add column if not exists balance_reconciled_at timestamptz;
+
+-- PHASE L: encrypt accounts.plaid_access_token at rest -- no schema change,
+-- since this column was already `text` and simply now holds an AES-256-GCM
+-- encrypted blob (see lib/tokenCrypto.js) instead of a raw token. Requires
+-- PLAID_TOKEN_ENCRYPTION_KEY to be set (see .env.example). Rows written
+-- before this shipped keep working as plain Plaid access tokens
+-- (decryptToken tolerates the legacy format) and self-heal to encrypted
+-- form the next time each row is read by GET /api/accounts or the Plaid
+-- webhook -- no backfill script needed, nothing to run here.

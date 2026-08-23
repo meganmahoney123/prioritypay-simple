@@ -4,6 +4,7 @@ import { plaidClient } from "@/lib/plaid";
 import { dwollaClient } from "@/lib/dwolla";
 import { isReadOnly, getBillingProfile, readOnlyError } from "@/lib/subscription";
 import { TRANSFER_EXECUTION_MODE } from "@/lib/executionMode";
+import { encryptToken } from "@/lib/tokenCrypto";
 
 // Runs after Plaid Link succeeds in the browser. Three steps:
 //  1. Exchange the public_token for a real access_token (server-only, never
@@ -106,7 +107,7 @@ export async function POST(request) {
         account_name: account_name || "Account",
         mask,
         plaid_item_id: itemId,
-        plaid_access_token: accessToken,
+        plaid_access_token: encryptToken(accessToken),
         plaid_account_id: account_id,
         dwolla_funding_source_id: fundingSourceId,
         account_type: isCredit ? "credit" : isBusiness ? "business" : "depository",

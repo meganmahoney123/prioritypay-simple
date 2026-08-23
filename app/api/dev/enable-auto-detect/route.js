@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { syncNewTransactions } from "@/lib/plaidSync";
+import { decryptToken } from "@/lib/tokenCrypto";
 
 // DEV/DEMO ONLY. Bulk version of the real per-account "Enable auto-detect"
 // button on the Accounts page (see PlaidLinkButton mode="update" + the
@@ -35,7 +36,7 @@ export async function POST() {
       continue;
     }
     try {
-      const { cursor } = await syncNewTransactions(acc.plaid_access_token, null);
+      const { cursor } = await syncNewTransactions(decryptToken(acc.plaid_access_token), null);
       await admin.from("simple_accounts").update({ plaid_cursor: cursor }).eq("id", acc.id);
       results.push({ id: acc.id, cursor: !!cursor });
     } catch (err) {

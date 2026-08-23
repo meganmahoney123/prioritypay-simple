@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
+import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
 
 // How long current_balance is trusted as a running ledger before this
 // route bothers Plaid for a real reconciliation check. See PHASE K,
@@ -53,7 +54,8 @@ export async function GET() {
 
       if (acc.plaid_access_token && acc.plaid_account_id && needsReconcile) {
         try {
-          const res = await plaidClient.accountsBalanceGet({ access_token: acc.plaid_access_token });
+          const accessToken = decryptToken(acc.plaid_access_token);
+          const res = await plaidClient.accountsBalanceGet({ access_token: accessToken });
           const match = res.data.accounts.find((a) => a.account_id === acc.plaid_account_id);
           if (match) {
             const fresh = match.balances.available ?? match.balances.current;
@@ -67,6 +69,14 @@ export async function GET() {
                 subtype,
                 balance_updated_at: nowIso,
                 balance_reconciled_at: nowIso,
+                // Self-healing migration to encrypted-at-rest (see
+                // lib/tokenCrypto.js): every account gets read here at
+                // least once a month, so re-saving a legacy plaintext
+                // token in encrypted form here converges the whole table
+                // without a separate backfill script.
+                ...(isLegacyPlaintext(acc.plaid_access_token)
+                  ? { plaid_access_token: encryptToken(accessToken) }
+                  : {}),
               })
               .eq("id", acc.id);
           }

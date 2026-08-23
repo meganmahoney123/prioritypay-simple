@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { syncNewTransactions } from "@/lib/plaidSync";
 import { runSplit } from "@/lib/runSplit";
+import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
 
 // This is what makes PriorityPay actually live up to "splits the moment it
 // hits your account," instead of requiring someone to open Payments and
@@ -52,7 +53,19 @@ export async function POST(request) {
   for (const account of accounts) {
     const isBaseline = !account.plaid_cursor;
     try {
-      const { added, cursor } = await syncNewTransactions(account.plaid_access_token, account.plaid_cursor || null);
+      const wasLegacyPlaintext = isLegacyPlaintext(account.plaid_access_token);
+      const accessToken = decryptToken(account.plaid_access_token);
+      // Self-healing migration to encrypted-at-rest (see lib/tokenCrypto.js)
+      // -- every actively-used account gets a webhook delivery on basically
+      // every new transaction, so re-saving a legacy plaintext token here
+      // converges the whole table to encrypted form with no backfill script.
+      if (wasLegacyPlaintext) {
+        await admin
+          .from("simple_accounts")
+          .update({ plaid_access_token: encryptToken(accessToken) })
+          .eq("id", account.id);
+      }
+      const { added, cursor } = await syncNewTransactions(accessToken, account.plaid_cursor || null);
 
       if (isBaseline) {
         console.log(

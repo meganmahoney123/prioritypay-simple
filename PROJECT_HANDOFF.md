@@ -271,22 +271,19 @@ zeroing out the Dashboard's "Total saved," YTD/MTD figures, and Close
 Out's retirement YTD tracking for an unknown amount of time before it was
 caught (August 2026) and fixed across all five call sites in one pass.
 
-**c. `computeAllocations()` normalizes percentages to 100% of the
-deposit — it does not leave an unclaimed remainder.** This is a real,
-currently-unresolved discrepancy between the engine and the product's own
-copy. If a user's percentages sum to 80%, the Split Rules page displays
-"80% allocated and 20% remains where it was deposited," and the homepage
-says "spend the rest, guilt free" — but the actual split engine
-(`lib/allocations.js`, the `while (remaining > 0.005 ...)` loop in
-`computeAllocations`) treats every percentage as a **relative weight** and
-proportionally scales the whole deposit to 100% across whatever rows are
-open. In practice, a Tax Reserve row set to 20% actually receives 25% of
-every real dollar deposited (20 / 80, once you account for the other rows
-summing to 80%), and nothing is ever left unclaimed in checking. **This
-needs a decision from Megan before production**: either fix the engine to
-match the copy (leave the gap unclaimed), or fix the copy to match the
-engine (percentages are relative weights, not literal shares). Flagged,
-not yet resolved as of this writing.
+**c. (RESOLVED, commit `1c81e5f`) `computeAllocations()` used to normalize
+percentages to 100% of the deposit instead of leaving an unclaimed
+remainder.** Previously, if a user's percentages summed to 80%, the Split
+Rules page displayed "80% allocated and 20% remains where it was
+deposited," but the engine actually proportionally scaled the whole
+deposit to 100% across whatever rows were open — a Tax Reserve row set to
+20% would silently receive 25% of every real dollar (20 / 80). Fixed by
+capping `remaining` to the committed percentage's share of the original
+deposit before the redistribution loop runs (`lib/allocations.js`, see the
+comment directly above `const committedPct = ...`), so the copy and the
+engine now agree: unclaimed percentage genuinely stays wherever the
+deposit landed. Left in this doc as a record of what was wrong and why,
+not as an open item.
 
 **d. Dwolla's sandbox collapses every Plaid-sandbox-sourced processor
 token to the same underlying test bank.** This means only the first
@@ -360,8 +357,8 @@ ever needed again.
 
 ## 8. Open items / not yet decided
 
-- **The `computeAllocations` 100%-normalization vs. displayed-percentage
-  mismatch** (gotcha 5c) — needs an explicit decision before production.
+- ~~The `computeAllocations` 100%-normalization vs. displayed-percentage
+  mismatch~~ (gotcha 5c) — resolved, commit `1c81e5f`.
 - **Remove the "Skip identity verification" testing link** (gotcha 5f)
   before production.
 - **Mobile layout** has been built with Tailwind's mobile-first responsive

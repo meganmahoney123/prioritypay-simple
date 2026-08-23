@@ -176,14 +176,18 @@ This section used to say deposit detection was manual and balances weren't
 fetched -- both are now built (see PROJECT_HANDOFF.md section 3 and 5).
 What's actually still simplified or open:
 
-- **Access-token encryption at rest.** `accounts.plaid_access_token` is
-  stored as plain text in Postgres today, protected only by RLS + the fact
-  that it's never selected by the browser client. Before handling real
-  money, encrypt it (Supabase Vault, or `pgsodium`) as defense in depth.
-- **Percentage-to-dollar behavior needs a decision.** See
-  PROJECT_HANDOFF.md section 4c -- the split engine currently normalizes
-  percentages to 100% of every deposit rather than leaving an unclaimed
-  remainder, which doesn't match the product's own copy. Unresolved.
+- ~~Access-token encryption at rest.~~ **Done.** `accounts.plaid_access_token`
+  is now AES-256-GCM encrypted before it's ever written to Postgres (see
+  `lib/tokenCrypto.js`) -- set `PLAID_TOKEN_ENCRYPTION_KEY` (`.env.example`)
+  to enable it. Accounts linked before this shipped keep working and
+  self-heal to encrypted form the next time each row is touched, so no
+  separate backfill migration is needed.
+- ~~Percentage-to-dollar behavior needs a decision.~~ **Done**, as of
+  commit `1c81e5f` ("Fix split math: uncommitted percentage now stays
+  unallocated") -- the split engine now caps what it allocates to exactly
+  the committed percentage, so unclaimed percentage genuinely stays in
+  checking, matching the product's own copy. PROJECT_HANDOFF.md section 4c
+  was written before this fix and is now stale.
 - **The "skip identity verification" testing shortcut** in onboarding must
   be removed before production (PROJECT_HANDOFF.md section 4f).
 - **Mobile app** — not started. React Native (Expo) reusing `lib/allocations.js`

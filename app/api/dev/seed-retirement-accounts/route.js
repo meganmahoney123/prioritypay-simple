@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
+import { encryptToken } from "@/lib/tokenCrypto";
 
 // DEV/DEMO ONLY. Sibling of /api/dev/seed-accounts, kept as its own
 // endpoint on purpose: seed-accounts is idempotent by deleting+reinserting
@@ -63,7 +64,7 @@ export async function POST() {
           account_name: seed.accountName,
           mask: seed.mask || plaidAccount?.mask,
           plaid_item_id: itemId,
-          plaid_access_token: accessToken,
+          plaid_access_token: encryptToken(accessToken),
           plaid_account_id: plaidAccount?.account_id,
           dwolla_funding_source_id: `demo-seed-${itemId}`,
           current_balance: seed.balance,

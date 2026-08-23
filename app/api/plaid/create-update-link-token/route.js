@@ -2,6 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
 import { CountryCode, Products } from "plaid";
+import { decryptToken } from "@/lib/tokenCrypto";
 
 // "Update mode for new products" -- lets someone re-consent an *already
 // linked* account to Transactions without going through a full new Link
@@ -39,7 +40,7 @@ export async function POST(request) {
       client_name: "PriorityPay Simple",
       country_codes: [CountryCode.Us],
       language: "en",
-      access_token: account.plaid_access_token,
+      access_token: decryptToken(account.plaid_access_token),
       additional_consented_products: [Products.Transactions],
       redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/accounts`,
       webhook: `${process.env.NEXT_PUBLIC_APP_URL}/api/plaid/webhook`,
