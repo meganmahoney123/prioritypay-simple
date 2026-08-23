@@ -101,11 +101,16 @@ them, it never opens or manages them.
 
 When a deposit lands in a connected account, Plaid's webhook
 (`app/api/plaid/webhook`) fires, and `lib/runSplit.js` computes the split
-(`lib/allocations.js` → `computeAllocations`) and fires real Dwolla
-transfers to every category's connected account. The same math also
-powers the manual "Split $X now" button and the live previews shown in
-Split Rules and onboarding, so what a user previews is provably what would
-actually move.
+(`lib/allocations.js` → `computeAllocations`). What happens next depends on
+`TRANSFER_EXECUTION_MODE` (`lib/executionMode.js`): in the default
+**manual_approval** mode, PriorityPay never touches money itself -- it
+generates a "Transfers waiting on you" checklist (see `PendingTransfers`)
+that the user completes themselves, in their own banking app. Only if
+`TRANSFER_EXECUTION_MODE=dwolla_auto` is explicitly set does it fire real
+Dwolla transfers automatically instead. The same split math also powers the
+manual "Split $X now" button and the live previews shown in Split Rules and
+onboarding, so what a user previews is provably what the checklist (or, in
+dwolla_auto mode, the real transfer) will show.
 
 **Monthly Close-Out** (`app/(app)/closeout`) is a separate, later step: it
 pulls every real transaction for a given month, has the user confirm
@@ -138,20 +143,31 @@ check `git log --oneline -- components/Homepage.js` before assuming any
 phrase is arbitrary or safe to casually rewrite.
 
 **Onboarding wizard (new signup)** — `app/onboarding/page.js`. Linear,
-six steps, can't skip ahead: Welcome → Business (business name + entity
-type: Sole proprietor/freelancer, LLC, or S-Corp) → Identity (real Dwolla
-identity verification; required before any money can move; there is a
-"Skip identity verification (testing only)" link that must be removed
-before production, see gotcha 4f) → Connect Accounts (a generic "Connect
-Account" button plus Venmo/PayPal/Cash App one-click buttons plus a
-"Connect More Apps" catch-all; at least one connected account is required
-to continue) → Percentage Splits (the exact same `PercentSplitEditor`
-component used later in the in-app Split Rules page — same rules, same
-7 default categories pre-filled at 75% total combined, same 100% cap,
-same "add your own category" flow) → Review, which submits everything to
-`POST /api/onboarding/complete` and creates the real split rules
-server-side. Whatever a user sees and sets here is not a preview that gets
-redone later — it's the same data model as Split Rules from day one.
+five steps, can't skip ahead: Welcome → Business (business name + entity
+type: Sole proprietor/freelancer, LLC, or S-Corp) → Connect Accounts (a
+"Connect Account" button plus a "Connect More Apps" catch-all; at least
+one connected account is required to continue) → Percentage Splits (the
+exact same `PercentSplitEditor` component used later in the in-app Split
+Rules page — same rules, same 7 default categories pre-filled at 75%
+total combined, same 100% cap, same "add your own category" flow, plus a
+minimum-deposit-to-split input with a $100 floor, see PHASE I,
+`supabase/schema.sql`) → Review, which submits everything to `POST
+/api/onboarding/complete` and creates the real split rules server-side.
+Whatever a user sees and sets here is not a preview that gets redone
+later — it's the same data model as Split Rules from day one.
+
+There is no Identity step and no Venmo/PayPal/Cash App quick-connect
+buttons — both existed at one point and were deliberately removed. The
+Identity step (real Dwolla KYC) only made sense back when Dwolla
+originated transfers on someone's behalf; manual-approval mode means
+PriorityPay never touches money, so there's nothing left that requires
+verifying identity before connecting accounts (removed rather than left
+as a skippable step, so it doesn't quietly collect SSNs for no reason).
+The Venmo/PayPal/Cash App buttons were removed because none of those can
+actually be linked as a Plaid institution — see the "can Plaid see
+Venmo/Cash App deposits" reasoning: Plaid only sees money after it's been
+transferred out to a real linked bank account, never a balance sitting
+inside one of those apps.
 
 **Dashboard (main logged-in home)** — `app/(app)/dashboard/page.js` +
 `components/AccountBalances.js` + `components/MoneyDistributionChart.js`.
@@ -293,7 +309,11 @@ connections in production each carry real, distinct account/routing
 numbers, so it shouldn't recur) — but it's why the dev seed endpoints
 (section 6) skip real Dwolla funding-source creation for seeded/demo
 accounts and use a placeholder `dwolla_funding_source_id` instead. Real
-users going through actual Plaid Link don't hit this.
+users going through actual Plaid Link don't hit this. Currently dormant
+either way: `exchange-public-token` skips Dwolla funding-source
+attachment entirely whenever `TRANSFER_EXECUTION_MODE !== "dwolla_auto"`
+(the default), so this only resurfaces if that env var is set for
+testing.
 
 **e. Plaid Link's own hosted "Continue without phone number" screen is
 intermittently unresponsive** in this environment during testing. That's
@@ -303,11 +323,13 @@ which reliably open Link every time. Worth knowing if a "buttons don't
 work" report comes in again; check whether it's actually Plaid's phone
 screen before assuming a regression here.
 
-**f. The "Skip identity verification (testing only)" link in onboarding's
-Identity step (`app/onboarding/page.js`) must be removed before any real
-production deployment.** It's a deliberate sandbox-only shortcut around
-Dwolla's identity verification requirement. Standing reminder, not yet
-actioned since the app is still sandbox-only.
+**f. (RESOLVED) The "Skip identity verification (testing only)" link in
+onboarding's Identity step used to need removing before production.**
+Superseded entirely: the whole Identity step (and the Dwolla identity
+verification it existed for) was removed from onboarding once
+manual-approval mode shipped, not just the testing shortcut around it.
+There is no identity verification anywhere in the current onboarding flow.
+Left here as a record, not an open item.
 
 ## 6. Dev-only tooling (sandbox only — do not expose in production)
 
@@ -359,8 +381,8 @@ ever needed again.
 
 - ~~The `computeAllocations` 100%-normalization vs. displayed-percentage
   mismatch~~ (gotcha 5c) — resolved, commit `1c81e5f`.
-- **Remove the "Skip identity verification" testing link** (gotcha 5f)
-  before production.
+- ~~Remove the "Skip identity verification" testing link~~ (gotcha 5f) —
+  resolved; the entire Identity step was removed, not just the link.
 - **Mobile layout** has been built with Tailwind's mobile-first responsive
   classes throughout, but couldn't be pixel-verified via screenshot in the
   browser-automation tooling used for this session (a tooling limitation,

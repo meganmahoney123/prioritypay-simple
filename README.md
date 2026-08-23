@@ -1,12 +1,19 @@
-# PriorityPay — web app
+# PriorityPay Simple
 
-A real, deployable Next.js app: Supabase for auth + database, Plaid for bank
-linking, Dwolla for ACH transfers. Runs in **sandbox mode** end-to-end —
-fake banks, fake money, zero risk — until you're approved for production
-access with Plaid and Dwolla (see "Going to production" below).
+A real, deployable Next.js app: Supabase for auth + database, Plaid for
+read-only bank account linking. PriorityPay calculates a percentage-based
+split for every deposit and shows you a checklist of what to send where --
+you complete every transfer yourself, in your own bank's app (that's
+**manual_approval** mode, the default -- see `lib/executionMode.js`). Real
+money movement via Dwolla exists in the codebase as an opt-in mode
+(`TRANSFER_EXECUTION_MODE=dwolla_auto`) for later, but isn't required to run
+or deploy the app today. Runs in **sandbox mode** end-to-end for Plaid until
+you're approved for Plaid production access (see "Going to production"
+below) -- there's no real money at risk either way, since PriorityPay never
+touches it regardless of Plaid's environment.
 
-Verified to build clean (`next build`, 23/23 pages, no errors) before this
-was handed to you.
+Verified to build clean (`next build`, no errors) before this was handed to
+you.
 
 > **New to this project? Start with [`PROJECT_HANDOFF.md`](./PROJECT_HANDOFF.md)
 > first.** This README covers how to run and deploy the app; PROJECT_HANDOFF.md
@@ -19,16 +26,18 @@ Next.js App Router, deployed on Vercel. Supabase Auth handles sign-up/login;
 Supabase Postgres (with row-level security) holds everything else. The
 browser never talks to Plaid, Dwolla, or the database directly — every
 sensitive action goes through a Next.js API route (`app/api/**`) running
-server-side, where `PLAID_SECRET`, `DWOLLA_SECRET`, and the Supabase
-service-role key actually live. See `lib/supabaseServer.js` for why it's
-built this way.
+server-side, where `PLAID_SECRET`, `DWOLLA_SECRET`, `PLAID_TOKEN_ENCRYPTION_KEY`,
+and the Supabase service-role key actually live. See `lib/supabaseServer.js`
+for why it's built this way, and `lib/executionMode.js` for the
+manual-vs-automatic transfer switch mentioned above.
 
 ---
 
-## Part 1 — Create your accounts (~20 minutes)
+## Part 1 — Create your accounts (~15 minutes)
 
-You'll need four free accounts. Do these in order — each one unblocks the
-next.
+You'll need three free accounts to run the app as it actually works today.
+A fourth (Dwolla) is optional -- only needed if you plan to test or enable
+automatic transfer execution later.
 
 ### 1. Supabase (database + auth)
 
@@ -55,17 +64,23 @@ next.
    - `Sandbox` secret → `PLAID_SECRET`
 3. Leave `PLAID_ENV=sandbox` for now.
 
-### 3. Dwolla (money movement)
+### 3. Dwolla (optional -- money movement, only if going automatic)
 
-1. Go to [dashboard-sandbox.dwolla.com](https://dashboard-sandbox.dwolla.com)
-   → sign up for a **sandbox** account (separate from production, no
-   approval needed).
-2. **Applications** → default app → copy the `Key` and `Secret` →
-   `DWOLLA_KEY` / `DWOLLA_SECRET`. Leave `DWOLLA_ENV=sandbox`.
-3. Once the app is deployed (Part 3), come back here: **Webhook
-   Subscriptions** → add `https://prioritypay.co/api/dwolla/webhook` →
-   copy the generated secret into `DWOLLA_WEBHOOK_SECRET`. This is what lets
-   Dwolla tell your app when a transfer actually settles.
+Skip this entirely for now unless you specifically want to test automatic
+transfer execution. The default `manual_approval` mode never calls Dwolla,
+so `DWOLLA_KEY`/`DWOLLA_SECRET` can stay blank in `.env.local` and nothing
+breaks (`lib/dwolla.js` builds its client lazily, only when actually
+called).
+
+If you do want to test it: go to
+[dashboard-sandbox.dwolla.com](https://dashboard-sandbox.dwolla.com) → sign
+up for a sandbox account → **Applications** → default app → copy the `Key`
+and `Secret` → `DWOLLA_KEY` / `DWOLLA_SECRET` → leave `DWOLLA_ENV=sandbox` →
+set `TRANSFER_EXECUTION_MODE=dwolla_auto`. Note that identity verification
+(collecting each user's SSN before Dwolla will move their money) was
+removed from onboarding when manual-approval mode became the default --
+re-adding that flow is required before dwolla_auto mode is usable with real
+users, not just a config flip.
 
 ### 4. Vercel (hosting)
 
@@ -78,15 +93,19 @@ next.
 ## Part 2 — Configure the app
 
 1. In this folder, copy `.env.example` to `.env.local` and fill in every
-   value you collected above (leave `DWOLLA_WEBHOOK_SECRET` blank for now).
-2. Test it locally: `npm install`, then `npm run dev`, then open
+   value you collected above.
+2. Generate an encryption key for stored Plaid access tokens:
+   `openssl rand -hex 32` → `PLAID_TOKEN_ENCRYPTION_KEY`.
+3. Test it locally: `npm install`, then `npm run dev`, then open
    `http://localhost:3000`.
-3. Walk through: sign up → onboarding → **Identity** step (use test data —
-   SSN `1234` triggers Dwolla's instant-verify sandbox path) → **Connect
-   bank** (Plaid's test institution search for "Chase", username
-   `user_good`, password `pass_good`) → set your fixed costs / percentages
-   → finish → go to **Payments** → run a split. You should see real
-   sandbox transfers appear in your Dwolla dashboard.
+4. Walk through: sign up → onboarding (Business → Connect Accounts, using
+   Plaid's test institution search for "Chase", username `user_good`,
+   password `pass_good` → Percentage Splits → Review) → land on the
+   Dashboard → seed a test deposit (see `app/api/dev/seed-history` for the
+   sandbox-only tooling that backfills realistic mock deposits) → check
+   **Accounts** or the Dashboard's "Transfers waiting on you" section for
+   the checklist PriorityPay generated. There's nothing to check in a
+   Dwolla dashboard -- nothing was sent anywhere, by design.
 
 If anything errors, the browser network tab + your terminal (`npm run dev`
 logs) will show which API route failed and why — almost always a missing
@@ -102,7 +121,7 @@ the Vercel CLI:
 ```bash
 npm install -g vercel
 vercel login
-cd prioritypay-web
+cd prioritypay-simple
 vercel        # first run: creates the project, links this folder to it
 ```
 
@@ -133,69 +152,63 @@ it:
 4. DNS usually propagates in minutes, sometimes up to a few hours. Vercel's
    Domains page shows a checkmark once it sees it.
 
-Once that's green: go back to Dwolla and add the webhook subscription
-pointing at `https://prioritypay.co/api/dwolla/webhook` (step 3 in Part 1),
-then add `DWOLLA_WEBHOOK_SECRET` to Vercel's env vars and redeploy
-(`vercel --prod`).
-
 **prioritypay.co is now a real, working app** — sign-up, bank linking, and
-splitting all function end-to-end, using Plaid and Dwolla's sandbox (fake
-data, zero real money moved).
+split calculation all function end-to-end, using Plaid's sandbox (fake
+data, zero real money moved). You complete every transfer yourself; nothing
+here requires Dwolla to be configured at all.
 
 ---
 
-## Going to production (real money)
+## Going to production (real money isn't required for Plaid)
 
-Two separate approvals, neither of which is a coding task:
+Plaid production access is a coding-adjacent, not a coding, task:
 
 **Plaid** — Dashboard → request Production access. You'll fill out a
-company profile and a security questionnaire; typically approved within a
-couple of business days. Swap `PLAID_ENV=sandbox` → `production` and the
-sandbox keys for production ones once approved.
+company profile, a security questionnaire, and (as of this writing) a
+Beneficial Owners section that needs a real person's information, not
+something to fill in on someone else's behalf. Typically approved within a
+couple of business days once submitted. Swap `PLAID_ENV=sandbox` →
+`production` and the sandbox keys for production ones once approved.
+`PLAID_TOKEN_ENCRYPTION_KEY` needs to be set in that environment too --
+same key works fine, or generate a fresh one for production specifically.
 
-**Dwolla** — this is the bigger one. Dwolla will not move real money until:
-1. PriorityPay is a registered legal business (LLC/Corp) with an EIN.
-2. You complete Dwolla's Platform verification for that business (their
-   Integration Manager reviews your production application).
-3. Each end user still goes through the same identity-verification step
-   already built into onboarding — except now it's their real SSN, not
-   sandbox test data.
+**Dwolla is not required to go live.** The current product works and makes
+money on real deposits without ever calling Dwolla, since `manual_approval`
+mode is the default and PriorityPay never initiates a transfer. Only pursue
+Dwolla production approval (registered legal business + EIN, Dwolla
+Platform verification, and re-adding real identity verification to
+onboarding) if and when you decide to build and ship automatic transfer
+execution as a real feature -- treat it as a future project, not a launch
+blocker.
 
-Budget real time for #1 and #2 — this is compliance review, not something
-either of us can speed up by writing more code. Once approved, swap
-`DWOLLA_ENV` and the keys the same way as Plaid.
-
-Nothing else about the app changes for this cutover — same code, same
+Nothing else about the app changes for the Plaid cutover — same code, same
 database, just real credentials.
 
 ---
 
 ## What's simplified today (fast follow-ups)
 
-This section used to say deposit detection was manual and balances weren't
-fetched -- both are now built (see PROJECT_HANDOFF.md section 3 and 5).
-What's actually still simplified or open:
-
-- ~~Access-token encryption at rest.~~ **Done.** `accounts.plaid_access_token`
-  is now AES-256-GCM encrypted before it's ever written to Postgres (see
-  `lib/tokenCrypto.js`) -- set `PLAID_TOKEN_ENCRYPTION_KEY` (`.env.example`)
-  to enable it. Accounts linked before this shipped keep working and
-  self-heal to encrypted form the next time each row is touched, so no
-  separate backfill migration is needed.
-- ~~Percentage-to-dollar behavior needs a decision.~~ **Done**, as of
-  commit `1c81e5f` ("Fix split math: uncommitted percentage now stays
-  unallocated") -- the split engine now caps what it allocates to exactly
-  the committed percentage, so unclaimed percentage genuinely stays in
-  checking, matching the product's own copy. PROJECT_HANDOFF.md section 4c
-  was written before this fix and is now stale.
-- **The "skip identity verification" testing shortcut** in onboarding must
-  be removed before production (PROJECT_HANDOFF.md section 4f).
-- **Mobile app** — not started. React Native (Expo) reusing `lib/allocations.js`
-  and the same API routes is the natural path once the web app is stable;
-  budget real time for App Store / Play Store review after that.
+- **Access-token encryption at rest** and the **percentage-to-dollar
+  split math** were both open items here previously -- both are now done
+  (see `PROJECT_HANDOFF.md` sections 4c and 5, and `lib/tokenCrypto.js`).
+- **The onboarding Identity step and its "skip" testing shortcut** are
+  also resolved -- the whole step was removed, not patched around, once
+  manual-approval mode shipped. There is no identity verification
+  anywhere in the current flow.
+- **Mobile app** — not started. React Native (Expo) reusing
+  `lib/allocations.js` and the same API routes is the natural path once
+  the web app is stable; budget real time for App Store / Play Store
+  review after that.
+- **Terms of Service / Privacy Policy legal review** — both pages were
+  rewritten to match the manual-approval model (no more Dwolla/SSN
+  language describing a flow that doesn't exist), but a lawyer should
+  review before treating them as final, especially the transfer-checklist
+  language that replaced the old ACH-authorization section.
 
 ## Stack
 
-Next.js 14 (App Router) · Supabase (Postgres + Auth) · Plaid · Dwolla ·
-Tailwind · Recharts · lucide-react. No separate backend — API routes are
-the backend.
+Next.js 14 (App Router) · Supabase (Postgres + Auth) · Plaid · Dwolla
+(present in the codebase, inactive by default) · Stripe (billing) ·
+Twilio (optional deposit SMS alerts) · Anthropic (optional Tax Strategy
+Advisor chat) · Tailwind · Recharts · lucide-react. No separate backend —
+API routes are the backend.
