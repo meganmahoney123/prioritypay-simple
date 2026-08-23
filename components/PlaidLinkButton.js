@@ -144,6 +144,29 @@ export default function PlaidLinkButton({
       return;
     }
 
+    // Try to establish the sync cursor immediately, right on the first
+    // link, instead of only ever doing this later via the webhook or a
+    // separate "Enable auto-detect" reconnect. Since manual_approval mode
+    // already requests Transactions on this very first Link call (see
+    // create-link-token), Plaid/the bank has nothing further to consent
+    // to -- so succeeding here means the account is fully auto-detect-
+    // ready with only ONE bank login, not two. This can still fail (Plaid
+    // sometimes hasn't finished its initial pull yet -- see the comment
+    // in exchange-public-token), and that's fine: the webhook remains the
+    // fallback that sets the cursor later, same as before this change, and
+    // "Enable auto-detect" still exists for that case.
+    if (!creditCard && !businessAccount) {
+      try {
+        await fetch("/api/plaid/sync-cursor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accountId: data.account.id }),
+        });
+      } catch {
+        // Ignore -- webhook fallback still covers this.
+      }
+    }
+
     if (retirementType) {
       // PHASE B: connects the REAL Solo 401k/SEP IRA (retirement_accounts),
       // not a split rule -- this scoped retirementType flow is only used
