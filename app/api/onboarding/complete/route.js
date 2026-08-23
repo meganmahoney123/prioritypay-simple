@@ -6,9 +6,10 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const { persona, businessName, entityType, retirementProfile, splitRules, minDepositThreshold } = await request.json();
+  const { persona, businessName, entityType, retirementProfile, splitRules, minDepositThreshold, notifications } = await request.json();
   const admin = supabaseAdmin();
   const rp = retirementProfile || {};
+  const notif = notifications || {};
 
   // $100 is a hard floor (see PHASE I, supabase/schema.sql) -- clamped here
   // too, not just the DB constraint, so onboarding never surfaces a raw
@@ -27,6 +28,12 @@ export async function POST(request) {
       age_bracket: rp.ageBracket,
       estimated_employee_payroll: rp.estimatedEmployeePayroll ?? null,
       min_deposit_threshold: clampedMinDepositThreshold,
+      phone_number: notif.phoneNumber || null,
+      // Only ever turns the flag OFF here -- never forces it back to true,
+      // so someone who already opted out in Settings mid-onboarding (not
+      // currently possible, but a real future path) never gets silently
+      // re-enrolled just by finishing onboarding.
+      ...(notif.phoneNumber ? { sms_notifications_enabled: Boolean(notif.smsEnabled) } : {}),
       onboarded: true,
     })
     .eq("id", user.id);

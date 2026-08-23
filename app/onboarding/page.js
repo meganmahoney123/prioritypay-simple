@@ -117,6 +117,17 @@ function OnboardingPageInner() {
   // entirely rather than triggering a checklist for a few dollars.
   const MIN_DEPOSIT_THRESHOLD_FLOOR = 100;
   const [minDepositThreshold, setMinDepositThreshold] = useState(MIN_DEPOSIT_THRESHOLD_FLOOR);
+  // Deposit text alerts default to on (see PHASE M, supabase/schema.sql --
+  // sms_notifications_enabled defaults true at the DB level for every new
+  // profile) but nothing ever asked for a phone number until now, so the
+  // feature was silently a no-op for anyone who signed up and never
+  // separately visited Settings (see lib/runSplit.js -- it requires
+  // phone_number AND sms_notifications_enabled both truthy before sending
+  // anything). Asking here, right where the deposit threshold is already
+  // being set, means alerts actually work from day one instead of quietly
+  // depending on a Settings visit nobody's prompted to make.
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [smsEnabled, setSmsEnabled] = useState(true);
   // Carried over from the Money Simulator's "Start saving for this" /
   // "Set up my real accounts" buttons (see app/(app)/simulator/page.js),
   // which base64-encode the simulated split into ?sim=. Runs once on
@@ -254,6 +265,7 @@ function OnboardingPageInner() {
         },
         splitRules: { percent },
         minDepositThreshold,
+        notifications: { phoneNumber, smsEnabled },
       }),
     });
     router.push("/dashboard");
@@ -655,6 +667,35 @@ function OnboardingPageInner() {
                   style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
                 />
               </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
+              <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                Deposit text alerts
+              </label>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
+                PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
+                checklist — this is on by default once you add a phone number below, but you can turn it off
+                anytime in Settings.
+              </p>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="Phone number (optional)"
+                style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px", marginBottom: 16 })}
+              />
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={smsEnabled}
+                  onChange={(e) => setSmsEnabled(e.target.checked)}
+                  style={{ width: 16, height: 16 }}
+                />
+                <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                  Text me when a deposit crosses my threshold
+                </span>
+              </label>
             </div>
 
             <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
