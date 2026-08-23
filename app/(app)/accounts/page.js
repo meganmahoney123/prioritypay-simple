@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Landmark, CreditCard, Briefcase } from "lucide-react";
-import { Card, Badge } from "@/components/ui";
+import { Card, Badge, GhostButton } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 
 // Identity verification (Dwolla KYC) used to gate this whole page -- see
@@ -15,6 +15,8 @@ import PlaidLinkButton from "@/components/PlaidLinkButton";
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [disconnectingId, setDisconnectingId] = useState(null);
+  const [disconnectError, setDisconnectError] = useState(null);
 
   const load = async () => {
     const accountsRes = await fetch("/api/accounts").then((r) => r.json());
@@ -25,6 +27,29 @@ export default function AccountsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const disconnect = async (acc) => {
+    const confirmed = window.confirm(
+      `Disconnect ${acc.institution_name} ${acc.account_name} •••• ${acc.mask}? ` +
+        `Any split rule currently sending money here will need a new account, and PriorityPay will stop seeing its deposits.`
+    );
+    if (!confirmed) return;
+
+    setDisconnectError(null);
+    setDisconnectingId(acc.id);
+    const res = await fetch("/api/plaid/disconnect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountId: acc.id }),
+    });
+    const data = await res.json();
+    setDisconnectingId(null);
+    if (!res.ok || !data.ok) {
+      setDisconnectError(data.error || "Could not disconnect that account.");
+      return;
+    }
+    load();
+  };
 
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
@@ -42,6 +67,7 @@ export default function AccountsPage() {
         <p className="text-xs text-neutral-500 mt-2">
           Credit cards are for close-out expense tracking only — they're never used for splits or transfers.
         </p>
+        {disconnectError && <p className="text-xs text-red-600 mt-2">{disconnectError}</p>}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -85,6 +111,15 @@ export default function AccountsPage() {
                 />
               </div>
             )}
+            <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
+              <GhostButton
+                onClick={() => disconnect(acc)}
+                disabled={disconnectingId === acc.id}
+                className="text-xs px-3 py-1.5"
+              >
+                {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
+              </GhostButton>
+            </div>
           </Card>
         ))}
       </div>
