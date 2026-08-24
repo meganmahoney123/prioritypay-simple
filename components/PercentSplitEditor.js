@@ -62,6 +62,7 @@ function CapField({ label, hint, value, onChange, theme }) {
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
               <input
                 type="number"
+                onFocus={(e) => e.target.select()}
                 min={1}
                 step={1}
                 value={value}
@@ -102,6 +103,7 @@ function CapField({ label, hint, value, onChange, theme }) {
           <span className="text-xs text-neutral-500">$</span>
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             min={1}
             step={1}
             value={value}
@@ -172,6 +174,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <input
               type="number"
+              onFocus={(e) => e.target.select()}
               min={0}
               max={100}
               value={rule.pct}
@@ -306,6 +309,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
         <input
           type="number"
+          onFocus={(e) => e.target.select()}
           min={0}
           max={100}
           value={rule.pct}
