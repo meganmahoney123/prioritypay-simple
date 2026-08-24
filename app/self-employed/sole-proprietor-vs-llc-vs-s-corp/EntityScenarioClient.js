@@ -508,7 +508,7 @@ export default function EntityScenarioClient() {
                     <label htmlFor="profit" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>Profit for the year</label>
                     <div style={{ position: "relative" }}>
                       <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
-                      <input type="number" id="profit" min="0" step="1000" value={profit} onChange={(e) => setProfit(parseFloat(e.target.value) || 0)}
+                      <input type="number" onFocus={(e) => e.target.select()} id="profit" min="0" step="1000" value={profit} onChange={(e) => setProfit(parseFloat(e.target.value) || 0)}
                         style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, ...muted(55) }}>Money left over after you pay business costs. Before you pay yourself.</div>
@@ -540,7 +540,7 @@ export default function EntityScenarioClient() {
                     <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                       <div style={{ position: "relative", maxWidth: 180 }}>
                         <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
-                        <input type="number" id="salary" min="0" step="1000" value={salary} onChange={(e) => setSalary(parseFloat(e.target.value) || 0)}
+                        <input type="number" onFocus={(e) => e.target.select()} id="salary" min="0" step="1000" value={salary} onChange={(e) => setSalary(parseFloat(e.target.value) || 0)}
                           style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
                       </div>
                       <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontVariantNumeric: "lining-nums tabular-nums", ...muted(55) }}>
@@ -567,7 +567,7 @@ export default function EntityScenarioClient() {
                     <label htmlFor="stateCost" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>Yearly state fee, if you know it</label>
                     <div style={{ position: "relative", maxWidth: 180 }}>
                       <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
-                      <input type="number" id="stateCost" min="0" step="25" value={stateCost} onChange={(e) => setStateCost(parseFloat(e.target.value) || 0)}
+                      <input type="number" onFocus={(e) => e.target.select()} id="stateCost" min="0" step="25" value={stateCost} onChange={(e) => setStateCost(parseFloat(e.target.value) || 0)}
                         style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, maxWidth: "62em", ...muted(55) }}>Only the LLC and S-corp pay this. It runs from $0 to $800 a year depending on your state, and California is the highest at $800. Leave it at 0 if you are not sure.</div>
@@ -579,7 +579,7 @@ export default function EntityScenarioClient() {
                     <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 16px", maxWidth: "62em", ...muted(56) }}>Contractors work differently. You pay them and send a 1099. They never go on your payroll, so having them or not does not change this cost.</p>
                     <div style={{ position: "relative", maxWidth: 180 }}>
                       <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
-                      <input type="number" id="adminCost" min="0" step="250" value={adminCost} onChange={(e) => setAdminCost(parseFloat(e.target.value) || 0)}
+                      <input type="number" onFocus={(e) => e.target.select()} id="adminCost" min="0" step="250" value={adminCost} onChange={(e) => setAdminCost(parseFloat(e.target.value) || 0)}
                         style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, maxWidth: "62em", ...muted(55) }}>Most people land somewhere between <b>$700 and $3,500 a year</b>, depending on how much you hand off. Only the company return is extra &mdash; you would pay for a personal return either way. Get a real quote before you decide anything.</div>
