@@ -67,6 +67,7 @@ export default function TaxEstimatorPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={1000}
                   value={netIncome}
@@ -85,6 +86,7 @@ export default function TaxEstimatorPublicClient() {
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={1000}
                     value={businessProfit}
@@ -99,6 +101,7 @@ export default function TaxEstimatorPublicClient() {
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={1000}
                     value={wagesToSelf}
@@ -121,6 +124,7 @@ export default function TaxEstimatorPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={1000}
                   value={grossSalary}
