@@ -97,6 +97,7 @@ export default function EmergencyFundPublicClient() {
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>$</span>
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={25}
                     value={expenses[c.key]}
@@ -128,6 +129,7 @@ export default function EmergencyFundPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={100}
                   value={businessExpenses}
@@ -144,6 +146,7 @@ export default function EmergencyFundPublicClient() {
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
               <input
                 type="number"
+                onFocus={(e) => e.target.select()}
                 min={0}
                 step={100}
                 value={currentSavings}
@@ -242,6 +245,7 @@ export default function EmergencyFundPublicClient() {
                   or custom:
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={1}
                     step={1}
                     value={timeframe}
