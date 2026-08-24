@@ -183,6 +183,7 @@ function SettingsPageInner() {
           </label>
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             min="100"
             step="1"
             value={profile.minDepositThreshold ?? 100}
@@ -246,6 +247,7 @@ function SettingsPageInner() {
             </label>
             <input
               type="number"
+              onFocus={(e) => e.target.select()}
               min="0"
               step="1"
               placeholder="500"
