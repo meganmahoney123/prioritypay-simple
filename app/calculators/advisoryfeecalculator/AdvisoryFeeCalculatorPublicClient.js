@@ -94,7 +94,7 @@ const FEE_CHECK_CSS = `
 .pp-fee-check .pick:hover{border-color:var(--color-accent)}
 .pp-fee-check .pick.on{border-color:var(--color-accent);background:color-mix(in srgb, var(--color-accent) 6%, transparent)}
 .pp-fee-check .pick b{display:block;font-weight:500;font-size:13.5px;margin-bottom:2px}
-.pp-fee-check .pick.on b:after{content:" \u2713";color:var(--color-accent-700)}
+.pp-fee-check .pick.on b:after{content:" ✓";color:var(--color-accent-700)}
 .pp-fee-check .pick span{font-size:11.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);line-height:1.45;display:block}
 
 .pp-fee-check .acct{border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:16px 18px;margin-bottom:12px}
@@ -129,8 +129,8 @@ const FEE_CHECK_CSS = `
 .pp-fee-check details.tier{margin-top:13px;border-top:1px solid var(--color-divider);padding-top:11px}
 .pp-fee-check details.tier summary{font-size:12px;color:var(--color-accent-700);cursor:pointer;list-style:none}
 .pp-fee-check details.tier summary::-webkit-details-marker{display:none}
-.pp-fee-check details.tier summary:before{content:"\u25b8 ";font-size:10px}
-.pp-fee-check details.tier[open] summary:before{content:"\u25be ";}
+.pp-fee-check details.tier summary:before{content:"▸ ";font-size:10px}
+.pp-fee-check details.tier[open] summary:before{content:"▾ ";}
 .pp-fee-check .trow{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:8px}
 .pp-fee-check .tnote{font-size:11.5px;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin-top:7px;line-height:1.5}
 .pp-fee-check .tnote b{color:color-mix(in srgb, var(--color-text) 76%, transparent);font-weight:500}
@@ -722,6 +722,15 @@ ${name}`;
     }
 
     const root = rootRef.current;
+    // Megan asked (2026-08-24) for every typeable number field to select
+    // its existing value the moment someone focuses it, so a new digit
+    // replaces what's there instead of landing next to it. Most inputs in
+    // this widget are the raw HTML-string ones above (data-k/data-tier),
+    // so one delegated listener here covers all of them without touching
+    // the hand-tuned cursor-position-preserving logic those already have.
+    root?.addEventListener("focusin", (e) => {
+      if (e.target.tagName === "INPUT" && e.target.type === "number") e.target.select();
+    });
     const drawer = document.getElementById("drawer");
     const pKnowBtn = document.getElementById("p-know");
     const pAskBtn = document.getElementById("p-ask");
@@ -810,9 +819,9 @@ ${name}`;
                 <h3>Assumptions</h3>
                 <p className="sub">Identical across every scenario — only the fees change between them.</p>
                 <div className="fields" style={{ maxWidth: 460 }}>
-                  <div><label className="f">Assumed yearly return</label><input className="in" id="a-ret" type="number" step="0.1" defaultValue="7" /></div>
-                  <div><label className="f">Years</label><input className="in" id="a-yrs" type="number" step="1" defaultValue="30" /></div>
-                  <div><label className="f">Added per year (total)</label><input className="in" id="a-add" type="number" step="500" defaultValue="0" /></div>
+                  <div><label className="f">Assumed yearly return</label><input className="in" id="a-ret" type="number" onFocus={(e) => e.target.select()} step="0.1" defaultValue="7" /></div>
+                  <div><label className="f">Years</label><input className="in" id="a-yrs" type="number" onFocus={(e) => e.target.select()} step="1" defaultValue="30" /></div>
+                  <div><label className="f">Added per year (total)</label><input className="in" id="a-add" type="number" onFocus={(e) => e.target.select()} step="500" defaultValue="0" /></div>
                 </div>
               </div>
 
@@ -823,8 +832,8 @@ ${name}`;
                   plan or a review when you want one — rather than a percentage of everything, every year, forever.
                 </p>
                 <div className="fields" style={{ maxWidth: 420 }}>
-                  <div><label className="f">Cost per engagement $</label><input className="in" id="v-fee" type="number" step="100" defaultValue="2500" /></div>
-                  <div><label className="f">How often, in years</label><input className="in" id="v-every" type="number" step="1" defaultValue="3" /></div>
+                  <div><label className="f">Cost per engagement $</label><input className="in" id="v-fee" type="number" onFocus={(e) => e.target.select()} step="100" defaultValue="2500" /></div>
+                  <div><label className="f">How often, in years</label><input className="in" id="v-every" type="number" onFocus={(e) => e.target.select()} step="1" defaultValue="3" /></div>
                 </div>
                 <div className="tnote" style={{ marginTop: 14 }}>
                   These are placeholder figures, not a quote and not a market rate — advice-only and flat-fee
@@ -845,8 +854,8 @@ ${name}`;
                   paying only what the funds themselves charge. These figures are yours to set.
                 </p>
                 <div className="fields" style={{ maxWidth: 420 }}>
-                  <div><label className="f">Fund expense ratio %/yr</label><input className="in" id="d-er" type="number" step="0.01" defaultValue="0.10" /></div>
-                  <div><label className="f">Platform fees $/yr</label><input className="in" id="d-flat" type="number" step="10" defaultValue="0" /></div>
+                  <div><label className="f">Fund expense ratio %/yr</label><input className="in" id="d-er" type="number" onFocus={(e) => e.target.select()} step="0.01" defaultValue="0.10" /></div>
+                  <div><label className="f">Platform fees $/yr</label><input className="in" id="d-flat" type="number" onFocus={(e) => e.target.select()} step="10" defaultValue="0" /></div>
                 </div>
                 <div className="tnote" style={{ marginTop: 14 }}>
                   Broad index funds commonly charge between <b>0.03% and 0.20%</b> a year; actively managed funds
