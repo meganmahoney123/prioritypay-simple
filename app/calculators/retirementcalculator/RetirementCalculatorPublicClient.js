@@ -82,6 +82,7 @@ export default function RetirementCalculatorPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={1000}
                   value={netIncome}
@@ -145,6 +146,7 @@ export default function RetirementCalculatorPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={500}
                   value={sepContributed}
@@ -195,6 +197,7 @@ export default function RetirementCalculatorPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={500}
                   value={solo401kContributed}
