@@ -177,6 +177,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
           >
             <input
               type="number"
+              onFocus={(e) => e.target.select()}
               min={0}
               autoFocus
               value={employeePayroll}
@@ -215,6 +216,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                 </label>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   value={otherPlanDeferralYTD}
                   onChange={(e) => setOtherPlanDeferralYTD(e.target.value)}
@@ -252,6 +254,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
             </label>
             <input
               type="number"
+              onFocus={(e) => e.target.select()}
               min={0}
               autoFocus
               value={netIncome}
