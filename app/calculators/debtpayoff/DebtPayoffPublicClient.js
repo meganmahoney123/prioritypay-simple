@@ -164,6 +164,7 @@ export default function DebtPayoffPublicClient() {
                   Remaining balance $
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={100}
                     value={d.balance}
@@ -175,6 +176,7 @@ export default function DebtPayoffPublicClient() {
                   Interest rate %
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={0.1}
                     value={d.apr}
@@ -186,6 +188,7 @@ export default function DebtPayoffPublicClient() {
                   Monthly or minimum payment $
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={10}
                     value={d.minPayment}
@@ -213,6 +216,7 @@ export default function DebtPayoffPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={25}
                   value={extraMonthly}
@@ -227,6 +231,7 @@ export default function DebtPayoffPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={100}
                   value={extraYearly}
@@ -241,6 +246,7 @@ export default function DebtPayoffPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={100}
                   value={oneTimeAmount}
@@ -250,6 +256,7 @@ export default function DebtPayoffPublicClient() {
                 <span className="text-xs">in month</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={1}
                   step={1}
                   value={oneTimeMonth}
