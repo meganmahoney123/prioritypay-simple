@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
+import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
 
 // Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
@@ -36,7 +37,7 @@ const ONBOARDING_LIVE = true;
 // opt into the same look via a `theme="ledger"` prop rather than being
 // forked, so the standalone Split Rules page (which reuses several of the
 // same components) keeps its original appearance untouched.
-const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Review"];
+const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Deposit Alerts", "Review"];
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -216,10 +217,31 @@ function OnboardingPageInner() {
     fetch("/api/split-rules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ percent: nextPercent }),
+      body: JSON.stringify({ percent: settleCaps(nextPercent) }),
     });
+  // Someone typing a percentage that would push the total over 100% gets
+  // silently clamped (see clampPctToRemaining in lib/allocations.js) --
+  // that alone can read as the input just not responding, so this also
+  // surfaces a one-row-at-a-time warning explaining what happened and the
+  // most they could actually enter. Cleared automatically after a few
+  // seconds, same pattern as the "row deleted" toast below.
+  const [pctOverflow, setPctOverflow] = useState(null);
+  useEffect(() => {
+    if (!pctOverflow) return;
+    const t = setTimeout(() => setPctOverflow(null), 5000);
+    return () => clearTimeout(t);
+  }, [pctOverflow]);
   const updatePercent = (id, patch) =>
     setPercent((prev) => {
+      if (patch.pct !== undefined) {
+        const roomLeft = maxAllowedPct(prev, id);
+        const requested = Math.max(0, Number(patch.pct) || 0);
+        setPctOverflow(
+          requested > roomLeft
+            ? { id, message: `This would put your deposit allocation over 100%. Select no more than ${roomLeft}% or adjust some of the other percentages.` }
+            : null
+        );
+      }
       const next = prev.map((r) =>
         r.id === id
           ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
@@ -319,9 +341,9 @@ function OnboardingPageInner() {
           ageBracket: "under50",
           estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
         },
-        splitRules: { percent },
+        splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
-        notifications: { phoneNumber, smsEnabled },
+        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled },
         finalize: false,
       }),
     });
@@ -335,8 +357,8 @@ function OnboardingPageInner() {
     window.location.href = data.url;
   };
 
-  const stepCounter = step === 0 ? "Getting started" : `Step ${step} of 4`;
-  const progress = step === 0 ? 2 : Math.min(100, step * 25);
+  const stepCounter = step === 0 ? "Getting started" : `Step ${step} of ${STEPS.length - 1}`;
+  const progress = step === 0 ? 2 : Math.min(100, step * (100 / (STEPS.length - 1)));
 
   if (!ONBOARDING_LIVE) {
     return (
@@ -530,7 +552,7 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              PriorityPay can only alert you to split a deposit it actually sees. Connect every bank account
+              PriorityPay can only tell you to split a deposit it actually sees. Connect every bank account
               you could receive a client payment into. You can always add more inside the dashboard.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
@@ -661,6 +683,8 @@ function OnboardingPageInner() {
               connecting={connecting}
               setConnecting={setConnecting}
               showRowWarnings={false}
+              totalPct={totalPct}
+              pctOverflow={pctOverflow}
               theme="ledger"
             />
 
@@ -748,35 +772,6 @@ function OnboardingPageInner() {
               </div>
             </div>
 
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
-              <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                Deposit text alerts
-              </label>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
-                PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
-                checklist. This is on by default once you add a phone number below, but you can turn it off
-                anytime in Settings.
-              </p>
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Phone number (optional)"
-                style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px", marginBottom: 16 })}
-              />
-              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={smsEnabled}
-                  onChange={(e) => setSmsEnabled(e.target.checked)}
-                  style={{ width: 16, height: 16 }}
-                />
-                <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                  Text me when a deposit crosses my threshold
-                </span>
-              </label>
-            </div>
-
             <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
               <BackBtn onClick={back} />
               <PrimaryBtn onClick={handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
@@ -784,7 +779,53 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === 4 && confirmingPayment && (
+        {step === 4 && (
+          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Get texted the moment a deposit lands
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+              PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
+              checklist — that text is how you actually confirm and send each transfer, so a working phone
+              number is required to finish setting up your account. We only support U.S. mobile numbers right
+              now.
+            </p>
+            <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+              Phone number
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="(555) 123-4567"
+              style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px", marginBottom: 10 })}
+            />
+            {phoneNumber && !isValidUSPhone(phoneNumber) && (
+              <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b3261e", margin: "0 0 16px" }}>
+                That doesn&apos;t look like a valid U.S. phone number — enter 10 digits, with or without
+                formatting.
+              </p>
+            )}
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 16 }}>
+              <input
+                type="checkbox"
+                checked={smsEnabled}
+                onChange={(e) => setSmsEnabled(e.target.checked)}
+                style={{ width: 16, height: 16 }}
+              />
+              <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                Text me when a deposit crosses my threshold
+              </span>
+            </label>
+            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={next} disabled={!isValidUSPhone(phoneNumber)} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && confirmingPayment && (
           <div style={{ maxWidth: "34em", margin: "0 auto", textAlign: "center" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
               Confirming your payment…
@@ -795,7 +836,7 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === 4 && !confirmingPayment && (
+        {step === 5 && !confirmingPayment && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Review and finish
