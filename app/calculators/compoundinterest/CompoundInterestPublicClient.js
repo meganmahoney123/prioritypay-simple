@@ -85,6 +85,7 @@ export default function CompoundInterestPublicClient() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={500}
                   value={startingAmount}
@@ -100,6 +101,7 @@ export default function CompoundInterestPublicClient() {
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={250}
                     value={annualContribution}
@@ -113,6 +115,7 @@ export default function CompoundInterestPublicClient() {
                   <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                   <input
                     type="number"
+                    onFocus={(e) => e.target.select()}
                     min={0}
                     step={25}
                     value={Math.round(annualContribution / 12)}
@@ -127,6 +130,7 @@ export default function CompoundInterestPublicClient() {
               Years to grow
               <input
                 type="number"
+                onFocus={(e) => e.target.select()}
                 min={1}
                 max={60}
                 step={1}
@@ -168,6 +172,7 @@ export default function CompoundInterestPublicClient() {
               or custom:
               <input
                 type="number"
+                onFocus={(e) => e.target.select()}
                 min={0}
                 max={30}
                 step={0.5}
