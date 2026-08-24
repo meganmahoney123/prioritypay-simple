@@ -6,7 +6,7 @@ import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
-import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -69,11 +69,22 @@ function SplitRulesPageInner() {
   const totalPct = useMemo(() => pctTotal(percent), [percent]);
   const remainingPct = roundPct(Math.max(0, 100 - totalPct));
 
+  // Same one-row-at-a-time "over 100%" warning as onboarding's Percentage
+  // Splits step (see app/onboarding/page.js) -- surfaced here too since
+  // this is the exact same editor/clamping behavior, just reached after
+  // onboarding instead of during it.
+  const [pctOverflow, setPctOverflow] = useState(null);
+  useEffect(() => {
+    if (!pctOverflow) return;
+    const t = setTimeout(() => setPctOverflow(null), 5000);
+    return () => clearTimeout(t);
+  }, [pctOverflow]);
+
   const saveNow = async (nextPercent) => {
     await fetch("/api/split-rules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ percent: nextPercent }),
+      body: JSON.stringify({ percent: settleCaps(nextPercent) }),
     });
     setSaved(true);
   };
@@ -81,6 +92,15 @@ function SplitRulesPageInner() {
   const updatePercent = (id, patch) => {
     setSaved(false);
     setPercent((prev) => {
+      if (patch.pct !== undefined) {
+        const roomLeft = maxAllowedPct(prev, id);
+        const requested = Math.max(0, Number(patch.pct) || 0);
+        setPctOverflow(
+          requested > roomLeft
+            ? { id, message: `This would put your deposit allocation over 100%. Select no more than ${roomLeft}% or adjust some of the other percentages.` }
+            : null
+        );
+      }
       const next = prev.map((r) =>
         r.id === id
           ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
@@ -190,6 +210,8 @@ function SplitRulesPageInner() {
         setCreating={setCreating}
         connecting={connecting}
         setConnecting={setConnecting}
+        totalPct={totalPct}
+        pctOverflow={pctOverflow}
         theme="ledger"
       />
 
