@@ -52,6 +52,7 @@ function NumberField({ label, value, onChange }) {
         <span style={{ color: "var(--color-neutral-600)" }}>$</span>
         <input
           type="number"
+          onFocus={(e) => e.target.select()}
           min={0}
           value={value === 0 ? "" : value}
           placeholder="0"
