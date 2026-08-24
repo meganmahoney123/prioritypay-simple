@@ -490,6 +490,7 @@ function OnboardingPageInner() {
                     </label>
                     <input
                       type="number"
+                      onFocus={(e) => e.target.select()}
                       min={0}
                       value={employeePayroll}
                       onChange={(e) => setEmployeePayroll(e.target.value)}
@@ -759,6 +760,7 @@ function OnboardingPageInner() {
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={MIN_DEPOSIT_THRESHOLD_FLOOR}
                   step="1"
                   value={minDepositThreshold}
