@@ -636,6 +636,7 @@ export default function CloseoutPage() {
                           <span className="text-xs text-neutral-500">Send $</span>
                           <input
                             type="number"
+                            onFocus={(e) => e.target.select()}
                             min={0}
                             value={contributeAmounts[r.retirementType] ?? Math.min(r.room, r.holdingAccountBalance ?? r.room)}
                             onChange={(e) => setContributeAmounts((prev) => ({ ...prev, [r.retirementType]: e.target.value }))}
@@ -690,6 +691,7 @@ export default function CloseoutPage() {
                 <span className="text-xs text-neutral-500">Rate</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={100}
                   value={taxRatePct}
@@ -712,6 +714,7 @@ export default function CloseoutPage() {
                 <span className="text-xs text-neutral-500">Estimated annual net income</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   value={annualNetIncome}
                   onChange={(e) => setAnnualNetIncome(e.target.value)}
@@ -723,6 +726,7 @@ export default function CloseoutPage() {
                 <span className="text-xs text-neutral-500">Rate</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={100}
                   value={annualTaxRatePct}
@@ -767,6 +771,7 @@ export default function CloseoutPage() {
                 <label className="block text-xs text-neutral-500">Amount</label>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   value={topUp.amount}
                   onChange={(e) => setTopUp((prev) => ({ ...prev, amount: e.target.value }))}
@@ -828,6 +833,7 @@ export default function CloseoutPage() {
                     </label>
                     <input
                       type="number"
+                      onFocus={(e) => e.target.select()}
                       min={0}
                       max={100}
                       value={obligationsForm.pct !== "" ? obligationsForm.pct : teamObligationsRow?.pct ?? ""}
@@ -842,6 +848,7 @@ export default function CloseoutPage() {
                     </label>
                     <input
                       type="number"
+                      onFocus={(e) => e.target.select()}
                       min={0}
                       value={obligationsForm.cap !== "" ? obligationsForm.cap : teamObligationsRow?.max ?? ""}
                       onChange={(e) => setObligationsForm((prev) => ({ ...prev, cap: e.target.value }))}
