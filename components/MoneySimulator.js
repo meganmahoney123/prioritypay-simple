@@ -121,6 +121,7 @@ export default function MoneySimulator({
           <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             min={0}
             step={0.01}
             value={income}
@@ -166,6 +167,7 @@ export default function MoneySimulator({
                 )}
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={Math.round((r.pct + maxPctForRow(r.id)) * 100) / 100}
                   step={0.1}
@@ -177,6 +179,7 @@ export default function MoneySimulator({
                 <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={income > 0 ? Math.round(((income * (r.pct + maxPctForRow(r.id))) / 100) * 100) / 100 : undefined}
                   step={0.01}
@@ -266,6 +269,7 @@ export default function MoneySimulator({
                         Monthly amount $
                         <input
                           type="number"
+                          onFocus={(e) => e.target.select()}
                           min={0}
                           step={50}
                           value={g.monthlyAmount ?? 0}
@@ -280,6 +284,7 @@ export default function MoneySimulator({
                         Target $
                         <input
                           type="number"
+                          onFocus={(e) => e.target.select()}
                           min={0}
                           step={100}
                           value={g.target}
