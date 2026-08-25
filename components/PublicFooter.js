@@ -9,17 +9,21 @@ import PriorityPayLogo from "./PriorityPayLogo";
 // signup screen. That's a real gap for a business applying for Dwolla's
 // Access API: reviewers check that a live, public site clearly names
 // the legal entity and links its Terms/Privacy, not just that the pages
-// exist somewhere. Hardcoded colors (not --color-* tokens) on purpose,
-// same as the original Homepage footer, so it renders identically
-// whether or not an ancestor sets LEDGER_TOKENS.
+// exist somewhere.
+//
+// Restyled per the Aug 2026 Bloom redesign (spec 02): light footer
+// (#FAF7FD, 1px #EFE7FA top rule, purple logo) replacing the old dark
+// (#171614) footer -- this is shared chrome, so the swap applies to
+// every public page at once, matching the light footer already used on
+// Homepage/onboarding.
 export default function PublicFooter() {
   const year = new Date().getFullYear();
   return (
     <footer
       style={{
-        background: "#171614",
-        color: "color-mix(in srgb, #f3f2f2 55%, transparent)",
-        borderTop: "1px solid color-mix(in srgb, #f3f2f2 14%, transparent)",
+        background: "#FAF7FD",
+        color: "#6B5E7A",
+        borderTop: "1px solid #EFE7FA",
       }}
     >
       <div
@@ -34,12 +38,10 @@ export default function PublicFooter() {
         }}
       >
         <div>
-          <div style={{ color: "#f3f2f2", marginBottom: 14 }}>
-            <PriorityPayLogo size={19} markColor="var(--color-accent-400)" payColor="var(--color-accent-400)" />
+          <div style={{ marginBottom: 14 }}>
+            <PriorityPayLogo size={19} payColor="#4E22B8" />
           </div>
-          <p style={{ fontSize: 12, margin: 0, color: "color-mix(in srgb, #f3f2f2 45%, transparent)" }}>
-            &copy; {year} PriorityPay LLC. All rights reserved.
-          </p>
+          <p style={{ fontSize: 12, margin: 0, color: "#8A7C99" }}>&copy; {year} PriorityPay LLC. All rights reserved.</p>
         </div>
 
         <div>
@@ -48,26 +50,27 @@ export default function PublicFooter() {
               fontSize: 11,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "color-mix(in srgb, #f3f2f2 40%, transparent)",
+              fontWeight: 700,
+              color: "#8A7C99",
               marginBottom: 12,
             }}
           >
             Legal
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Link href="/terms" style={{ color: "color-mix(in srgb, #f3f2f2 70%, transparent)", fontSize: 13.5, textDecoration: "none" }}>
+            <Link href="/terms" style={{ color: "#4B3D5E", fontSize: 13.5, textDecoration: "none" }}>
               Terms of Service
             </Link>
-            <Link href="/privacy" style={{ color: "color-mix(in srgb, #f3f2f2 70%, transparent)", fontSize: 13.5, textDecoration: "none" }}>
+            <Link href="/privacy" style={{ color: "#4B3D5E", fontSize: 13.5, textDecoration: "none" }}>
               Privacy Policy
             </Link>
-            <a href="mailto:megan@ignitemysite.com" style={{ color: "color-mix(in srgb, #f3f2f2 70%, transparent)", fontSize: 13.5, textDecoration: "none" }}>
+            <a href="mailto:megan@ignitemysite.com" style={{ color: "#4B3D5E", fontSize: 13.5, textDecoration: "none" }}>
               Contact
             </a>
           </div>
         </div>
 
-        <p style={{ fontSize: 12.5, lineHeight: 1.7, margin: 0, maxWidth: "60em" }}>
+        <p style={{ fontSize: 13, lineHeight: 1.7, margin: 0, maxWidth: "60em", color: "#6B5E7A" }}>
           PriorityPay routes money between accounts you connect and control. It is not a bank, broker-dealer, or
           investment adviser, and does not hold or invest your funds. Money movement is performed by Dwolla, Inc., a
           licensed payment processor; account connections are made through Plaid Inc.
