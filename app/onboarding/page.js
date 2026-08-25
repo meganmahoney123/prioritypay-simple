@@ -7,7 +7,7 @@ import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
-import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
 
 // Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
@@ -362,7 +362,7 @@ function OnboardingPageInner() {
 
   if (!ONBOARDING_LIVE) {
     return (
-      <div style={{ ...LEDGER_TOKENS, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+      <div style={{ ...BLOOM_TOKENS, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
         <div style={{ maxWidth: "28em" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 30 }}>
             <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
@@ -387,7 +387,7 @@ function OnboardingPageInner() {
   }
 
   return (
-    <div style={{ ...LEDGER_TOKENS, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ ...BLOOM_TOKENS, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <header
         style={{
           position: "sticky",
@@ -466,7 +466,7 @@ function OnboardingPageInner() {
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   placeholder="Business name"
-                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                  style={bloomInputStyle({ fontSize: 16 })}
                 />
               </div>
               <div>
@@ -476,7 +476,7 @@ function OnboardingPageInner() {
                 <select
                   value={businessType}
                   onChange={(e) => setBusinessType(e.target.value)}
-                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                  style={bloomInputStyle({ fontSize: 16 })}
                 >
                   {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -495,7 +495,7 @@ function OnboardingPageInner() {
                       value={employeePayroll}
                       onChange={(e) => setEmployeePayroll(e.target.value)}
                       placeholder="e.g. 120000"
-                      style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                      style={bloomInputStyle({ fontSize: 16 })}
                     />
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
                       A ballpark is fine — this only shapes what a SEP IRA would cost you once your team&apos;s
@@ -769,7 +769,7 @@ function OnboardingPageInner() {
                     const v = Math.max(MIN_DEPOSIT_THRESHOLD_FLOOR, Number(e.target.value) || MIN_DEPOSIT_THRESHOLD_FLOOR);
                     setMinDepositThreshold(v);
                   }}
-                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                  style={bloomInputStyle({ fontSize: 16 })}
                 />
               </div>
             </div>
@@ -801,7 +801,7 @@ function OnboardingPageInner() {
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="(555) 123-4567"
-              style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px", marginBottom: 10 })}
+              style={bloomInputStyle({ fontSize: 16, marginBottom: 10 })}
             />
             {phoneNumber && !isValidUSPhone(phoneNumber) && (
               <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b3261e", margin: "0 0 16px" }}>
@@ -1016,26 +1016,30 @@ function OnboardingPageInner() {
           cursor: pointer;
           text-decoration: none;
           font-family: var(--font-heading);
-          font-weight: 600;
+          font-weight: 700;
           font-size: 14px;
           line-height: 1.2;
           color: var(--color-text);
           background: transparent;
           border: 1px solid transparent;
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-pill, 999px);
         }
         .pp-btn-primary {
-          color: var(--color-accent);
+          color: #fff;
+          background: var(--color-accent);
           border-color: var(--color-accent);
         }
         .pp-btn-primary:hover {
-          background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+          background: color-mix(in srgb, var(--color-accent) 82%, black);
+          border-color: color-mix(in srgb, var(--color-accent) 82%, black);
         }
         .pp-btn-secondary {
+          color: var(--color-accent);
+          background: var(--color-surface, #fff);
           border-color: var(--color-divider);
         }
         .pp-btn-secondary:hover {
-          background: color-mix(in srgb, var(--color-text) 7%, transparent);
+          background: color-mix(in srgb, var(--color-accent) 8%, transparent);
         }
         .pp-btn-ghost {
           color: var(--color-accent);
