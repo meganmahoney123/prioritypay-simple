@@ -37,27 +37,36 @@ body {
   cursor: pointer;
   text-decoration: none;
   font-family: var(--font-heading);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   line-height: 1.2;
   color: var(--color-text);
   background: transparent;
   border: 1px solid transparent;
-  padding: 9.2px 16.6px;
-  border-radius: var(--radius-md);
+  padding: 9.2px 18px;
+  /* Pill shape site-wide per the Aug 2026 redesign handoff. Falls back to
+     999px on pages/themes (e.g. the older "Ledger" LEDGER_TOKENS) that
+     don't define --radius-pill, so this doesn't break on unredesigned
+     calculator/blog pages -- it just makes their buttons pill-shaped too,
+     using whatever --color-accent that page's own theme already sets. */
+  border-radius: var(--radius-pill, 999px);
 }
 .pp-btn-primary {
-  color: var(--color-accent);
+  color: #fff;
+  background: var(--color-accent);
   border-color: var(--color-accent);
 }
 .pp-btn-primary:hover {
-  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 82%, black);
+  border-color: color-mix(in srgb, var(--color-accent) 82%, black);
 }
 .pp-btn-secondary {
+  color: var(--color-accent);
+  background: var(--color-surface, #fff);
   border-color: var(--color-divider);
 }
 .pp-btn-secondary:hover {
-  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
 }
 .pp-btn-ghost {
   color: var(--color-accent);
