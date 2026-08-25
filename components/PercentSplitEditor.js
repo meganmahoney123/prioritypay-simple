@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Plus, Trash2, AlertTriangle, Pencil, Link2 } from "lucide-react";
 import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
@@ -139,6 +140,12 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // meant to keep receiving their full percentage indefinitely, not stop
   // once some dollar figure is hit.
   const isGrouped = rule.group === "Investments" || rule.group === "Retirement";
+  // Collapsed by default (Onboarding Pass 2, Aug 2026 handoff) -- caps are
+  // an edge case most people never touch, so hiding them behind a toggle
+  // is the main density fix for this step. Local to each row's own render
+  // rather than lifted to the parent, since nothing outside this row ever
+  // needs to know whether its caps panel happens to be open.
+  const [showLimits, setShowLimits] = useState(false);
 
   if (theme === "ledger") {
     return (
@@ -207,24 +214,6 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "#b3261e", margin: "8px 0 0" }}>{overflowMessage}</p>
         )}
         {(rule.retirementType || rule.group === "Retirement") && <RetirementNote label={rule.label} theme="ledger" />}
-        {!isGrouped && (
-          <>
-            <CapField
-              label="Monthly Cap $"
-              hint="resets automatically each month"
-              value={rule.max}
-              onChange={(v) => onUpdate(rule.id, { max: v })}
-              theme="ledger"
-            />
-            <CapField
-              label="Account Total Cap $"
-              hint="based on the connected account's balance"
-              value={rule.balanceCap}
-              onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
-              theme="ledger"
-            />
-          </>
-        )}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--color-accent-700)", margin: "10px 0 0" }}>
             No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
@@ -248,6 +237,44 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             />
           </div>
         </div>
+        {!isGrouped && (
+          <div style={{ marginTop: 4 }}>
+            <button
+              type="button"
+              onClick={() => setShowLimits((v) => !v)}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 600,
+                fontSize: 13,
+                color: "var(--color-accent)",
+                background: "transparent",
+                border: 0,
+                padding: "10px 0 0",
+                cursor: "pointer",
+              }}
+            >
+              {showLimits ? "Hide limits" : "Add monthly or total limits"}
+            </button>
+            {showLimits && (
+              <div style={{ marginTop: 8, background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
+                <CapField
+                  label="Monthly Cap $"
+                  hint="resets automatically each month"
+                  value={rule.max}
+                  onChange={(v) => onUpdate(rule.id, { max: v })}
+                  theme="ledger"
+                />
+                <CapField
+                  label="Account Total Cap $"
+                  hint="based on the connected account's balance"
+                  value={rule.balanceCap}
+                  onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
+                  theme="ledger"
+                />
+              </div>
+            )}
+          </div>
+        )}
         {connecting[rule.id] && (
           <div style={{ marginTop: 10 }}>
             <PlaidLinkButton
@@ -437,12 +464,19 @@ export default function PercentSplitEditor({
   // percentage would have been clamped).
   pctOverflow,
   theme,
+  // Onboarding Pass 2 (Aug 2026 handoff) folds this same cap explanation
+  // into a page-level "How splits work" panel above the whole editor, so
+  // the caller can suppress this component's own copy of it here rather
+  // than showing the same explanation twice. Defaults to false so Split
+  // Rules (which has no such page-level panel) keeps this disclosure.
+  hideCapDetails = false,
 }) {
   const overflowMessageFor = (id) => (pctOverflow && pctOverflow.id === id ? pctOverflow.message : null);
 
   if (theme === "ledger") {
     return (
       <div style={{ display: "grid", gap: 18 }}>
+        {!hideCapDetails && (
         <details
           className="pp-cap-details"
           style={{
@@ -478,6 +512,7 @@ export default function PercentSplitEditor({
             across your other categories instead of going unused.
           </p>
         </details>
+        )}
         {typeof totalPct === "number" && (
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20 }}>
             <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
