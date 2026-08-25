@@ -1,7 +1,7 @@
 import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 
 // Hub landing page for the "Self Employed" Blog category -- linked from
 // the Blog dropdown (components/PublicHeader.js), which only shows hub
@@ -22,49 +22,102 @@ const ARTICLES = [
 
 export default function SelfEmployedHubPage() {
   return (
-    <div style={LEDGER_TOKENS}>
+    <div style={BLOOM_TOKENS}>
       <PublicHeader />
       <div style={{ background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "var(--font-body)", minHeight: "60vh" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "46px 22px 90px" }}>
-          <nav aria-label="Breadcrumb" style={{ fontSize: 13, marginBottom: 22, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            <Link href="/" style={{ color: "inherit" }}>Home</Link> / Blog / Self Employed
+        <div style={{ maxWidth: 860, margin: "0 auto", padding: "56px 28px 96px" }}>
+          <nav aria-label="Breadcrumb" style={{ fontSize: 15, marginBottom: 24, color: "var(--color-neutral-700)" }}>
+            <Link href="/" style={{ color: "var(--color-accent)", fontWeight: 600, textDecoration: "none" }}>
+              Home
+            </Link>
+            {" / Blog / "}
+            <span style={{ color: "var(--color-text)", fontWeight: 700 }}>Self Employed</span>
           </nav>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <span style={{ width: 30, height: 1, background: "var(--color-accent)" }} />
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>Blog</span>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              background: "var(--color-accent-200)",
+              borderRadius: 999,
+              padding: "8px 14px",
+              marginBottom: 22,
+            }}
+          >
+            <span style={{ width: 18, height: 2, borderRadius: 999, background: "var(--color-accent)" }} />
+            <span
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: 13,
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--color-accent-700)",
+              }}
+            >
+              Blog
+            </span>
           </div>
 
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 400, lineHeight: 1.08, letterSpacing: "-0.02em", margin: "0 0 14px" }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "clamp(40px, 5.4vw, 58px)",
+              fontWeight: 800,
+              lineHeight: 1.03,
+              letterSpacing: "-0.035em",
+              margin: "0 0 16px",
+            }}
+          >
             Self Employed
           </h1>
-          <p style={{ fontSize: 17, lineHeight: 1.65, maxWidth: "36em", margin: "0 0 42px", color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-            Guides to help self employed individuals navigate taxes, entity structure, and the aspects of managing money that don't come with a steady paycheck.
+          <p style={{ fontSize: 20, lineHeight: 1.6, maxWidth: "34em", margin: "0 0 42px", color: "var(--color-neutral-800)" }}>
+            Guides to help self employed individuals navigate taxes, entity structure, and the aspects of managing
+            money that don't come with a steady paycheck.
           </p>
 
-          <div style={{ display: "grid", gap: 18 }}>
+          <div style={{ display: "grid", gap: 16 }}>
             {ARTICLES.map((a) => (
               <Link
                 key={a.href}
                 href={a.href}
+                className="self-employed-hub-card"
                 style={{
                   display: "block",
                   textDecoration: "none",
                   color: "inherit",
                   border: "1px solid var(--color-divider)",
-                  borderRadius: "var(--radius-lg)",
-                  background: "var(--color-neutral-100)",
-                  boxShadow: "var(--shadow-sm)",
-                  padding: "24px 26px",
+                  borderRadius: 28,
+                  background: "var(--color-surface)",
+                  boxShadow: "0 18px 40px -32px rgba(52,26,102,0.3)",
+                  padding: "30px 32px",
+                  transition: "border-color 160ms ease, background 160ms ease",
                 }}
               >
-                <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 400, margin: "0 0 8px" }}>{a.title}</h2>
-                <p style={{ fontSize: 15.5, lineHeight: 1.6, margin: 0, color: "color-mix(in srgb, var(--color-text) 74%, transparent)" }}>{a.dek}</p>
+                <h2
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: "clamp(24px, 2.6vw, 30px)",
+                    fontWeight: 800,
+                    letterSpacing: "-0.025em",
+                    margin: "0 0 10px",
+                  }}
+                >
+                  {a.title}
+                </h2>
+                <p style={{ fontSize: 17, lineHeight: 1.6, margin: 0, color: "var(--color-neutral-800)" }}>{a.dek}</p>
               </Link>
             ))}
           </div>
         </div>
       </div>
+      <style>{`
+        .self-employed-hub-card:hover {
+          border-color: var(--color-accent-400) !important;
+          background: #FDFCFF !important;
+        }
+      `}</style>
       <PublicFooter />
     </div>
   );
