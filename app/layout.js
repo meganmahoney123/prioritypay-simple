@@ -50,6 +50,15 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap"
         />
+        {/* Figtree + IBM Plex Mono power the redesigned Homepage/Onboarding
+            (Aug 2026 purple design, see components/Homepage.js). Loaded the
+            same way as Cormorant/Lora above -- globally, not via next/font --
+            so both design systems can coexist without one page's font load
+            depending on another's. */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        />
       </head>
       <body className="text-neutral-900">{children}</body>
     </html>
