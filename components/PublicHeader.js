@@ -113,15 +113,18 @@ function DropdownLink({ href, label, onClick }) {
 // Mobile drawer group heading -- plain uppercase label, not a button
 // (unlike the desktop dropdowns, the drawer just lists everything flat
 // since hover-driven dropdowns don't have a touch equivalent).
+// 13px/700, full-strength text color -- not the old 50%-opacity uppercase
+// treatment, which fell below WCAG AA contrast on the light Bloom
+// background (see lib/bloomTheme.js's --color-neutral-700 comment for the
+// same contrast-driven correction elsewhere in this redesign).
 function DrawerGroupLabel({ children }) {
   return (
     <div
       style={{
         fontFamily: "var(--font-heading)",
-        fontSize: 12,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-        color: "color-mix(in srgb, var(--color-text) 50%, transparent)",
+        fontSize: 13,
+        fontWeight: 700,
+        color: "var(--color-text)",
         padding: "16px 16px 6px",
       }}
     >
