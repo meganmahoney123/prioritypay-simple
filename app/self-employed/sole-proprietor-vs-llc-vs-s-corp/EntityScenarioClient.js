@@ -4,62 +4,70 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS, bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
 import { computeEntityScenarios, WHO_OPTIONS } from "@/lib/entityScenarioCalculator";
 
-// Redesigned per Megan's "Entity-Scenario-Modeler.dc.html" export (Aug 2026
-// refresh): the article now styles itself directly off the shared Ledger
-// design tokens (var(--color-bg), var(--font-heading), --color-accent-700,
-// etc.) instead of its own bespoke navy/blue palette, so it reads as part
-// of the same site as the dashboard rather than a separate blog theme.
-// Calculator math is unchanged -- still lib/entityScenarioCalculator.js,
-// already verified -- this file only changes how it's presented. The
-// hover-tracking tooltip from the original vanilla-JS build is simplified
-// to a native title attribute; everything else (copy, structure, warnings,
-// "copy for my accountant" button) is a faithful port.
+// Restyled per the Aug 2026 "Bloom" purple redesign handoff (spec
+// 11-entity-comparison-article.md): this article previously ran on the
+// shared Ledger design tokens (Aug 2026 refresh before this one) -- it now
+// reads its look from lib/bloomTheme.js (BLOOM_TOKENS / bloomInputStyle)
+// instead, matching the purple system used across the rest of the
+// redesigned marketing site. Calculator math is unchanged -- still
+// lib/entityScenarioCalculator.js, untouched -- this file only changes how
+// it's presented. The hover-tracking tooltip from the original vanilla-JS
+// build is simplified to a native title attribute; everything else (copy,
+// structure, warnings, "copy for my accountant" button) is a faithful port.
 
 const M = (n) => (n < 0 ? "−" : "") + "$" + Math.round(Math.abs(n)).toLocaleString("en-US");
 
-const COLORS = { tax: "var(--color-accent-700)", fees: "var(--color-accent-300)", left: "#17140e" };
-const TEXTON = { tax: "#fff3e4", fees: "#3a270d", left: "var(--color-accent-300)" };
+const COLORS = { tax: "var(--color-accent-600)", fees: "var(--color-accent-300)", left: "var(--color-accent-800)" };
+const TEXTON = { tax: "#ffffff", fees: "var(--color-accent-800)", left: "#ffffff" };
 
 const eyebrow = {
-  display: "block",
+  display: "inline-block",
   fontFamily: "var(--font-heading)",
-  fontSize: 11,
-  fontWeight: 600,
-  letterSpacing: "0.16em",
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
   color: "var(--color-accent-700)",
-  marginBottom: 6,
+  background: "var(--color-accent-100)",
+  borderRadius: "var(--radius-pill)",
+  padding: "7px 16px",
 };
-const muted = (pct) => ({ color: `color-mix(in srgb, var(--color-text) ${pct}%, transparent)` });
+// Muted text now uses a fixed, WCAG-checked shade rather than an
+// opacity mix -- README's muted-tier rule for the Bloom palette landed on
+// #6B5E7A (var(--color-neutral-700)) as the only value that clears AA
+// contrast on both white and #FAF7FD under 18px. The pct argument is kept
+// so every call site below still reads naturally; it no longer changes
+// the result, it's just not worth touching 40+ call sites to remove.
+const muted = (_pct) => ({ color: "var(--color-neutral-700)" });
 const card = {
   border: "1px solid var(--color-divider)",
   borderRadius: "var(--radius-lg)",
-  background: "var(--color-neutral-100)",
+  background: "var(--color-surface)",
   boxShadow: "var(--shadow-sm)",
 };
 const h3Style = {
   fontFamily: "var(--font-heading)",
   fontSize: 30,
-  fontWeight: 400,
-  letterSpacing: "-0.015em",
+  fontWeight: 800,
+  letterSpacing: "-0.03em",
   margin: "46px 0 14px",
   paddingBottom: 10,
   borderBottom: "1px solid var(--color-divider)",
 };
 const h4Pros = {
   fontFamily: "var(--font-heading)",
-  fontSize: 18,
-  fontWeight: 600,
+  fontSize: 15,
+  fontWeight: 800,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
   color: "var(--color-accent-700)",
   margin: "30px 0 12px",
 };
 const h4Cons = { ...h4Pros, color: "var(--color-neutral-700)" };
-const h4When = { ...h4Pros, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" };
+const h4When = { ...h4Pros, color: "var(--color-neutral-700)" };
 // Plain block <ul> -- NOT display:grid/flex (grid/flex items don't get
 // marker boxes per the CSS Lists spec, which was bug #1). Also explicit
 // listStyle here because Tailwind's preflight base styles reset every
@@ -72,22 +80,23 @@ const liStyle = { marginBottom: 9 };
 const olStyle = { margin: "0 0 22px", paddingLeft: "1.4em", listStyle: "decimal" };
 const oliStyle = { marginBottom: 11 };
 const note = {
-  borderLeft: "1px solid var(--color-accent)",
-  padding: "4px 0 4px 20px",
+  background: "var(--color-accent-100)",
+  borderRadius: "var(--radius-md)",
+  padding: "20px 24px",
   margin: "0 0 24px",
   fontSize: 16,
   lineHeight: 1.72,
-  ...muted(78),
+  color: "var(--color-neutral-700)",
 };
 const criticalBox = {
-  border: "1px solid var(--color-accent-300)",
-  background: "var(--color-accent-100)",
+  border: "1px solid var(--color-accent-400)",
+  background: "var(--color-accent-200)",
   borderRadius: "var(--radius-md)",
   padding: "18px 22px",
   margin: "26px 0",
   fontSize: 16.5,
   lineHeight: 1.7,
-  color: "var(--color-accent-900)",
+  color: "var(--color-accent-800)",
 };
 
 function List({ items }) {
@@ -264,7 +273,7 @@ export default function EntityScenarioClient() {
     const [sole, llc, scorp] = result.cols;
     const llcD = llc.left - sole.left;
     const scD = scorp.left - sole.left;
-    const em = { fontWeight: 600, fontStyle: "italic", color: "var(--color-accent-700)" };
+    const em = { fontWeight: 800, color: "#ffffff" };
     const a =
       Math.abs(llcD) < 1 ? (
         <>
@@ -337,82 +346,79 @@ export default function EntityScenarioClient() {
   }
 
   return (
-    <div style={LEDGER_TOKENS}>
+    <div style={BLOOM_TOKENS}>
       <PublicHeader />
       <div style={{ background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.7 }}>
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "46px 22px 72px" }}>
-          <nav aria-label="Breadcrumb" style={{ fontSize: 13, marginBottom: 22, ...muted(55) }}>
-            <Link href="/" style={{ color: "inherit" }}>Home</Link> / Blog / <Link href="/self-employed" style={{ color: "inherit" }}>Self Employed</Link> / Sole Proprietor vs. LLC vs. S-Corp
+          <nav aria-label="Breadcrumb" style={{ fontSize: 15, marginBottom: 22 }}>
+            <Link href="/" style={{ color: "var(--color-accent)" }}>Home</Link> / Blog / <Link href="/self-employed" style={{ color: "var(--color-accent)" }}>Self Employed</Link> / <span style={{ color: "var(--color-text)", fontWeight: 700 }}>Sole Proprietor vs. LLC vs. S-Corp</span>
           </nav>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <span style={{ width: 30, height: 1, background: "var(--color-accent)" }} />
-            <span style={{ ...eyebrow, marginBottom: 0, fontSize: 11.5, fontVariantNumeric: "lining-nums tabular-nums" }}>2026 tax year</span>
+          <div style={{ marginBottom: 20 }}>
+            <span style={eyebrow}>2026 tax year</span>
           </div>
 
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(34px, 5.4vw, 58px)", fontWeight: 400, lineHeight: 1.04, letterSpacing: "-0.02em", margin: "0 0 16px", maxWidth: "26em" }}>
-            For Self Employed: <span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}>Sole Proprietor vs. LLC vs. S-Corp</span>
+          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(36px, 5.4vw, 58px)", fontWeight: 800, lineHeight: 1.04, letterSpacing: "-0.035em", margin: "0 0 16px", maxWidth: "26em" }}>
+            For Self Employed: <span style={{ color: "var(--color-accent)" }}>Sole Proprietor vs. LLC vs. S-Corp</span>
           </h1>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gridTemplateRows: "auto auto auto", gap: 18, margin: "38px 0 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 18, margin: "38px 0 0" }}>
             {INTRO_CARDS.map((c) => (
-              <div key={c.title} style={{ ...card, padding: "22px 24px 24px", display: "grid", gridRow: "span 3", gridTemplateRows: "subgrid", alignContent: "start" }}>
-                <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 25, fontWeight: 400, margin: "0 0 10px" }}>{c.title}</h3>
+              <div key={c.title} style={{ ...card, borderRadius: 26, padding: "22px 24px 24px", display: "flex", flexDirection: "column" }}>
+                <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 25, fontWeight: 800, margin: "0 0 10px" }}>{c.title}</h3>
                 <p style={{ fontSize: 16, lineHeight: 1.62, margin: "0 0 20px", ...muted(78) }}>{c.body}</p>
-                <div style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 14 }}>
-                  <span style={eyebrow}>What it costs</span>
+                <div style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 14, marginTop: "auto" }}>
+                  <span style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent)", marginBottom: 6 }}>What it costs</span>
                   <span style={{ fontSize: 15, lineHeight: 1.55, ...muted(72) }}>{c.cost}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.4vw, 34px)", fontWeight: 400, letterSpacing: "-0.015em", margin: "52px 0 4px" }}>Side by side</h2>
-          <div style={{ height: 1, background: "var(--color-accent)", width: 54, marginBottom: 22 }} />
+          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.4vw, 34px)", fontWeight: 800, letterSpacing: "-0.02em", margin: "52px 0 4px" }}>Side by side</h2>
+          <div style={{ height: 3, background: "var(--color-accent)", borderRadius: "var(--radius-pill)", width: 54, marginBottom: 22 }} />
 
-          <div style={{ overflowX: "auto", borderTop: "1px solid var(--color-divider)", borderBottom: "1px solid var(--color-divider)" }}>
-            <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 680, fontSize: 15 }}>
-              <thead>
-                <tr>
-                  <th scope="col" style={{ textAlign: "left", padding: "14px 16px", borderBottom: "1px solid var(--color-accent)" }} />
-                  {["Sole proprietor", "LLC", "S-corp"].map((h) => (
-                    <th key={h} scope="col" style={{ textAlign: "left", padding: "14px 16px", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {SIDE_BY_SIDE.map(([label, ...cells], i) => (
-                  <tr key={label}>
-                    <th scope="row" style={{ textAlign: "left", verticalAlign: "top", width: i === 0 ? "19%" : undefined, minWidth: i === 0 ? 150 : undefined, padding: "15px 16px", borderBottom: i === SIDE_BY_SIDE.length - 1 ? "none" : "1px solid var(--color-divider)", fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 600, lineHeight: 1.3 }}>
-                      {label}
-                    </th>
-                    {cells.map((cellHtml, j) => (
-                      <td key={j} style={{ verticalAlign: "top", padding: "15px 16px", borderBottom: i === SIDE_BY_SIDE.length - 1 ? "none" : "1px solid var(--color-divider)", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: cellHtml }} />
-                    ))}
-                  </tr>
+          <div style={{ overflowX: "auto" }}>
+            <div style={{ minWidth: 700 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "150px repeat(3, 1fr)", padding: "0 4px 10px" }}>
+                <div />
+                {["Sole proprietor", "LLC", "S-corp"].map((h) => (
+                  <div key={h} style={{ fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)", padding: "0 12px" }}>
+                    {h}
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {SIDE_BY_SIDE.map(([label, ...cells]) => (
+                  <div key={label} style={{ border: "1px solid var(--color-divider)", borderRadius: 18, background: "var(--color-surface)", padding: "16px 12px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "150px repeat(3, 1fr)", gap: 4 }}>
+                      <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 800, lineHeight: 1.3, padding: "0 12px" }}>{label}</div>
+                      {cells.map((cellHtml, j) => (
+                        <div key={j} style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)", padding: "0 12px" }} dangerouslySetInnerHTML={{ __html: cellHtml }} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <article style={{ maxWidth: "40em", margin: "0 auto", fontSize: 17.5, lineHeight: 1.75 }}>
+          <article style={{ maxWidth: "40em", margin: "0 auto", fontSize: 18, lineHeight: 1.75 }}>
             <div id="guide" style={{ height: 1, marginTop: 48 }} />
 
             <div style={note}>
-              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>Before you read this.</b> This is general educational information, not tax or legal advice. It explains how the rules generally work. It does not tell you what to do in your own situation, and it cannot. These decisions turn on facts specific to you: your state, your income, your filing status, and the nature of your work. The right answer for one self employed individual is regularly the wrong answer for another. Talk to a CPA or an attorney licensed in your state before acting on any of it.
+              <b style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 800, color: "var(--color-text)", marginBottom: 4 }}>Before you read this.</b> This is general educational information, not tax or legal advice. It explains how the rules generally work. It does not tell you what to do in your own situation, and it cannot. These decisions turn on facts specific to you: your state, your income, your filing status, and the nature of your work. The right answer for one self employed individual is regularly the wrong answer for another. Talk to a CPA or an attorney licensed in your state before acting on any of it.
             </div>
 
-            <nav aria-label="In this guide" style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-neutral-100)", padding: "22px 26px", margin: "0 0 36px" }}>
-              <b style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent-700)", marginBottom: 14 }}>In this guide</b>
-              <ol style={{ margin: 0, paddingLeft: "1.4em", display: "grid", gap: 8, fontSize: 16.5 }}>
-                <li><a href="#opt1">Option 1: Sole proprietor</a></li>
-                <li><a href="#opt2">Option 2: LLC with default tax treatment</a></li>
-                <li><a href="#sued">Does an LLC actually protect you from being sued?</a></li>
-                <li><a href="#boi">Does your LLC need to file a BOI report?</a></li>
-                <li><a href="#opt3">Option 3: S-corp election</a></li>
-                <li><a href="#breakeven">At what income does an S-corp actually make sense?</a></li>
+            <nav aria-label="In this guide" style={{ ...card, borderRadius: 24, padding: "22px 26px", margin: "0 0 36px" }}>
+              <b style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)", marginBottom: 14 }}>In this guide</b>
+              <ol style={{ margin: 0, paddingLeft: "1.4em", display: "grid", gap: 8, fontSize: 17, fontWeight: 600 }}>
+                <li><a href="#opt1" style={{ color: "var(--color-text)" }}>Option 1: Sole proprietor</a></li>
+                <li><a href="#opt2" style={{ color: "var(--color-text)" }}>Option 2: LLC with default tax treatment</a></li>
+                <li><a href="#sued" style={{ color: "var(--color-text)" }}>Does an LLC actually protect you from being sued?</a></li>
+                <li><a href="#boi" style={{ color: "var(--color-text)" }}>Does your LLC need to file a BOI report?</a></li>
+                <li><a href="#opt3" style={{ color: "var(--color-text)" }}>Option 3: S-corp election</a></li>
+                <li><a href="#breakeven" style={{ color: "var(--color-text)" }}>At what income does an S-corp actually make sense?</a></li>
               </ol>
             </nav>
 
@@ -437,7 +443,7 @@ export default function EntityScenarioClient() {
 
             <h3 id="sued" style={h3Style}>Does an LLC actually protect you from being sued?</h3>
             <div style={note}>
-              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>On this section specifically.</b> Liability is a matter of state law, and it turns on the facts of a particular claim. What follows describes how LLC protection is generally understood to work. It is not legal advice, it is not a complete account, and it is not a prediction about any real situation. Whether an LLC would shield you from a specific claim is a question for an attorney licensed in your state. If you take one thing from this section, make it the point about insurance.
+              <b style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 800, color: "var(--color-text)", marginBottom: 4 }}>On this section specifically.</b> Liability is a matter of state law, and it turns on the facts of a particular claim. What follows describes how LLC protection is generally understood to work. It is not legal advice, it is not a complete account, and it is not a prediction about any real situation. Whether an LLC would shield you from a specific claim is a question for an attorney licensed in your state. If you take one thing from this section, make it the point about insurance.
             </div>
             <p style={{ margin: "0 0 14px" }}><b>Anyone can sue you regardless of your entity.</b> An LLC doesn't prevent lawsuits. What it can do is limit which <i>assets</i> are available to satisfy a judgment.</p>
             <p style={{ margin: "0 0 14px" }}><b>What an LLC generally does protect against:</b><br /><span style={{ fontSize: 15.5, fontStyle: "italic", ...muted(55) }}>(However, this is not a complete list and is not legal advice.)</span></p>
@@ -452,7 +458,7 @@ export default function EntityScenarioClient() {
             <h3 id="boi" style={h3Style}>Does your LLC need to file a BOI report? (2026: No)</h3>
             <p style={{ margin: "0 0 14px" }}><b>Short answer: if your LLC is a US company, no. You have nothing to file.</b></p>
             <div style={note}>
-              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>Check the date on this one.</b> This reflects FinCEN's final rule as of 20 August 2026. Beneficial ownership reporting changed several times between 2024 and 2026 and could change again. Confirm the current position with FinCEN or your accountant before relying on it.
+              <b style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 800, color: "var(--color-text)", marginBottom: 4 }}>Check the date on this one.</b> This reflects FinCEN's final rule as of 20 August 2026. Beneficial ownership reporting changed several times between 2024 and 2026 and could change again. Confirm the current position with FinCEN or your accountant before relying on it.
             </div>
             <p style={{ margin: "0 0 14px" }}>This one confused a lot of people for two years, and much of the content still online is out of date.</p>
             <p style={{ margin: "0 0 14px" }}><b>What happened.</b> The Corporate Transparency Act required most small entities to report beneficial ownership information to FinCEN, with filings starting in January 2024. After extensive litigation, FinCEN issued an interim final rule on <b>March 26, 2025</b> redefining "reporting company" to cover only foreign entities. Then on <b>August 11, 2026</b>, FinCEN issued a <b>final rule</b> permanently removing the requirement for US companies and US persons to report.</p>
@@ -467,7 +473,7 @@ export default function EntityScenarioClient() {
 
             <h3 id="opt3" style={h3Style}>Option 3: S-corp election</h3>
             <div style={note}>
-              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>On the numbers in this section.</b> All figures are for the 2026 tax year and come from the IRS and SSA sources listed at the end. Tax figures change every year, so check the date above. "Reasonable compensation" has no published formula or safe number. It is a judgment call an accountant should make with you, and getting it wrong carries a real cost in either direction.
+              <b style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 800, color: "var(--color-text)", marginBottom: 4 }}>On the numbers in this section.</b> All figures are for the 2026 tax year and come from the IRS and SSA sources listed at the end. Tax figures change every year, so check the date above. "Reasonable compensation" has no published formula or safe number. It is a judgment call an accountant should make with you, and getting it wrong carries a real cost in either direction.
             </div>
             <p style={{ margin: "0 0 14px" }}><b>What it is:</b> A tax election, filed on Form 2553, available to an LLC or a corporation. It changes how your business profit is taxed, but doesn't change your legal structure.</p>
             <p style={{ margin: "0 0 14px" }}><b>How the tax saving works.</b> As a sole proprietor, essentially all your net profit is subject to 15.3% self-employment tax. With an S-corp election, you become an employee of your own business. You pay yourself a <i>reasonable salary</i>, which carries payroll taxes at the same combined 15.3%. Remaining profit is distributed to you and is <b>not</b> subject to self-employment or payroll tax.</p>
@@ -477,7 +483,7 @@ export default function EntityScenarioClient() {
             <h4 style={h4Cons}>Cons</h4>
             <List items={SCORP_CONS} />
             <div style={criticalBox}>
-              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600 }}>Critical deadline.</b> Form 2553 must be filed no more than <b>2 months and 15 days after the start of the tax year</b> you want it to apply to (so mid-March for a calendar-year business) or any time during the <i>preceding</i> year. Miss it and late-election relief is available under Rev. Proc. 2013-30 if you can show reasonable cause and acted diligently, but you don't want to depend on it.
+              <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800 }}>Critical deadline.</b> Form 2553 must be filed no more than <b>2 months and 15 days after the start of the tax year</b> you want it to apply to (so mid-March for a calendar-year business) or any time during the <i>preceding</i> year. Miss it and late-election relief is available under Rev. Proc. 2013-30 if you can show reasonable cause and acted diligently, but you don't want to depend on it.
             </div>
             <h4 style={h4When}>When it genuinely makes sense</h4>
             <List items={SCORP_WHEN} />
@@ -493,30 +499,30 @@ export default function EntityScenarioClient() {
             <p style={{ margin: "0 0 14px", fontSize: 16.5, ...muted(74) }}>The calculator below runs all four of these on your own numbers.</p>
 
             <div style={{ width: "min(1000px, calc(100vw - 44px))", position: "relative", left: "50%", transform: "translateX(-50%)", margin: "40px 0 48px" }}>
-              <h2 id="top-calc" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.4vw, 34px)", fontWeight: 400, letterSpacing: "-0.015em", margin: "56px 0 4px" }}>Try your own numbers</h2>
-              <div style={{ height: 1, background: "var(--color-accent)", width: 54, marginBottom: 22 }} />
+              <h2 id="top-calc" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.4vw, 34px)", fontWeight: 800, letterSpacing: "-0.02em", margin: "56px 0 4px" }}>Try your own numbers</h2>
+              <div style={{ height: 3, background: "var(--color-accent)", borderRadius: "var(--radius-pill)", width: 54, marginBottom: 22 }} />
 
               <div style={{ ...note, maxWidth: "62em" }}>
-                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, ...muted(80) }}>
-                  <strong style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600 }}>Note:</strong> This is a simple simulation, but not a recommendation. Nothing here ranks them or picks one for you.
+                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: "var(--color-neutral-700)" }}>
+                  <strong style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800 }}>Note:</strong> This is a simple simulation, but not a recommendation. Nothing here ranks them or picks one for you.
                 </p>
               </div>
 
-              <div style={{ ...card, padding: "28px 28px 30px" }}>
+              <div style={{ ...card, borderRadius: 30, padding: "30px 30px 30px" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "26px 30px" }}>
                   <div>
-                    <label htmlFor="profit" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>Profit for the year</label>
+                    <label htmlFor="profit" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>Profit for the year</label>
                     <div style={{ position: "relative" }}>
-                      <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
+                      <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, color: "var(--color-neutral-700)" }}>$</span>
                       <input type="number" onFocus={(e) => e.target.select()} id="profit" min="0" step="1000" value={profit} onChange={(e) => setProfit(parseFloat(e.target.value) || 0)}
-                        style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
+                        style={bloomInputStyle({ height: 56, fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "0 16px 0 32px", fontVariantNumeric: "tabular-nums" })} />
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, ...muted(55) }}>Money left over after you pay business costs. Before you pay yourself.</div>
                   </div>
                   <div>
-                    <label htmlFor="status" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>How you file taxes</label>
+                    <label htmlFor="status" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>How you file taxes</label>
                     <select id="status" value={status} onChange={(e) => setStatus(e.target.value)}
-                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 17, color: "var(--color-text)", background: "transparent", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", padding: "9px 10px" }}>
+                      style={bloomSelectStyle({ height: 56, fontSize: 17, background: "var(--color-neutral-100)" })}>
                       <option value="single">Single</option>
                       <option value="mfj">Married, filing together</option>
                     </select>
@@ -524,26 +530,26 @@ export default function EntityScenarioClient() {
                   </div>
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
-                    <label htmlFor="who" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>Who does the work?</label>
+                    <label htmlFor="who" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>Who does the work?</label>
                     <select id="who" value={who} onChange={(e) => setWho(e.target.value)}
-                      style={{ width: "auto", maxWidth: "100%", minWidth: 320, boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 17, color: "var(--color-text)", background: "transparent", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", padding: "9px 10px" }}>
+                      style={bloomSelectStyle({ width: "auto", maxWidth: "100%", minWidth: 320, height: 56, fontSize: 17, background: "var(--color-neutral-100)" })}>
                       {WHO_OPTIONS.map((w) => (<option key={w.value} value={w.value}>{w.label}</option>))}
                     </select>
                     <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, ...muted(55) }}>This does not change any tax math. It only changes the paycheck range we suggest below.</div>
                   </div>
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
-                    <label htmlFor="salary" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>
-                      The paycheck part <span style={{ letterSpacing: "0.1em", color: "var(--color-accent-700)" }}>&mdash; S-corp only</span>
+                    <label htmlFor="salary" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>
+                      The paycheck part <span style={{ color: "var(--color-accent)" }}>&mdash; S-corp only</span>
                     </label>
                     <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 16px", maxWidth: "62em", ...muted(76) }}>An S-corp splits your profit into two parts: a <b>paycheck</b>, and <b>the rest</b>. You take both. Only the paycheck pays payroll tax, and that is where the savings come from.</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                      <div style={{ position: "relative", maxWidth: 180 }}>
-                        <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
+                      <div style={{ position: "relative", maxWidth: 200 }}>
+                        <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, color: "var(--color-accent-800)" }}>$</span>
                         <input type="number" onFocus={(e) => e.target.select()} id="salary" min="0" step="1000" value={salary} onChange={(e) => setSalary(parseFloat(e.target.value) || 0)}
-                          style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
+                          style={bloomInputStyle({ height: 56, fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, background: "var(--color-accent-100)", border: "2px solid var(--color-accent-400)", borderRadius: "var(--radius-sm)", padding: "0 16px 0 34px", fontVariantNumeric: "tabular-nums", color: "var(--color-accent-800)" })} />
                       </div>
-                      <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, letterSpacing: "0.08em", textTransform: "uppercase", fontVariantNumeric: "lining-nums tabular-nums", ...muted(55) }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, ...muted(55) }}>
                         {salPct !== null ? salPct + "% of profit" : ""}
                       </span>
                       <span style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
@@ -551,7 +557,7 @@ export default function EntityScenarioClient() {
                           const on = profit > 0 && Math.abs(salPct - p) < 0.6;
                           return (
                             <button key={p} type="button" onClick={() => setSalary(Math.round((profit * p) / 100 / 500) * 500)}
-                              style={{ fontFamily: "var(--font-heading)", fontSize: 13, fontWeight: 600, letterSpacing: "0.08em", padding: "8px 15px", borderRadius: 999, cursor: "pointer", fontVariantNumeric: "lining-nums tabular-nums", border: `1px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`, background: on ? "var(--color-accent-100)" : "transparent", color: on ? "var(--color-accent-800)" : "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+                              style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, padding: "8px 15px", borderRadius: "var(--radius-pill)", cursor: "pointer", fontVariantNumeric: "lining-nums tabular-nums", border: `1px solid ${on ? "var(--color-accent)" : "var(--color-neutral-300)"}`, background: on ? "var(--color-accent)" : "transparent", color: on ? "#ffffff" : "var(--color-neutral-700)" }}>
                               {p}%
                             </button>
                           );
@@ -564,49 +570,49 @@ export default function EntityScenarioClient() {
                   </div>
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
-                    <label htmlFor="stateCost" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>Yearly state fee, if you know it</label>
-                    <div style={{ position: "relative", maxWidth: 180 }}>
-                      <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
+                    <label htmlFor="stateCost" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>Yearly state fee, if you know it</label>
+                    <div style={{ position: "relative", maxWidth: 200 }}>
+                      <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, color: "var(--color-neutral-700)" }}>$</span>
                       <input type="number" onFocus={(e) => e.target.select()} id="stateCost" min="0" step="25" value={stateCost} onChange={(e) => setStateCost(parseFloat(e.target.value) || 0)}
-                        style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
+                        style={bloomInputStyle({ height: 56, fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "0 16px 0 32px", fontVariantNumeric: "tabular-nums" })} />
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, maxWidth: "62em", ...muted(55) }}>Only the LLC and S-corp pay this. It runs from $0 to $800 a year depending on your state, and California is the highest at $800. Leave it at 0 if you are not sure.</div>
                   </div>
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
-                    <label htmlFor="adminCost" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 9, ...muted(62) }}>Who would handle your payroll and tax returns?</label>
+                    <label htmlFor="adminCost" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>Who would handle your payroll and tax returns?</label>
                     <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 12px", maxWidth: "62em", ...muted(76) }}>With an S-corp, your company pays you like an employee. So there is payroll to run for <b>one person &mdash; you</b>. There is also a second tax return, for the company. Both cost money every year, and this is the part people forget.</p>
                     <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 16px", maxWidth: "62em", ...muted(56) }}>Contractors work differently. You pay them and send a 1099. They never go on your payroll, so having them or not does not change this cost.</p>
-                    <div style={{ position: "relative", maxWidth: 180 }}>
-                      <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", fontSize: 17, ...muted(45) }}>$</span>
+                    <div style={{ position: "relative", maxWidth: 200 }}>
+                      <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, color: "var(--color-neutral-700)" }}>$</span>
                       <input type="number" onFocus={(e) => e.target.select()} id="adminCost" min="0" step="250" value={adminCost} onChange={(e) => setAdminCost(parseFloat(e.target.value) || 0)}
-                        style={{ width: "100%", boxSizing: "border-box", fontFamily: "var(--font-body)", fontSize: 18, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", padding: "9px 2px 9px 16px", fontVariantNumeric: "tabular-nums" }} />
+                        style={bloomInputStyle({ height: 56, fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "0 16px 0 32px", fontVariantNumeric: "tabular-nums" })} />
                     </div>
                     <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, maxWidth: "62em", ...muted(55) }}>Most people land somewhere between <b>$700 and $3,500 a year</b>, depending on how much you hand off. Only the company return is extra &mdash; you would pay for a personal return either way. Get a real quote before you decide anything.</div>
                   </div>
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
-                    <span style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 12, ...muted(62) }}>Kind of work</span>
+                    <span style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 12, color: "var(--color-text)" }}>Kind of work</span>
                     <label htmlFor="sstb" style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer", maxWidth: "62em" }}>
-                      <input type="checkbox" id="sstb" checked={sstb} onChange={(e) => setSstb(e.target.checked)} style={{ width: 16, height: 16, margin: "6px 0 0", flex: "none", accentColor: "var(--color-accent)" }} />
-                      <span style={{ fontSize: 15.5, lineHeight: 1.6, ...muted(74) }}>My work is consulting, health, law, money, accounting, acting or sports. This only matters at higher incomes.</span>
+                      <input type="checkbox" id="sstb" checked={sstb} onChange={(e) => setSstb(e.target.checked)} style={{ width: 20, height: 20, margin: "3px 0 0", flex: "none", accentColor: "var(--color-accent)" }} />
+                      <span style={{ fontSize: 16, lineHeight: 1.6, ...muted(74) }}>My work is consulting, health, law, money, accounting, acting or sports. This only matters at higher incomes.</span>
                     </label>
                   </div>
                 </div>
               </div>
 
               {result?.warnSalary && (
-                <div style={{ border: "1px solid var(--color-accent-300)", background: "var(--color-accent-100)", borderLeft: "3px solid var(--color-accent)", borderRadius: "var(--radius-md)", padding: "15px 20px", margin: "22px 0 0", fontSize: 15.5, lineHeight: 1.68, color: "var(--color-accent-900)" }}>
+                <div style={{ border: "1px solid var(--color-accent-400)", background: "var(--color-accent-200)", borderRadius: "var(--radius-md)", padding: "15px 20px", margin: "22px 0 0", fontSize: 15.5, lineHeight: 1.68, color: "var(--color-accent-800)" }}>
                   The paycheck you put in is as big as the whole profit. It has been capped at the profit, so there is nothing left to take as profit. That removes the only tax difference the S-corp would show.
                 </div>
               )}
               {result?.warnQbi && (
-                <div style={{ border: "1px solid var(--color-accent-300)", background: "var(--color-accent-100)", borderLeft: "3px solid var(--color-accent)", borderRadius: "var(--radius-md)", padding: "15px 20px", margin: "22px 0 0", fontSize: 15.5, lineHeight: 1.68, color: "var(--color-accent-900)" }}>
+                <div style={{ border: "1px solid var(--color-accent-400)", background: "var(--color-accent-200)", borderRadius: "var(--radius-md)", padding: "15px 20px", margin: "22px 0 0", fontSize: 15.5, lineHeight: 1.68, color: "var(--color-accent-800)" }}>
                   At this income the 20% small business deduction starts to get cut back, and the rules get tricky. This tool keeps them simple. Ask an accountant about these numbers before you rely on them.
                 </div>
               )}
 
-              <p style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(21px, 2.6vw, 27px)", fontWeight: 400, lineHeight: 1.42, margin: "38px 0 26px", maxWidth: "40em" }}>{headline}</p>
+              <p style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(20px, 2.4vw, 26px)", fontWeight: 700, lineHeight: 1.42, margin: "38px 0 26px", maxWidth: "40em", background: "var(--color-accent-800)", color: "#ffffff", borderRadius: 30, padding: "26px 30px" }}>{headline}</p>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {cols.map((c) => {
@@ -619,8 +625,8 @@ export default function EntityScenarioClient() {
                   return (
                     <div key={c.label} style={{ display: "grid", gridTemplateColumns: "minmax(0,168px) 1fr", gap: 16, alignItems: "center" }}>
                       <div>
-                        <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 600 }}>{c.label}</div>
-                        <div style={{ fontFamily: "var(--font-heading)", fontSize: 23, fontWeight: 400, fontVariantNumeric: "lining-nums tabular-nums", marginTop: 1 }}>{M(c.left)}</div>
+                        <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 800 }}>{c.label}</div>
+                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 800, color: "var(--color-accent-800)", fontVariantNumeric: "lining-nums tabular-nums", marginTop: 1 }}>{M(c.left)}</div>
                       </div>
                       <div style={{ display: "flex", height: 40, borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--color-neutral-200)" }}>
                         {segs.map(([k, name, val]) => {
@@ -629,7 +635,7 @@ export default function EntityScenarioClient() {
                           if (pct <= 0) return null;
                           return (
                             <div key={k} title={name + ": " + M(v)}
-                              style={{ width: pct + "%", background: COLORS[k], color: TEXTON[k], display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10, fontFamily: "var(--font-heading)", fontSize: 13, fontWeight: 600, letterSpacing: "0.04em", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", boxShadow: "0 0 0 1px var(--color-bg) inset" }}>
+                              style={{ width: pct + "%", background: COLORS[k], color: TEXTON[k], display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 10, fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", boxShadow: "0 0 0 1px var(--color-bg) inset" }}>
                               {pct > 13 ? M(v) : ""}
                             </div>
                           );
@@ -639,21 +645,21 @@ export default function EntityScenarioClient() {
                   );
                 })}
               </div>
-              <div style={{ display: "flex", gap: 22, flexWrap: "wrap", margin: "20px 0 0", fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", ...muted(60) }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}><i style={{ width: 12, height: 12, borderRadius: 2, flex: "none", background: "var(--color-accent-700)", display: "inline-block" }} />Tax</span>
+              <div style={{ display: "flex", gap: 22, flexWrap: "wrap", margin: "20px 0 0", fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", ...muted(60) }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}><i style={{ width: 12, height: 12, borderRadius: 2, flex: "none", background: "var(--color-accent-600)", display: "inline-block" }} />Tax</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}><i style={{ width: 12, height: 12, borderRadius: 2, flex: "none", background: "var(--color-accent-300)", display: "inline-block" }} />Fees and forms</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}><i style={{ width: 12, height: 12, borderRadius: 2, flex: "none", background: "#17140e", display: "inline-block" }} />What is left</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}><i style={{ width: 12, height: 12, borderRadius: 2, flex: "none", background: "var(--color-accent-800)", display: "inline-block" }} />What is left</span>
               </div>
               <p style={{ margin: "14px 0 0", fontSize: 14.5, ...muted(55) }}>Each bar adds up to the same profit. The parts show where it goes.</p>
 
-              <div style={{ overflowX: "auto", borderTop: "1px solid var(--color-divider)", borderBottom: "1px solid var(--color-divider)", marginTop: 34 }}>
+              <div style={{ overflowX: "auto", marginTop: 34 }}>
                 <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 660, fontSize: 15 }}>
                   <caption style={{ textAlign: "left", padding: "16px 16px 14px", fontSize: 14, fontStyle: "italic", ...muted(58) }}>Federal tax only, for a full 2026 tax year, using the numbers above.</caption>
                   <thead>
                     <tr>
-                      <th scope="col" style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--color-accent)", borderTop: "1px solid var(--color-divider)", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>Each year</th>
+                      <th scope="col" style={{ textAlign: "left", padding: "12px 16px", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>Each year</th>
                       {cols.map((c) => (
-                        <th key={c.label} scope="col" style={{ textAlign: "right", padding: "12px 16px", borderBottom: "1px solid var(--color-accent)", borderTop: "1px solid var(--color-divider)", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>{c.label}</th>
+                        <th key={c.label} scope="col" style={{ textAlign: "right", padding: "12px 16px", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>{c.label}</th>
                       ))}
                     </tr>
                   </thead>
@@ -665,23 +671,26 @@ export default function EntityScenarioClient() {
 
               <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginTop: 26 }}>
                 <button type="button" onClick={copyForAccountant} disabled={!result}
-                  style={{ fontFamily: "var(--font-heading)", fontSize: 15, cursor: result ? "pointer" : "default", padding: "13px 24px", borderRadius: "var(--radius-md)", background: "var(--color-accent)", border: "1px solid var(--color-accent)", color: "#fff", opacity: result ? 1 : 0.5 }}>
+                  style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, cursor: result ? "pointer" : "default", padding: "14px 26px", borderRadius: "var(--radius-pill)", background: "var(--color-accent)", border: "1px solid var(--color-accent)", color: "#fff", opacity: result ? 1 : 0.5 }}>
                   Copy this for my accountant
                 </button>
                 {copied && (
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 13.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>Copied. Paste it into an email.</span>
+                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 13.5, fontWeight: 700, color: "var(--color-accent-700)" }}>Copied. Paste it into an email.</span>
                 )}
               </div>
             </div>
 
             <div style={{ marginTop: 48, paddingTop: 26, borderTop: "1px solid var(--color-divider)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.72, margin: "0 0 14px", ...muted(74) }}>
-                <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600, color: "var(--color-text)" }}>About this article.</b> This is general educational information about how these rules work, not tax or legal advice for your situation. Entity and tax decisions depend on facts specific to you &mdash; your state, your income, your filing status, the nature of your work &mdash; and the right answer for one self employed individual is often wrong for another. Figures are current for the 2026 tax year as of publication. Rules change; check the date. Talk to a CPA or attorney licensed in your state before making a decision.
+                <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800, color: "var(--color-text)" }}>About this article.</b> This is general educational information about how these rules work, not tax or legal advice for your situation. Entity and tax decisions depend on facts specific to you &mdash; your state, your income, your filing status, the nature of your work &mdash; and the right answer for one self employed individual is often wrong for another. Figures are current for the 2026 tax year as of publication. Rules change; check the date. Talk to a CPA or attorney licensed in your state before making a decision.
               </p>
               <h4 style={h4Pros}>Sources</h4>
-              <ul style={{ margin: 0, paddingLeft: "1.2em", fontSize: 16, lineHeight: 1.6, listStyle: "disc" }}>
-                {SOURCES.map(([org, url, label], i) => (
-                  <li key={url} style={i === SOURCES.length - 1 ? undefined : { marginBottom: 8 }}>{org} &mdash; <a href={url} target="_blank" rel="noopener noreferrer">{label}</a></li>
+              <ul style={{ margin: 0, paddingLeft: 0, fontSize: 16, lineHeight: 1.6, listStyle: "none", display: "grid", gap: 10 }}>
+                {SOURCES.map(([org, url, label]) => (
+                  <li key={url} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent-700)", background: "var(--color-accent-100)", borderRadius: "var(--radius-pill)", padding: "4px 12px" }}>{org}</span>
+                    <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>{label}</a>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -689,7 +698,7 @@ export default function EntityScenarioClient() {
 
           <footer style={{ marginTop: 56, paddingTop: 26, borderTop: "1px solid var(--color-divider)", fontSize: 15, lineHeight: 1.7, ...muted(60) }}>
             <p style={{ margin: "0 0 12px" }}>This is a model, not advice. It uses 2026 federal tax rules. It leaves out state income tax, other income, and many deductions. It assumes a full year, no employees but you, and that you take the standard deduction. The paycheck amount is something you choose, not something this tool works out, because that part is a judgment call. Talk to an accountant or a lawyer in your state before you decide anything.</p>
-            <p style={{ margin: 0 }}>Numbers come from <a href="https://www.irs.gov/pub/irs-drop/rp-25-32.pdf" target="_blank" rel="noopener noreferrer">IRS Rev. Proc. 2025-32</a>, <a href="https://www.irs.gov/pub/irs-drop/n-25-67.pdf" target="_blank" rel="noopener noreferrer">IRS Notice 2025-67</a> and the <a href="https://www.ssa.gov/oact/cola/cbb.html" target="_blank" rel="noopener noreferrer">SSA wage base</a>.</p>
+            <p style={{ margin: 0 }}>Numbers come from <a href="https://www.irs.gov/pub/irs-drop/rp-25-32.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-accent)" }}>IRS Rev. Proc. 2025-32</a>, <a href="https://www.irs.gov/pub/irs-drop/n-25-67.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-accent)" }}>IRS Notice 2025-67</a> and the <a href="https://www.ssa.gov/oact/cola/cbb.html" target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-accent)" }}>SSA wage base</a>.</p>
           </footer>
         </div>
       </div>
@@ -701,23 +710,23 @@ export default function EntityScenarioClient() {
 function ResultRows({ cols }) {
   if (!cols.length) return null;
   const same = (a, b) => Math.abs(a - b) < 0.5;
-  const TH = { textAlign: "right", padding: "11px 16px", borderBottom: "1px solid var(--color-divider)", fontVariantNumeric: "tabular-nums", verticalAlign: "top" };
+  const TH = { textAlign: "right", padding: "11px 16px", borderBottom: "1px solid var(--color-divider)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", verticalAlign: "top" };
   const TD1 = { textAlign: "left", padding: "11px 16px", borderBottom: "1px solid var(--color-divider)", verticalAlign: "top" };
   const grp = (t) => (
     <tr key={"grp-" + t}>
-      <td colSpan={4} style={{ padding: "22px 16px 8px", borderBottom: "1px solid var(--color-divider)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>{t}</td>
+      <td colSpan={4} style={{ padding: "22px 16px 8px", borderBottom: "1px solid var(--color-divider)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>{t}</td>
     </tr>
   );
   const row = (label, vals, kind) => {
-    const boldExtra = kind === "total" ? { fontWeight: 600, fontSize: 17 } : {};
-    const topExtra = kind === "total" ? { borderTop: "1px solid var(--color-accent)", borderBottom: "none" } : {};
+    const boldExtra = kind === "total" ? { fontWeight: 800, fontSize: 17 } : {};
+    const totalExtra = kind === "total" ? { background: "var(--color-accent-100)" } : {};
     return (
       <tr key={label}>
-        <td style={{ ...TD1, ...boldExtra, ...topExtra }}>{label}</td>
+        <td style={{ ...TD1, ...boldExtra, ...totalExtra }}>{label}</td>
         {vals.map((v, i) => {
           const txt = typeof v === "number" ? M(v) : v;
-          const dim = i === 1 && typeof v === "number" && same(vals[0], vals[1]) ? { color: "color-mix(in srgb, var(--color-text) 45%, transparent)" } : {};
-          return <td key={i} style={{ ...TH, ...boldExtra, ...topExtra, ...dim }}>{txt}</td>;
+          const dim = i === 1 && typeof v === "number" && same(vals[0], vals[1]) ? { color: "var(--color-neutral-700)" } : {};
+          return <td key={i} style={{ ...TH, ...boldExtra, ...totalExtra, ...dim }}>{txt}</td>;
         })}
       </tr>
     );
