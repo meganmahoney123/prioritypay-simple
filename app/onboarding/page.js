@@ -197,6 +197,12 @@ function OnboardingPageInner() {
   // asks the user to double-check they haven't forgotten an income source,
   // since PriorityPay can only split deposits it actually sees.
   const [showConfirmAccountsModal, setShowConfirmAccountsModal] = useState(false);
+  // Step 3 (Onboarding Pass 2, Aug 2026 handoff): the three explainer
+  // paragraphs, the "any percentage not assigned..." callout, and the cap
+  // explanation all now live inside one collapsible panel instead of
+  // always being on screen -- closed by default, since most people don't
+  // need any of it to fill out the step.
+  const [howOpen, setHowOpen] = useState(false);
 
   const next = () => {
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -658,18 +664,48 @@ function OnboardingPageInner() {
               Set your percentage splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <div style={{ display: "grid", gap: 14, marginBottom: 36, maxWidth: "34em" }}>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                Decide what percentage of each deposit received you want sent to each account.
-              </p>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit,
-                it&apos;ll tell you to send $10 to the savings account connected.
-              </p>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no
-                money will be set aside for that account.
-              </p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
+              Decide what share of each deposit goes where — set savings to 10% and a $100 deposit tells you to
+              send $10 to savings.
+            </p>
+
+            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-surface, #fff)", overflow: "hidden", marginBottom: 30 }}>
+              <button
+                type="button"
+                onClick={() => setHowOpen((v) => !v)}
+                className="pp-how-toggle"
+                style={{ width: "100%", textAlign: "left", background: "none", border: 0, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", color: "var(--color-text)" }}
+              >
+                <span style={{ flex: 1, fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
+                  How splits work (and what a cap is)
+                </span>
+                <span style={{ fontSize: 18, color: "var(--color-accent)" }}>{howOpen ? "−" : "+"}</span>
+              </button>
+              {howOpen && (
+                <div style={{ padding: "0 20px 20px", display: "grid", gap: 12 }}>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    Decide what percentage of each deposit received you want sent to each account.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100
+                    deposit, it&apos;ll tell you to send $10 to the savings account connected.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot;
+                    and no money will be set aside for that account.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--color-accent-700)", background: "var(--color-accent-100)", borderRadius: 14, padding: "12px 14px", margin: 0 }}>
+                    Note: Any percentage not assigned to one of the accounts below stays wherever the deposit
+                    landed.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly cap
+                    stops routing to a bucket once it has received that much in a month (it resets
+                    automatically). An account total cap stops routing once the connected account&apos;s balance
+                    reaches that amount.
+                  </p>
+                </div>
+              )}
             </div>
 
             <PercentSplitEditor
@@ -684,8 +720,8 @@ function OnboardingPageInner() {
               connecting={connecting}
               setConnecting={setConnecting}
               showRowWarnings={false}
-              totalPct={totalPct}
               pctOverflow={pctOverflow}
+              hideCapDetails
               theme="ledger"
             />
 
@@ -739,16 +775,7 @@ function OnboardingPageInner() {
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20, flexWrap: "wrap", borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 20 }}>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Allocated
-              </span>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontVariantNumeric: "lining-nums tabular-nums" }}>
-                {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
-              </span>
-            </div>
-
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 24 }}>
               <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
                 Minimum deposit to split
               </label>
@@ -772,11 +799,6 @@ function OnboardingPageInner() {
                   style={bloomInputStyle({ fontSize: 16 })}
                 />
               </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
-              <BackBtn onClick={back} />
-              <PrimaryBtn onClick={handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}
@@ -878,6 +900,40 @@ function OnboardingPageInner() {
           </div>
         )}
       </main>
+
+      {/* Onboarding Pass 2 (Aug 2026 handoff): replaces the mid-page
+          "Allocated" row and step 3's own Back/Continue block -- pinning
+          allocation status + Continue to the bottom of the viewport keeps
+          both visible no matter how far someone has scrolled through the
+          bucket list. Sticky to the outer flex column (not main's own
+          max-width wrapper) so it can sit flush with the viewport edge. */}
+      {step === 3 && (
+        <div
+          style={{
+            position: "sticky",
+            bottom: 0,
+            zIndex: 15,
+            background: "color-mix(in srgb, var(--color-bg) 94%, transparent)",
+            backdropFilter: "blur(14px)",
+            borderTop: "1px solid var(--color-divider)",
+          }}
+        >
+          <div style={{ maxWidth: "40em", margin: "0 auto", padding: "16px clamp(18px, 4vw, 40px) 20px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", marginBottom: 12 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, color: "var(--color-accent-700)" }}>
+                {totalPct}% allocated
+              </span>
+              <span>
+                {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showConfirmAccountsModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
