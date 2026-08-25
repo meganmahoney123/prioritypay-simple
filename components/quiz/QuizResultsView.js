@@ -32,10 +32,10 @@ export default function QuizResultsView({ results, onStartOver, ctaSlot, emptySt
   }
 
   return (
-    <div>
-      <Card style={{ padding: "clamp(20px, 4vw, 32px)", marginBottom: 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ background: "#EDE6FF", borderRadius: 30, padding: "clamp(20px, 4vw, 32px)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-          <p className="text-sm" style={{ margin: 0, maxWidth: 560, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+          <p className="text-sm" style={{ margin: 0, maxWidth: 560, fontSize: 18, fontWeight: 600, lineHeight: 1.6, color: "#3B1C7A" }}>
             Based on your answers, here are strategies worth researching, grouped by area. Each one follows the same
             shape: if this applies to you, here's something you could look into, and here's the benefit. These are
             things to be aware of and look into, not personalized financial advice.
@@ -48,12 +48,12 @@ export default function QuizResultsView({ results, onStartOver, ctaSlot, emptySt
                 disabled={downloading}
                 style={{
                   fontFamily: "var(--font-heading)",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  padding: "10px 18px",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-accent)",
-                  background: "var(--color-accent)",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  padding: "14px 24px",
+                  borderRadius: 999,
+                  border: "1px solid #6D3BE0",
+                  background: "#6D3BE0",
                   color: "#fff",
                   cursor: downloading ? "default" : "pointer",
                   opacity: downloading ? 0.6 : 1,
@@ -62,7 +62,7 @@ export default function QuizResultsView({ results, onStartOver, ctaSlot, emptySt
               >
                 {downloading ? "Building PDF..." : "Download report (PDF)"}
               </button>
-              <p style={{ margin: "6px 0 0", fontSize: 11, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+              <p style={{ margin: "8px 0 0", fontSize: 15, color: "#574A68" }}>
                 Built in your browser — to hand to a CPA or tax attorney.
               </p>
               {downloadError && (
@@ -71,10 +71,10 @@ export default function QuizResultsView({ results, onStartOver, ctaSlot, emptySt
             </div>
           )}
         </div>
-      </Card>
+      </div>
 
       {results.results.length === 0 && (
-        <Card style={{ padding: 24 }}>
+        <Card style={{ padding: 24, borderRadius: 30 }}>
           <p className="text-sm" style={{ margin: 0 }}>
             {emptyStateNote || "We didn't find a strong match based on your answers. Try the quiz again with different answers."}
           </p>
@@ -82,24 +82,24 @@ export default function QuizResultsView({ results, onStartOver, ctaSlot, emptySt
       )}
 
       {results.results.map((group) => (
-        <Card key={group.category} style={{ padding: "clamp(18px, 4vw, 28px)", marginBottom: 18 }}>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 400, fontSize: 20, margin: "0 0 4px" }}>
+        <div key={group.category} style={{ background: "var(--color-surface)", borderRadius: 30, padding: 32 }}>
+          <h3 style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 4px" }}>
             {group.category}
           </h3>
           {CATEGORY_BLURBS[group.category] && (
-            <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 16px" }}>
+            <p className="text-sm" style={{ fontSize: 16, color: "#574A68", margin: "0 0 16px" }}>
               {CATEGORY_BLURBS[group.category]}
             </p>
           )}
           {group.strategies.map((s) => (
             <StrategyCard key={s.id} s={s} />
           ))}
-        </Card>
+        </div>
       ))}
 
       {ctaSlot}
 
-      <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textAlign: "center", margin: "24px 0" }}>
+      <p className="text-sm" style={{ fontSize: 15, color: "#6B5E7A", textAlign: "center", margin: "4px 0 0" }}>
         This is general educational information based on your quiz answers, not tax, legal, or financial advice.
         Confirm anything before acting on it with a CPA or attorney licensed in your state.
       </p>
