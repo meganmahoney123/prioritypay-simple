@@ -140,26 +140,57 @@ export default function MoneySimulator({
       <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Your split</span>
-            <span className="text-sm" style={{ color: remainingPct < 0 ? "#7a2f2a" : "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800 }}>Your split</span>
+            <span
+              className="text-sm"
+              style={{
+                fontWeight: 700,
+                color: remainingPct < 0 ? "#7a2f2a" : "var(--color-accent-700)",
+                background: remainingPct < 0 ? "color-mix(in srgb, #9b3b3b 10%, transparent)" : "var(--color-accent-100)",
+                borderRadius: 999,
+                padding: "4px 12px",
+              }}
+            >
               {totalPct}% allocated &middot; {remainingPct}% unallocated
             </span>
           </div>
+          {/* Allocation bar -- a 12px segmented strip, one block per
+              category, gives an at-a-glance read the plain percentage
+              line above doesn't. Purely visual; totalPct/remainingPct
+              stay the source of truth. */}
+          <div style={{ display: "flex", gap: 2, height: 12, borderRadius: 999, background: "var(--color-divider)", overflow: "hidden", marginBottom: 14 }}>
+            {rows
+              .filter((r) => r.pct > 0)
+              .map((r) => (
+                <span key={r.id} style={{ width: `${r.pct}%`, background: r.color, minWidth: 2 }} />
+              ))}
+          </div>
           <div className="space-y-2.5">
             {rows.map((r) => (
-              <Card key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: r.color, flex: "none" }} />
+              <Card key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", flexWrap: "wrap" }}>
+                <span style={{ width: 12, height: 12, borderRadius: "50%", background: r.color, flex: "none" }} />
                 {r.custom ? (
                   <input
                     value={r.label}
                     onChange={(e) => updateRow(r.id, { label: e.target.value })}
-                    style={ledgerInputStyle({ flex: 1, minWidth: 0, fontSize: 15 })}
+                    style={ledgerInputStyle({ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700 })}
                   />
                 ) : (
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 15 }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
                     {r.label}
                     {r.fixed && (
-                      <span style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)", marginLeft: 8 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: "var(--color-accent-700)",
+                          background: "var(--color-accent-200)",
+                          borderRadius: 999,
+                          padding: "2px 8px",
+                        }}
+                      >
                         fixed
                       </span>
                     )}
@@ -173,7 +204,7 @@ export default function MoneySimulator({
                   step={0.1}
                   value={r.pct}
                   onChange={(e) => updatePct(r.id, e.target.value)}
-                  style={ledgerInputStyle({ width: 56, textAlign: "right", fontFamily: "var(--font-heading)", fontSize: 16 })}
+                  style={ledgerInputStyle({ width: 76, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
                 />
                 <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>%</span>
                 <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
@@ -185,7 +216,7 @@ export default function MoneySimulator({
                   step={0.01}
                   value={Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
                   onChange={(e) => updateRowDollar(r.id, e.target.value)}
-                  style={ledgerInputStyle({ width: 84, textAlign: "right", fontFamily: "var(--font-heading)", fontSize: 16 })}
+                  style={ledgerInputStyle({ width: 110, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
                 />
                 {r.custom ? (
                   <button onClick={() => removeRow(r.id)} aria-label="Remove category" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
@@ -304,20 +335,41 @@ export default function MoneySimulator({
                     </div>
                   )}
 
-                  <ul style={{ fontSize: 13.5, lineHeight: 1.8, margin: "0 0 2px", paddingLeft: 18 }}>
-                    {isRecurring ? (
-                      <li>Recurring monthly cost</li>
-                    ) : (
-                      <li>{months} months away</li>
-                    )}
-                    <li>
-                      <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>{currency(monthlyNeeded)}</strong>/mo{!isRecurring && " needed"}
-                    </li>
-                    <li>{Math.round(pctOfIncome * 10) / 10}% of total income</li>
-                  </ul>
-                  <p className="text-xs mt-1.5" style={{ color: fits ? "color-mix(in srgb, var(--color-text) 55%, transparent)" : "#7a2f2a" }}>
+                  {/* Stats strip -- 3-up grid of tiles instead of a plain
+                      bullet list, so the key numbers (timing, monthly
+                      need, % of income) read at a glance. */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, margin: "0 0 10px" }}>
+                    <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{isRecurring ? "—" : months}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
+                        {isRecurring ? "recurring" : "months away"}
+                      </div>
+                    </div>
+                    <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{currency(monthlyNeeded)}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
+                        needed / mo
+                      </div>
+                    </div>
+                    <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{Math.round(pctOfIncome * 10) / 10}%</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
+                        of income
+                      </div>
+                    </div>
+                  </div>
+                  <p
+                    className="text-xs mt-1.5"
+                    style={{
+                      fontWeight: 600,
+                      borderRadius: "var(--radius-sm)",
+                      padding: "10px 12px",
+                      color: fits ? "#22684C" : "#9C3B22",
+                      background: fits ? "color-mix(in srgb, #22684C 10%, transparent)" : "color-mix(in srgb, #9C3B22 8%, transparent)",
+                    }}
+                  >
                     {fits
-                      ? `Fits within your ${remainingPct}% unallocated.`
+                      ? `Fits with ${remainingPct}% of income to spare. Add it as a category to lock it in.`
                       : isRecurring
                       ? `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Lower the monthly amount, raise income, or free up room.`
                       : `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Extend the date, raise income, or free up room.`}
