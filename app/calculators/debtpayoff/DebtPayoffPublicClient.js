@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Plus, X } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
-import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
+import { PrimaryButton, currency } from "@/components/ui";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 
 const DEFAULT_DEBTS = [
   { id: "d1", name: "Credit Card", balance: 4000, apr: 22, minPayment: 120 },
@@ -91,6 +91,28 @@ function monthsToYearsLabel(months) {
   return parts.join(" ");
 }
 
+function PillButton({ active, onClick, children, wide }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        fontSize: 15,
+        fontWeight: 700,
+        padding: wide ? "13px 26px" : "13px 20px",
+        borderRadius: 999,
+        cursor: "pointer",
+        border: `2px solid ${active ? "var(--color-accent)" : "var(--color-neutral-300)"}`,
+        background: active ? "var(--color-accent)" : "var(--color-surface)",
+        color: active ? "#fff" : "#3B1C7A",
+        transition: "border-color 140ms ease",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function DebtPayoffPublicClient() {
   const router = useRouter();
   const [debts, setDebts] = useState(DEFAULT_DEBTS);
@@ -120,6 +142,7 @@ export default function DebtPayoffPublicClient() {
   );
 
   const hasAnyExtra = extraMonthly > 0 || extraYearly > 0 || oneTimeAmount > 0;
+  const showSavings = hasAnyExtra && !noExtra.reachedCap && !result.reachedCap;
 
   // "See the impact of paying more" -- holds everything else constant
   // (yearly/one-time extras, the fixed-total toggle, strategy) and only
@@ -139,282 +162,589 @@ export default function DebtPayoffPublicClient() {
       }));
   }, [debts, extraOpts, strategy, extraMonthly]);
 
+  const summaryTiles = [
+    { value: currency(totalBalance), label: `Total balance today across ${debts.length} debt${debts.length === 1 ? "" : "s"}` },
+    { value: `${currency(totalMin)}/mo`, label: "Minimums alone" },
+    { value: currency(result.totalInterest), label: "Total interest paid" },
+  ];
+
   return (
-    <div style={LEDGER_TOKENS}>
+    <div style={BLOOM_TOKENS}>
       <PublicHeader />
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px clamp(18px, 4vw, 40px) 80px" }}>
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 400, margin: "0 0 10px" }}>
+      <div style={{ maxWidth: 940, margin: "0 auto", padding: "56px clamp(18px, 4vw, 28px) 96px" }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "clamp(38px, 4.6vw, 52px)",
+            lineHeight: 1.04,
+            letterSpacing: "-0.035em",
+            fontWeight: 800,
+            margin: "0 0 16px",
+          }}
+        >
           Debt Payoff Calculator
         </h1>
-        <p className="text-sm" style={{ maxWidth: 580, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+        <p style={{ fontSize: 19, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "0 0 36px", maxWidth: "40em" }}>
           Compare the snowball and avalanche strategies and see exactly how long it takes and what it costs in
           interest. Free, no account needed.
         </p>
 
-        <Card style={{ padding: "24px 26px", marginBottom: 24 }}>
-          <div className="space-y-2.5 mb-4">
+        {/* Debts card */}
+        <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-divider)", borderRadius: 30, padding: 32 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 14 }}>Your debts</div>
+          <div className="flex flex-col gap-3">
             {debts.map((d) => (
-              <div key={d.id} className="flex items-center gap-3 flex-wrap" style={{ padding: "10px 0", borderBottom: "1px solid var(--color-divider)" }}>
-                <input
-                  value={d.name}
-                  onChange={(e) => updateDebt(d.id, { name: e.target.value })}
-                  style={ledgerInputStyle({ flex: "1 1 140px", minWidth: 0, fontSize: 14 })}
-                />
-                <label className="text-xs flex items-center gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  Remaining balance $
+              <div key={d.id} style={{ background: "var(--color-neutral-100)", border: "1px solid var(--color-divider)", borderRadius: 22, padding: 20 }}>
+                <div className="flex items-center gap-3">
+                  <input
+                    value={d.name}
+                    onChange={(e) => updateDebt(d.id, { name: e.target.value })}
+                    aria-label="Debt name"
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: 19,
+                      fontWeight: 800,
+                      letterSpacing: "-0.015em",
+                      color: "var(--color-text)",
+                      background: "var(--color-surface)",
+                      border: "1px solid var(--color-neutral-300)",
+                      borderRadius: 14,
+                      padding: "12px 14px",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    onClick={() => removeDebt(d.id)}
+                    aria-label="Remove debt"
+                    style={{
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--color-neutral-700)",
+                      background: "none",
+                      border: "1px solid var(--color-neutral-300)",
+                      borderRadius: 999,
+                      width: 44,
+                      height: 44,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <X size={17} />
+                  </button>
+                </div>
+                <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", marginTop: 14 }}>
+                  <label className="flex flex-col gap-2">
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-neutral-800)" }}>Remaining balance</span>
+                    <span
+                      style={{
+                        height: 50,
+                        boxSizing: "border-box",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        background: "var(--color-surface)",
+                        border: "1px solid var(--color-neutral-300)",
+                        borderRadius: 14,
+                        padding: "0 14px",
+                      }}
+                    >
+                      <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-neutral-700)" }}>$</span>
+                      <input
+                        type="number"
+                        onFocus={(e) => e.target.select()}
+                        min={0}
+                        step={100}
+                        value={d.balance}
+                        onChange={(e) => updateDebt(d.id, { balance: Math.max(0, Number(e.target.value) || 0) })}
+                        style={{
+                          flex: 1,
+                          width: "100%",
+                          fontSize: 18,
+                          fontWeight: 800,
+                          color: "var(--color-text)",
+                          background: "none",
+                          border: 0,
+                          padding: 0,
+                          outline: "none",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      />
+                    </span>
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-neutral-800)" }}>Interest rate</span>
+                    <span
+                      style={{
+                        height: 50,
+                        boxSizing: "border-box",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        background: "var(--color-surface)",
+                        border: "1px solid var(--color-neutral-300)",
+                        borderRadius: 14,
+                        padding: "0 14px",
+                      }}
+                    >
+                      <input
+                        type="number"
+                        onFocus={(e) => e.target.select()}
+                        min={0}
+                        step={0.1}
+                        value={d.apr}
+                        onChange={(e) => updateDebt(d.id, { apr: Math.max(0, Number(e.target.value) || 0) })}
+                        style={{
+                          flex: 1,
+                          width: "100%",
+                          fontSize: 18,
+                          fontWeight: 800,
+                          color: "var(--color-text)",
+                          background: "none",
+                          border: 0,
+                          padding: 0,
+                          outline: "none",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      />
+                      <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-neutral-700)" }}>%</span>
+                    </span>
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-neutral-800)" }}>Monthly or minimum payment</span>
+                    <span
+                      style={{
+                        height: 50,
+                        boxSizing: "border-box",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        background: "var(--color-surface)",
+                        border: "1px solid var(--color-neutral-300)",
+                        borderRadius: 14,
+                        padding: "0 14px",
+                      }}
+                    >
+                      <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-neutral-700)" }}>$</span>
+                      <input
+                        type="number"
+                        onFocus={(e) => e.target.select()}
+                        min={0}
+                        step={10}
+                        value={d.minPayment}
+                        onChange={(e) => updateDebt(d.id, { minPayment: Math.max(0, Number(e.target.value) || 0) })}
+                        style={{
+                          flex: 1,
+                          width: "100%",
+                          fontSize: 18,
+                          fontWeight: 800,
+                          color: "var(--color-text)",
+                          background: "none",
+                          border: 0,
+                          padding: 0,
+                          outline: "none",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      />
+                    </span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addDebt}
+            style={{
+              width: "100%",
+              marginTop: 14,
+              fontSize: 16,
+              fontWeight: 700,
+              color: "var(--color-accent-700)",
+              background: "none",
+              border: "1px dashed var(--color-accent-400)",
+              borderRadius: 20,
+              padding: 16,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            <Plus size={16} /> Add debt
+          </button>
+
+          {/* Extra payments */}
+          <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 28, paddingTop: 24 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 14 }}>Extra payments</div>
+            <div className="flex gap-4 flex-wrap">
+              <label className="flex flex-col gap-2" style={{ flex: "1 1 180px" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>Per month</span>
+                <span
+                  style={{
+                    marginTop: "auto",
+                    height: 56,
+                    boxSizing: "border-box",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    background: "var(--color-accent-100)",
+                    border: "2px solid var(--color-accent-400)",
+                    borderRadius: 16,
+                    padding: "0 16px",
+                  }}
+                >
+                  <span style={{ fontSize: 19, fontWeight: 700, color: "var(--color-accent-700)" }}>$</span>
+                  <input
+                    type="number"
+                    onFocus={(e) => e.target.select()}
+                    min={0}
+                    step={25}
+                    value={extraMonthly}
+                    onChange={(e) => setExtraMonthly(Math.max(0, Number(e.target.value) || 0))}
+                    style={{
+                      flex: 1,
+                      width: "100%",
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color: "var(--color-text)",
+                      background: "none",
+                      border: 0,
+                      padding: 0,
+                      outline: "none",
+                      fontFamily: "var(--font-mono)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  />
+                </span>
+              </label>
+              <label className="flex flex-col gap-2" style={{ flex: "1 1 180px" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>Per year</span>
+                <span
+                  style={{
+                    marginTop: "auto",
+                    height: 56,
+                    boxSizing: "border-box",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    background: "var(--color-neutral-100)",
+                    border: "1px solid var(--color-neutral-300)",
+                    borderRadius: 16,
+                    padding: "0 16px",
+                  }}
+                >
+                  <span style={{ fontSize: 19, fontWeight: 700, color: "var(--color-neutral-700)" }}>$</span>
                   <input
                     type="number"
                     onFocus={(e) => e.target.select()}
                     min={0}
                     step={100}
-                    value={d.balance}
-                    onChange={(e) => updateDebt(d.id, { balance: Math.max(0, Number(e.target.value) || 0) })}
-                    style={ledgerInputStyle({ width: 90, fontSize: 14 })}
+                    value={extraYearly}
+                    onChange={(e) => setExtraYearly(Math.max(0, Number(e.target.value) || 0))}
+                    style={{
+                      flex: 1,
+                      width: "100%",
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color: "var(--color-text)",
+                      background: "none",
+                      border: 0,
+                      padding: 0,
+                      outline: "none",
+                      fontFamily: "var(--font-mono)",
+                      letterSpacing: "-0.02em",
+                    }}
                   />
-                </label>
-                <label className="text-xs flex items-center gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  Interest rate %
-                  <input
-                    type="number"
-                    onFocus={(e) => e.target.select()}
-                    min={0}
-                    step={0.1}
-                    value={d.apr}
-                    onChange={(e) => updateDebt(d.id, { apr: Math.max(0, Number(e.target.value) || 0) })}
-                    style={ledgerInputStyle({ width: 64, fontSize: 14 })}
-                  />
-                </label>
-                <label className="text-xs flex items-center gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  Monthly or minimum payment $
-                  <input
-                    type="number"
-                    onFocus={(e) => e.target.select()}
-                    min={0}
-                    step={10}
-                    value={d.minPayment}
-                    onChange={(e) => updateDebt(d.id, { minPayment: Math.max(0, Number(e.target.value) || 0) })}
-                    style={ledgerInputStyle({ width: 70, fontSize: 14 })}
-                  />
-                </label>
-                <button onClick={() => removeDebt(d.id)} aria-label="Remove debt" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
+                </span>
+              </label>
+              <label className="flex flex-col gap-2" style={{ flex: "1 1 260px" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>One-time, during month #</span>
+                <span className="flex items-center gap-2 flex-wrap" style={{ marginTop: "auto" }}>
+                  <span
+                    style={{
+                      flex: "1 1 120px",
+                      height: 56,
+                      boxSizing: "border-box",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      background: "var(--color-neutral-100)",
+                      border: "1px solid var(--color-neutral-300)",
+                      borderRadius: 16,
+                      padding: "0 16px",
+                    }}
+                  >
+                    <span style={{ fontSize: 19, fontWeight: 700, color: "var(--color-neutral-700)" }}>$</span>
+                    <input
+                      type="number"
+                      onFocus={(e) => e.target.select()}
+                      min={0}
+                      step={100}
+                      value={oneTimeAmount}
+                      onChange={(e) => setOneTimeAmount(Math.max(0, Number(e.target.value) || 0))}
+                      style={{
+                        flex: 1,
+                        width: "100%",
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: "var(--color-text)",
+                        background: "none",
+                        border: 0,
+                        padding: 0,
+                        outline: "none",
+                        fontFamily: "var(--font-mono)",
+                      }}
+                    />
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: "var(--color-neutral-800)" }}>in month</span>
+                  <span
+                    style={{
+                      height: 56,
+                      boxSizing: "border-box",
+                      display: "flex",
+                      alignItems: "center",
+                      background: "var(--color-neutral-100)",
+                      border: "1px solid var(--color-neutral-300)",
+                      borderRadius: 16,
+                      padding: "0 14px",
+                    }}
+                  >
+                    <input
+                      type="number"
+                      onFocus={(e) => e.target.select()}
+                      min={1}
+                      step={1}
+                      value={oneTimeMonth}
+                      onChange={(e) => setOneTimeMonth(Math.max(1, Number(e.target.value) || 1))}
+                      aria-label="One-time payment month"
+                      style={{
+                        width: 58,
+                        fontSize: 18,
+                        fontWeight: 800,
+                        color: "var(--color-text)",
+                        background: "none",
+                        border: 0,
+                        padding: 0,
+                        outline: "none",
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono)",
+                      }}
+                    />
+                  </span>
+                </span>
+              </label>
+            </div>
+            <p
+              style={{
+                fontSize: 16,
+                lineHeight: 1.6,
+                color: "var(--color-neutral-800)",
+                background: "var(--color-accent-100)",
+                borderRadius: 16,
+                padding: "15px 18px",
+                margin: "18px 0 0",
+              }}
+            >
+              The "Per month" amount is the one lever most worth playing with -- see exactly how much sooner a
+              bigger number gets you out of debt in "See the impact of paying more" below.
+            </p>
           </div>
-          <GhostButton onClick={addDebt} className="mb-6">
-            <Plus size={15} /> Add debt
-          </GhostButton>
 
-          <div className="text-xs mb-2" style={{ letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            Extra payments
-          </div>
-          <div className="flex gap-6 flex-wrap items-end mb-5">
-            <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Per month
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  onFocus={(e) => e.target.select()}
-                  min={0}
-                  step={25}
-                  value={extraMonthly}
-                  onChange={(e) => setExtraMonthly(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 110 })}
-                />
-              </span>
-            </label>
-            <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Per year
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  onFocus={(e) => e.target.select()}
-                  min={0}
-                  step={100}
-                  value={extraYearly}
-                  onChange={(e) => setExtraYearly(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 110 })}
-                />
-              </span>
-            </label>
-            <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              One-time, during month #
-              <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  onFocus={(e) => e.target.select()}
-                  min={0}
-                  step={100}
-                  value={oneTimeAmount}
-                  onChange={(e) => setOneTimeAmount(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 100 })}
-                />
-                <span className="text-xs">in month</span>
-                <input
-                  type="number"
-                  onFocus={(e) => e.target.select()}
-                  min={1}
-                  step={1}
-                  value={oneTimeMonth}
-                  onChange={(e) => setOneTimeMonth(Math.max(1, Number(e.target.value) || 1))}
-                  style={ledgerInputStyle({ fontSize: 15, width: 50 })}
-                />
-              </span>
-            </label>
-          </div>
-          <p className="text-xs mt-0 mb-5" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-            The "Per month" amount is the one lever most worth playing with -- see exactly how much sooner a bigger
-            number gets you out of debt in "See the impact of paying more" below.
-          </p>
-
-          <div className="flex gap-6 flex-wrap items-start">
-            <div>
-              <div className="text-xs mb-2" style={{ letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Strategy
-              </div>
-              <div className="flex gap-2" role="group" aria-label="Payoff strategy">
+          {/* Strategy + fixed total */}
+          <div className="flex gap-8 flex-wrap" style={{ borderTop: "1px solid var(--color-divider)", marginTop: 28, paddingTop: 24 }}>
+            <div style={{ flex: "1 1 340px" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 14 }}>Strategy</div>
+              <div className="flex gap-2 flex-wrap" role="group" aria-label="Payoff strategy">
                 {[
                   { value: "avalanche", label: "Avalanche (highest rate first)" },
                   { value: "snowball", label: "Snowball (smallest balance first)" },
                 ].map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    onClick={() => setStrategy(s.value)}
-                    style={{
-                      fontSize: 13,
-                      padding: "8px 14px",
-                      borderRadius: 999,
-                      cursor: "pointer",
-                      border: `1px solid ${strategy === s.value ? "var(--color-accent)" : "var(--color-divider)"}`,
-                      background: strategy === s.value ? "color-mix(in srgb, var(--color-accent) 12%, transparent)" : "transparent",
-                      color: strategy === s.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
-                    }}
-                  >
+                  <PillButton key={s.value} active={strategy === s.value} onClick={() => setStrategy(s.value)}>
                     {s.label}
-                  </button>
+                  </PillButton>
                 ))}
               </div>
             </div>
 
-            <div>
-              <div className="text-xs mb-2" style={{ letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Fixed total monthly payment?
-              </div>
+            <div style={{ flex: "0 1 200px" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 14 }}>Fixed total monthly payment?</div>
               <div className="flex gap-2" role="group" aria-label="Fixed total monthly payment">
                 {[
                   { value: true, label: "Yes" },
                   { value: false, label: "No" },
                 ].map((opt) => (
-                  <button
-                    key={String(opt.value)}
-                    type="button"
-                    onClick={() => setFixedTotal(opt.value)}
-                    style={{
-                      fontSize: 13,
-                      padding: "8px 14px",
-                      borderRadius: 999,
-                      cursor: "pointer",
-                      border: `1px solid ${fixedTotal === opt.value ? "var(--color-accent)" : "var(--color-divider)"}`,
-                      background: fixedTotal === opt.value ? "color-mix(in srgb, var(--color-accent) 12%, transparent)" : "transparent",
-                      color: fixedTotal === opt.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 60%, transparent)",
-                    }}
-                  >
+                  <PillButton key={String(opt.value)} active={fixedTotal === opt.value} onClick={() => setFixedTotal(opt.value)} wide>
                     {opt.label}
-                  </button>
+                  </PillButton>
                 ))}
               </div>
             </div>
           </div>
-          <p className="text-xs mt-3 mb-0" style={{ maxWidth: 620, color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+          <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "18px 0 0", maxWidth: "60em" }}>
             {fixedTotal
               ? 'Yes: once a debt is paid off, the payment that was going to it gets redirected to your remaining debts, so the total you\'re putting toward debt each month stays the same until everything\'s paid off. This is the faster, more standard way to run either strategy.'
               : "No: once a debt is paid off, that payment just goes away instead of being redirected -- so the total you're putting toward debt each month shrinks as debts close, and payoff takes longer."}
           </p>
-        </Card>
+        </div>
 
-        <Card style={{ padding: "26px 28px", marginBottom: 24 }}>
-          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Debt-free in</span>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 600 }}>{monthsToYearsLabel(result.months)}</span>
+        {/* Result panel -- plum, white text */}
+        <div style={{ background: "#3B1C7A", color: "#fff", borderRadius: 30, padding: 34, marginTop: 20 }}>
+          <div className="flex items-baseline gap-5 flex-wrap">
+            <span style={{ flex: 1, minWidth: 200, fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 700, opacity: 0.85 }}>
+              Debt-free in
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(38px, 5vw, 54px)", fontWeight: 800, letterSpacing: "-0.035em" }}>
+              {result.reachedCap ? "50+ yrs" : monthsToYearsLabel(result.months)}
+            </span>
           </div>
-          <ul style={{ fontSize: 14, lineHeight: 2, margin: "0 0 4px", paddingLeft: 18, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-            <li>Total balance today: <strong>{currency(totalBalance)}</strong> across {debts.length} debt{debts.length === 1 ? "" : "s"}</li>
-            <li>Minimums alone: <strong>{currency(totalMin)}</strong>/mo</li>
-            <li>Total interest paid: <strong>{currency(result.totalInterest)}</strong></li>
-            {hasAnyExtra && !noExtra.reachedCap && (
-              <li>
-                Your extra payments save you{" "}
-                <strong>{monthsToYearsLabel(Math.max(0, noExtra.months - result.months))}</strong> and{" "}
-                <strong>{currency(Math.max(0, noExtra.totalInterest - result.totalInterest))}</strong> in interest vs. minimums only
-              </li>
-            )}
-          </ul>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12, marginTop: 26 }}>
+            {summaryTiles.map((t) => (
+              <div key={t.label} style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: 18 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>{t.value}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.8, marginTop: 6, lineHeight: 1.4 }}>{t.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {showSavings && (
+            <div
+              className="flex items-center gap-4 flex-wrap"
+              style={{ background: "#fff", color: "var(--color-text)", borderRadius: 20, padding: "22px 24px", marginTop: 20 }}
+            >
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "#22684C",
+                  background: "#E9F6EF",
+                  borderRadius: 999,
+                  padding: "8px 14px",
+                }}
+              >
+                Extra payments
+              </span>
+              <span style={{ flex: 1, minWidth: 240, fontSize: 18, fontWeight: 700, lineHeight: 1.45 }}>
+                save you <strong>{monthsToYearsLabel(Math.max(0, noExtra.months - result.months))}</strong> and{" "}
+                <strong>{currency(Math.max(0, noExtra.totalInterest - result.totalInterest))}</strong> in interest vs.
+                minimums only.
+              </span>
+            </div>
+          )}
+
           {result.reachedCap && (
-            <p className="text-sm mt-2" style={{ color: "#7a2f2a" }}>
+            <p
+              style={{
+                fontSize: 16,
+                lineHeight: 1.6,
+                fontWeight: 600,
+                background: "#FBEEEA",
+                color: "#9C3B22",
+                borderRadius: 16,
+                padding: "15px 18px",
+                margin: "20px 0 0",
+              }}
+            >
               At these minimums and extra amounts, this doesn't pay off within 50 years -- increase your extra
               payments.
             </p>
           )}
-        </Card>
+        </div>
 
-        <Card style={{ padding: "26px 28px", marginBottom: 24 }}>
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: 18, marginBottom: 4 }}>See the impact of paying more</div>
-          <p className="text-xs mb-4" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+        {/* Impact table */}
+        <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-divider)", borderRadius: 30, padding: 32, marginTop: 20 }}>
+          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 800, letterSpacing: "-0.025em", margin: "0 0 8px" }}>
+            See the impact of paying more
+          </h2>
+          <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "0 0 22px" }}>
             Same debts, same strategy -- only the extra monthly amount changes. This is the one number worth
             experimenting with above.
           </p>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 420, fontSize: 14 }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left", padding: "8px 12px 8px 0", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                    Extra/mo
-                  </th>
-                  <th style={{ textAlign: "left", padding: "8px 12px", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                    Debt-free in
-                  </th>
-                  <th style={{ textAlign: "right", padding: "8px 0 8px 12px", borderBottom: "1px solid var(--color-accent)", fontFamily: "var(--font-heading)", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                    Total interest
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {impactRows.map((row) => (
-                  <tr key={row.amount} style={row.isCurrent ? { background: "var(--color-accent-100)" } : undefined}>
-                    <td style={{ padding: "9px 12px 9px 0", borderBottom: "1px solid var(--color-divider)", fontWeight: row.isCurrent ? 600 : 400 }}>
-                      {currency(row.amount)}
-                      {row.isCurrent ? <span style={{ fontSize: 11, color: "var(--color-accent-700)", marginLeft: 6 }}>current</span> : null}
-                    </td>
-                    <td style={{ padding: "9px 12px", borderBottom: "1px solid var(--color-divider)", fontWeight: row.isCurrent ? 600 : 400 }}>
-                      {row.reachedCap ? "50+ yrs" : monthsToYearsLabel(row.months)}
-                    </td>
-                    <td style={{ textAlign: "right", padding: "9px 0 9px 12px", borderBottom: "1px solid var(--color-divider)", fontWeight: row.isCurrent ? 600 : 400 }}>
-                      {row.reachedCap ? "--" : currency(row.totalInterest)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
 
-        <Card style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "18px 22px", marginBottom: 20 }}>
-          <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-4" style={{ padding: "0 18px 6px" }}>
+              <span style={{ flex: "0 0 110px", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Extra/mo
+              </span>
+              <span style={{ flex: 1, fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Debt-free in
+              </span>
+              <span style={{ flex: "0 0 120px", textAlign: "right", fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Total interest
+              </span>
+            </div>
+            {impactRows.map((row) => (
+              <div
+                key={row.amount}
+                className="flex items-center gap-4"
+                style={{
+                  background: row.isCurrent ? "var(--color-accent-100)" : "var(--color-surface)",
+                  border: `1px solid ${row.isCurrent ? "var(--color-accent-400)" : "var(--color-divider)"}`,
+                  borderRadius: 16,
+                  padding: "16px 18px",
+                }}
+              >
+                <span style={{ flex: "0 0 110px", display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: row.isCurrent ? 800 : 500, fontFamily: "var(--font-mono)" }}>
+                  {currency(row.amount)}
+                  {row.isCurrent && (
+                    <span
+                      style={{
+                        fontFamily: "var(--font-heading)",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "#fff",
+                        background: "var(--color-accent)",
+                        borderRadius: 999,
+                        padding: "4px 8px",
+                      }}
+                    >
+                      Now
+                    </span>
+                  )}
+                </span>
+                <span style={{ flex: 1, minWidth: 90, fontSize: 17, fontWeight: row.isCurrent ? 800 : 500 }}>
+                  {row.reachedCap ? "50+ yrs" : monthsToYearsLabel(row.months)}
+                </span>
+                <span style={{ flex: "0 0 120px", textAlign: "right", fontSize: 18, fontWeight: row.isCurrent ? 800 : 500, fontFamily: "var(--font-mono)" }}>
+                  {row.reachedCap ? "—" : currency(row.totalInterest)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA banner */}
+        <div
+          style={{
+            background: "#EDE6FF",
+            borderRadius: 26,
+            padding: "28px 32px",
+            marginTop: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <p style={{ fontSize: 19, fontWeight: 700, margin: 0, color: "var(--color-text)" }}>
             Want your extra payment routed automatically every time you get paid?
           </p>
           <PrimaryButton onClick={() => router.push("/signup")}>
             Get started free <ArrowRight size={14} />
           </PrimaryButton>
-        </Card>
+        </div>
 
-        <p className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
-          Estimate only. This assumes a fixed APR and steady payments each month, and doesn't account for new charges,
-          promotional rates, or fees.
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "22px 0 0" }}>
+          Estimate only. This assumes a fixed APR and steady payments each month, and doesn't account for new
+          charges, promotional rates, or fees.
         </p>
       </div>
       <PublicFooter />
