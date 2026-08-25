@@ -66,6 +66,56 @@ function GroupBox({ title, rows, accountsById, ytdByLabel, mtdByLabel }) {
   );
 }
 
+// Plain account-balance card, no split-category info -- used for accounts
+// that aren't assigned as the destination of any split-rule category at
+// all (most commonly the checking/deposit account a paycheck actually
+// lands in, which is a *source* for splits, not a destination). Without
+// this box, an account like that never appeared anywhere on the
+// dashboard even though its balance is tracked correctly -- see
+// UnassignedAccountsBox below.
+function PlainAccountCard({ acc }) {
+  return (
+    <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-bg)", padding: "18px 20px" }}>
+      <div className="flex items-baseline gap-2.5 flex-wrap mb-1">
+        <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name} {acc.account_name}</span>
+        <span className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 48%, transparent)" }}>•••• {acc.mask}</span>
+      </div>
+      <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "12px 0 0" }}>
+        {acc.current_balance === null || acc.current_balance === undefined ? "—" : currency(acc.current_balance)}
+      </div>
+    </div>
+  );
+}
+
+// Every connected account is assigned to at least one split-rule category
+// EXCEPT the account a deposit actually lands in, which is usually left
+// unassigned on purpose (it's the source, not a destination). Those
+// accounts don't appear in GroupBox (Retirement/Investments) or
+// OtherAccountsBox below -- both only render accounts referenced by a
+// split-rule row -- so without this box, a connected account with zero
+// category assignments was invisible on the dashboard even though its
+// balance was tracked correctly.
+function UnassignedAccountsBox({ accounts, assignedAccountIds }) {
+  const unassigned = accounts.filter((a) => !assignedAccountIds.has(a.id));
+  if (!unassigned.length) return null;
+  return (
+    <Card className="p-6">
+      <div
+        style={{
+          fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
+          color: "color-mix(in srgb, var(--color-text) 58%, transparent)", paddingBottom: 20,
+          borderBottom: "1px solid var(--color-divider)", marginBottom: 20,
+        }}
+      >
+        Checking &amp; other accounts
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {unassigned.map((acc) => <PlainAccountCard key={acc.id} acc={acc} />)}
+      </div>
+    </Card>
+  );
+}
+
 // Account-centric (not category-centric) -- one card per physical account
 // that isn't already shown in the Retirement or Investments boxes above,
 // listing every category that lands there (a Tax Reserve and a Savings
@@ -139,6 +189,18 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
   const investmentRows = sections.find((s) => s.type === "group" && s.group === "Investments")?.rows || [];
   const flatRows = sections.filter((s) => s.type === "row").map((s) => s.row);
 
+  // Union of every account referenced by ANY split-rule row (retirement,
+  // investment, or flat/other) -- anything not in this set has no split
+  // category pointed at it (typically the checking account a deposit
+  // lands in) and needs UnassignedAccountsBox below to be visible at all.
+  const assignedAccountIds = useMemo(() => {
+    const ids = new Set();
+    [...retirementRows, ...investmentRows, ...flatRows].forEach((r) => {
+      if (r.accountId) ids.add(r.accountId);
+    });
+    return ids;
+  }, [retirementRows, investmentRows, flatRows]);
+
   // Dashboard preview: even with nothing connected yet, render every box
   // with its normal layout and "Not connected yet" / placeholder rows
   // (each row already handles a missing account -- see CategoryRow below)
@@ -182,6 +244,8 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
       </div>
 
       <OtherAccountsBox accounts={accounts} flatRows={flatRows} ytdByLabel={ytdByLabel} mtdByLabel={mtdByLabel} />
+
+      <UnassignedAccountsBox accounts={accounts || []} assignedAccountIds={assignedAccountIds} />
     </div>
   );
 }
