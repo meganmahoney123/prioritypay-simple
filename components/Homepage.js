@@ -314,12 +314,12 @@ export default function Homepage() {
               <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent)" }}>
                 Deposit received
               </span>
-              <span style={{ fontSize: 13, color: "#8A7C99", fontFamily: "var(--font-mono)" }}>Today, 9:14 AM</span>
+              <span style={{ fontSize: 13, color: "#6B5E7A", fontFamily: "var(--font-mono)" }}>Today, 9:14 AM</span>
             </div>
             <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.03em", marginTop: 14 }}>$4,200.00</div>
             <div style={{ fontSize: 15, color: "#574A68", marginTop: 4 }}>Client payment · Bridgeway Studio</div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 18px" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8A7C99" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6B5E7A" }}>
                 Split
               </span>
               <span style={{ flex: 1, height: 1, background: "var(--color-divider)", display: "block" }} />
@@ -394,7 +394,7 @@ export default function Homepage() {
               01
             </span>
             <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "#8A7C99", fontFamily: "var(--font-mono)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "#6B5E7A", fontFamily: "var(--font-mono)" }}>
                 CHECKING · · · · 4412
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, fontSize: 14 }}>
@@ -407,7 +407,7 @@ export default function Homepage() {
               </div>
               <div style={{ height: 1, background: "var(--color-divider)", margin: "16px 0 12px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "#8A7C99" }}>BALANCE</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "#6B5E7A" }}>BALANCE</span>
                 <span style={{ fontSize: 20, fontWeight: 800, fontFamily: "var(--font-mono)" }}>$6,120.00</span>
               </div>
             </div>
@@ -427,7 +427,7 @@ export default function Homepage() {
             <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 24, fontWeight: 800, fontFamily: "var(--font-mono)" }}>$4,200</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#8A7C99" }}>SPLIT ON ARRIVAL · 45%</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#6B5E7A" }}>SPLIT ON ARRIVAL · 45%</span>
               </div>
               <div style={{ display: "flex", gap: 4, marginTop: 18, height: 14, borderRadius: "var(--radius-pill)", overflow: "hidden", background: "var(--color-divider)" }}>
                 <span style={{ flex: 15, background: "var(--color-accent-900)", display: "block" }} />
@@ -540,7 +540,7 @@ export default function Homepage() {
 
           <Reveal>
             <div style={{ background: "var(--color-surface)", borderRadius: "var(--radius-lg)", padding: 30, boxShadow: "var(--shadow-md)" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A7C99" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6B5E7A" }}>
                 Total saved since joining
               </div>
               <div style={{ fontSize: "clamp(40px, 6vw, 52px)", fontWeight: 800, letterSpacing: "-0.035em", margin: "8px 0 22px", color: "var(--color-accent-900)", fontFamily: "var(--font-mono)" }}>
@@ -590,7 +590,7 @@ export default function Homepage() {
             </div>
             <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 22 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#8A7C99" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B5E7A" }}>
                   Income sources connected
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-accent-700)", fontFamily: "var(--font-mono)" }}>6 of 6</span>
@@ -601,7 +601,7 @@ export default function Homepage() {
                     <span style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent-200)", display: "block", flexShrink: 0 }} />
                     <span style={{ flex: 1 }}>
                       <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{i.name}</span>
-                      <span style={{ display: "block", fontSize: 13, color: "#8A7C99" }}>{i.kind}</span>
+                      <span style={{ display: "block", fontSize: 13, color: "#6B5E7A" }}>{i.kind}</span>
                     </span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "5px 10px", borderRadius: "var(--radius-pill)" }}>
                       Linked
@@ -609,7 +609,7 @@ export default function Homepage() {
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: "#8A7C99", marginTop: 14, textAlign: "center" }}>
+              <div style={{ fontSize: 13, color: "#6B5E7A", marginTop: 14, textAlign: "center" }}>
                 + 12,000 more banks &amp; credit unions available
               </div>
             </div>
@@ -668,7 +668,7 @@ export default function Homepage() {
 
       {/* BANK MARQUEE */}
       <section style={{ padding: "20px 0 clamp(60px, 9vw, 88px)", overflow: "hidden" }}>
-        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8A7C99", marginBottom: 26 }}>
+        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6B5E7A", marginBottom: 26 }}>
           12,000+ banks &amp; credit unions
         </div>
         <div className="pp-marquee-track" style={{ display: "flex", width: "max-content", gap: 12 }}>
@@ -723,7 +723,7 @@ export default function Homepage() {
             </p>
           </div>
           <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 26 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#8A7C99" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B5E7A" }}>
               Monthly Close Out — July 2026
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 18 }}>
@@ -738,7 +738,7 @@ export default function Homepage() {
               <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-accent-900)" }}>{NET_INCOME.label}</span>
               <span style={{ fontSize: 22, fontWeight: 800, color: "var(--color-accent-900)", fontFamily: "var(--font-mono)" }}>{NET_INCOME.value}</span>
             </div>
-            <p style={{ fontSize: 14, lineHeight: 1.5, color: "#8A7C99", margin: "16px 0 0" }}>
+            <p style={{ fontSize: 14, lineHeight: 1.5, color: "#6B5E7A", margin: "16px 0 0" }}>
               Calculate your Solo 401k and SEP IRA contributions effortlessly inside the dashboard.
             </p>
           </div>
