@@ -1,33 +1,37 @@
 "use client";
 
 // Shared brand mark for every surface of the app (sidebar, public header,
-// auth card, homepage footer, favicon) -- built from the logo artwork
-// Megan provided (priority-pay-logo-6b-written.png): four horizontal bars
-// tapering ~65% each step, forming a funnel/priority-stack mark, paired
-// with the "Priority" + italic gold "Pay" wordmark already used
-// throughout the site. Rendered as a solid fill rather than the softer
-// blurred/feathered edges in the source artwork -- that blur reads well
-// at large marketing sizes but just looks like fuzz at the ~20px this
-// renders at in a nav bar or sidebar, so the shape (not the blur) is what
-// carries the brand here.
+// auth card, homepage footer, favicon) -- rebuilt for the Aug 2026 logo
+// refresh (design_handoff_prioritypay_redesign/logo/*.svg): three
+// left-aligned bars tapering 52/36/20 wide (a funnel -- the "know your
+// split before you spend it" metaphor), each 6px tall with a 6px gap, in
+// three shades of purple (#3B1C7A / #6D3BE0 / #9A72F0) -- replacing the
+// old single-tone, four-bar, centered mark. Geometry and colors match
+// logo/prioritypay-mark.svg exactly (viewBox 0 0 52 30) so this component
+// and the standalone SVG files (used for favicons, app icons, and print)
+// stay visually identical.
 //
 // One component so every surface stays in sync automatically -- update
-// the bar ratios or wordmark styling once, here, instead of drifting
-// across AppShell/PublicHeader/AuthCard/Homepage's separate copies.
+// the mark once, here, instead of drifting across AppShell/PublicHeader/
+// AuthCard/PublicFooter's separate copies.
 
 const BARS = [
-  { w: 0.88, y: 0 },
-  { w: 0.58, y: 0.28 },
-  { w: 0.38, y: 0.56 },
-  { w: 0.25, y: 0.84 },
+  { w: 52, y: 0, color: "#3B1C7A" },
+  { w: 36, y: 12, color: "#6D3BE0" },
+  { w: 20, y: 24, color: "#9A72F0" },
 ];
-const BAR_HEIGHT = 0.14;
+const MARK_ASPECT = 52 / 30; // matches logo/prioritypay-mark.svg's 52x30 viewBox
 
-export function PriorityPayMark({ size = 22, color = "var(--color-accent-700)", style }) {
+// `color`, when passed, overrides all three bars with one flat tone --
+// used on dark backgrounds (see PublicFooter.js) where the three-tone
+// gradient would lose contrast against a near-black background. Omitted
+// entirely (the normal case) renders the real three-tone mark.
+export function PriorityPayMark({ size = 22, color, style }) {
+  const width = size * MARK_ASPECT;
   return (
-    <svg width={size} height={size} viewBox="0 0 1 1" style={style} aria-hidden="true">
+    <svg width={width} height={size} viewBox="0 0 52 30" style={style} aria-hidden="true">
       {BARS.map((b, i) => (
-        <rect key={i} x={(1 - b.w) / 2} y={b.y} width={b.w} height={BAR_HEIGHT} rx={BAR_HEIGHT / 2} fill={color} />
+        <rect key={i} x={0} y={b.y} width={b.w} height={6} rx={3} fill={color || b.color} />
       ))}
     </svg>
   );
