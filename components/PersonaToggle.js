@@ -12,12 +12,17 @@ export const ALL_PERSONAS = [
   { value: "w2", label: "W2 employee" },
 ];
 
+// Restyled per the Aug 2026 Bloom redesign (spec 04/05): the label is now
+// a normal-weight sentence instead of small uppercase letterspaced gray,
+// and the active pill is a solid accent fill with white text -- the old
+// active state (a faint accent-tinted wash) read as nearly invisible next
+// to the idle pills once the design moved off the amber ledger palette.
 export default function PersonaToggle({ value, onChange, options = ALL_PERSONAS, label = "Which describes you?" }) {
   return (
     <div className="mb-5">
       <div
-        className="text-xs mb-2"
-        style={{ letterSpacing: "0.06em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
+        className="mb-2"
+        style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}
       >
         {label}
       </div>
@@ -29,15 +34,17 @@ export default function PersonaToggle({ value, onChange, options = ALL_PERSONAS,
               key={opt.value}
               type="button"
               onClick={() => onChange(opt.value)}
+              aria-pressed={active}
               style={{
-                fontSize: 13.5,
-                padding: "8px 16px",
+                fontSize: 16,
+                fontWeight: 700,
+                padding: "14px 26px",
                 borderRadius: 999,
                 cursor: "pointer",
                 fontFamily: "var(--font-heading)",
-                border: `1px solid ${active ? "var(--color-accent)" : "var(--color-divider)"}`,
-                background: active ? "color-mix(in srgb, var(--color-accent) 12%, transparent)" : "transparent",
-                color: active ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                border: `2px solid ${active ? "var(--color-accent)" : "var(--color-neutral-300)"}`,
+                background: active ? "var(--color-accent)" : "var(--color-surface)",
+                color: active ? "#fff" : "var(--color-accent-800)",
               }}
             >
               {opt.label}
