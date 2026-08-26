@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthedUser, supabaseAdmin } from "@/lib/supabaseServer";
 import Homepage from "@/components/Homepage";
+import NativeHomeRedirect from "@/components/NativeHomeRedirect";
 
 // The homepage previously had no page-specific metadata at all and fell
 // back to the generic root-layout default ("PriorityPay Simple" / "Route
@@ -39,6 +40,7 @@ export default async function RootPage() {
     return (
       <>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        <NativeHomeRedirect />
         <Homepage />
       </>
     );
