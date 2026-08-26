@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, CheckCircle2, Circle } from "lucide-react";
-import { Card, PrimaryButton, GhostButton, Badge, currency } from "@/components/ui";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import { Card, PrimaryButton, Badge, currency } from "@/components/ui";
+import { BLOOM_TOKENS, bloomWarningCardStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -15,12 +15,6 @@ function monthLabel(period) {
   return MONTH_NAMES[m - 1];
 }
 
-// Light tax-prep, not tax filing: this rolls up the same categorized data
-// Close-Out already produces (backfilling any month the person never
-// manually visited Close-Out for -- see lib/closeoutSync.js) into an
-// annual view, and offers a CSV built for handing to an accountant or
-// importing into tax software. It never files anything and never touches
-// simple_monthly_closeouts' confirmed/locked state.
 export default function TaxSummaryPage() {
   const [year, setYear] = useState(() => new Date().getUTCFullYear() - 1);
   const [data, setData] = useState(null);
@@ -49,55 +43,105 @@ export default function TaxSummaryPage() {
   );
 
   return (
-    <div className="max-w-2xl space-y-6" style={LEDGER_TOKENS}>
-      <div className="flex items-center gap-2">
-        <GhostButton onClick={() => setYear((y) => y - 1)} className="px-2 py-1.5">
-          <ChevronLeft size={16} />
-        </GhostButton>
-        <span className="text-sm font-semibold w-16 text-center">{year}</span>
-        <GhostButton onClick={() => setYear((y) => y + 1)} className="px-2 py-1.5" disabled={year >= new Date().getUTCFullYear()}>
-          <ChevronRight size={16} />
-        </GhostButton>
+    <div className="max-w-2xl space-y-6" style={BLOOM_TOKENS}>
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => setYear((y) => y - 1)}
+          style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 30, height: 30, borderRadius: "50%", background: "transparent",
+            border: "1px solid var(--color-divider)", color: "var(--color-text)",
+            cursor: "pointer",
+          }}
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, width: 64, textAlign: "center" }}>{year}</span>
+        <button
+          onClick={() => setYear((y) => y + 1)}
+          disabled={year >= new Date().getUTCFullYear()}
+          style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 30, height: 30, borderRadius: "50%", background: "transparent",
+            border: "1px solid var(--color-divider)", color: "var(--color-text)",
+            cursor: year >= new Date().getUTCFullYear() ? "not-allowed" : "pointer",
+            opacity: year >= new Date().getUTCFullYear() ? 0.3 : 1,
+          }}
+        >
+          <ChevronRight size={14} />
+        </button>
       </div>
 
       {error && (
-        <Card className="p-4 text-sm" style={{ color: "#7a2f2a" }}>
+        <Card className="p-4 text-sm" style={bloomWarningCardStyle()}>
           {error}
         </Card>
       )}
 
       {loading ? (
-        <p className="text-sm text-neutral-500">Pulling {year}&apos;s transactions…</p>
+        <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>Pulling {year}&apos;s transactions…</p>
       ) : data && data.totalMonths === 0 ? (
-        <Card className="p-8 text-center">
-          <p className="text-sm text-neutral-500">Nothing to summarize yet for {year}.</p>
+        <Card className="p-8 text-center" style={bloomWarningCardStyle()}>
+          <p className="text-sm" style={{ color: "#9C3B22" }}>Nothing to summarize yet for {year}.</p>
         </Card>
       ) : data ? (
         <>
-          <div className="grid grid-cols-2 gap-3">
+          <Card
+            style={bloomAccentCardStyle({
+              padding: "clamp(26px, 3.5vw, 40px)",
+              borderRadius: "var(--radius-lg)",
+              background: "var(--color-accent-800)",
+              border: "none",
+              color: "#fff",
+            })}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: 12,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "var(--color-accent-400)",
+                marginBottom: 14,
+              }}
+            >
+              Net Income
+            </div>
+            <div
+              className="font-mono"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "clamp(40px, 6vw, 68px)",
+                lineHeight: 1,
+                fontWeight: 800,
+                letterSpacing: "-0.02em",
+                color: "#fff",
+              }}
+            >
+              {currency(data.totals.net)}
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-3 gap-3">
             <Card className="p-4">
-              <p className="text-xs text-neutral-500 mb-1">Total Income</p>
-              <p className="text-xl font-semibold">{currency(data.totals.income)}</p>
+              <p className="text-xs mb-1" style={{ color: "var(--color-neutral-700)" }}>Total Income</p>
+              <p className="text-xl font-semibold font-mono" style={{ fontFamily: "var(--font-mono)" }}>{currency(data.totals.income)}</p>
             </Card>
             <Card className="p-4">
-              <p className="text-xs text-neutral-500 mb-1">W2 Income</p>
-              <p className="text-xl font-semibold">{currency(data.totals.w2Income)}</p>
+              <p className="text-xs mb-1" style={{ color: "var(--color-neutral-700)" }}>W2 Income</p>
+              <p className="text-xl font-semibold font-mono" style={{ fontFamily: "var(--font-mono)" }}>{currency(data.totals.w2Income)}</p>
             </Card>
             <Card className="p-4">
-              <p className="text-xs text-neutral-500 mb-1">Total Expenses</p>
-              <p className="text-xl font-semibold">{currency(data.totals.expense)}</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-xs text-neutral-500 mb-1">Net Income</p>
-              <p className="text-xl font-semibold">{currency(data.totals.net)}</p>
+              <p className="text-xs mb-1" style={{ color: "var(--color-neutral-700)" }}>Total Expenses</p>
+              <p className="text-xl font-semibold font-mono" style={{ fontFamily: "var(--font-mono)" }}>{currency(data.totals.expense)}</p>
             </Card>
           </div>
 
           {data.totals.business > 0 && (
             <Card className="p-4">
-              <p className="text-xs text-neutral-500 mb-1">Flagged as business (excluded above)</p>
-              <p className="text-xl font-semibold">{currency(data.totals.business)}</p>
-              <p className="text-xs text-neutral-400 mt-1">
+              <p className="text-xs mb-1" style={{ color: "var(--color-neutral-700)" }}>Flagged as business (excluded above)</p>
+              <p className="text-xl font-semibold font-mono" style={{ fontFamily: "var(--font-mono)" }}>{currency(data.totals.business)}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--color-neutral-700)" }}>
                 Transactions marked &quot;Business&quot; in Close-Out — landed on a personal account but flagged
                 as belonging to the business side. Not counted in income/expenses/net above; included in the CSV
                 below for your accountant.
@@ -113,7 +157,7 @@ export default function TaxSummaryPage() {
               </Badge>
             </div>
             {!allReviewed && (
-              <p className="text-xs text-neutral-500 mb-4">
+              <p className="text-xs mb-4" style={{ color: "var(--color-neutral-700)" }}>
                 Months not yet confirmed in Close-Out use PriorityPay&apos;s best-guess categorization — review
                 them there before treating these numbers as final.
               </p>
@@ -125,13 +169,13 @@ export default function TaxSummaryPage() {
                     {m.status === "confirmed" ? (
                       <CheckCircle2 size={14} style={{ color: "var(--color-accent-700)" }} />
                     ) : (
-                      <Circle size={14} className="text-neutral-300" />
+                      <Circle size={14} style={{ color: "var(--color-neutral-300)" }} />
                     )}
                     {monthLabel(m.period)}
                   </span>
-                  <span className="text-neutral-500 flex-1 text-right pr-4">{currency(m.income + m.w2Income)} in</span>
-                  <span className="text-neutral-500 flex-1 text-right pr-4">{currency(m.expense)} out</span>
-                  <span className="font-semibold w-24 text-right">{currency(m.net)}</span>
+                  <span className="flex-1 text-right pr-4 font-mono" style={{ color: "var(--color-neutral-700)", fontFamily: "var(--font-mono)" }}>{currency(m.income + m.w2Income)} in</span>
+                  <span className="flex-1 text-right pr-4 font-mono" style={{ color: "var(--color-neutral-700)", fontFamily: "var(--font-mono)" }}>{currency(m.expense)} out</span>
+                  <span className="font-semibold w-24 text-right font-mono" style={{ fontFamily: "var(--font-mono)" }}>{currency(m.net)}</span>
                 </div>
               ))}
             </div>
@@ -139,7 +183,7 @@ export default function TaxSummaryPage() {
 
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-1">Download for your accountant</h2>
-            <p className="text-xs text-neutral-500 mb-4">
+            <p className="text-xs mb-4" style={{ color: "var(--color-neutral-700)" }}>
               Every transaction PriorityPay saw for {year} — date, description, account, category, and whether
               you confirmed it — as a CSV. Not tax advice; a starting point to hand off or import into tax
               software.
