@@ -59,9 +59,9 @@ export default function AccountSelect({
   };
 
   if (theme === "ledger") {
-    const linkColor = connected ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 35%, transparent)";
-    const selColor = connected ? "var(--color-text)" : "var(--color-accent-700)";
-    const selBorder = connected ? "var(--color-divider)" : "var(--color-accent-300)";
+    const linkColor = connected ? "var(--color-neutral-700)" : "#4E22B8";
+    const selColor = connected ? "var(--color-text)" : "#4E22B8";
+    const selBorder = connected ? "var(--color-neutral-300)" : "#C4A9FA";
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
         <Link2 size={15} style={{ color: linkColor, flexShrink: 0 }} />
@@ -72,14 +72,14 @@ export default function AccountSelect({
             flex: 1,
             minWidth: 0,
             maxWidth: "100%",
+            height: 50,
             fontFamily: "var(--font-body)",
-            fontSize: 14.5,
+            fontSize: 15,
             color: selColor,
-            background: "transparent",
-            border: 0,
-            borderBottom: `1px solid ${selBorder}`,
-            borderRadius: 0,
-            padding: "8px 2px",
+            background: "var(--color-surface)",
+            border: `1px solid ${selBorder}`,
+            borderRadius: "var(--radius-sm)",
+            padding: "0 12px",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
