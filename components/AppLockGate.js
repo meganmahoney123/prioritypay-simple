@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import {
@@ -23,6 +24,7 @@ import {
 // the existing cookie-based auth (see lib/supabaseServer.js); this is only
 // ever a local re-confirmation layer on top of it.
 export default function AppLockGate({ children }) {
+  const router = useRouter();
   const [ready, setReady] = useState(false);
   const [locked, setLocked] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -45,7 +47,13 @@ export default function AppLockGate({ children }) {
 
       if (!pushRegistered.current) {
         pushRegistered.current = true;
-        registerForPushNotifications();
+        // Deep-links to wherever the tapped notification points (currently
+        // always /dashboard -- see sendDepositAlertPush in lib/push.js) --
+        // this is a no-op today since APNs isn't configured yet (no key
+        // means no pushes are ever actually delivered to tap), but it's
+        // ready the moment that changes rather than needing a separate app
+        // update just for tap handling.
+        registerForPushNotifications((path) => router.push(path));
       }
 
       const lockEnabled = await getBiometricLockEnabled();
