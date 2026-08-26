@@ -316,6 +316,27 @@ function OnboardingPageInner() {
     next();
   };
 
+  // Bug fix: `finish()` below sets submitting=true, then hard-navigates to
+  // Stripe Checkout via `window.location.href`. If someone hits their
+  // browser's Back button from Checkout, Chrome/Safari often restore this
+  // page from bfcache (back-forward cache) instead of reloading it --
+  // which means React state is frozen exactly as it was the instant they
+  // left, with submitting still stuck at `true`. The Continue button stays
+  // disabled forever, permanently showing "Redirecting to checkout..."
+  // with no way to retry short of a manual page refresh. `pageshow` fires
+  // on both a normal load AND a bfcache restore, and its `persisted` flag
+  // is only true for the latter -- exactly the case that needs the stuck
+  // state cleared.
+  useEffect(() => {
+    const onPageShow = (event) => {
+      if (event.persisted) {
+        setSubmitting(false);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   // No more 30-day free trial for anyone signing up from here on -- $7/mo
   // is collected via Stripe Checkout right here, before onboarding
   // actually finishes, since PriorityPay now incurs real costs (Plaid,
