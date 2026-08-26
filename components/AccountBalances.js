@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Card, currency } from "./ui";
-import { ledgerAccentCardStyle } from "@/lib/ledgerTheme";
+import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { percentSections } from "@/lib/allocations";
 
 function accountLabel(acc) {
@@ -19,10 +19,10 @@ function accountLabel(acc) {
 // outside of PriorityPay's own splits.
 function CategoryRow({ label, account, ytd, mtd }) {
   return (
-    <div className="flex items-center justify-between py-3 gap-3" style={{ borderBottom: "1px solid color-mix(in srgb, var(--color-text) 8%, transparent)" }}>
+    <div className="flex items-center justify-between py-3 gap-3" style={{ borderBottom: "1px solid var(--color-divider)" }}>
       <div className="min-w-0">
         <div className="truncate" style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{label}</div>
-        <div className="text-xs truncate" style={{ color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}>
+        <div className="text-xs truncate" style={{ color: "var(--color-neutral-700)" }}>
           {account ? accountLabel(account) : "Not connected yet"}
         </div>
       </div>
@@ -30,7 +30,7 @@ function CategoryRow({ label, account, ytd, mtd }) {
         <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 20 }}>
           {account ? (account.current_balance === null || account.current_balance === undefined ? "—" : currency(account.current_balance)) : "—"}
         </div>
-        <div className="text-[11px]" style={{ color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}>
+        <div className="text-[11px]" style={{ color: "var(--color-neutral-700)" }}>
           {currency(ytd)} this year · {currency(mtd)} this month
         </div>
       </div>
@@ -45,7 +45,7 @@ function GroupBox({ title, rows, accountsById, ytdByLabel, mtdByLabel }) {
       <div
         style={{
           fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
-          color: "color-mix(in srgb, var(--color-text) 58%, transparent)", paddingBottom: 16,
+          color: "var(--color-neutral-700)", paddingBottom: 16,
           borderBottom: "1px solid var(--color-divider)",
         }}
       >
@@ -75,10 +75,10 @@ function GroupBox({ title, rows, accountsById, ytdByLabel, mtdByLabel }) {
 // UnassignedAccountsBox below.
 function PlainAccountCard({ acc }) {
   return (
-    <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-bg)", padding: "18px 20px" }}>
+    <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", padding: "18px 20px" }}>
       <div className="flex items-baseline gap-2.5 flex-wrap mb-1">
         <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name} {acc.account_name}</span>
-        <span className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 48%, transparent)" }}>•••• {acc.mask}</span>
+        <span className="text-xs" style={{ color: "var(--color-neutral-700)" }}>•••• {acc.mask}</span>
       </div>
       <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "12px 0 0" }}>
         {acc.current_balance === null || acc.current_balance === undefined ? "—" : currency(acc.current_balance)}
@@ -103,7 +103,7 @@ function UnassignedAccountsBox({ accounts, assignedAccountIds }) {
       <div
         style={{
           fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
-          color: "color-mix(in srgb, var(--color-text) 58%, transparent)", paddingBottom: 20,
+          color: "var(--color-neutral-700)", paddingBottom: 20,
           borderBottom: "1px solid var(--color-divider)", marginBottom: 20,
         }}
       >
@@ -137,31 +137,31 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
       <div
         style={{
           fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
-          color: "color-mix(in srgb, var(--color-text) 58%, transparent)", paddingBottom: 20,
+          color: "var(--color-neutral-700)", paddingBottom: 20,
           borderBottom: "1px solid var(--color-divider)", marginBottom: usedAccounts.length ? 20 : 0,
         }}
       >
         Other connected accounts
       </div>
       {!usedAccounts.length && (
-        <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 52%, transparent)", paddingTop: 16, margin: 0 }}>
+        <p className="text-sm" style={{ color: "var(--color-neutral-700)", paddingTop: 16, margin: 0 }}>
           Any account connected for a category like Business Expenses (OPEX) or Savings will show up here, with its
           balance and how much has landed there this year.
         </p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {usedAccounts.map((acc) => (
-          <div key={acc.id} style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-bg)", padding: "18px 20px" }}>
+          <div key={acc.id} style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", padding: "18px 20px" }}>
             <div className="flex items-baseline gap-2.5 flex-wrap mb-1">
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name} {acc.account_name}</span>
-              <span className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 48%, transparent)" }}>•••• {acc.mask}</span>
+              <span className="text-xs" style={{ color: "var(--color-neutral-700)" }}>•••• {acc.mask}</span>
             </div>
             <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "12px 0 16px" }}>
               {acc.current_balance === null || acc.current_balance === undefined ? "—" : currency(acc.current_balance)}
             </div>
             <div className="space-y-1" style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 12 }}>
               {byAccount[acc.id].map((r) => (
-                <div key={r.id} className="flex justify-between gap-2 text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+                <div key={r.id} className="flex justify-between gap-2 text-xs" style={{ color: "var(--color-neutral-700)" }}>
                   <span className="truncate">{r.label}</span>
                   <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>{currency(ytdByLabel[r.label] || 0)} this year</span>
                 </div>
@@ -208,14 +208,22 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
   // dashboard will look like once accounts are linked and deposits split.
   return (
     <div className="space-y-6">
-      <Card style={ledgerAccentCardStyle({ padding: "clamp(26px, 3.5vw, 40px)" })}>
+      <Card
+        style={bloomAccentCardStyle({
+          padding: "clamp(26px, 3.5vw, 40px)",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--color-accent-800)",
+          border: "none",
+          color: "#fff",
+        })}
+      >
         <div
           style={{
             fontFamily: "var(--font-heading)",
             fontSize: 12,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            color: "var(--color-accent-700)",
+            color: "var(--color-accent-400)",
             marginBottom: 14,
           }}
         >
@@ -224,16 +232,17 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
         <div
           className="font-mono"
           style={{
-            fontSize: "clamp(38px, 6vw, 64px)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "clamp(40px, 6vw, 68px)",
             lineHeight: 1,
-            fontWeight: 700,
+            fontWeight: 800,
             letterSpacing: "-0.02em",
-            color: "var(--color-text)",
+            color: "#fff",
           }}
         >
           {currency(allTimeTotal)}
         </div>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 62%, transparent)", marginTop: 16 }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontStyle: "italic", color: "#fff", opacity: 0.85, marginTop: 16 }}>
           Every dollar PriorityPay has calculated and confirmed out of a deposit, ever.
         </div>
       </Card>
