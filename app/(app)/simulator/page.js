@@ -3,30 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import MoneySimulator from "@/components/MoneySimulator";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import { DEFAULT_SPLIT_RULES, isCoreRow } from "@/lib/allocations";
 import { toPercentRules, DEMO_GOALS } from "@/lib/simSharing";
 
-// Dashboard tab version -- unlike the public one under Resources (see
-// app/calculators/moneysimulator/), this seeds from the person's ACTUAL
-// split rules and last month's confirmed net income, not generic
-// defaults, so "what if" questions are answered against their real
-// numbers. Each real percent row keeps a reference to itself (`real`) so
-// applying a change back to Split Rules (see toPercentRules in
-// lib/simSharing.js) never loses an already-connected account -- only
-// pct/label can change here.
-//
-// "Add This Category to My Split" (see components/MoneySimulator.js) is
-// purely local -- it never touches real split rules. The only way
-// anything here becomes real is the bottom "Update my real split rules"
-// button, which opens a confirm-the-diff popup before writing.
-//
-// "Fixed" (tax obligations/business overhead, not a flexible goal-eligible
-// bucket) is matched on LABEL, not id -- simple_split_rules_percent.id is a
-// real Postgres uuid the moment a row is ever saved, not the semantic
-// "tax_reserve"/"opex" string DEFAULT_SPLIT_RULES uses before that first
-// save. Labels are what actually stay stable/comparable for a real,
-// already-onboarded person.
 const FIXED_LABELS = new Set(["Tax Reserve", "Business Expenses (OPEX)"]);
 
 function toSimRows(percent) {
@@ -41,9 +21,6 @@ function toSimRows(percent) {
   }));
 }
 
-// Compares the ORIGINAL fetched rows against whatever's about to be
-// applied -- by id, so a genuinely new row (added manually, or folded in
-// from a goal) shows as "new" rather than a change from nothing.
 function computeDiff(original, next) {
   const originalById = new Map(original.map((r) => [r.id, r]));
   const changes = [];
@@ -70,20 +47,9 @@ export default function MoneySimulatorDashboardPage() {
   useEffect(() => {
     (async () => {
       const rulesPromise = fetch("/api/split-rules").then((r) => r.json());
-      // Last month's net income only exists once that month's close-out
-      // has actually been confirmed (see simple_monthly_closeouts.net_income
-      // in supabase/schema.sql) -- checking /status first avoids silently
-      // triggering a fresh Plaid pull / draft close-out just to open this
-      // tab. If it isn't confirmed yet, income starts at 0 and stays fully
-      // editable -- no guess is better than a wrong one.
       const statusPromise = fetch("/api/closeout/status").then((r) => r.json());
 
       const [rulesRes, statusRes] = await Promise.all([rulesPromise, statusPromise]);
-      // Same fallback as Split Rules (app/(app)/splits/page.js): someone
-      // who never finished onboarding has zero rows saved yet. Seed the
-      // simulator with the same seven starting categories instead of an
-      // empty list, so there's always something real to try "what if"
-      // changes against.
       const savedPercent = rulesRes.splitRules?.percent;
       setRows(toSimRows(savedPercent && savedPercent.length ? savedPercent : DEFAULT_SPLIT_RULES.percent));
 
@@ -92,10 +58,6 @@ export default function MoneySimulatorDashboardPage() {
         try {
           const closeoutRes = await fetch(`/api/closeout/${statusRes.period}`).then((r) => r.json());
           if (typeof closeoutRes?.closeout?.net_income === "number") {
-            // Net income comes back as a raw numeric from Postgres, which
-            // can carry float noise (e.g. 4689.1844154...) -- cap to 2
-            // decimal places for a clean starting number in an input
-            // someone's about to edit anyway.
             setIncome(Math.round(closeoutRes.closeout.net_income * 100) / 100);
             setIncomeSource(`Pulled from your confirmed net income for ${statusRes.period}. Edit anytime.`);
             gotConfirmedIncome = true;
@@ -127,7 +89,7 @@ export default function MoneySimulatorDashboardPage() {
   };
 
   return (
-    <div className="max-w-4xl space-y-6" style={LEDGER_TOKENS}>
+    <div className="max-w-4xl space-y-6" style={BLOOM_TOKENS}>
       <div>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3.2vw, 32px)", fontWeight: 400, margin: "0 0 8px", lineHeight: 1.3 }}>
           Enter a financial goal and adjust split percentages to achieve it.
