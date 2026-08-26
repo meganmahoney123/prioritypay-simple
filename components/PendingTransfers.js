@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card, PrimaryButton, currency } from "./ui";
-import { ledgerAccentCardStyle } from "@/lib/ledgerTheme";
+import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { resolveBankLoginUrl } from "@/lib/bankLinks";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 
@@ -26,12 +26,12 @@ function TransferGroup({ transfer, accountsById, onConfirm, confirmingId }) {
   const done = allocations.filter((a) => a.status !== "needs_approval");
 
   return (
-    <Card className="p-5">
+    <Card className="p-5" style={{ borderRadius: 24 }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap" style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700 }}>
           {currency(transfer.source_amount)} deposit — split ready
         </div>
-        <div className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+        <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
           {new Date(transfer.created_at).toLocaleDateString("en-US", { dateStyle: "medium" })}
         </div>
       </div>
@@ -45,10 +45,10 @@ function TransferGroup({ transfer, accountsById, onConfirm, confirmingId }) {
               key={a.id}
               className="flex items-center justify-between gap-3 flex-wrap"
               style={{
-                padding: "10px 14px",
+                padding: "12px 16px",
                 border: "1px solid var(--color-divider)",
-                borderRadius: "var(--radius-md)",
-                background: "var(--color-bg)",
+                borderRadius: 18,
+                background: "var(--color-neutral-100)",
               }}
             >
               <div className="min-w-0">
@@ -58,22 +58,26 @@ function TransferGroup({ transfer, accountsById, onConfirm, confirmingId }) {
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5"
-                    style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", textDecoration: "none" }}
+                    style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", textDecoration: "none" }}
                   >
                     {a.label} — {currency(a.amount)}
                     <ExternalLink size={13} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
                   </a>
                 ) : (
-                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>
+                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700 }}>
                     {a.label} — {currency(a.amount)}
                   </div>
                 )}
-                <div className="text-xs truncate" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                <div className="text-xs truncate" style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>
                   {bankUrl ? "Click the amount to open " : "Send to "}
                   {accountLabel(destAccount)}
                 </div>
               </div>
-              <PrimaryButton onClick={() => onConfirm(a.id)} disabled={confirmingId === a.id} style={{ padding: "8px 16px", fontSize: 13 }}>
+              <PrimaryButton
+                onClick={() => onConfirm(a.id)}
+                disabled={confirmingId === a.id}
+                style={{ padding: "10px 20px", fontSize: 15, fontWeight: 700, borderRadius: 999 }}
+              >
                 {confirmingId === a.id ? "Marking…" : "I sent this"}
               </PrimaryButton>
             </div>
@@ -83,7 +87,7 @@ function TransferGroup({ transfer, accountsById, onConfirm, confirmingId }) {
           <div
             key={a.id}
             className="flex items-center gap-2 text-sm"
-            style={{ padding: "6px 14px", color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}
+            style={{ padding: "6px 16px", color: "var(--color-neutral-700)" }}
           >
             <CheckCircle2 size={15} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
             <span style={{ textDecoration: "line-through" }}>
@@ -120,11 +124,12 @@ export default function PendingTransfers({ transfers, accounts, onConfirmed }) {
 
   return (
     <div className="space-y-4">
-      <Card style={ledgerAccentCardStyle({ padding: "20px 24px" })}>
+      <Card style={bloomAccentCardStyle({ padding: "20px 24px", borderRadius: 24, background: "var(--color-accent-200)", border: "none" })}>
         <div
           style={{
             fontFamily: "var(--font-heading)",
             fontSize: 13,
+            fontWeight: 800,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: "var(--color-accent-700)",
@@ -133,7 +138,7 @@ export default function PendingTransfers({ transfers, accounts, onConfirmed }) {
         >
           Transfers waiting on you
         </div>
-        <p className="text-sm" style={{ margin: 0, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" }}>
+        <p className="text-sm" style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "var(--color-accent-800)" }}>
           PriorityPay calculated these splits but can&apos;t move the money yet — click an amount below to open that
           account&apos;s bank and send it yourself, then check it off. Once confirmed, it counts toward your totals
           below.
