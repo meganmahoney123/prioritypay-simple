@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Card, PrimaryButton } from "@/components/ui";
-import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS, bloomInputStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 
-// Schedule C's own line items (the ones Megan approved) -- grouping and
-// labels chosen to read naturally, not necessarily the IRS form's exact
-// wording. Field keys match app/api/business-financials/route.js's FIELDS.
 const EXPENSE_FIELDS = [
   { key: "advertising", label: "Advertising" },
   { key: "carAndTruck", label: "Car and truck expenses" },
@@ -57,7 +54,7 @@ function NumberField({ label, value, onChange }) {
           value={value === 0 ? "" : value}
           placeholder="0"
           onChange={(e) => onChange(e.target.value === "" ? 0 : Number(e.target.value))}
-          style={ledgerInputStyle({ fontSize: 15, padding: "9px 2px" })}
+          style={bloomInputStyle({ fontSize: 15, padding: "9px 2px" })}
         />
       </div>
     </div>
@@ -102,7 +99,7 @@ export default function BusinessFinancialsPage() {
   if (loading) return <p style={{ fontSize: 14, color: "var(--color-neutral-600)" }}>Loading...</p>;
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", ...LEDGER_TOKENS }}>
+    <div style={{ maxWidth: 760, margin: "0 auto", ...BLOOM_TOKENS }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Business Financials</h1>
         <p style={{ margin: 0, color: "var(--color-neutral-700)", fontSize: 15, lineHeight: 1.5 }}>
@@ -135,12 +132,45 @@ export default function BusinessFinancialsPage() {
         </div>
       </Card>
 
-      <Card style={{ padding: 24, marginBottom: 20, background: "var(--color-surface)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-heading)", fontSize: 18 }}>
+      <Card
+        style={bloomAccentCardStyle({
+          padding: "clamp(24px, 3.5vw, 36px)",
+          marginBottom: 20,
+          borderRadius: "var(--radius-lg)",
+          background: "var(--color-accent-800)",
+          border: "none",
+          color: "#fff",
+        })}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            fontFamily: "var(--font-heading)",
+            fontSize: 12,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: "var(--color-accent-400)",
+          }}
+        >
           <span>Net profit</span>
-          <span>{currency(netProfit)}</span>
         </div>
-        <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--color-neutral-600)" }}>
+        <div
+          className="font-mono"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "clamp(36px, 5.5vw, 56px)",
+            lineHeight: 1,
+            fontWeight: 800,
+            letterSpacing: "-0.02em",
+            color: "#fff",
+            marginTop: 14,
+          }}
+        >
+          {currency(netProfit)}
+        </div>
+        <p style={{ margin: "16px 0 0", fontSize: 13, color: "#fff", opacity: 0.85 }}>
           Gross receipts minus cost of goods sold minus total expenses ({currency(totalExpenses)}). This is the figure
           the assistant will use for entity comparisons, retirement room, and tax reserve sizing.
         </p>
