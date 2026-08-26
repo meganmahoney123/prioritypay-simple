@@ -28,36 +28,54 @@ export const CATEGORY_BLURBS = {
 // is bolded slightly heavier since it's the actionable center of the card.
 export function StrategyLine({ label, text, emphasize }) {
   if (!text) return null;
+  // Fixed 96px chip + sentence, two-column row (wraps to stacked on narrow
+  // widths) -- replaces the old tiny inline caps label, which read as part
+  // of the sentence rather than a distinct structural marker. Benefit gets
+  // its own green tint so it reads as a distinct, positive outcome; If/You
+  // could share the purple tint since they're both part of the same
+  // conditional-action framing.
+  const isBenefit = label === "The benefit";
   return (
-    <p
-      className="text-sm"
-      style={{
-        margin: "0 0 8px",
-        color: emphasize ? "var(--color-text)" : "color-mix(in srgb, var(--color-text) 80%, transparent)",
-      }}
-    >
+    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap", margin: "0 0 8px" }}>
       <span
         style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: 10.5,
-          letterSpacing: "0.08em",
+          flex: "0 0 96px",
+          width: 96,
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: "var(--color-accent-700)",
-          marginRight: 8,
+          borderRadius: 8,
+          padding: "4px 8px",
+          textAlign: "center",
+          color: isBenefit ? "#22684C" : "#4E22B8",
+          background: isBenefit ? "#E9F6EF" : "#F4EEFF",
         }}
       >
         {label}
       </span>
-      {text}
-    </p>
+      <p
+        className="text-sm"
+        style={{
+          flex: "1 1 220px",
+          minWidth: 0,
+          margin: 0,
+          fontSize: 17,
+          lineHeight: 1.6,
+          color: emphasize ? "#241634" : "color-mix(in srgb, var(--color-text) 82%, transparent)",
+        }}
+      >
+        {text}
+      </p>
+    </div>
   );
 }
 
 export function StrategyCard({ s }) {
   const [showScenario, setShowScenario] = useState(false);
   return (
-    <div style={{ borderTop: "1px solid var(--color-divider)", padding: "18px 0" }}>
-      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10 }}>{s.title}</div>
+    <div style={{ borderTop: "1px solid #F2ECFC", padding: "18px 0" }}>
+      <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 10 }}>{s.title}</div>
 
       <StrategyLine label="If" text={s.condition} />
       <StrategyLine label="You could" text={s.action} emphasize />
@@ -77,9 +95,9 @@ export function StrategyCard({ s }) {
               alignItems: "center",
               gap: 6,
               fontFamily: "var(--font-heading)",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--color-accent-700)",
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#6D3BE0",
             }}
             aria-expanded={showScenario}
           >
@@ -94,15 +112,15 @@ export function StrategyCard({ s }) {
               style={{
                 marginTop: 8,
                 padding: "12px 14px",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--color-neutral-200)",
+                borderRadius: 16,
+                background: "#FAF7FD",
                 border: "1px solid var(--color-divider)",
               }}
             >
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 6 }}>
                 Example
               </div>
-              <p className="text-sm" style={{ margin: "0 0 8px", color: "var(--color-text)" }}>
+              <p className="text-sm" style={{ margin: "0 0 8px", fontSize: 16, lineHeight: 1.6, color: "var(--color-text)" }}>
                 {s.scenario}
               </p>
               <p style={{ margin: 0, fontSize: 12, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
@@ -113,12 +131,16 @@ export function StrategyCard({ s }) {
         </div>
       )}
 
+      {/* Deliberately the quietest element on the card, per spec, while
+          still passing contrast -- same muted color/weight as the rest of
+          the page's meta text, no colored chip like the If/You could/
+          Benefit rows above. */}
       {s.notFinancialAdviceNote && (
-        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", flexShrink: 0, paddingTop: 1 }}>
+        <div style={{ display: "flex", gap: 14, marginTop: 4, flexWrap: "wrap" }}>
+          <span style={{ flex: "0 0 96px", width: 96, fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B5E7A", flexShrink: 0, paddingTop: 1 }}>
             Not advice
           </span>
-          <p style={{ margin: 0, fontSize: 12.5, fontStyle: "italic", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          <p style={{ flex: "1 1 220px", minWidth: 0, margin: 0, fontSize: 15, fontStyle: "italic", color: "#6B5E7A" }}>
             {s.notFinancialAdviceNote}
           </p>
         </div>
@@ -127,27 +149,61 @@ export function StrategyCard({ s }) {
   );
 }
 
-export function OptionButton({ selected, onClick, label }) {
+// `multi` distinguishes a checkbox-style mark (square, for select-all-that-
+// apply questions) from a radio-style mark (circle, for choose-one
+// questions) -- the redesign's fix for the old design giving no visible
+// selected state and no way to tell single- vs multi-select apart just by
+// looking at the options.
+export function OptionButton({ selected, onClick, label, multi }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={selected}
       style={{
-        display: "block",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
         width: "100%",
+        minHeight: 60,
         textAlign: "left",
-        padding: "14px 16px",
+        boxSizing: "border-box",
+        padding: "18px 20px",
         marginBottom: 10,
-        borderRadius: "var(--radius-md)",
-        border: selected ? "1px solid var(--color-accent)" : "1px solid var(--color-divider)",
-        background: selected ? "color-mix(in srgb, var(--color-accent) 12%, var(--color-neutral-100))" : "var(--color-neutral-100)",
+        borderRadius: 18,
+        border: selected ? "2px solid #6D3BE0" : "2px solid #E3D6FA",
+        background: selected ? "#F4EEFF" : "var(--color-surface, #fff)",
         color: "var(--color-text)",
         fontFamily: "var(--font-body)",
-        fontSize: 15,
+        fontSize: 17,
+        fontWeight: 600,
         cursor: "pointer",
+        transition: "border-color 140ms ease, background 140ms ease",
+      }}
+      onMouseEnter={(e) => {
+        if (!selected) e.currentTarget.style.borderColor = "#9A72F0";
+      }}
+      onMouseLeave={(e) => {
+        if (!selected) e.currentTarget.style.borderColor = "#E3D6FA";
       }}
     >
-      <span style={{ marginRight: 10 }}>{selected ? "◉" : "○"}</span>
+      <span
+        style={{
+          flexShrink: 0,
+          width: 24,
+          height: 24,
+          borderRadius: multi ? 8 : "50%",
+          border: selected ? "2px solid #6D3BE0" : "2px solid #D9C9FF",
+          background: selected ? "#6D3BE0" : "transparent",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {selected && (
+          <span style={{ color: "#fff", fontSize: 14, fontWeight: 800, lineHeight: 1 }}>✓</span>
+        )}
+      </span>
       {label}
     </button>
   );

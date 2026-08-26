@@ -3,21 +3,10 @@
 import { useMemo, useState } from "react";
 import { Plus, Trash2, ArrowRight } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { ledgerInputStyle } from "@/lib/ledgerTheme";
+import { bloomInputStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { CATEGORY_COLORS } from "@/lib/allocations";
 
-// Shared by both places the Money Simulator lives:
-//   - app/(app)/simulator/page.js -- the dashboard tab, seeded from a
-//     signed-in person's REAL split rules and last month's confirmed net
-//     income (see that file for the fetch/mapping)
-//   - app/calculators/moneysimulator/MoneySimulatorPublicClient.js -- the
-//     public, logged-out-friendly version under Resources, seeded from
-//     PriorityPay Simple's generic suggested categories
-// This file only knows about the math and the UI -- it has no idea which
-// context it's in. The two callbacks (onStartSavingForGoal/onSetUpReal)
-// are how each caller decides what "make this real" actually does: the
-// public version sends someone to /signup, the dashboard version sends
-// them to their real /splits.
+const BLOOM_DOT_COLORS = ["#D9C9FF", "#C4A9FA", "#9A72F0", "#6D3BE0", "#4E22B8", "#3B1C7A", "#2A1550"];
 
 export function monthsUntil(dateStr) {
   if (!dateStr) return 1;
@@ -51,10 +40,6 @@ export default function MoneySimulator({
   const remainingPct = Math.round((100 - totalPct) * 10) / 10;
 
   const updateRow = (id, patch) => setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  // Neither field is allowed to push the total past 100% -- a row's max
-  // is whatever's left once every OTHER row's percentage is accounted
-  // for, so raising one number never silently overdraws the rest of the
-  // split.
   const maxPctForRow = (id) => {
     const otherTotal = rows.filter((r) => r.id !== id).reduce((s, r) => s + (Number(r.pct) || 0), 0);
     return Math.max(0, Math.round((100 - otherTotal) * 100) / 100);
@@ -63,12 +48,6 @@ export default function MoneySimulator({
     const requested = Math.max(0, Number(rawValue) || 0);
     updateRow(id, { pct: Math.min(requested, maxPctForRow(id)) });
   };
-  // Dollar amount is always derived from income * pct -- pct stays the
-  // single source of truth in state (that's what actually gets saved to
-  // real split rules). Editing the dollar field just back-solves for the
-  // pct that produces it, so typing a target amount and typing a
-  // percentage land on the same number either way, and both respect the
-  // same 100%-total ceiling.
   const updateRowDollar = (id, dollarValue) => {
     const dollar = Math.max(0, Number(dollarValue) || 0);
     const requestedPct = income > 0 ? Math.round((dollar / income) * 10000) / 100 : 0;
@@ -85,11 +64,6 @@ export default function MoneySimulator({
     setGoals((prev) => [...prev, { id: `goal_${Date.now()}`, name: "New goal", type: "goal", target: 5000, date: defaultGoalDate(), monthlyAmount: 500 }]);
   const updateGoal = (id, patch) => setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   const removeGoal = (id) => setGoals((prev) => prev.filter((g) => g.id !== id));
-  // Switching a goal's type also renames it IF it's still sitting on a
-  // generic/example name nobody typed themselves -- otherwise the "Wedding"
-  // demo goal could get flipped to a recurring cost and stay labeled
-  // "Wedding," which reads as a mismatch. A name someone actually typed in
-  // is always left alone.
   const GENERIC_GOAL_NAMES = new Set(["New goal", "Wedding", "Mortgage"]);
   const switchGoalType = (goal, type) => {
     const patch = { type };
@@ -100,18 +74,16 @@ export default function MoneySimulator({
   const monthlyNeededFor = (goal) =>
     goal.type === "recurring" ? Number(goal.monthlyAmount || 0) : goal.target / monthsUntil(goal.date);
 
-  // "Add This Category to My Split" is purely local -- it folds the goal
-  // into "Your split" below so someone can see how it fits alongside
-  // everything else. Nothing becomes real (no write to actual split
-  // rules, no navigation) until the separate bottom CTA is used.
   const addGoalToSplit = (goal) => {
     const monthlyNeeded = monthlyNeededFor(goal);
     const pct = income > 0 ? Math.round((monthlyNeeded / income) * 1000) / 10 : 0;
-    const goalRow = { id: `custom_${Date.now()}`, label: goal.name, pct, fixed: false, color: "#b68235", custom: true };
+    const goalRow = { id: `custom_${Date.now()}`, label: goal.name, pct, fixed: false, color: "#6D3BE0", custom: true };
     setRows((prev) => [...prev, goalRow]);
   };
 
   const setUpReal = () => onSetUpReal?.(rows);
+
+  const dotColorFor = (id) => BLOOM_DOT_COLORS[Math.max(0, rows.findIndex((r) => r.id === id)) % BLOOM_DOT_COLORS.length];
 
   return (
     <div className="space-y-6">
@@ -121,11 +93,12 @@ export default function MoneySimulator({
           <span style={{ fontFamily: "var(--font-heading)", fontSize: 22, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             min={0}
             step={0.01}
             value={income}
             onChange={(e) => setIncome(Math.max(0, Math.round((Number(e.target.value) || 0) * 100) / 100))}
-            style={ledgerInputStyle({ width: 130, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600 })}
+            style={bloomInputStyle({ width: 130, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600 })}
           />
         </span>
         <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>/ month</span>
@@ -139,26 +112,53 @@ export default function MoneySimulator({
       <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Your split</span>
-            <span className="text-sm" style={{ color: remainingPct < 0 ? "#7a2f2a" : "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800 }}>Your split</span>
+            <span
+              className="text-sm"
+              style={{
+                fontWeight: 700,
+                color: remainingPct < 0 ? "#7a2f2a" : "var(--color-accent-700)",
+                background: remainingPct < 0 ? "color-mix(in srgb, #9b3b3b 10%, transparent)" : "var(--color-accent-100)",
+                borderRadius: 999,
+                padding: "4px 12px",
+              }}
+            >
               {totalPct}% allocated &middot; {remainingPct}% unallocated
             </span>
           </div>
+          <div style={{ display: "flex", gap: 2, height: 12, borderRadius: 999, background: "var(--color-divider)", overflow: "hidden", marginBottom: 14 }}>
+            {rows
+              .filter((r) => r.pct > 0)
+              .map((r) => (
+                <span key={r.id} style={{ width: `${r.pct}%`, background: dotColorFor(r.id), minWidth: 2 }} />
+              ))}
+          </div>
           <div className="space-y-2.5">
             {rows.map((r) => (
-              <Card key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: r.color, flex: "none" }} />
+              <Card key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", flexWrap: "wrap" }}>
+                <span style={{ width: 12, height: 12, borderRadius: "50%", background: dotColorFor(r.id), flex: "none" }} />
                 {r.custom ? (
                   <input
                     value={r.label}
                     onChange={(e) => updateRow(r.id, { label: e.target.value })}
-                    style={ledgerInputStyle({ flex: 1, minWidth: 0, fontSize: 15 })}
+                    style={bloomInputStyle({ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700 })}
                   />
                 ) : (
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 15 }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
                     {r.label}
                     {r.fixed && (
-                      <span style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)", marginLeft: 8 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: "var(--color-accent-700)",
+                          background: "var(--color-accent-200)",
+                          borderRadius: 999,
+                          padding: "2px 8px",
+                        }}
+                      >
                         fixed
                       </span>
                     )}
@@ -166,23 +166,25 @@ export default function MoneySimulator({
                 )}
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={Math.round((r.pct + maxPctForRow(r.id)) * 100) / 100}
                   step={0.1}
                   value={r.pct}
                   onChange={(e) => updatePct(r.id, e.target.value)}
-                  style={ledgerInputStyle({ width: 56, textAlign: "right", fontFamily: "var(--font-heading)", fontSize: 16 })}
+                  style={bloomInputStyle({ width: 76, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
                 />
                 <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>%</span>
                 <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={income > 0 ? Math.round(((income * (r.pct + maxPctForRow(r.id))) / 100) * 100) / 100 : undefined}
                   step={0.01}
                   value={Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
                   onChange={(e) => updateRowDollar(r.id, e.target.value)}
-                  style={ledgerInputStyle({ width: 84, textAlign: "right", fontFamily: "var(--font-heading)", fontSize: 16 })}
+                  style={bloomInputStyle({ width: 110, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
                 />
                 {r.custom ? (
                   <button onClick={() => removeRow(r.id)} aria-label="Remove category" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
@@ -220,7 +222,7 @@ export default function MoneySimulator({
                     <input
                       value={g.name}
                       onChange={(e) => updateGoal(g.id, { name: e.target.value })}
-                      style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 600, maxWidth: 140 })}
+                      style={bloomInputStyle({ fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 600, maxWidth: 140 })}
                     />
                     <button onClick={() => removeGoal(g.id)} aria-label="Remove goal" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
                       <Trash2 size={15} />
@@ -266,11 +268,12 @@ export default function MoneySimulator({
                         Monthly amount $
                         <input
                           type="number"
+                          onFocus={(e) => e.target.select()}
                           min={0}
                           step={50}
                           value={g.monthlyAmount ?? 0}
                           onChange={(e) => updateGoal(g.id, { monthlyAmount: Math.max(0, Number(e.target.value) || 0) })}
-                          style={ledgerInputStyle({ width: 110, fontFamily: "var(--font-heading)", fontSize: 15 })}
+                          style={bloomInputStyle({ width: 110, fontFamily: "var(--font-heading)", fontSize: 15 })}
                         />
                       </label>
                     </div>
@@ -280,11 +283,12 @@ export default function MoneySimulator({
                         Target $
                         <input
                           type="number"
+                          onFocus={(e) => e.target.select()}
                           min={0}
                           step={100}
                           value={g.target}
                           onChange={(e) => updateGoal(g.id, { target: Math.max(0, Number(e.target.value) || 0) })}
-                          style={ledgerInputStyle({ width: 100, fontFamily: "var(--font-heading)", fontSize: 15 })}
+                          style={bloomInputStyle({ width: 100, fontFamily: "var(--font-heading)", fontSize: 15 })}
                         />
                       </label>
                       <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
@@ -293,26 +297,44 @@ export default function MoneySimulator({
                           type="month"
                           value={g.date}
                           onChange={(e) => updateGoal(g.id, { date: e.target.value })}
-                          style={ledgerInputStyle({ fontSize: 13 })}
+                          style={bloomInputStyle({ fontSize: 13 })}
                         />
                       </label>
                     </div>
                   )}
 
-                  <ul style={{ fontSize: 13.5, lineHeight: 1.8, margin: "0 0 2px", paddingLeft: 18 }}>
-                    {isRecurring ? (
-                      <li>Recurring monthly cost</li>
-                    ) : (
-                      <li>{months} months away</li>
-                    )}
-                    <li>
-                      <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>{currency(monthlyNeeded)}</strong>/mo{!isRecurring && " needed"}
-                    </li>
-                    <li>{Math.round(pctOfIncome * 10) / 10}% of total income</li>
-                  </ul>
-                  <p className="text-xs mt-1.5" style={{ color: fits ? "color-mix(in srgb, var(--color-text) 55%, transparent)" : "#7a2f2a" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, margin: "0 0 10px" }}>
+                    <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{isRecurring ? "—" : months}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
+                        {isRecurring ? "recurring" : "months away"}
+                      </div>
+                    </div>
+                    <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{currency(monthlyNeeded)}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
+                        needed / mo
+                      </div>
+                    </div>
+                    <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{Math.round(pctOfIncome * 10) / 10}%</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
+                        of income
+                      </div>
+                    </div>
+                  </div>
+                  <p
+                    className="text-xs mt-1.5"
+                    style={{
+                      fontWeight: 600,
+                      borderRadius: "var(--radius-sm)",
+                      padding: "10px 12px",
+                      color: fits ? "#22684C" : "#9C3B22",
+                      background: fits ? "color-mix(in srgb, #22684C 10%, transparent)" : "color-mix(in srgb, #9C3B22 8%, transparent)",
+                    }}
+                  >
                     {fits
-                      ? `Fits within your ${remainingPct}% unallocated.`
+                      ? `Fits with ${remainingPct}% of income to spare. Add it as a category to lock it in.`
                       : isRecurring
                       ? `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Lower the monthly amount, raise income, or free up room.`
                       : `Short by ${Math.round((pctOfIncome - remainingPct) * 10) / 10}%. Extend the date, raise income, or free up room.`}
@@ -336,13 +358,13 @@ export default function MoneySimulator({
         </div>
       </div>
 
-      <Card style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "18px 22px" }}>
-        <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+      <Card style={bloomAccentCardStyle({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "18px 22px" })}>
+        <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-accent-800) 76%, transparent)" }}>
           {secondaryCtaHelp}
         </p>
-        <GhostButton onClick={setUpReal}>
+        <PrimaryButton onClick={setUpReal} style={{ borderRadius: "var(--radius-pill)" }}>
           {secondaryCtaLabel} <ArrowRight size={14} />
-        </GhostButton>
+        </PrimaryButton>
       </Card>
     </div>
   );

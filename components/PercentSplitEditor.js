@@ -1,28 +1,43 @@
 "use client";
 
+import { useState } from "react";
 import { Plus, Trash2, AlertTriangle, Pencil, Link2 } from "lucide-react";
 import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
-import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SUBTEXT, isCoreRow } from "@/lib/allocations";
+import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SUBTEXT, isCoreRow, roundPct } from "@/lib/allocations";
+
+// Purple ramp used for each row's colour dot in the Bloom-styled ("ledger"
+// theme prop) editor -- replaces the old per-row hex values from
+// CATEGORY_COLORS (still used unchanged by lib/allocations.js and any
+// not-yet-restyled surface) with a fixed purple progression assigned by a
+// row's position, so restyling this component never has to touch that
+// shared data file.
+const BLOOM_DOT_COLORS = ["#D9C9FF", "#C4A9FA", "#9A72F0", "#6D3BE0", "#4E22B8", "#3B1C7A", "#2A1550"];
 
 // A single optional dollar cap control -- rendered twice per flat row (see
 // PercentRow below), once for the monthly cap and once for the account-
 // balance cap (see computeAllocations in lib/allocations.js for how each
-// actually behaves once set). Deliberately NOT a free-typed "0 means no
-// cap" input: the dropdown is the only way to clear a cap back to "None",
-// and once "Set a limit" is chosen the number field can never go below $1
-// -- so a saved cap value is always either exactly `null` (no cap) or a
-// real positive dollar amount, never 0 or an ambiguous empty string.
+// actually behaves once set). The dropdown is the only way to clear a cap
+// back to "None". Picking "Set a limit" starts the number field EMPTY
+// (rather than pre-filled with a "1" someone has to notice and delete
+// before they can type their own number) -- the field only ever accepts
+// numbers greater than 0 while typing, and settles back to the $1 floor
+// on blur if it's left empty, so whatever actually gets saved is still
+// always either exactly `null` (no cap) or a real positive dollar amount
+// (see settleCaps in lib/allocations.js, which enforces this one more
+// time right before anything is sent to the server, in case a value is
+// still mid-edit at that moment).
 function CapField({ label, hint, value, onChange, theme }) {
-  const isSet = value !== null && value !== undefined && value !== "";
+  const isSet = value !== null && value !== undefined;
   const clamp = (raw) => {
     if (raw === "") return "";
     const n = Number(raw);
     return Number.isFinite(n) && n > 0 ? n : 1;
   };
   const settle = (raw) => {
+    if (raw === "") return 1;
     const n = Number(raw);
     return !raw || !Number.isFinite(n) || n <= 0 ? 1 : n;
   };
@@ -36,7 +51,7 @@ function CapField({ label, hint, value, onChange, theme }) {
         <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <select
             value={isSet ? "set" : "none"}
-            onChange={(e) => onChange(e.target.value === "none" ? null : 1)}
+            onChange={(e) => onChange(e.target.value === "none" ? null : "")}
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 13,
@@ -56,6 +71,7 @@ function CapField({ label, hint, value, onChange, theme }) {
               <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
               <input
                 type="number"
+                onFocus={(e) => e.target.select()}
                 min={1}
                 step={1}
                 value={value}
@@ -85,7 +101,7 @@ function CapField({ label, hint, value, onChange, theme }) {
       <span className="text-xs text-neutral-500">{label} ({hint})</span>
       <select
         value={isSet ? "set" : "none"}
-        onChange={(e) => onChange(e.target.value === "none" ? null : 1)}
+        onChange={(e) => onChange(e.target.value === "none" ? null : "")}
         className="text-xs border border-neutral-200 rounded-lg px-1.5 py-1 ml-auto"
       >
         <option value="none">None</option>
@@ -96,6 +112,7 @@ function CapField({ label, hint, value, onChange, theme }) {
           <span className="text-xs text-neutral-500">$</span>
           <input
             type="number"
+            onFocus={(e) => e.target.select()}
             min={1}
             step={1}
             value={value}
@@ -122,7 +139,7 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, theme }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor }) {
   const locked = isCoreRow(rule);
   // Cap $ (a monthly dollar cap -- see computeAllocations in
   // lib/allocations.js) only applies to flat categories (Tax Reserve,
@@ -131,19 +148,25 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // meant to keep receiving their full percentage indefinitely, not stop
   // once some dollar figure is hit.
   const isGrouped = rule.group === "Investments" || rule.group === "Retirement";
+  // Collapsed by default (Onboarding Pass 2, Aug 2026 handoff) -- caps are
+  // an edge case most people never touch, so hiding them behind a toggle
+  // is the main density fix for this step. Local to each row's own render
+  // rather than lifted to the parent, since nothing outside this row ever
+  // needs to know whether its caps panel happens to be open.
+  const [showLimits, setShowLimits] = useState(false);
 
   if (theme === "ledger") {
     return (
-      <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-bg)", padding: "18px 20px" }}>
+      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
           {locked ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: "var(--font-heading)", fontSize: 19 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-accent)", flexShrink: 0 }} />
+            <span style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 700 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor || "var(--color-accent)", flexShrink: 0 }} />
               {rule.label}
             </span>
           ) : (
             <span style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-accent)", flexShrink: 0 }} />
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor || "var(--color-accent)", flexShrink: 0 }} />
               <input
                 value={rule.label}
                 onChange={(e) => onUpdate(rule.id, { label: e.target.value })}
@@ -151,86 +174,149 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 style={{
                   flex: 1,
                   minWidth: 0,
-                  fontFamily: "var(--font-heading)",
-                  fontSize: 19,
+                  fontFamily: "var(--font-body)",
+                  fontSize: 16,
                   color: "var(--color-text)",
-                  background: "transparent",
-                  border: 0,
-                  borderBottom: "1px solid var(--color-divider)",
-                  borderRadius: 0,
-                  padding: "3px 2px",
+                  background: "var(--color-neutral-100)",
+                  border: "1px solid var(--color-neutral-300)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "9px 12px",
                 }}
               />
             </span>
           )}
-          <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              value={rule.pct}
-              onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
+          <span style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            <span
               style={{
-                width: 62,
-                textAlign: "right",
-                fontFamily: "var(--font-heading)",
-                fontSize: 19,
-                color: "var(--color-text)",
-                background: "transparent",
-                border: 0,
-                borderBottom: "1px solid var(--color-divider)",
-                padding: "4px 4px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 2,
+                background: "#F4EEFF",
+                borderRadius: "var(--radius-pill)",
+                padding: "6px 6px 6px 14px",
               }}
-            />
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>%</span>
+            >
+              <input
+                type="number"
+                onFocus={(e) => e.target.select()}
+                min={0}
+                max={100}
+                value={rule.pct}
+                onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
+                style={{
+                  width: 40,
+                  textAlign: "right",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "#4E22B8",
+                  background: "transparent",
+                  border: 0,
+                  padding: "4px 2px",
+                }}
+              />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "#4E22B8" }}>%</span>
+            </span>
             {!locked && (
               <button
                 onClick={() => onRemove(rule.id)}
                 title="Delete category"
-                style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "color-mix(in srgb, var(--color-text) 45%, transparent)", padding: 4 }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "var(--color-neutral-100)",
+                  border: "1px solid var(--color-divider)",
+                  cursor: "pointer",
+                  color: "var(--color-neutral-700)",
+                  padding: 0,
+                  flexShrink: 0,
+                }}
               >
-                <Trash2 size={15} />
+                <Trash2 size={16} />
               </button>
             )}
           </span>
         </div>
-        {(rule.retirementType || rule.group === "Retirement") && <RetirementNote label={rule.label} theme="ledger" />}
-        {!isGrouped && (
-          <>
-            <CapField
-              label="Monthly Cap $"
-              hint="resets automatically each month"
-              value={rule.max}
-              onChange={(v) => onUpdate(rule.id, { max: v })}
-              theme="ledger"
-            />
-            <CapField
-              label="Account Total Cap $"
-              hint="based on the connected account's balance"
-              value={rule.balanceCap}
-              onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
-              theme="ledger"
-            />
-          </>
+        {overflowMessage && (
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: "#9C3B22", margin: "8px 0 0" }}>{overflowMessage}</p>
         )}
+        {(rule.retirementType || rule.group === "Retirement") && <RetirementNote label={rule.label} theme="ledger" />}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--color-accent-700)", margin: "10px 0 0" }}>
+          <p
+            style={{
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "#9C3B22",
+              background: "#FBEEEA",
+              border: "1px solid #F0C9C0",
+              borderRadius: "var(--radius-sm)",
+              padding: "10px 12px",
+              margin: "10px 0 0",
+            }}
+          >
             No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
             checklist.
           </p>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
-          <AccountSelect
-            value={rule.accountId}
-            onChange={(v) => onUpdate(rule.id, { accountId: v })}
-            accounts={accounts}
-            onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
-            onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
-            recommendCreate={false}
-            excludeSubtypes={rule.group === "Investments" ? ["checking"] : undefined}
-            theme="ledger"
-          />
+        <div style={{ marginTop: 12 }}>
+          <span style={{ display: "block", fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 6 }}>
+            I want to route my money to this account:
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <AccountSelect
+              value={rule.accountId}
+              onChange={(v) => onUpdate(rule.id, { accountId: v })}
+              accounts={accounts}
+              onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
+              onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
+              recommendCreate={false}
+              excludeSubtypes={rule.group === "Investments" ? ["checking"] : undefined}
+              theme="ledger"
+            />
+          </div>
         </div>
+        {!isGrouped && (
+          <div style={{ marginTop: 4 }}>
+            <button
+              type="button"
+              onClick={() => setShowLimits((v) => !v)}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 600,
+                fontSize: 13,
+                color: "var(--color-accent)",
+                background: "transparent",
+                border: 0,
+                padding: "10px 0 0",
+                cursor: "pointer",
+              }}
+            >
+              {showLimits ? "Hide limits" : "Add monthly or total limits"}
+            </button>
+            {showLimits && (
+              <div style={{ marginTop: 8, background: "#FAF7FD", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
+                <CapField
+                  label="Monthly Cap $"
+                  hint="resets automatically each month"
+                  value={rule.max}
+                  onChange={(v) => onUpdate(rule.id, { max: v })}
+                  theme="ledger"
+                />
+                <CapField
+                  label="Account Total Cap $"
+                  hint="based on the connected account's balance"
+                  value={rule.balanceCap}
+                  onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
+                  theme="ledger"
+                />
+              </div>
+            )}
+          </div>
+        )}
         {connecting[rule.id] && (
           <div style={{ marginTop: 10 }}>
             <PlaidLinkButton
@@ -250,7 +336,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 color: "var(--color-accent)",
                 background: "transparent",
                 border: "1px solid var(--color-accent)",
-                borderRadius: "var(--radius-md)",
+                borderRadius: "var(--radius-pill)",
                 padding: "9px 18px",
               }}
             />
@@ -292,6 +378,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
         <input
           type="number"
+          onFocus={(e) => e.target.select()}
           min={0}
           max={100}
           value={rule.pct}
@@ -305,6 +392,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           </button>
         )}
       </div>
+      {overflowMessage && <p className="text-xs text-red-700 mt-1">{overflowMessage}</p>}
       {rule.retirementType || rule.group === "Retirement" ? <RetirementNote label={rule.label} /> : null}
       {!isGrouped && (
         <>
@@ -323,6 +411,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         </>
       )}
       <div className="mt-2">
+        <span className="block text-xs text-neutral-500 mb-1">I want to route my money to this account:</span>
         <AccountSelect
           value={rule.accountId}
           onChange={(v) => onUpdate(rule.id, { accountId: v })}
@@ -404,36 +493,66 @@ export default function PercentSplitEditor({
   connecting,
   setConnecting,
   showRowWarnings = true,
+  // Optional -- when passed, renders a bold "Allocated" total right under
+  // "What's a cap?" in addition to the detailed summary at the bottom of
+  // the editor (see app/onboarding/page.js and app/(app)/splits/page.js,
+  // which both already compute this same number). Omitted entirely if the
+  // caller doesn't pass it, rather than recomputing it here, so this stays
+  // in sync with whatever `percent` state the caller is authoritative for.
+  totalPct,
+  // Optional -- { id, message } for the one row currently showing an
+  // "over 100%" warning (see updatePercent in app/onboarding/page.js and
+  // app/(app)/splits/page.js, which set this the moment a typed
+  // percentage would have been clamped).
+  pctOverflow,
   theme,
+  // Onboarding Pass 2 (Aug 2026 handoff) folds this same cap explanation
+  // into a page-level "How splits work" panel above the whole editor, so
+  // the caller can suppress this component's own copy of it here rather
+  // than showing the same explanation twice. Defaults to false so Split
+  // Rules (which has no such page-level panel) keeps this disclosure.
+  hideCapDetails = false,
 }) {
+  const overflowMessageFor = (id) => (pctOverflow && pctOverflow.id === id ? pctOverflow.message : null);
+
   if (theme === "ledger") {
+    // Global row order (across every group and flat row) so each row's
+    // colour dot can be assigned a purple-ramp shade by position -- see
+    // BLOOM_DOT_COLORS above. Purely presentational; doesn't affect which
+    // row is which.
+    const orderedRowIds = percentSections(percent).flatMap((s) => (s.type === "group" ? s.rows.map((r) => r.id) : [s.row.id]));
+    const dotColorFor = (id) => BLOOM_DOT_COLORS[Math.max(0, orderedRowIds.indexOf(id)) % BLOOM_DOT_COLORS.length];
     return (
       <div style={{ display: "grid", gap: 18 }}>
+        {!hideCapDetails && (
         <details
           className="pp-cap-details"
           style={{
-            fontFamily: "var(--font-heading)",
-            color: "color-mix(in srgb, var(--color-text) 66%, transparent)",
-            borderLeft: "1px solid var(--color-accent-300)",
-            paddingLeft: 16,
+            fontFamily: "var(--font-body)",
+            color: "var(--color-text)",
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-divider)",
+            borderRadius: "var(--radius-md)",
+            padding: "16px 20px",
             margin: 0,
-            maxWidth: "40em",
           }}
         >
           <summary
             style={{
-              fontSize: 14,
+              fontSize: 16,
+              fontWeight: 700,
               display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
               gap: 6,
             }}
           >
-            <span className="pp-cap-chevron" style={{ display: "inline-block", transition: "transform 0.15s ease" }}>
-              &#9656;
-            </span>
             What&apos;s a cap?
+            <span className="pp-cap-chevron" style={{ display: "inline-block", transition: "transform 0.15s ease", fontWeight: 400 }}>
+              +
+            </span>
           </summary>
-          <p style={{ fontSize: 14, lineHeight: 1.7, margin: "8px 0 0" }}>
+          <p style={{ fontSize: 16, lineHeight: 1.7, margin: "12px 0 0" }}>
             Any category below other than Investments or Retirement can have up to two optional caps. A{" "}
             <strong>Monthly Cap</strong> limits how many dollars a category can receive from your deposits in a
             given calendar month. Once it&apos;s hit, that category drops to 0% for the rest of the month and
@@ -444,11 +563,22 @@ export default function PercentSplitEditor({
             across your other categories instead of going unused.
           </p>
         </details>
+        )}
+        {typeof totalPct === "number" && (
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20 }}>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              Allocated
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: 30, color: "#4E22B8", fontVariantNumeric: "lining-nums tabular-nums" }}>
+              {totalPct}%
+            </span>
+          </div>
+        )}
         {percentSections(percent).map((section) =>
           section.type === "group" ? (
             <div
               key={section.group}
-              style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "color-mix(in srgb, var(--color-accent) 4%, transparent)", overflow: "hidden" }}
+              style={{ border: "1px solid #D9C9FF", borderRadius: 24, background: "#F7F3FF", overflow: "hidden" }}
             >
               <div
                 style={{
@@ -457,14 +587,14 @@ export default function PercentSplitEditor({
                   justifyContent: "space-between",
                   gap: 20,
                   padding: "16px 22px",
-                  borderBottom: "1px solid var(--color-accent-300)",
-                  background: "color-mix(in srgb, var(--color-accent) 7%, transparent)",
+                  borderBottom: "1px solid #D9C9FF",
+                  background: "#EDE6FF",
                 }}
               >
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: "#4E22B8" }}>
                   {section.group}
                 </span>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, letterSpacing: "0.06em", color: "var(--color-accent-700)", fontVariantNumeric: "lining-nums tabular-nums" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "#4E22B8", fontVariantNumeric: "lining-nums tabular-nums" }}>
                   {groupPctTotal(section.rows)}% total
                 </span>
               </div>
@@ -488,7 +618,9 @@ export default function PercentSplitEditor({
                       setConnecting={setConnecting}
                       onAccountLinked={onAccountLinked}
                       showRowWarnings={showRowWarnings}
+                      overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
+                      dotColor={dotColorFor(rule.id)}
                     />
                   ))}
                 </div>
@@ -499,14 +631,14 @@ export default function PercentSplitEditor({
                     width: "100%",
                     marginTop: 16,
                     background: "transparent",
-                    border: "1px dashed var(--color-accent-300)",
-                    borderRadius: "var(--radius-md)",
+                    border: "1px dashed #C4A9FA",
+                    borderRadius: 18,
                     padding: "11px 16px",
                     cursor: "pointer",
                     fontFamily: "var(--font-heading)",
-                    fontSize: 14,
-                    letterSpacing: "0.04em",
-                    color: "var(--color-accent-700)",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: "#4E22B8",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -527,14 +659,16 @@ export default function PercentSplitEditor({
               setConnecting={setConnecting}
               onAccountLinked={onAccountLinked}
               showRowWarnings={showRowWarnings}
+              overflowMessage={overflowMessageFor(section.row.id)}
               theme="ledger"
+              dotColor={dotColorFor(section.row.id)}
             />
           )
         )}
         <style jsx>{`
           .pp-ledger-add:hover {
-            border-color: var(--color-accent);
-            background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+            border-color: #4E22B8;
+            background: #F4EEFF;
           }
           .pp-cap-details summary {
             list-style: none;
@@ -547,7 +681,7 @@ export default function PercentSplitEditor({
             content: "";
           }
           .pp-cap-details[open] .pp-cap-chevron {
-            transform: rotate(90deg);
+            transform: rotate(45deg);
           }
         `}</style>
       </div>
@@ -568,6 +702,12 @@ export default function PercentSplitEditor({
           proportionally across your other categories instead of going unused.
         </p>
       </details>
+      {typeof totalPct === "number" && (
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Allocated</span>
+          <span className="text-3xl font-bold text-emerald-700 font-mono">{totalPct}%</span>
+        </div>
+      )}
       {percentSections(percent).map((section) =>
         section.type === "group" ? (
           <div key={section.group} className="border border-neutral-200 rounded-xl p-3 bg-neutral-50">
@@ -592,6 +732,7 @@ export default function PercentSplitEditor({
                   setConnecting={setConnecting}
                   onAccountLinked={onAccountLinked}
                   showRowWarnings={showRowWarnings}
+                  overflowMessage={overflowMessageFor(rule.id)}
                 />
               ))}
             </div>
@@ -615,6 +756,7 @@ export default function PercentSplitEditor({
             setConnecting={setConnecting}
             onAccountLinked={onAccountLinked}
             showRowWarnings={showRowWarnings}
+            overflowMessage={overflowMessageFor(section.row.id)}
           />
         )
       )}

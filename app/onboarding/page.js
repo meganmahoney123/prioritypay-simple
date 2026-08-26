@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
-import { LEDGER_TOKENS, ledgerInputStyle } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
+import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
 
 // Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
@@ -36,7 +37,7 @@ const ONBOARDING_LIVE = true;
 // opt into the same look via a `theme="ledger"` prop rather than being
 // forked, so the standalone Split Rules page (which reuses several of the
 // same components) keeps its original appearance untouched.
-const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Review"];
+const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Deposit Alerts", "Review"];
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -110,12 +111,13 @@ function OnboardingPageInner() {
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
-  // $100 is a hard floor (see PHASE I, supabase/schema.sql) -- enforced
+  // $50 is a hard floor (see PHASE N, supabase/schema.sql) -- enforced
   // both here (input can't go below it) and again server-side in
   // app/api/onboarding/complete, so it can't be bypassed by editing the
   // request directly. Below this amount, an automatic deposit is skipped
-  // entirely rather than triggering a checklist for a few dollars.
-  const MIN_DEPOSIT_THRESHOLD_FLOOR = 100;
+  // entirely rather than triggering a checklist for a few dollars. Lowered
+  // from the original $100 floor since some clients pay as little as $50.
+  const MIN_DEPOSIT_THRESHOLD_FLOOR = 50;
   const [minDepositThreshold, setMinDepositThreshold] = useState(MIN_DEPOSIT_THRESHOLD_FLOOR);
   // Deposit text alerts default to on (see PHASE M, supabase/schema.sql --
   // sms_notifications_enabled defaults true at the DB level for every new
@@ -140,6 +142,49 @@ function OnboardingPageInner() {
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  // Stripe Checkout is a real off-domain redirect, so the whole page
+  // (and every bit of the state above) reloads from scratch by the time
+  // someone's back -- everything they entered was already saved
+  // server-side via /api/onboarding/complete (finalize: false) right
+  // before they left, so nothing here needs to be restored, just the
+  // Review step needs to jump straight to confirming the payment instead
+  // of starting over from Welcome. See finish() below for the send-off
+  // half of this round trip.
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  useEffect(() => {
+    const paid = searchParams.get("paid");
+    if (paid === "1") {
+      const sessionId = searchParams.get("session_id");
+      setStep(STEPS.length - 1);
+      setConfirmingPayment(true);
+      fetch("/api/onboarding/confirm-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.ok) {
+            router.push("/dashboard");
+            router.refresh();
+            return;
+          }
+          setConfirmingPayment(false);
+          setPaymentError(data.error || "Could not confirm your payment. Please try again.");
+        })
+        .catch(() => {
+          setConfirmingPayment(false);
+          setPaymentError("Could not confirm your payment. Please try again.");
+        });
+    } else if (paid === "cancelled") {
+      setStep(STEPS.length - 1);
+      setPaymentError("Checkout was cancelled — no charge was made. Try again when you're ready.");
+    }
+    // Only ever meant to run once, against whatever ?paid= was on the URL
+    // Stripe redirected back to -- not on every searchParams change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Step 3: after any account links, ask "got more?" instead of leaving it
   // to a static button label.
   const [showAddMorePopup, setShowAddMorePopup] = useState(false);
@@ -152,6 +197,12 @@ function OnboardingPageInner() {
   // asks the user to double-check they haven't forgotten an income source,
   // since PriorityPay can only split deposits it actually sees.
   const [showConfirmAccountsModal, setShowConfirmAccountsModal] = useState(false);
+  // Step 3 (Onboarding Pass 2, Aug 2026 handoff): the three explainer
+  // paragraphs, the "any percentage not assigned..." callout, and the cap
+  // explanation all now live inside one collapsible panel instead of
+  // always being on screen -- closed by default, since most people don't
+  // need any of it to fill out the step.
+  const [howOpen, setHowOpen] = useState(false);
 
   const next = () => {
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -172,10 +223,31 @@ function OnboardingPageInner() {
     fetch("/api/split-rules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ percent: nextPercent }),
+      body: JSON.stringify({ percent: settleCaps(nextPercent) }),
     });
+  // Someone typing a percentage that would push the total over 100% gets
+  // silently clamped (see clampPctToRemaining in lib/allocations.js) --
+  // that alone can read as the input just not responding, so this also
+  // surfaces a one-row-at-a-time warning explaining what happened and the
+  // most they could actually enter. Cleared automatically after a few
+  // seconds, same pattern as the "row deleted" toast below.
+  const [pctOverflow, setPctOverflow] = useState(null);
+  useEffect(() => {
+    if (!pctOverflow) return;
+    const t = setTimeout(() => setPctOverflow(null), 5000);
+    return () => clearTimeout(t);
+  }, [pctOverflow]);
   const updatePercent = (id, patch) =>
     setPercent((prev) => {
+      if (patch.pct !== undefined) {
+        const roomLeft = maxAllowedPct(prev, id);
+        const requested = Math.max(0, Number(patch.pct) || 0);
+        setPctOverflow(
+          requested > roomLeft
+            ? { id, message: `This would put your deposit allocation over 100%. Select no more than ${roomLeft}% or adjust some of the other percentages.` }
+            : null
+        );
+      }
       const next = prev.map((r) =>
         r.id === id
           ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
@@ -244,8 +316,20 @@ function OnboardingPageInner() {
     next();
   };
 
+  // No more 30-day free trial for anyone signing up from here on -- $7/mo
+  // is collected via Stripe Checkout right here, before onboarding
+  // actually finishes, since PriorityPay now incurs real costs (Plaid,
+  // Twilio, Anthropic) the moment someone starts using it. Existing
+  // trialing users are entirely unaffected -- this only ever runs for a
+  // brand-new signup finishing onboarding for the first time.
+  //
+  // Everything is saved with `finalize: false` (so `onboarded` stays
+  // false) BEFORE the redirect, since Checkout is a real off-domain page
+  // and this whole tab reloads by the time someone's back -- see the
+  // ?paid= handling in the useEffect above for the other half of this.
   const finish = async () => {
     setSubmitting(true);
+    setPaymentError(null);
     await fetch("/api/onboarding/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -263,21 +347,28 @@ function OnboardingPageInner() {
           ageBracket: "under50",
           estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
         },
-        splitRules: { percent },
+        splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
-        notifications: { phoneNumber, smsEnabled },
+        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled },
+        finalize: false,
       }),
     });
-    router.push("/dashboard");
-    router.refresh();
+    const res = await fetch("/api/onboarding/checkout", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok || !data.url) {
+      setSubmitting(false);
+      setPaymentError(data.error || "Could not start checkout. Please try again.");
+      return;
+    }
+    window.location.href = data.url;
   };
 
-  const stepCounter = step === 0 ? "Getting started" : `Step ${step} of 4`;
-  const progress = step === 0 ? 2 : Math.min(100, step * 25);
+  const stepCounter = step === 0 ? "Getting started" : `Step ${step} of ${STEPS.length - 1}`;
+  const progress = step === 0 ? 2 : Math.min(100, step * (100 / (STEPS.length - 1)));
 
   if (!ONBOARDING_LIVE) {
     return (
-      <div style={{ ...LEDGER_TOKENS, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+      <div style={{ ...BLOOM_TOKENS, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
         <div style={{ maxWidth: "28em" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 30 }}>
             <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
@@ -302,7 +393,7 @@ function OnboardingPageInner() {
   }
 
   return (
-    <div style={{ ...LEDGER_TOKENS, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ ...BLOOM_TOKENS, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <header
         style={{
           position: "sticky",
@@ -381,7 +472,7 @@ function OnboardingPageInner() {
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   placeholder="Business name"
-                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                  style={bloomInputStyle({ fontSize: 16 })}
                 />
               </div>
               <div>
@@ -391,7 +482,7 @@ function OnboardingPageInner() {
                 <select
                   value={businessType}
                   onChange={(e) => setBusinessType(e.target.value)}
-                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                  style={bloomInputStyle({ fontSize: 16 })}
                 >
                   {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -405,11 +496,12 @@ function OnboardingPageInner() {
                     </label>
                     <input
                       type="number"
+                      onFocus={(e) => e.target.select()}
                       min={0}
                       value={employeePayroll}
                       onChange={(e) => setEmployeePayroll(e.target.value)}
                       placeholder="e.g. 120000"
-                      style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                      style={bloomInputStyle({ fontSize: 16 })}
                     />
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
                       A ballpark is fine — this only shapes what a SEP IRA would cost you once your team&apos;s
@@ -467,26 +559,46 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              PriorityPay Simple can only split a deposit it actually sees. Connect every bank account you
-              could receive a client payment into. You can always add more inside the dashboard.
+              PriorityPay can only tell you to split a deposit it actually sees. Connect every bank account
+              you could receive a client payment into. You can always add more inside the dashboard.
             </p>
-            <PlaidLinkButton
-              label="Connect Account"
-              onLinked={(account) => {
-                onAccountLinked(account);
-                if (account) setShowAddMorePopup(true);
-              }}
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontWeight: 600,
-                color: "var(--color-accent)",
-                background: "transparent",
-                border: "1px solid var(--color-accent)",
-                borderRadius: "var(--radius-md)",
-                padding: "13px 26px",
-                marginBottom: 34,
-              }}
-            />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+              <PlaidLinkButton
+                label="Connect Account"
+                onLinked={(account) => {
+                  onAccountLinked(account);
+                  if (account) setShowAddMorePopup(true);
+                }}
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 600,
+                  color: "var(--color-accent)",
+                  background: "transparent",
+                  border: "1px solid var(--color-accent)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "13px 26px",
+                }}
+              />
+              <PlaidLinkButton
+                label="Add a credit card"
+                creditCard
+                onLinked={(account) => onAccountLinked(account)}
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 600,
+                  fontSize: 13.5,
+                  color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                  background: "transparent",
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "13px 22px",
+                }}
+              />
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 34px" }}>
+              Credit cards are for close-out expense tracking only — they&apos;re never used for splits or
+              transfers.
+            </p>
 
             {accounts.length > 0 && (
               <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", overflow: "hidden", marginBottom: 34 }}>
@@ -523,6 +635,7 @@ function OnboardingPageInner() {
                       </span>
                       <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1, minWidth: 0 }}>
                         {a.institution_name} — {a.account_name} •••• {a.mask}
+                        {a.account_type === "credit" ? " (credit card)" : ""}
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-accent)" }} />
@@ -551,23 +664,48 @@ function OnboardingPageInner() {
               Set your percentage splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <div style={{ display: "grid", gap: 14, marginBottom: 36, maxWidth: "34em" }}>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                Each deposit you receive will be split by percentage into the following accounts, and you&apos;ll
-                get a checklist to confirm and send each transfer yourself. Here, set the percentages you want sent
-                to each account.
-              </p>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit,
-                it&apos;ll tell you to send $10 to the savings account connected.
-              </p>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no
-                money will be set aside for that account.
-              </p>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, fontFamily: "var(--font-heading)", color: "color-mix(in srgb, var(--color-text) 66%, transparent)", borderLeft: "1px solid var(--color-accent-300)", paddingLeft: 16, margin: "6px 0 0" }}>
-                Note: Any percentage not assigned to one of the accounts below stays wherever the deposit landed.
-              </p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
+              Decide what share of each deposit goes where — set savings to 10% and a $100 deposit tells you to
+              send $10 to savings.
+            </p>
+
+            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-surface, #fff)", overflow: "hidden", marginBottom: 30 }}>
+              <button
+                type="button"
+                onClick={() => setHowOpen((v) => !v)}
+                className="pp-how-toggle"
+                style={{ width: "100%", textAlign: "left", background: "none", border: 0, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", color: "var(--color-text)" }}
+              >
+                <span style={{ flex: 1, fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
+                  How splits work (and what a cap is)
+                </span>
+                <span style={{ fontSize: 18, color: "var(--color-accent)" }}>{howOpen ? "−" : "+"}</span>
+              </button>
+              {howOpen && (
+                <div style={{ padding: "0 20px 20px", display: "grid", gap: 12 }}>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    Decide what percentage of each deposit received you want sent to each account.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100
+                    deposit, it&apos;ll tell you to send $10 to the savings account connected.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot;
+                    and no money will be set aside for that account.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--color-accent-700)", background: "var(--color-accent-100)", borderRadius: 14, padding: "12px 14px", margin: 0 }}>
+                    Note: Any percentage not assigned to one of the accounts below stays wherever the deposit
+                    landed.
+                  </p>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly cap
+                    stops routing to a bucket once it has received that much in a month (it resets
+                    automatically). An account total cap stops routing once the connected account&apos;s balance
+                    reaches that amount.
+                  </p>
+                </div>
+              )}
             </div>
 
             <PercentSplitEditor
@@ -582,6 +720,8 @@ function OnboardingPageInner() {
               connecting={connecting}
               setConnecting={setConnecting}
               showRowWarnings={false}
+              pctOverflow={pctOverflow}
+              hideCapDetails
               theme="ledger"
             />
 
@@ -635,27 +775,19 @@ function OnboardingPageInner() {
               </div>
             )}
 
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20, flexWrap: "wrap", borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 20 }}>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Allocated
-              </span>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontVariantNumeric: "lining-nums tabular-nums" }}>
-                {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
-              </span>
-            </div>
-
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 24 }}>
               <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
                 Minimum deposit to split
               </label>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 14px" }}>
-                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all — $100 is
-                the lowest you can set it. Adjustable anytime from Settings.
+                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a message to initiate
+                split. $50 is the lowest you can set it. Adjustable anytime from Settings.
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 220 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={MIN_DEPOSIT_THRESHOLD_FLOOR}
                   step="1"
                   value={minDepositThreshold}
@@ -664,48 +796,71 @@ function OnboardingPageInner() {
                     const v = Math.max(MIN_DEPOSIT_THRESHOLD_FLOOR, Number(e.target.value) || MIN_DEPOSIT_THRESHOLD_FLOOR);
                     setMinDepositThreshold(v);
                   }}
-                  style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px" })}
+                  style={bloomInputStyle({ fontSize: 16 })}
                 />
               </div>
-            </div>
-
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
-              <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                Deposit text alerts
-              </label>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
-                PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
-                checklist — this is on by default once you add a phone number below, but you can turn it off
-                anytime in Settings.
-              </p>
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Phone number (optional)"
-                style={ledgerInputStyle({ fontSize: 16, padding: "12px 2px", marginBottom: 16 })}
-              />
-              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={smsEnabled}
-                  onChange={(e) => setSmsEnabled(e.target.checked)}
-                  style={{ width: 16, height: 16 }}
-                />
-                <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                  Text me when a deposit crosses my threshold
-                </span>
-              </label>
-            </div>
-
-            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
-              <BackBtn onClick={back} />
-              <PrimaryBtn onClick={handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}
 
         {step === 4 && (
+          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Get texted the moment a deposit lands
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+              PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
+              checklist — that text is how you actually confirm and send each transfer, so a working phone
+              number is required to finish setting up your account. We only support U.S. mobile numbers right
+              now.
+            </p>
+            <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+              Phone number
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="(555) 123-4567"
+              style={bloomInputStyle({ fontSize: 16, marginBottom: 10 })}
+            />
+            {phoneNumber && !isValidUSPhone(phoneNumber) && (
+              <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b3261e", margin: "0 0 16px" }}>
+                That doesn&apos;t look like a valid U.S. phone number — enter 10 digits, with or without
+                formatting.
+              </p>
+            )}
+            <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 16 }}>
+              <input
+                type="checkbox"
+                checked={smsEnabled}
+                onChange={(e) => setSmsEnabled(e.target.checked)}
+                style={{ width: 16, height: 16 }}
+              />
+              <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                Text me when a deposit crosses my threshold
+              </span>
+            </label>
+            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={next} disabled={!isValidUSPhone(phoneNumber)} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && confirmingPayment && (
+          <div style={{ maxWidth: "34em", margin: "0 auto", textAlign: "center" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
+              Confirming your payment…
+            </h1>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+              One moment — you&apos;ll land in your dashboard as soon as this is done.
+            </p>
+          </div>
+        )}
+
+        {step === 5 && !confirmingPayment && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Review and finish
@@ -726,15 +881,59 @@ function OnboardingPageInner() {
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
+                PriorityPay is $7/month, billed today to get started — there&apos;s no free trial for new
+                accounts. You&apos;ll enter payment details on Stripe&apos;s secure checkout page next, and can
+                cancel anytime from Settings.
+              </p>
+            </div>
+            {paymentError && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "20px 0 0" }}>{paymentError}</p>
+            )}
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <BackBtn onClick={back} />
               <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                {submitting ? "Setting up…" : "Enter dashboard"} &nbsp;→
+                {submitting ? "Redirecting to checkout…" : "Continue to payment — $7/month"} &nbsp;→
               </PrimaryBtn>
             </div>
           </div>
         )}
       </main>
+
+      {/* Onboarding Pass 2 (Aug 2026 handoff): replaces the mid-page
+          "Allocated" row and step 3's own Back/Continue block -- pinning
+          allocation status + Continue to the bottom of the viewport keeps
+          both visible no matter how far someone has scrolled through the
+          bucket list. Sticky to the outer flex column (not main's own
+          max-width wrapper) so it can sit flush with the viewport edge. */}
+      {step === 3 && (
+        <div
+          style={{
+            position: "sticky",
+            bottom: 0,
+            zIndex: 15,
+            background: "color-mix(in srgb, var(--color-bg) 94%, transparent)",
+            backdropFilter: "blur(14px)",
+            borderTop: "1px solid var(--color-divider)",
+          }}
+        >
+          <div style={{ maxWidth: "40em", margin: "0 auto", padding: "16px clamp(18px, 4vw, 40px) 20px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", marginBottom: 12 }}>
+              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, color: "var(--color-accent-700)" }}>
+                {totalPct}% allocated
+              </span>
+              <span>
+                {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showConfirmAccountsModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -873,26 +1072,30 @@ function OnboardingPageInner() {
           cursor: pointer;
           text-decoration: none;
           font-family: var(--font-heading);
-          font-weight: 600;
+          font-weight: 700;
           font-size: 14px;
           line-height: 1.2;
           color: var(--color-text);
           background: transparent;
           border: 1px solid transparent;
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-pill, 999px);
         }
         .pp-btn-primary {
-          color: var(--color-accent);
+          color: #fff;
+          background: var(--color-accent);
           border-color: var(--color-accent);
         }
         .pp-btn-primary:hover {
-          background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+          background: color-mix(in srgb, var(--color-accent) 82%, black);
+          border-color: color-mix(in srgb, var(--color-accent) 82%, black);
         }
         .pp-btn-secondary {
+          color: var(--color-accent);
+          background: var(--color-surface, #fff);
           border-color: var(--color-divider);
         }
         .pp-btn-secondary:hover {
-          background: color-mix(in srgb, var(--color-text) 7%, transparent);
+          background: color-mix(in srgb, var(--color-accent) 8%, transparent);
         }
         .pp-btn-ghost {
           color: var(--color-accent);

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { X, ChevronLeft, AlertTriangle, Calculator } from "lucide-react";
 import { PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import {
   AGE_BRACKETS,
   BUSINESS_TYPES,
@@ -35,22 +35,12 @@ function Step({ title, subtitle, children }) {
   return (
     <div>
       <h3 className="text-base font-bold mb-1">{title}</h3>
-      {subtitle && <p className="text-xs text-neutral-500 mb-4">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-[var(--color-neutral-700)] mb-4">{subtitle}</p>}
       <div className="space-y-2">{children}</div>
     </div>
   );
 }
 
-// A self-contained what-if simulator, not a live tracker: every input here
-// is typed in by hand (never pulled from real PriorityPay data), on
-// purpose, so someone can answer once and then freely try different
-// expected-net-income numbers to see how their contribution room moves.
-// Walks through a short eligibility screen first (business structure,
-// employees, age, other-employer-plan deferrals, spouse) because those
-// answers change which formula applies, then lands on a persistent results
-// screen where net income is the one thing meant to be adjusted over and
-// over. See lib/retirementCalculator.js for the actual math and why it's
-// more complete than the auto-cap estimate used elsewhere in the app.
 export default function ContributionCalculatorModal({ planType, defaultEmployeePayroll, onClose }) {
   const isSolo = planType === "solo_401k";
   const planLabel = isSolo ? "Solo 401k" : "SEP IRA";
@@ -65,20 +55,12 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
   const [spouseInBusiness, setSpouseInBusiness] = useState(null);
   const [netIncome, setNetIncome] = useState("");
 
-  // Solo 401k requires the plan-sponsoring business to have no common-law
-  // employees other than the owner and a spouse -- a real hard IRS
-  // eligibility rule, not a cost tradeoff like it is for SEP.
   const soloBlockedByEmployees = isSolo && hasEmployees === true;
 
   const steps = useMemo(() => {
     const s = ["business", "employees"];
     if (!(isSolo && hasEmployees === true)) {
-      // SEP IRA + employees: ask for a rough total payroll so results can
-      // show the real employer-parity dollar cost instead of just a
-      // qualitative warning.
       if (!isSolo && hasEmployees === true) s.push("employeePayroll");
-      // Age only matters for Solo 401k's catch-up brackets -- SEP IRA has
-      // no age-based catch-up, so there's no reason to ask.
       if (isSolo) s.push("age", "otherPlan");
       s.push("spouse", "results");
     }
@@ -109,7 +91,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
   return (
     <div
       className="fixed inset-0 flex items-center justify-center p-4 z-50"
-      style={{ ...LEDGER_TOKENS, background: "color-mix(in srgb, #171614 55%, transparent)" }}
+      style={{ ...BLOOM_TOKENS, background: "color-mix(in srgb, #241634 55%, transparent)" }}
     >
       <div
         className="max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 relative"
@@ -157,11 +139,11 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
         )}
 
         {current === "employees" && soloBlockedByEmployees && (
-          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
-            <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="mt-4 bg-[#FBEEEA] border border-[#F0C9C0] rounded-[20px] p-4 flex gap-3">
+            <AlertTriangle size={18} className="text-[#9C3B22] shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-amber-800 mb-1">Not eligible for a Solo 401k</p>
-              <p className="text-xs text-amber-700">
+              <p className="text-sm font-semibold text-[#9C3B22] mb-1">Not eligible for a Solo 401k</p>
+              <p className="text-xs text-[#9C3B22]">
                 Solo 401k plans are only available to owner-only (plus spouse) businesses. With other employees on
                 payroll, a SEP IRA or a standard employer 401k would be the options to look into instead — worth a
                 conversation with a tax professional about which fits.
@@ -177,11 +159,12 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
           >
             <input
               type="number"
+              onFocus={(e) => e.target.select()}
               min={0}
               autoFocus
               value={employeePayroll}
               onChange={(e) => setEmployeePayroll(e.target.value)}
-              className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono"
+              className="w-full text-sm border border-[var(--color-divider)] rounded-[14px] px-3 py-2 font-mono"
               placeholder="e.g. 120000"
             />
           </Step>
@@ -210,15 +193,16 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
             </OptionButton>
             {hasOtherPlan && (
               <div className="pt-2">
-                <label className="block text-xs text-neutral-500 mb-1">
+                <label className="block text-xs text-[var(--color-neutral-700)] mb-1">
                   How much have you deferred there so far this year?
                 </label>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   value={otherPlanDeferralYTD}
                   onChange={(e) => setOtherPlanDeferralYTD(e.target.value)}
-                  className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono"
+                  className="w-full text-sm border border-[var(--color-divider)] rounded-[14px] px-3 py-2 font-mono"
                   placeholder="0"
                 />
               </div>
@@ -243,58 +227,59 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
         {current === "results" && (
           <div>
             <h3 className="text-base font-bold mb-1">Try different net income amounts</h3>
-            <p className="text-xs text-neutral-500 mb-4">
+            <p className="text-xs text-[var(--color-neutral-700)] mb-4">
               Enter what you expect your net self-employment income to be for the year — adjust it as much as you
               want to see how the room changes.
             </p>
-            <label className="block text-xs text-neutral-500 mb-1">
+            <label className="block text-xs text-[var(--color-neutral-700)] mb-1">
               Expected net income for the year
             </label>
             <input
               type="number"
+              onFocus={(e) => e.target.select()}
               min={0}
               autoFocus
               value={netIncome}
               onChange={(e) => setNetIncome(e.target.value)}
-              className="w-full text-lg border border-neutral-200 rounded-xl px-3 py-2.5 font-mono font-bold mb-1"
+              className="w-full text-lg border border-[var(--color-divider)] rounded-[20px] px-3 py-2.5 font-mono font-bold mb-1"
               placeholder="$0"
             />
-            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 leading-snug">
+            <p className="text-[11px] text-[#9C3B22] bg-[#FBEEEA] border border-[#F0C9C0] rounded-[14px] px-3 py-2 mb-4 leading-snug">
               Have a W2 job too? Don&apos;t include that income here — enter only the net profit from this
               self-employment business (after business expenses), since that&apos;s the only income this plan is
               allowed to be based on.
             </p>
 
             {result && (
-              <div className="bg-neutral-50 border border-neutral-100 rounded-xl p-4 space-y-3">
+              <div className="bg-[var(--color-neutral-100)] border border-[var(--color-divider)] rounded-[20px] p-4 space-y-3">
                 {isSolo ? (
                   <>
                     <div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-600">Employee deferral</span>
+                        <span className="text-[var(--color-neutral-800)]">Employee deferral</span>
                         <span className="font-mono font-semibold">{currency(result.employeeDeferral)}</span>
                       </div>
-                      <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
+                      <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
                         What you personally choose to set aside, like an employee electing to divert part of their
                         paycheck into a 401k — capped at a flat dollar amount for the year, not a percentage.
                       </p>
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-600">Employer (profit-share) contribution</span>
+                        <span className="text-[var(--color-neutral-800)]">Employer (profit-share) contribution</span>
                         <span className="font-mono font-semibold">{currency(result.employerContribution)}</span>
                       </div>
-                      <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
+                      <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
                         A separate contribution your business makes on your behalf, calculated as a percentage of
                         your income — on top of the employee deferral above, not instead of it.
                       </p>
                     </div>
-                    <div className="pt-3 border-t border-neutral-200">
+                    <div className="pt-3 border-t border-[var(--color-divider)]">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-bold">Maximum you could contribute this year</span>
                         <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.total)}</span>
                       </div>
-                      <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
+                      <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
                         This is the ceiling given what you entered above, not a recommendation — the most you
                         could put in, not what you should.
                       </p>
@@ -306,22 +291,22 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                       <span className="font-bold">Your contribution</span>
                       <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.contribution)}</span>
                     </div>
-                    <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
+                    <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
                       This is the ceiling given what you entered above, not a recommendation — the most you could
                       put in, not what you should.
                     </p>
                     {hasEmployees === true && (
                       <>
-                        <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-neutral-200">
-                          <span className="text-neutral-600">Required for your team (same rate)</span>
+                        <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-[var(--color-divider)]">
+                          <span className="text-[var(--color-neutral-800)]">Required for your team (same rate)</span>
                           <span className="font-mono font-semibold">{currency(result.employeeParityContribution)}</span>
                         </div>
-                        <p className="text-[11px] text-neutral-400 leading-snug mt-0.5">
+                        <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
                           SEP IRA requires the same percentage of compensation for every eligible employee --
                           calculated here off your effective rate ({(result.effectiveRate * 100).toFixed(1)}%)
                           applied to the payroll estimate you entered.
                         </p>
-                        <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-neutral-200">
+                        <div className="flex items-center justify-between text-sm mt-3 pt-3 border-t border-[var(--color-divider)]">
                           <span className="font-bold">Total real cost</span>
                           <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.totalCostWithParity)}</span>
                         </div>
@@ -330,13 +315,13 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                   </div>
                 )}
                 {result.cappedByAnnualLimit && (
-                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-[#9C3B22] bg-[#FBEEEA] border border-[#F0C9C0] rounded-[14px] px-3 py-2">
                     Capped by this year&apos;s ${result.cap.toLocaleString()} IRS annual limit — the uncapped
                     formula would&apos;ve allowed more.
                   </p>
                 )}
                 {spouseInBusiness && (
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-[var(--color-neutral-700)]">
                     Your spouse may be able to open their own {planLabel} based on their own compensation from this
                     business — this number is just yours.
                   </p>
@@ -344,7 +329,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
               </div>
             )}
 
-            <div className="mt-4 bg-neutral-50 border border-neutral-100 rounded-xl p-3 text-xs text-neutral-500 leading-relaxed">
+            <div className="mt-4 bg-[var(--color-neutral-100)] border border-[var(--color-divider)] rounded-[20px] p-3 text-xs text-[var(--color-neutral-700)] leading-relaxed">
               This is a simulator, not a tracker — it has no idea what you&apos;ve actually contributed this year,
               here or anywhere else, and it doesn&apos;t know your real numbers unless you type them in above.
               Contributing more than your real limit (over-contributing) can trigger an IRS excise tax on the

@@ -5,8 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
-import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -69,11 +68,22 @@ function SplitRulesPageInner() {
   const totalPct = useMemo(() => pctTotal(percent), [percent]);
   const remainingPct = roundPct(Math.max(0, 100 - totalPct));
 
+  // Same one-row-at-a-time "over 100%" warning as onboarding's Percentage
+  // Splits step (see app/onboarding/page.js) -- surfaced here too since
+  // this is the exact same editor/clamping behavior, just reached after
+  // onboarding instead of during it.
+  const [pctOverflow, setPctOverflow] = useState(null);
+  useEffect(() => {
+    if (!pctOverflow) return;
+    const t = setTimeout(() => setPctOverflow(null), 5000);
+    return () => clearTimeout(t);
+  }, [pctOverflow]);
+
   const saveNow = async (nextPercent) => {
     await fetch("/api/split-rules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ percent: nextPercent }),
+      body: JSON.stringify({ percent: settleCaps(nextPercent) }),
     });
     setSaved(true);
   };
@@ -81,6 +91,15 @@ function SplitRulesPageInner() {
   const updatePercent = (id, patch) => {
     setSaved(false);
     setPercent((prev) => {
+      if (patch.pct !== undefined) {
+        const roomLeft = maxAllowedPct(prev, id);
+        const requested = Math.max(0, Number(patch.pct) || 0);
+        setPctOverflow(
+          requested > roomLeft
+            ? { id, message: `This would put your deposit allocation over 100%. Select no more than ${roomLeft}% or adjust some of the other percentages.` }
+            : null
+        );
+      }
       const next = prev.map((r) =>
         r.id === id
           ? { ...r, ...patch, ...(patch.pct !== undefined ? { pct: clampPctToRemaining(prev, id, patch.pct) } : {}) }
@@ -146,33 +165,34 @@ function SplitRulesPageInner() {
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
-    <div className="max-w-2xl space-y-6" style={LEDGER_TOKENS}>
+    <div className="space-y-6" style={{ maxWidth: 780 }}>
       <div>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(26px, 3.4vw, 34px)", fontWeight: 400, margin: "0 0 8px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px, 3.4vw, 36px)", fontWeight: 800, margin: "0 0 8px" }}>
           Split every deposit by percentage
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
-        <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
           Each deposit you receive will be split by percentage into the following accounts, and you&apos;ll get a
           checklist to confirm and send each transfer yourself. Here, set the percentages you want sent to each
           account.
         </p>
-        <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
           For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, it&apos;ll
           tell you to send $10 to the savings account connected.
         </p>
-        <p className="text-sm mb-2" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 16px" }}>
           If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no money
           will be set aside for that account.
         </p>
         <p
-          className="text-sm"
           style={{
-            fontStyle: "italic",
-            fontFamily: "var(--font-heading)",
-            color: "color-mix(in srgb, var(--color-text) 66%, transparent)",
-            borderLeft: "1px solid var(--color-accent-300)",
-            paddingLeft: 16,
+            fontSize: 17,
+            lineHeight: 1.7,
+            color: "#3B1C7A",
+            background: "#F4EEFF",
+            borderRadius: 18,
+            padding: "16px 20px",
+            margin: 0,
           }}
         >
           Note: Any percentage not assigned to one of the accounts below stays wherever the deposit landed.
@@ -190,6 +210,8 @@ function SplitRulesPageInner() {
         setCreating={setCreating}
         connecting={connecting}
         setConnecting={setConnecting}
+        totalPct={totalPct}
+        pctOverflow={pctOverflow}
         theme="ledger"
       />
 
@@ -199,12 +221,12 @@ function SplitRulesPageInner() {
           className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5"
           style={{
             background: "transparent",
-            border: "1px dashed var(--color-accent-300)",
-            borderRadius: "var(--radius-md)",
+            border: "1px dashed #C4A9FA",
+            borderRadius: 18,
             fontFamily: "var(--font-heading)",
-            fontSize: 14,
-            letterSpacing: "0.04em",
-            color: "var(--color-accent-700)",
+            fontSize: 15,
+            fontWeight: 600,
+            color: "#4E22B8",
             cursor: "pointer",
           }}
         >
@@ -228,9 +250,10 @@ function SplitRulesPageInner() {
                 className="flex items-center gap-1"
                 style={{
                   fontFamily: "var(--font-body)",
-                  fontSize: 14,
-                  color: "color-mix(in srgb, var(--color-text) 72%, transparent)",
-                  background: "transparent",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "var(--color-text)",
+                  background: "#FFFFFF",
                   border: "1px solid var(--color-divider)",
                   borderRadius: 999,
                   padding: "8px 16px",
@@ -249,25 +272,25 @@ function SplitRulesPageInner() {
         <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
           Allocated
         </span>
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: 17 }}>
+        <span style={{ fontFamily: "var(--font-body)", fontSize: 16, color: "var(--color-text)" }}>
           {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
         </span>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
-        <PrimaryButton onClick={handleSave}>
+        <PrimaryButton onClick={handleSave} style={{ borderRadius: "var(--radius-pill)" }}>
           <Save size={16} /> Save split rules
         </PrimaryButton>
-        {saved && <span className="text-sm font-medium" style={{ color: "var(--color-accent-700)", fontFamily: "var(--font-heading)", fontStyle: "italic" }}>Saved.</span>}
+        {saved && <span className="text-sm" style={{ color: "#4E22B8", fontFamily: "var(--font-heading)", fontWeight: 700 }}>Saved.</span>}
       </div>
 
       {lastDeleted && (
         <div
           className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm pl-4 pr-2 py-2.5 flex items-center gap-3 z-50"
-          style={{ background: "#171614", color: "#f3f2f2", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-lg)" }}
+          style={{ background: "#241634", color: "#FFFFFF", borderRadius: 999, boxShadow: "var(--shadow-lg)" }}
         >
           <span>&quot;{lastDeleted.row.label}&quot; removed.</span>
-          <button onClick={undoDelete} className="px-2 py-1" style={{ fontWeight: 700, color: "var(--color-accent-300)" }}>
+          <button onClick={undoDelete} className="px-2 py-1" style={{ fontWeight: 700, color: "#C4A9FA" }}>
             Undo
           </button>
         </div>

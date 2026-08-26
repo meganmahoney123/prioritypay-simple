@@ -7,7 +7,7 @@ import CloseoutNudge from "@/components/CloseoutNudge";
 import MoneyDistributionChart from "@/components/MoneyDistributionChart";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS } from "@/lib/allocations";
 import { Card } from "@/components/ui";
-import { ledgerNoticeCardStyle, ledgerWarningCardStyle } from "@/lib/ledgerTheme";
+import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
@@ -102,7 +102,7 @@ export default function DashboardPage() {
       <PendingTransfers transfers={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
 
       {billing?.readOnly && (
-        <Card className="p-4 text-sm flex items-start gap-2" style={ledgerWarningCardStyle()}>
+        <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
             <span style={{ fontWeight: 600 }}>Your free trial has ended.</span> You can still see your split rules
@@ -113,7 +113,7 @@ export default function DashboardPage() {
       )}
 
       {billing && !billing.readOnly && billing.subscriptionStatus !== "active" && trialRemaining !== null && trialRemaining <= 5 && (
-        <Card className="p-4 text-sm" style={ledgerNoticeCardStyle()}>
+        <Card className="p-4 text-sm" style={bloomNoticeCardStyle()}>
           <span style={{ fontWeight: 600 }}>
             {trialRemaining === 0 ? "Your free trial ends today." : `${trialRemaining} day${trialRemaining === 1 ? "" : "s"} left in your free trial.`}
           </span>{" "}
@@ -141,7 +141,7 @@ export default function DashboardPage() {
       )}
 
       {accounts.length > 0 && unconnected.length > 0 && (
-        <Card className="p-4 text-sm" style={ledgerNoticeCardStyle()}>
+        <Card className="p-4 text-sm" style={bloomNoticeCardStyle()}>
           <span style={{ fontWeight: 600 }}>
             {unconnected.length} categor{unconnected.length === 1 ? "y needs" : "ies need"} an account before money can move:
           </span>{" "}
@@ -152,7 +152,7 @@ export default function DashboardPage() {
       )}
 
       {retirementPct === 0 && (
-        <Card className="p-4 text-sm flex items-start gap-2" style={ledgerWarningCardStyle()}>
+        <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
@@ -170,7 +170,7 @@ export default function DashboardPage() {
       )}
 
       {investmentsPct === 0 && (
-        <Card className="p-4 text-sm flex items-start gap-2" style={ledgerWarningCardStyle()}>
+        <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t investing any money. This

@@ -9,8 +9,7 @@ import { Card, currency } from "@/components/ui";
 // user's current split rules (e.g. a category they've since renamed or
 // deleted) -- same look-and-feel palette as DEFAULT_SPLIT_RULES.
 const FALLBACK_PALETTE = [
-  "#7d5411", "#a06f24", "#c28d41", "#b68235", "#e1ad66", "#facb8d",
-  "#605d5d", "#9b9797", "#3a270d", "#5a3b0a", "#d7d3d3",
+  "#6D3BE0", "#4E22B8", "#3B1C7A", "#9A72F0", "#C4A9FA",
 ];
 
 function currentPeriod() {
@@ -79,9 +78,9 @@ export default function MoneyDistributionChart({ rules = [] }) {
   const emptyLabel = mode === "month" ? periodLabel(period) : `the ${rangeLabel}`;
 
   return (
-    <Card className="p-5">
+    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h2 className="text-sm font-semibold">How your money has been distributed</h2>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>How your money has been distributed</h2>
         <div className="flex items-center gap-1.5 flex-wrap">
           {MODES.map((m) => (
             <button
@@ -91,7 +90,7 @@ export default function MoneyDistributionChart({ rules = [] }) {
                 fontFamily: "var(--font-heading)",
                 fontSize: 13,
                 letterSpacing: "0.06em",
-                color: mode === m.key ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 62%, transparent)",
+                color: mode === m.key ? "var(--color-accent-700)" : "var(--color-neutral-700)",
                 background: "transparent",
                 border: `1px solid ${mode === m.key ? "var(--color-accent)" : "var(--color-divider)"}`,
                 borderRadius: 999,

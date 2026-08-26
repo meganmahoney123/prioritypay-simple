@@ -6,15 +6,24 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const { persona, businessName, entityType, retirementProfile, splitRules, minDepositThreshold, notifications } = await request.json();
+  const { persona, businessName, entityType, retirementProfile, splitRules, minDepositThreshold, notifications, finalize } =
+    await request.json();
   const admin = supabaseAdmin();
   const rp = retirementProfile || {};
   const notif = notifications || {};
+  // New signups now pay for their subscription before onboarding finishes
+  // (see /api/onboarding/checkout + /api/onboarding/confirm-payment) --
+  // the Review step calls this route with `finalize: false` right before
+  // sending someone to Stripe Checkout, so every other answer gets saved
+  // without marking them onboarded yet. confirm-payment is what actually
+  // flips `onboarded: true`, once payment is confirmed. Omitting `false`
+  // entirely (finalize left undefined) keeps the original one-step
+  // behavior, so nothing else calling this route needs to change.
 
-  // $100 is a hard floor (see PHASE I, supabase/schema.sql) -- clamped here
+  // $50 is a hard floor (see PHASE N, supabase/schema.sql) -- clamped here
   // too, not just the DB constraint, so onboarding never surfaces a raw
   // Postgres constraint-violation error to someone finishing signup.
-  const clampedMinDepositThreshold = Math.max(100, Number(minDepositThreshold) || 100);
+  const clampedMinDepositThreshold = Math.max(50, Number(minDepositThreshold) || 50);
 
   const { error: profileError } = await admin
     .from("simple_profiles")
@@ -34,7 +43,7 @@ export async function POST(request) {
       // currently possible, but a real future path) never gets silently
       // re-enrolled just by finishing onboarding.
       ...(notif.phoneNumber ? { sms_notifications_enabled: Boolean(notif.smsEnabled) } : {}),
-      onboarded: true,
+      ...(finalize === false ? {} : { onboarded: true }),
     })
     .eq("id", user.id);
   if (profileError) return Response.json({ error: profileError.message }, { status: 500 });

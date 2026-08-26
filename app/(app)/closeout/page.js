@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar, CreditCard, AlertTriangle } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS, bloomBadgeStyle, bloomNoticeCardStyle, bloomWarningCardStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
 import ContributionCalculatorModal from "@/components/ContributionCalculatorModal";
@@ -26,10 +26,6 @@ function periodLabel(period) {
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-// "YYYY-MM" strings compare correctly with plain string comparison. Used
-// to gate the current (and any future) month out of close-out entirely --
-// closing out a month that hasn't finished yet means working from an
-// incomplete transaction list, so recommendations would just be wrong.
 function currentPeriod() {
   const now = new Date();
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -47,13 +43,6 @@ const CATS = [
   { value: "exclude", label: "Exclude" },
 ];
 
-// PHASE B: the monthly ritual that replaces the old auto-cap guesswork --
-// review every transaction PriorityPay saw across every linked account
-// this month, confirm which is real income vs. a real expense vs. an
-// internal transfer that shouldn't count as either, and only THEN does
-// PriorityPay tell you how much retirement/tax room you actually have,
-// based on a real confirmed number instead of raw deposit totals (which
-// could include business-expense reimbursements that aren't real income).
 export default function CloseoutPage() {
   const [period, setPeriod] = useState(defaultPeriod);
   const [closeout, setCloseout] = useState(null);
@@ -72,39 +61,12 @@ export default function CloseoutPage() {
   const [calculatorPlanType, setCalculatorPlanType] = useState(null);
   const [annualNetIncome, setAnnualNetIncome] = useState("");
   const [annualTaxRatePct, setAnnualTaxRatePct] = useState(25);
-  // Gate on first landing on this tab: "Do you have W2 income this month?"
-  // -- Yes forces flagging every W2 paycheck before touching anything else
-  // on the page (see the w2_income category and how it's excluded from
-  // netIncome in the confirm route), No just dismisses it. Deliberately
-  // NOT reset by the period useEffect below -- switching months with the
-  // prev/next arrows shouldn't re-ask, only navigating to this tab fresh
-  // (a fresh mount of this component) does.
   const [w2PopupStep, setW2PopupStep] = useState("ask");
-  // Lets someone deliberately reopen a confirmed month for corrections --
-  // categories were never actually locked server-side (PATCH .../transactions/[id]
-  // has no status check, and POST .../confirm can always recompute from
-  // scratch), so this is purely a UI guardrail against *accidental* edits.
-  // Resets to locked every time the person switches months.
   const [editingConfirmed, setEditingConfirmed] = useState(false);
-  // Persona-gated retirement copy for the "Business Owner (With Employees)"
-  // persona -- Solo 401k is legally unavailable to anyone with employees
-  // other than a spouse, and SEP IRA's employer-parity cost only applies
-  // here. Fetched once; every other persona's Close-Out UI is unaffected
-  // since `persona` just stays null/unused for them.
   const [persona, setPersona] = useState(null);
   const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
-  // "Business" is only ever offered as a category for this persona --
-  // someone whose accounts might be commingled with the business needs a
-  // way to flag a transaction that landed on a personal account but
-  // actually belongs to the business side (see CATS above and the
-  // confirm route, which excludes it from personal net income the same
-  // way "exclude" already does for internal transfers).
   const cats = isBusinessOwnerWithEmployees ? [...CATS, { value: "business", label: "Business" }] : CATS;
-  // Team & Plan Obligations: reuses the exact same split-rule engine every
-  // other category already runs on (percent of each deposit + a monthly
-  // cap that acts as the target). Only ever fetched/rendered for the
-  // Business Owner (With Employees) persona.
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
   const [savingObligations, setSavingObligations] = useState(false);
   const [editingObligations, setEditingObligations] = useState(false);
@@ -158,9 +120,6 @@ export default function CloseoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
-  // Give the annual tax calculator a sensible starting guess (this period's
-  // net income, annualized) the first time recommendations load -- still
-  // freely editable afterward, this only fills it in while it's untouched.
   useEffect(() => {
     if (recommendations && annualNetIncome === "") {
       setAnnualNetIncome(Math.round((Number(recommendations.netIncome) || 0) * 12));
@@ -195,10 +154,6 @@ export default function CloseoutPage() {
       }, 0),
     [transactions]
   );
-  // Only real income candidates are relevant to the W2 popup -- no reason
-  // to ask someone to flag an expense, or a transfer already excluded as
-  // PriorityPay's own money moving between their own accounts, as a
-  // paycheck.
   const incomeTransactions = useMemo(
     () =>
       transactions.filter((t) => {
@@ -210,10 +165,6 @@ export default function CloseoutPage() {
   );
 
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
-  // Business accounts (linked for balance visibility only -- see the
-  // Business Account card below) are never a valid destination for a
-  // split-rule holding account, so every AccountSelect picker on this page
-  // uses this filtered list instead of the raw `accounts` state.
   const splitEligibleAccounts = useMemo(() => accounts.filter((a) => a.account_type !== "business"), [accounts]);
   const businessAccounts = useMemo(() => accounts.filter((a) => a.account_type === "business"), [accounts]);
   const realByType = useMemo(() => Object.fromEntries(realAccounts.map((r) => [r.retirementType, r])), [realAccounts]);
@@ -239,25 +190,10 @@ export default function CloseoutPage() {
       body: JSON.stringify({ confirmedCategory: category }),
     });
     if (!res.ok) {
-      // Revert the optimistic update instead of leaving the UI showing a
-      // category that never actually saved -- found during QA when the
-      // API's category whitelist didn't yet include "w2_income": clicking
-      // that button looked like it worked (this state update ran
-      // immediately) but silently 400'd underneath, so the real value in
-      // the database never changed.
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: previous ?? null } : t)));
       alert("Couldn't save that category — please try again.");
       return;
     }
-    // Editing a category on an already-confirmed month: re-run the same
-    // confirm call used the first time around, which always recomputes
-    // net income, retirement room, and the tax reserve estimate from
-    // scratch off the current categories (see the comment on POST
-    // .../confirm) -- so correcting a mistake here immediately ripples
-    // through Step 2/3 below and into Tax Summary's next load, without a
-    // second manual "confirm" click. Money already sent for a prior
-    // (wrong) room/reserve number isn't reversed -- only what's left to
-    // send adjusts.
     if (isConfirmed) handleConfirm();
   };
 
@@ -301,14 +237,6 @@ export default function CloseoutPage() {
     await load(period);
   };
 
-  // Creates or updates the "Team & Plan Obligations" split-rule row --
-  // deliberately the exact same mechanism every other category (Tax
-  // Reserve, Solo 401k, etc.) already uses: a percentage of every deposit,
-  // capped at a monthly target, held in a real connected account. Nothing
-  // new on the backend -- this just gives Business Owner (With Employees)
-  // a purpose-built setup form instead of routing them through the
-  // general Split Rules page for something with such specific, one-off
-  // framing ("what did your accountant say you owe").
   const saveTeamObligations = async () => {
     setSavingObligations(true);
     const pctInput = obligationsForm.pct !== "" ? Number(obligationsForm.pct) : Number(teamObligationsRow?.pct ?? 0);
@@ -343,18 +271,11 @@ export default function CloseoutPage() {
     setEditingObligations(false);
   };
 
-  if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
+  if (loading) return <p className="text-sm text-[var(--color-neutral-700)]">Loading…</p>;
 
-  // Current month (or, in principle, any month that hasn't happened yet)
-  // stays locked until its last day -- the one exception is the current
-  // month ON its last day, which is a real close-out day.
   const isTooEarlyToClose = period >= currentPeriod() && !(period === currentPeriod() && isLastDayOfCurrentMonthUTC());
   const isConfirmed = closeout?.status === "confirmed";
   const displayNetIncome = isConfirmed ? Number(closeout?.net_income) || 0 : netIncomePreview;
-  // recommendations.w2Income (from the confirm response) is the source of
-  // truth once available; w2IncomePreview covers the brief window before
-  // it loads and the normal not-yet-confirmed preview state -- both derive
-  // from the same per-transaction category, so they agree once loaded.
   const displayW2Income = recommendations?.w2Income ?? w2IncomePreview;
   const displayBusiness = recommendations?.business ?? businessPreview;
   const liveTaxEstimate = estimateTaxReserve(displayNetIncome, taxRatePct);
@@ -362,7 +283,7 @@ export default function CloseoutPage() {
   const annualTaxEstimate = estimateTaxReserve(annualNetIncomeValue, annualTaxRatePct);
 
   return (
-    <div className="max-w-2xl space-y-6" style={LEDGER_TOKENS}>
+    <div className="max-w-2xl space-y-6" style={BLOOM_TOKENS}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GhostButton onClick={() => setPeriod((p) => shiftPeriod(p, -1))} className="px-2 py-1.5">
@@ -374,7 +295,10 @@ export default function CloseoutPage() {
           </GhostButton>
         </div>
         {isConfirmed && (
-          <span className="text-xs font-semibold flex items-center gap-1" style={{ color: "var(--color-accent-700)" }}>
+          <span
+            className="flex items-center gap-1"
+            style={bloomBadgeStyle({ color: "var(--color-neutral-800)", background: "var(--color-neutral-200)" })}
+          >
             <CheckCircle2 size={14} /> Confirmed
           </span>
         )}
@@ -382,22 +306,22 @@ export default function CloseoutPage() {
 
       {isTooEarlyToClose ? (
         <Card className="p-8 text-center">
-          <Calendar size={28} className="mx-auto text-neutral-300 mb-3" />
-          <p className="text-sm font-semibold text-neutral-700 mb-1">
+          <Calendar size={28} className="mx-auto text-[var(--color-neutral-400)] mb-3" />
+          <p className="text-sm font-semibold text-[var(--color-text)] mb-1">
             {periodLabel(period)} isn&apos;t finished yet.
           </p>
-          <p className="text-sm text-neutral-500">Check back on the last day of the month.</p>
+          <p className="text-sm text-[var(--color-neutral-700)]">Check back on the last day of the month.</p>
         </Card>
       ) : (
       <>
       {!accounts.some((a) => a.account_type === "credit") && (
         <Card className="p-5 flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-            <CreditCard size={16} className="text-neutral-600" />
+          <div className="w-9 h-9 rounded-[20px] bg-[var(--color-neutral-200)] flex items-center justify-center shrink-0">
+            <CreditCard size={16} className="text-[var(--color-neutral-800)]" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold mb-1">Connect your credit cards</p>
-            <p className="text-xs text-neutral-500 mb-3">
+            <p className="text-xs text-[var(--color-neutral-700)] mb-3">
               If you spend on a credit card, close-out is only seeing part of the picture. Add your cards here for a
               complete monthly expense total. They&apos;re never used for splits or transfers, just tracked for
               close-out.
@@ -407,21 +331,24 @@ export default function CloseoutPage() {
               creditCard
               onLinked={() => load(period)}
               className="text-xs px-4 py-2"
-              style={{ backgroundColor: "#525252" }}
+              style={{ backgroundColor: "var(--color-neutral-800)", borderColor: "var(--color-neutral-800)" }}
             />
           </div>
         </Card>
       )}
       <Card className="p-6">
         <h2 className="text-sm font-semibold mb-1">Step 1: Confirm Net Income</h2>
-        <p className="text-xs text-neutral-500 mb-4">
+        <p className="text-xs text-[var(--color-neutral-700)] mb-4">
           PriorityPay pulled every transaction across your linked accounts for {periodLabel(period)} and made a
           best guess at what&apos;s real income, a real expense, or an internal transfer that shouldn&apos;t count
           as either (like PriorityPay&apos;s own splits moving between your accounts).
         </p>
         {isConfirmed && (
-          <div className="mb-4 flex items-start gap-2 bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2.5 text-xs text-neutral-600">
-            <CheckCircle2 size={14} style={{ color: "var(--color-accent-700)" }} className="shrink-0 mt-0.5" />
+          <div
+            className="mb-4 flex items-start gap-2 px-3 py-2.5 text-xs"
+            style={bloomNoticeCardStyle({ padding: "10px 12px" })}
+          >
+            <CheckCircle2 size={14} style={{ color: "var(--color-accent-800)" }} className="shrink-0 mt-0.5" />
             <span className="flex-1">
               This month was confirmed
               {closeout?.confirmed_at
@@ -438,22 +365,22 @@ export default function CloseoutPage() {
           </div>
         )}
         {transactions.length === 0 ? (
-          <p className="text-sm text-neutral-400">No transactions found for this month.</p>
+          <p className="text-sm text-[var(--color-neutral-700)]">No transactions found for this month.</p>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {transactions.map((t) => {
               const cat = t.confirmed_category || t.suggested_category;
               const acc = accountsById[t.account_id];
               return (
-                <div key={t.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-neutral-100 pb-2">
+                <div key={t.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-[var(--color-divider)] pb-2">
                   <div className="min-w-[110px] flex-1">
                     <div className="text-sm font-medium truncate">{t.name}</div>
-                    <div className="text-xs text-neutral-400">
+                    <div className="text-xs text-[var(--color-neutral-700)]">
                       {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-mono text-neutral-500">
+                    <span className="text-xs font-mono text-[var(--color-neutral-700)]">
                       {t.direction === "in" ? "+" : "-"}
                       {currency(t.amount)}
                     </span>
@@ -482,18 +409,18 @@ export default function CloseoutPage() {
             })}
           </div>
         )}
-        <div className="pt-4 mt-4 border-t border-neutral-100 flex items-center justify-between">
+        <div className="pt-4 mt-4 border-t border-[var(--color-divider)] flex items-center justify-between">
           <span className="text-sm font-semibold">Net income {isConfirmed ? "(confirmed)" : "(preview)"}</span>
           <span className="text-sm font-mono font-bold">{currency(displayNetIncome)}</span>
         </div>
         {displayW2Income > 0 && (
-          <div className="flex items-center justify-between text-xs text-neutral-400 mt-1">
+          <div className="flex items-center justify-between text-xs text-[var(--color-neutral-700)] mt-1">
             <span>W2 income this month (excluded from retirement &amp; tax below)</span>
             <span className="font-mono">{currency(displayW2Income)}</span>
           </div>
         )}
         {displayBusiness > 0 && (
-          <div className="flex items-center justify-between text-xs text-neutral-400 mt-1">
+          <div className="flex items-center justify-between text-xs text-[var(--color-neutral-700)] mt-1">
             <span>Flagged as business this month (excluded — belongs to the business side, see Tax Summary)</span>
             <span className="font-mono">{currency(displayBusiness)}</span>
           </div>
@@ -510,7 +437,7 @@ export default function CloseoutPage() {
         <>
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-1">Step 2: Contribute to Retirement</h2>
-            <p className="text-xs text-neutral-500 mb-4">
+            <p className="text-xs text-[var(--color-neutral-700)] mb-4">
               A solo 401(k) is a specialized retirement savings plan built for self-employed individuals and
               business owners who have no employees, other than a spouse. For 2026, the combined annual limit is{" "}
               {currency(overallDCLimit(recommendations.ageBracket))}, including up to{" "}
@@ -518,16 +445,16 @@ export default function CloseoutPage() {
             </p>
             {recommendations.retirement.length === 0 ? (
               <div className="space-y-5">
-                <p className="text-sm text-neutral-500">
+                <p className="text-sm text-[var(--color-neutral-700)]">
                   You haven&apos;t added a Solo 401k or SEP IRA category to your Income Split Rules yet. You can
                   still calculate what you&apos;d be able to contribute below, and see how to open either account,
                   before deciding what to route toward retirement.
                 </p>
 
                 {!isBusinessOwnerWithEmployees && (
-                  <div className="border border-neutral-200 rounded-xl p-4">
+                  <div className="border border-[var(--color-divider)] rounded-[20px] p-4">
                     <div className="text-sm font-semibold mb-1">Solo 401k</div>
-                    <p className="text-xs text-neutral-500 mb-3">
+                    <p className="text-xs text-[var(--color-neutral-700)] mb-3">
                       A specialized retirement plan for self-employed individuals and business owners with no
                       employees other than a spouse.
                     </p>
@@ -548,9 +475,9 @@ export default function CloseoutPage() {
                   </div>
                 )}
 
-                <div className="border border-neutral-200 rounded-xl p-4">
+                <div className="border border-[var(--color-divider)] rounded-[20px] p-4">
                   <div className="text-sm font-semibold mb-1">SEP IRA</div>
-                  <p className="text-xs text-neutral-500 mb-3">
+                  <p className="text-xs text-[var(--color-neutral-700)] mb-3">
                     A Simplified Employee Pension (SEP) IRA lets business owners and self-employed individuals
                     make tax-deductible contributions for themselves and their eligible employees.
                   </p>
@@ -570,7 +497,7 @@ export default function CloseoutPage() {
                   </div>
                 </div>
 
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-[var(--color-neutral-700)]">
                   Ready to actually start funding one? <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Add it to your Income Split Rules</Link> so
                   a share of every deposit gets set aside for it automatically.
                 </p>
@@ -581,11 +508,11 @@ export default function CloseoutPage() {
                   const real = realByType[r.retirementType];
                   if (isBusinessOwnerWithEmployees && r.retirementType === "solo_401k") {
                     return (
-                      <div key={r.retirementType} className="border border-amber-200 bg-amber-50 rounded-xl p-4 flex gap-3">
-                        <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                      <div key={r.retirementType} className="border border-[#F0C9C0] bg-[#FBEEEA] rounded-[20px] p-4 flex gap-3">
+                        <AlertTriangle size={18} className="text-[#9C3B22] shrink-0 mt-0.5" />
                         <div>
-                          <div className="text-sm font-semibold text-amber-800 mb-1">Solo 401k isn&apos;t available to you</div>
-                          <p className="text-xs text-amber-700">
+                          <div className="text-sm font-semibold text-[#9C3B22] mb-1">Solo 401k isn&apos;t available to you</div>
+                          <p className="text-xs text-[#9C3B22]">
                             Solo 401k plans only cover a business owner and their spouse — with other employees on
                             payroll, the business isn&apos;t eligible for this specific plan, no exceptions. A SEP
                             IRA (below, if set up) or a standard employer 401(k) are the options to look into
@@ -596,16 +523,16 @@ export default function CloseoutPage() {
                     );
                   }
                   return (
-                    <div key={r.retirementType} className="border border-neutral-200 rounded-xl p-4">
+                    <div key={r.retirementType} className="border border-[var(--color-divider)] rounded-[20px] p-4">
                       <div className="text-sm font-semibold mb-1">{RETIREMENT_LABELS[r.retirementType] || r.label}</div>
                       {r.retirementType === "sep_ira" ? (
-                        <p className="text-xs text-neutral-500 mb-2">
+                        <p className="text-xs text-[var(--color-neutral-700)] mb-2">
                           A Simplified Employee Pension (SEP) IRA is a retirement plan that allows business owners
                           and self-employed individuals to make tax-deductible contributions for themselves and
                           their eligible employees.
                         </p>
                       ) : (
-                        <p className="text-xs text-neutral-500 mb-2">
+                        <p className="text-xs text-[var(--color-neutral-700)] mb-2">
                           {currency(r.room)} of room left this year ({currency(r.ytdContributed)} sent through
                           PriorityPay so far this year — doesn&apos;t include anything contributed outside
                           PriorityPay). Holding in {r.holdingAccountLabel || "no account set"}
@@ -613,7 +540,7 @@ export default function CloseoutPage() {
                         </p>
                       )}
                       {isBusinessOwnerWithEmployees && r.retirementType === "sep_ira" && (
-                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+                        <p className="text-xs text-[#9C3B22] bg-[#FBEEEA] border border-[#F0C9C0] rounded-[14px] px-3 py-2 mb-2">
                           You have employees, so contributing here commits you to the same percentage of
                           compensation for every eligible employee too. Use the calculator below for the real
                           total cost before sending anything.
@@ -633,16 +560,17 @@ export default function CloseoutPage() {
                       />
                       {real?.accountId && r.room > 0 && (
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          <span className="text-xs text-neutral-500">Send $</span>
+                          <span className="text-xs text-[var(--color-neutral-700)]">Send $</span>
                           <input
                             type="number"
+                            onFocus={(e) => e.target.select()}
                             min={0}
                             value={contributeAmounts[r.retirementType] ?? Math.min(r.room, r.holdingAccountBalance ?? r.room)}
                             onChange={(e) => setContributeAmounts((prev) => ({ ...prev, [r.retirementType]: e.target.value }))}
                             className="text-sm font-mono"
                   style={{ width: 96, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                           />
-                          <span className="text-xs text-neutral-500">from</span>
+                          <span className="text-xs text-[var(--color-neutral-700)]">from</span>
                           <div style={{ width: 176, minWidth: 0 }}>
                             <AccountSelect
                               value={contributeFrom[r.retirementType] ?? r.holdingAccountId}
@@ -670,26 +598,46 @@ export default function CloseoutPage() {
 
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-1">Step 3: Estimated Tax Reserve</h2>
-            <p className="text-xs text-neutral-500 mb-4">
-              Current Contribution to Tax Reserve For {periodLabel(period)}:{" "}
-              <span className="font-mono font-semibold text-neutral-700">
+            <div
+              className="mb-4"
+              style={bloomAccentCardStyle({
+                padding: "20px 24px",
+                background: "var(--color-accent-800)",
+                border: "none",
+                color: "#fff",
+              })}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 11,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "var(--color-accent-400)",
+                  marginBottom: 6,
+                }}
+              >
+                Current Contribution to Tax Reserve For {periodLabel(period)}:
+              </div>
+              <div className="font-mono font-bold" style={{ fontFamily: "var(--font-mono)", fontSize: 30, color: "#fff" }}>
                 {currency(recommendations.tax.setAsideThisMonth)}
-              </span>
-            </p>
+              </div>
+            </div>
 
-            <div className="border border-neutral-200 rounded-xl p-4 mb-3">
+            <div className="border border-[var(--color-divider)] rounded-[20px] p-4 mb-3">
               <div className="text-sm font-semibold mb-2">Monthly calculator</div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-neutral-500">Net Monthly Income</span>
+                <span className="text-xs text-[var(--color-neutral-700)]">Net Monthly Income</span>
                 <span className="text-sm font-mono font-semibold">{currency(displayNetIncome)}</span>
               </div>
-              <p className="text-[11px] text-neutral-400 mb-2">
+              <p className="text-[11px] text-[var(--color-neutral-700)] mb-2">
                 Pulled from Step 1&apos;s {isConfirmed ? "confirmed" : "preview"} net income for {periodLabel(period)}.
               </p>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-500">Rate</span>
+                <span className="text-xs text-[var(--color-neutral-700)]">Rate</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={100}
                   value={taxRatePct}
@@ -697,21 +645,22 @@ export default function CloseoutPage() {
                   className="text-sm font-mono"
                   style={{ width: 64, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                 />
-                <span className="text-xs text-neutral-500">%</span>
+                <span className="text-xs text-[var(--color-neutral-700)]">%</span>
                 <span className="text-sm font-mono font-bold ml-auto">{currency(liveTaxEstimate)}</span>
               </div>
             </div>
 
-            <div className="border border-neutral-200 rounded-xl p-4 mb-4">
+            <div className="border border-[var(--color-divider)] rounded-[20px] p-4 mb-4">
               <div className="text-sm font-semibold mb-2">Annual calculator</div>
-              <p className="text-[11px] text-neutral-400 mb-2">
+              <p className="text-[11px] text-[var(--color-neutral-700)] mb-2">
                 Some people haven&apos;t set aside anything for taxes yet this year — use this to see roughly what
                 the whole year&apos;s target should be, not just this month&apos;s.
               </p>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs text-neutral-500">Estimated annual net income</span>
+                <span className="text-xs text-[var(--color-neutral-700)]">Estimated annual net income</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   value={annualNetIncome}
                   onChange={(e) => setAnnualNetIncome(e.target.value)}
@@ -720,9 +669,10 @@ export default function CloseoutPage() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-500">Rate</span>
+                <span className="text-xs text-[var(--color-neutral-700)]">Rate</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   max={100}
                   value={annualTaxRatePct}
@@ -730,17 +680,17 @@ export default function CloseoutPage() {
                   className="text-sm font-mono"
                   style={{ width: 64, fontFamily: "var(--font-heading)", fontSize: 15, color: "var(--color-text)", background: "transparent", border: 0, borderBottom: "1px solid var(--color-divider)", borderRadius: 0, padding: "4px 2px" }}
                 />
-                <span className="text-xs text-neutral-500">%</span>
+                <span className="text-xs text-[var(--color-neutral-700)]">%</span>
                 <span className="text-sm font-mono font-bold ml-auto">{currency(annualTaxEstimate)}</span>
               </div>
             </div>
 
-            <p className="text-xs text-neutral-500 mb-4">
+            <p className="text-xs text-[var(--color-neutral-700)] mb-4">
               This calculator is designed to help you get a very rough estimate of how much to set aside for taxes,
               but actual tax rates and amounts vary. PriorityPay isn&apos;t responsible for this number being
               accurate, and it&apos;s not tax advice. Talk to a tax professional about your real effective rate.
             </p>
-            <p className="text-xs text-neutral-400 mb-3">
+            <p className="text-xs text-[var(--color-neutral-700)] mb-3">
               All of this stays in whichever account you already chose for Tax Reserve on Income Split Rules — this is
               just a number to compare against what&apos;s already there. Want to add more?
             </p>
@@ -749,24 +699,25 @@ export default function CloseoutPage() {
                 <Plus size={14} /> Add money to an account
               </GhostButton>
             ) : (
-              <div className="border border-neutral-200 rounded-xl p-3 space-y-2">
-                <label className="block text-xs text-neutral-500">From</label>
+              <div className="border border-[var(--color-divider)] rounded-[20px] p-3 space-y-2">
+                <label className="block text-xs text-[var(--color-neutral-700)]">From</label>
                 <AccountSelect
                   value={topUp.fromAccountId}
                   onChange={(v) => setTopUp((prev) => ({ ...prev, fromAccountId: v }))}
                   accounts={splitEligibleAccounts}
                   theme="ledger"
                 />
-                <label className="block text-xs text-neutral-500">To</label>
+                <label className="block text-xs text-[var(--color-neutral-700)]">To</label>
                 <AccountSelect
                   value={topUp.toAccountId}
                   onChange={(v) => setTopUp((prev) => ({ ...prev, toAccountId: v }))}
                   accounts={splitEligibleAccounts}
                   theme="ledger"
                 />
-                <label className="block text-xs text-neutral-500">Amount</label>
+                <label className="block text-xs text-[var(--color-neutral-700)]">Amount</label>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   value={topUp.amount}
                   onChange={(e) => setTopUp((prev) => ({ ...prev, amount: e.target.value }))}
@@ -788,7 +739,7 @@ export default function CloseoutPage() {
           {isBusinessOwnerWithEmployees && (
             <Card className="p-6">
               <h2 className="text-sm font-semibold mb-1">Team & Plan Obligations</h2>
-              <p className="text-xs text-neutral-500 mb-4">
+              <p className="text-xs text-[var(--color-neutral-700)] mb-4">
                 For employer payroll tax, unemployment insurance, workers&apos; comp, or a standard 401(k) match --
                 anything your accountant or plan administrator calculates a number for. This routes money toward it
                 automatically, same as everything else above, but it&apos;s money staged and ready, not the actual
@@ -797,19 +748,19 @@ export default function CloseoutPage() {
               </p>
 
               {teamObligationsRow && !editingObligations ? (
-                <div className="border border-neutral-200 rounded-xl p-4">
+                <div className="border border-[var(--color-divider)] rounded-[20px] p-4">
                   <div className="flex items-baseline justify-between text-sm mb-1">
-                    <span className="text-neutral-600">Routing</span>
+                    <span className="text-[var(--color-neutral-800)]">Routing</span>
                     <span className="font-mono font-semibold">{teamObligationsRow.pct}% of every deposit</span>
                   </div>
                   {teamObligationsRow.max !== null && (
                     <div className="flex items-baseline justify-between text-sm mb-1">
-                      <span className="text-neutral-600">Monthly target</span>
+                      <span className="text-[var(--color-neutral-800)]">Monthly target</span>
                       <span className="font-mono font-semibold">{currency(teamObligationsRow.max)}</span>
                     </div>
                   )}
                   <div className="flex items-baseline justify-between text-sm mb-3">
-                    <span className="text-neutral-600">Holding account</span>
+                    <span className="text-[var(--color-neutral-800)]">Holding account</span>
                     <span className="font-mono font-semibold">
                       {accountsById[teamObligationsRow.accountId]
                         ? `${accountsById[teamObligationsRow.accountId].institution_name} •••• ${accountsById[teamObligationsRow.accountId].mask}`
@@ -821,36 +772,38 @@ export default function CloseoutPage() {
                   </GhostButton>
                 </div>
               ) : (
-                <div className="border border-neutral-200 rounded-xl p-4 space-y-3">
+                <div className="border border-[var(--color-divider)] rounded-[20px] p-4 space-y-3">
                   <div>
-                    <label className="block text-xs text-neutral-500 mb-1">
+                    <label className="block text-xs text-[var(--color-neutral-700)] mb-1">
                       % of every deposit to route here
                     </label>
                     <input
                       type="number"
+                      onFocus={(e) => e.target.select()}
                       min={0}
                       max={100}
                       value={obligationsForm.pct !== "" ? obligationsForm.pct : teamObligationsRow?.pct ?? ""}
                       onChange={(e) => setObligationsForm((prev) => ({ ...prev, pct: e.target.value }))}
-                      className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono"
+                      className="w-full text-sm border border-[var(--color-divider)] rounded-[14px] px-3 py-2 font-mono"
                       placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-neutral-500 mb-1">
+                    <label className="block text-xs text-[var(--color-neutral-700)] mb-1">
                       Monthly target (what your accountant/administrator told you to set aside)
                     </label>
                     <input
                       type="number"
+                      onFocus={(e) => e.target.select()}
                       min={0}
                       value={obligationsForm.cap !== "" ? obligationsForm.cap : teamObligationsRow?.max ?? ""}
                       onChange={(e) => setObligationsForm((prev) => ({ ...prev, cap: e.target.value }))}
-                      className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2 font-mono"
+                      className="w-full text-sm border border-[var(--color-divider)] rounded-[14px] px-3 py-2 font-mono"
                       placeholder="Optional"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-neutral-500 mb-1">Holding account</label>
+                    <label className="block text-xs text-[var(--color-neutral-700)] mb-1">Holding account</label>
                     <AccountSelect
                       value={obligationsForm.accountId ?? teamObligationsRow?.accountId ?? null}
                       onChange={(v) => setObligationsForm((prev) => ({ ...prev, accountId: v }))}
@@ -883,7 +836,7 @@ export default function CloseoutPage() {
           {isBusinessOwnerWithEmployees && (
             <Card className="p-6">
               <h2 className="text-sm font-semibold mb-1">Business Account</h2>
-              <p className="text-xs text-neutral-500 mb-4">
+              <p className="text-xs text-[var(--color-neutral-700)] mb-4">
                 Link your business checking or savings account to see its balance right here, next to what&apos;s
                 staged in Team & Plan Obligations above — a quick gut check that there&apos;s actually enough
                 sitting there before you send anything. Read-only: never used for splits or transfers, and never
@@ -892,12 +845,12 @@ export default function CloseoutPage() {
               {businessAccounts.length > 0 && (
                 <div className="space-y-2 mb-3">
                   {businessAccounts.map((acc) => (
-                    <div key={acc.id} className="border border-neutral-200 rounded-xl p-4 flex items-center justify-between">
+                    <div key={acc.id} className="border border-[var(--color-divider)] rounded-[20px] p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Briefcase size={16} className="text-neutral-500" />
+                        <Briefcase size={16} className="text-[var(--color-neutral-700)]" />
                         <div>
                           <div className="text-sm font-medium">{acc.institution_name}</div>
-                          <div className="text-xs text-neutral-500">{acc.account_name} •••• {acc.mask}</div>
+                          <div className="text-xs text-[var(--color-neutral-700)]">{acc.account_name} •••• {acc.mask}</div>
                         </div>
                       </div>
                       <span className="font-mono font-semibold text-sm">{currency(acc.current_balance ?? 0)}</span>
@@ -910,7 +863,7 @@ export default function CloseoutPage() {
                 businessAccount
                 onLinked={() => load(period)}
                 className="text-xs px-4 py-2"
-                style={{ backgroundColor: "#525252" }}
+                style={{ backgroundColor: "var(--color-neutral-800)", borderColor: "var(--color-neutral-800)" }}
               />
             </Card>
           )}
@@ -928,7 +881,7 @@ export default function CloseoutPage() {
       )}
 
       {w2PopupStep !== "closed" && !loading && !isTooEarlyToClose && (
-        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ ...LEDGER_TOKENS, background: "color-mix(in srgb, #171614 55%, transparent)" }}>
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ ...BLOOM_TOKENS, background: "color-mix(in srgb, #241634 55%, transparent)" }}>
           <div
             className="max-w-lg w-full max-h-[90vh] overflow-y-auto p-6"
             style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)" }}
@@ -939,7 +892,7 @@ export default function CloseoutPage() {
                   <Briefcase size={18} style={{ color: "var(--color-accent-700)" }} />
                   <span className="text-base font-bold">Do you have W2 income this month?</span>
                 </div>
-                <p className="text-sm text-neutral-500 mb-6">
+                <p className="text-sm text-[var(--color-neutral-700)] mb-6">
                   If any deposit this month was a W2 paycheck (as opposed to business or side-hustle income),
                   flag it so PriorityPay can leave it out of your retirement contribution room and tax reserve
                   estimate below. This impacts how much you can contribute to your Solo 401k, SEP IRA, and how
@@ -961,12 +914,12 @@ export default function CloseoutPage() {
                   <Briefcase size={18} style={{ color: "var(--color-accent-700)" }} />
                   <span className="text-base font-bold">Flag your W2 paychecks</span>
                 </div>
-                <p className="text-xs text-neutral-500 mb-4">
+                <p className="text-xs text-[var(--color-neutral-700)] mb-4">
                   Toggle on anything that&apos;s a W2 paycheck for {periodLabel(period)}. Everything else stays
                   counted as regular business income. You can always change this later in Step 1 below.
                 </p>
                 {incomeTransactions.length === 0 ? (
-                  <p className="text-sm text-neutral-400 mb-4">
+                  <p className="text-sm text-[var(--color-neutral-700)] mb-4">
                     No income transactions found for {periodLabel(period)} yet — nothing to flag right now.
                   </p>
                 ) : (
@@ -977,11 +930,11 @@ export default function CloseoutPage() {
                       return (
                         <div
                           key={t.id}
-                          className="flex items-center justify-between gap-3 border border-neutral-200 rounded-lg px-3 py-2"
+                          className="flex items-center justify-between gap-3 border border-[var(--color-divider)] rounded-[14px] px-3 py-2"
                         >
                           <div className="min-w-0">
                             <div className="text-sm font-medium truncate">{t.name}</div>
-                            <div className="text-xs text-neutral-400">
+                            <div className="text-xs text-[var(--color-neutral-700)]">
                               {t.txn_date} • {currency(t.amount)}
                             </div>
                           </div>

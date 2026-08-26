@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
-import { Card, PrimaryButton, currency } from "@/components/ui";
-import { LEDGER_TOKENS, ledgerInputStyle, ledgerSelectStyle } from "@/lib/ledgerTheme";
+import { PrimaryButton, currency } from "@/components/ui";
+import { BLOOM_TOKENS, bloomSelectStyle } from "@/lib/bloomTheme";
 import { calculateSepIra, calculateSolo401k, AGE_BRACKETS, BUSINESS_TYPES } from "@/lib/retirementCalculator";
 
 // No persona toggle here (Megan's Aug 2026 note): the "How you're taxed"
@@ -61,42 +61,116 @@ export default function RetirementCalculatorPublicClient() {
   };
   const sepProgress = planProgress(sep.contribution, sepContributed);
   const solo401kProgress = planProgress(solo401k.total, solo401kContributed);
+  const soloBigger = solo401k.total > sep.contribution;
+
+  const plans = [
+    {
+      key: "sep",
+      name: "SEP IRA",
+      total: sep.contribution,
+      isBigger: !soloBigger && sep.contribution > 0,
+      lines: [
+        { label: "Structure", value: "Employer only" },
+        { label: "Compensation base", value: currency(sep.compensation) },
+        { label: "Annual dollar cap", value: currency(sep.cap) },
+      ],
+      capped: sep.cappedByAnnualLimit,
+      cappedNote: `Capped by the annual dollar limit -- the uncapped 20-25% formula would allow ${currency(sep.uncappedContribution)}.`,
+      contributedLabel: "Already contributed to this SEP IRA",
+      contributed: sepContributed,
+      onContributed: (e) => setSepContributed(Math.max(0, Number(e.target.value) || 0)),
+      progress: sepProgress,
+    },
+    {
+      key: "solo401k",
+      name: "Solo 401k",
+      total: solo401k.total,
+      isBigger: soloBigger,
+      lines: [
+        { label: "Employee deferral", value: currency(solo401k.employeeDeferral) },
+        { label: "Employer/profit-share", value: currency(solo401k.employerContribution) },
+        { label: "Overall dollar cap", value: currency(solo401k.cap) },
+      ],
+      capped: solo401k.cappedByAnnualLimit,
+      cappedNote: "Capped by the overall annual limit.",
+      contributedLabel: "Already contributed to this Solo 401k",
+      contributed: solo401kContributed,
+      onContributed: (e) => setSolo401kContributed(Math.max(0, Number(e.target.value) || 0)),
+      progress: solo401kProgress,
+    },
+  ];
 
   return (
-    <div style={LEDGER_TOKENS}>
+    <div style={BLOOM_TOKENS}>
       <PublicHeader />
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px clamp(18px, 4vw, 40px) 80px" }}>
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 400, margin: "0 0 10px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "56px clamp(18px, 4vw, 28px) 96px" }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "clamp(38px, 4.6vw, 52px)",
+            lineHeight: 1.04,
+            letterSpacing: "-0.035em",
+            fontWeight: 800,
+            margin: "0 0 16px",
+          }}
+        >
           Solo 401k + SEP IRA Calculator
         </h1>
-        <p className="text-sm" style={{ maxWidth: 600, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+        <p style={{ fontSize: 19, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "0 0 36px", maxWidth: "42em" }}>
           See how much room you actually have in each for 2026, side by side. Free, no account needed -- for
           self-employed people and business owners only, since W2 employees don't have access to either plan.
         </p>
 
-        <Card style={{ padding: "24px 26px", marginBottom: 24 }}>
-          <div className="flex gap-6 flex-wrap items-end mb-2">
-            <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Expected net income, annual
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+        {/* Inputs card */}
+        <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-divider)", borderRadius: 30, padding: 32 }}>
+          <div className="flex gap-5 flex-wrap">
+            <label className="flex flex-col gap-2" style={{ flex: "1 1 220px" }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>Expected net income, annual</span>
+              <span
+                style={{
+                  marginTop: "auto",
+                  height: 56,
+                  boxSizing: "border-box",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: "var(--color-neutral-100)",
+                  border: "1px solid var(--color-neutral-300)",
+                  borderRadius: 16,
+                  padding: "0 16px",
+                }}
+              >
+                <span style={{ fontSize: 19, fontWeight: 700, color: "var(--color-neutral-700)" }}>$</span>
                 <input
                   type="number"
+                  onFocus={(e) => e.target.select()}
                   min={0}
                   step={1000}
                   value={netIncome}
                   onChange={(e) => setNetIncome(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 140 })}
+                  style={{
+                    flex: 1,
+                    width: "100%",
+                    fontSize: 22,
+                    fontWeight: 800,
+                    color: "var(--color-text)",
+                    background: "none",
+                    border: 0,
+                    padding: 0,
+                    outline: "none",
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "-0.02em",
+                  }}
                 />
               </span>
             </label>
 
-            <label className="text-xs flex flex-col gap-1" style={{ flex: "1 1 300px", maxWidth: 340, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              How you're taxed
+            <label className="flex flex-col gap-2" style={{ flex: "2 1 320px" }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>How you're taxed</span>
               <select
                 value={businessType}
                 onChange={(e) => setBusinessType(e.target.value)}
-                style={ledgerSelectStyle({ fontSize: 13, width: "100%", boxSizing: "border-box" })}
+                style={bloomSelectStyle({ marginTop: "auto", height: 56, fontSize: 16, borderRadius: 16 })}
               >
                 {BUSINESS_TYPES.map((b) => (
                   <option key={b.value} value={b.value}>
@@ -106,9 +180,13 @@ export default function RetirementCalculatorPublicClient() {
               </select>
             </label>
 
-            <label className="text-xs flex flex-col gap-1" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Age bracket
-              <select value={ageBracket} onChange={(e) => setAgeBracket(e.target.value)} style={ledgerSelectStyle({ fontSize: 13 })}>
+            <label className="flex flex-col gap-2" style={{ flex: "1 1 180px" }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>Age bracket</span>
+              <select
+                value={ageBracket}
+                onChange={(e) => setAgeBracket(e.target.value)}
+                style={bloomSelectStyle({ marginTop: "auto", height: 56, fontSize: 16, borderRadius: 16 })}
+              >
                 {AGE_BRACKETS.map((a) => (
                   <option key={a.value} value={a.value}>
                     {a.label}
@@ -117,133 +195,219 @@ export default function RetirementCalculatorPublicClient() {
               </select>
             </label>
           </div>
-          <p className="text-xs mt-1 mb-5" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+          <p
+            style={{
+              fontSize: 16,
+              lineHeight: 1.6,
+              color: "var(--color-neutral-800)",
+              background: "var(--color-accent-100)",
+              borderRadius: 16,
+              padding: "15px 18px",
+              margin: "20px 0 0",
+            }}
+          >
             Just your self-employment or business net income -- if you also have a W2 job, don't include those wages
             here.
           </p>
-        </Card>
-
-        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-          <Card style={{ padding: "26px 28px" }}>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, display: "block", marginBottom: 6 }}>SEP IRA</span>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 600, display: "block", marginBottom: 14 }}>
-              {currency(sep.contribution)}
-            </span>
-            <ul style={{ fontSize: 14, lineHeight: 2, margin: 0, paddingLeft: 18, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-              <li>Employer-only contribution</li>
-              <li>Compensation base: <strong>{currency(sep.compensation)}</strong></li>
-              <li>Annual dollar cap: <strong>{currency(sep.cap)}</strong></li>
-            </ul>
-            {sep.cappedByAnnualLimit && (
-              <p className="text-xs mt-3" style={{ color: "var(--color-accent-700)" }}>
-                Capped by the annual dollar limit -- the uncapped 20-25% formula would allow {currency(sep.uncappedContribution)}.
-              </p>
-            )}
-            <label className="text-xs flex flex-col gap-1 mt-4" style={{ maxWidth: 220, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Already contributed to this SEP IRA
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={500}
-                  value={sepContributed}
-                  onChange={(e) => setSepContributed(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontSize: 15, width: 100 })}
-                />
-              </span>
-            </label>
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
-              {sepProgress.overContributed ? (
-                <p className="text-sm m-0" style={{ color: "#7a2f2a", fontWeight: 600 }}>
-                  {currency(-sepProgress.remaining)} over this estimate -- talk to your plan administrator before
-                  contributing more.
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                    Room left: <strong>{currency(sepProgress.remaining)}</strong>
-                  </p>
-                  {sepProgress.remaining > 0 && (
-                    <p className="text-sm mt-1 mb-0" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
-                      About {currency(sepProgress.monthlyToHitTarget)}/mo for the rest of {new Date().getFullYear()} to hit it
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          </Card>
-
-          <Card style={{ padding: "26px 28px" }}>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, display: "block", marginBottom: 6 }}>Solo 401k</span>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 600, display: "block", marginBottom: 14 }}>
-              {currency(solo401k.total)}
-            </span>
-            <ul style={{ fontSize: 14, lineHeight: 2, margin: 0, paddingLeft: 18, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-              <li>Employee deferral: <strong>{currency(solo401k.employeeDeferral)}</strong></li>
-              <li>Employer/profit-share: <strong>{currency(solo401k.employerContribution)}</strong></li>
-              <li>Overall dollar cap: <strong>{currency(solo401k.cap)}</strong></li>
-            </ul>
-            {solo401k.cappedByAnnualLimit && (
-              <p className="text-xs mt-3" style={{ color: "var(--color-accent-700)" }}>
-                Capped by the overall annual limit.
-              </p>
-            )}
-            <label className="text-xs flex flex-col gap-1 mt-4" style={{ maxWidth: 220, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Already contributed to this Solo 401k
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={500}
-                  value={solo401kContributed}
-                  onChange={(e) => setSolo401kContributed(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontSize: 15, width: 100 })}
-                />
-              </span>
-            </label>
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 16, paddingTop: 14 }}>
-              {solo401kProgress.overContributed ? (
-                <p className="text-sm m-0" style={{ color: "#7a2f2a", fontWeight: 600 }}>
-                  {currency(-solo401kProgress.remaining)} over this estimate -- talk to your plan administrator
-                  before contributing more.
-                </p>
-              ) : (
-                <>
-                  <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                    Room left: <strong>{currency(solo401kProgress.remaining)}</strong>
-                  </p>
-                  {solo401kProgress.remaining > 0 && (
-                    <p className="text-sm mt-1 mb-0" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
-                      About {currency(solo401kProgress.monthlyToHitTarget)}/mo for the rest of {new Date().getFullYear()} to hit it
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          </Card>
         </div>
-        <p className="text-xs mt-3" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+
+        {/* Plan cards */}
+        <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", marginTop: 20 }}>
+          {plans.map((p) => (
+            <div
+              key={p.key}
+              style={{
+                background: p.isBigger ? "#F7F3FF" : "var(--color-neutral-100)",
+                border: `1px solid ${p.isBigger ? "#D9C9FF" : "var(--color-divider)"}`,
+                borderRadius: 30,
+                padding: 30,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <span style={{ flex: 1, fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>{p.name}</span>
+                {p.isBigger && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: "#fff",
+                      background: "var(--color-accent)",
+                      borderRadius: 999,
+                      padding: "5px 10px",
+                    }}
+                  >
+                    More room
+                  </span>
+                )}
+              </div>
+              <div
+                style={{
+                  fontSize: "clamp(34px, 4vw, 44px)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.035em",
+                  color: "#3B1C7A",
+                  margin: "10px 0 20px",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                {currency(p.total)}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {p.lines.map((l) => (
+                  <div
+                    key={l.label}
+                    className="flex items-baseline justify-between gap-3"
+                    style={{ background: "var(--color-surface)", borderRadius: 14, padding: "13px 16px" }}
+                  >
+                    <span style={{ fontSize: 15, color: "var(--color-neutral-800)" }}>{l.label}</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{l.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {p.capped && (
+                <p
+                  style={{
+                    fontSize: 15,
+                    lineHeight: 1.55,
+                    fontWeight: 600,
+                    color: "var(--color-accent-700)",
+                    background: "var(--color-accent-200)",
+                    borderRadius: 14,
+                    padding: "13px 16px",
+                    margin: "12px 0 0",
+                  }}
+                >
+                  {p.cappedNote}
+                </p>
+              )}
+
+              <label className="flex flex-col gap-2" style={{ marginTop: 20 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{p.contributedLabel}</span>
+                <span
+                  style={{
+                    height: 52,
+                    boxSizing: "border-box",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    background: "var(--color-surface)",
+                    border: "1px solid var(--color-neutral-300)",
+                    borderRadius: 14,
+                    padding: "0 16px",
+                  }}
+                >
+                  <span style={{ fontSize: 17, fontWeight: 700, color: "var(--color-neutral-700)" }}>$</span>
+                  <input
+                    type="number"
+                    onFocus={(e) => e.target.select()}
+                    min={0}
+                    step={500}
+                    value={p.contributed}
+                    onChange={p.onContributed}
+                    style={{
+                      flex: 1,
+                      width: "100%",
+                      fontSize: 19,
+                      fontWeight: 800,
+                      color: "var(--color-text)",
+                      background: "none",
+                      border: 0,
+                      padding: 0,
+                      outline: "none",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  />
+                </span>
+              </label>
+
+              <div style={{ marginTop: "auto", paddingTop: 20 }}>
+                {p.progress.overContributed ? (
+                  <p
+                    style={{
+                      fontSize: 16,
+                      lineHeight: 1.55,
+                      fontWeight: 700,
+                      color: "#9C3B22",
+                      background: "#FBEEEA",
+                      borderRadius: 16,
+                      padding: "15px 18px",
+                      margin: 0,
+                    }}
+                  >
+                    {currency(-p.progress.remaining)} over this estimate -- talk to your plan administrator before
+                    contributing more.
+                  </p>
+                ) : (
+                  <div style={{ background: "#3B1C7A", color: "#fff", borderRadius: 20, padding: "20px 22px" }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.75 }}>
+                      Room left
+                    </div>
+                    <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.025em", margin: "6px 0 0", fontFamily: "var(--font-mono)" }}>
+                      {currency(p.progress.remaining)}
+                    </div>
+                    {p.progress.remaining > 0 && (
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#C4A9FA", marginTop: 10 }}>
+                        About {currency(p.progress.monthlyToHitTarget)}/mo for the rest of {new Date().getFullYear()} to hit it
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "16px 0 0" }}>
           The monthly amounts above are a general estimate to help you plan, not financial or tax advice.
         </p>
 
-        <p className="text-sm mt-4" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-          {solo401k.total > sep.contribution
+        <p
+          style={{
+            fontSize: 18,
+            lineHeight: 1.6,
+            color: "var(--color-text)",
+            fontWeight: 600,
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-divider)",
+            borderRadius: 22,
+            padding: "22px 24px",
+            margin: "20px 0 0",
+          }}
+        >
+          {soloBigger
             ? `A Solo 401k gives you ${currency(solo401k.total - sep.contribution)} more room here, mainly because of the separate employee deferral on top of the employer share.`
             : `These come out close to even at this income -- a SEP IRA is simpler to administer if you'd rather skip the extra paperwork a Solo 401k needs.`}
         </p>
 
-        <Card style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "18px 22px", margin: "24px 0 20px" }}>
-          <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+        {/* CTA banner */}
+        <div
+          style={{
+            background: "#EDE6FF",
+            borderRadius: 26,
+            padding: "28px 32px",
+            marginTop: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <p style={{ fontSize: 19, fontWeight: 700, margin: 0, color: "var(--color-text)" }}>
             Want this contributed automatically every time you get paid?
           </p>
           <PrimaryButton onClick={() => router.push("/signup")}>
             Get started free <ArrowRight size={14} />
           </PrimaryButton>
-        </Card>
+        </div>
 
-        <p className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "22px 0 0" }}>
           Estimate only, based on 2026 IRS limits. Not tax advice. Actual eligible contributions depend on plan
           documents and other real-world details a real accountant should confirm.
         </p>

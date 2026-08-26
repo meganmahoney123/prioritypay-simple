@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import PersonaToggle from "@/components/PersonaToggle";
-import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { LEDGER_TOKENS, ledgerInputStyle, ledgerSelectStyle } from "@/lib/ledgerTheme";
+import { Card, PrimaryButton, currency } from "@/components/ui";
+import { BLOOM_TOKENS, bloomSelectStyle } from "@/lib/bloomTheme";
 import {
   FILING_STATUSES,
   estimateSelfEmployedTax,
@@ -14,6 +14,58 @@ import {
   estimateW2Tax,
 } from "@/lib/federalTaxCalculator";
 import { ArrowRight } from "lucide-react";
+
+// Shared field styling for the inputs card -- filled box (not a bare
+// underline), $ prefix, fixed 56px height with margin-top: auto inside a
+// stretched flex label so every control bottom-aligns on one baseline
+// even when a neighboring label wraps to two lines (see spec 04's
+// "baseline alignment" note -- the W2-wages label is the one that wraps).
+function MoneyField({ label, value, onChange, width = 220 }) {
+  return (
+    <label
+      className="flex flex-col gap-2"
+      style={{ flex: "1 1 240px", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}
+    >
+      {label}
+      <span
+        style={{
+          marginTop: "auto",
+          height: 56,
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width,
+          maxWidth: "100%",
+          background: "var(--color-neutral-100)",
+          border: "1px solid var(--color-neutral-300)",
+          borderRadius: "var(--radius-sm)",
+          padding: "0 16px",
+        }}
+      >
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, color: "var(--color-neutral-700)" }}>$</span>
+        <input
+          type="number"
+          onFocus={(e) => e.target.select()}
+          min={0}
+          step={1000}
+          value={value}
+          onChange={onChange}
+          style={{
+            width: "100%",
+            border: 0,
+            background: "transparent",
+            outline: "none",
+            fontFamily: "var(--font-mono)",
+            fontSize: 22,
+            fontWeight: 800,
+            color: "var(--color-text)",
+          }}
+        />
+      </span>
+    </label>
+  );
+}
 
 const pct = (n) => `${Math.round((n || 0) * 1000) / 10}%`;
 
@@ -34,24 +86,61 @@ export default function TaxEstimatorPublicClient() {
 
   const setAsidePct = Math.min(60, Math.ceil((result.effectiveRate || 0) * 100) + 2);
 
+  // Breakdown tiles vary by persona (spec 04): SE tax/income tax/effective
+  // + marginal for self-employed; payroll tax/income tax/effective +
+  // marginal for business owner; income tax/effective/marginal for W2.
+  const tiles =
+    persona === "self_employed"
+      ? [
+          { label: "SE tax (15.3%)", value: currency(result.seTax) },
+          { label: "income tax", value: currency(result.incomeTax) },
+          { label: "effective rate", value: pct(result.effectiveRate) },
+          { label: "marginal bracket", value: pct(result.marginalRate) },
+        ]
+      : persona === "business_owner"
+      ? [
+          { label: `payroll tax on ${currency(result.wages)} wages`, value: currency(result.payrollTax) },
+          { label: "income tax on wages + draw", value: currency(result.incomeTax) },
+          { label: "effective rate", value: pct(result.effectiveRate) },
+          { label: "marginal bracket", value: pct(result.marginalRate) },
+        ]
+      : [
+          { label: "income tax", value: currency(result.incomeTax) },
+          { label: "effective rate", value: pct(result.effectiveRate) },
+          { label: "marginal bracket", value: pct(result.marginalRate) },
+        ];
+
   return (
-    <div style={LEDGER_TOKENS}>
+    <div style={BLOOM_TOKENS}>
       <PublicHeader />
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "48px clamp(18px, 4vw, 40px) 80px" }}>
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 4vw, 40px)", fontWeight: 400, margin: "0 0 10px" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px clamp(18px, 4vw, 40px) 80px" }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "clamp(38px, 4.6vw, 52px)",
+            fontWeight: 800,
+            letterSpacing: "-0.035em",
+            lineHeight: 1.04,
+            margin: "0 0 14px",
+          }}
+        >
           Tax Reserve Estimator
         </h1>
-        <p className="text-sm" style={{ maxWidth: 580, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+        <p style={{ fontSize: 19, lineHeight: 1.6, maxWidth: "42em", color: "var(--color-neutral-800)", margin: "0 0 32px" }}>
           Estimate your 2026 federal tax bill so you know how much to set aside for taxes if you're self employed
           or a business owner.
         </p>
 
-        <Card style={{ padding: "24px 26px", marginBottom: 24 }}>
+        {/* Inputs card */}
+        <div style={{ background: "var(--color-surface)", border: "1px solid var(--color-divider)", borderRadius: 30, padding: 32, marginBottom: 28 }}>
           <PersonaToggle value={persona} onChange={setPersona} />
 
-          <label className="text-xs flex flex-col gap-1 mb-5" style={{ maxWidth: 260, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          <label
+            className="flex flex-col gap-2 mb-5"
+            style={{ maxWidth: 280, fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}
+          >
             Filing status
-            <select value={filingStatus} onChange={(e) => setFilingStatus(e.target.value)} style={ledgerSelectStyle({ fontSize: 14 })}>
+            <select value={filingStatus} onChange={(e) => setFilingStatus(e.target.value)} style={bloomSelectStyle({ height: 56, fontSize: 16 })}>
               {FILING_STATUSES.map((f) => (
                 <option key={f.value} value={f.value}>
                   {f.label}
@@ -61,53 +150,42 @@ export default function TaxEstimatorPublicClient() {
           </label>
 
           {persona === "self_employed" && (
-            <label className="text-xs flex flex-col gap-1" style={{ maxWidth: 280, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Net self-employment income (after business expenses), annual
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={netIncome}
-                  onChange={(e) => setNetIncome(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 160 })}
-                />
-              </span>
-            </label>
+            <div className="flex gap-5 flex-wrap items-end">
+              <MoneyField
+                label="Net self-employment income (after business expenses), annual"
+                value={netIncome}
+                onChange={(e) => setNetIncome(Math.max(0, Number(e.target.value) || 0))}
+                width={220}
+              />
+            </div>
           )}
 
           {persona === "business_owner" && (
-            <div className="flex gap-6 flex-wrap">
-              <label className="text-xs flex flex-col gap-1" style={{ maxWidth: 260, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Total business profit, annual
-                <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1000}
-                    value={businessProfit}
-                    onChange={(e) => setBusinessProfit(Math.max(0, Number(e.target.value) || 0))}
-                    style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 150 })}
-                  />
-                </span>
-              </label>
-              <label className="text-xs flex flex-col gap-1" style={{ maxWidth: 260, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                What you pay yourself in W2 wages, annual
-                <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1000}
-                    value={wagesToSelf}
-                    onChange={(e) => setWagesToSelf(Math.max(0, Number(e.target.value) || 0))}
-                    style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 150 })}
-                  />
-                </span>
-              </label>
-              <p className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)", flexBasis: "100%", margin: 0 }}>
+            <div className="flex gap-5 flex-wrap items-end">
+              <MoneyField
+                label="Total business profit, annual"
+                value={businessProfit}
+                onChange={(e) => setBusinessProfit(Math.max(0, Number(e.target.value) || 0))}
+                width={220}
+              />
+              <MoneyField
+                label="What you pay yourself in W2 wages, annual"
+                value={wagesToSelf}
+                onChange={(e) => setWagesToSelf(Math.max(0, Number(e.target.value) || 0))}
+                width={220}
+              />
+              <p
+                style={{
+                  flexBasis: "100%",
+                  margin: "16px 0 0",
+                  background: "var(--color-accent-100)",
+                  borderRadius: 16,
+                  padding: "14px 18px",
+                  fontSize: 16,
+                  lineHeight: 1.6,
+                  color: "var(--color-neutral-800)",
+                }}
+              >
                 The rest ({currency(result.draw || 0)}) is treated as an owner's draw / distribution -- not subject
                 to payroll tax the way wages are.
               </p>
@@ -115,59 +193,47 @@ export default function TaxEstimatorPublicClient() {
           )}
 
           {persona === "w2" && (
-            <label className="text-xs flex flex-col gap-1" style={{ maxWidth: 260, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-              Gross annual salary
-              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={1000}
-                  value={grossSalary}
-                  onChange={(e) => setGrossSalary(Math.max(0, Number(e.target.value) || 0))}
-                  style={ledgerInputStyle({ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, width: 160 })}
-                />
-              </span>
-            </label>
+            <div className="flex gap-5 flex-wrap items-end">
+              <MoneyField
+                label="Gross annual salary"
+                value={grossSalary}
+                onChange={(e) => setGrossSalary(Math.max(0, Number(e.target.value) || 0))}
+                width={220}
+              />
+            </div>
           )}
-        </Card>
+        </div>
 
-        <Card style={{ padding: "26px 28px", marginBottom: 24 }}>
+        {/* Result panel -- plum, white text, the main visual change */}
+        <div style={{ background: "#3B1C7A", color: "#fff", borderRadius: 30, padding: 34, marginBottom: 28 }}>
           <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>Estimated federal tax</span>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 600 }}>{currency(result.totalTax)}</span>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 700, opacity: 0.85 }}>Estimated federal tax</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(40px, 5vw, 54px)", fontWeight: 800 }}>{currency(result.totalTax)}</span>
           </div>
 
-          <ul style={{ fontSize: 14, lineHeight: 2, margin: "0 0 18px", paddingLeft: 18, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-            {persona === "self_employed" && (
-              <>
-                <li>Self-employment tax (15.3%): <strong>{currency(result.seTax)}</strong></li>
-                <li>Federal income tax: <strong>{currency(result.incomeTax)}</strong></li>
-              </>
-            )}
-            {persona === "business_owner" && (
-              <>
-                <li>Payroll tax on wages (15.3% of {currency(result.wages)}): <strong>{currency(result.payrollTax)}</strong></li>
-                <li>Federal income tax on wages + draw: <strong>{currency(result.incomeTax)}</strong></li>
-              </>
-            )}
-            {persona === "w2" && <li>Federal income tax: <strong>{currency(result.incomeTax)}</strong></li>}
-            <li>Effective rate: <strong>{pct(result.effectiveRate)}</strong> &middot; Marginal bracket: <strong>{pct(result.marginalRate)}</strong></li>
-          </ul>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 20 }}>
+            {tiles.map((t) => (
+              <div key={t.label} style={{ background: "rgba(255,255,255,0.1)", borderRadius: 18, padding: "14px 16px" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 800 }}>{t.value}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, opacity: 0.8, marginTop: 4, textTransform: "capitalize" }}>{t.label}</div>
+              </div>
+            ))}
+          </div>
 
           {persona !== "w2" ? (
-            <p className="text-sm m-0" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
-              Set aside about {setAsidePct}% of every payment to cover this.
-            </p>
+            <div style={{ background: "#fff", borderRadius: 20, padding: "20px 24px", display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap", marginBottom: 16 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 34, fontWeight: 800, color: "#4E22B8" }}>{setAsidePct}%</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text)" }}>Set aside about this much of every payment to cover it.</span>
+            </div>
           ) : (
-            <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            <p style={{ fontSize: 16, lineHeight: 1.6, opacity: 0.85, margin: "0 0 16px" }}>
               Your employer withholds throughout the year. Compare this estimate to what's coming out of your
               paychecks to see if you're on track.
             </p>
           )}
 
           {persona === "business_owner" && result.potentialSavingsVsSelfEmployed > 100 && (
-            <p className="text-sm mt-3" style={{ color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+            <p style={{ fontSize: 16, lineHeight: 1.6, opacity: 0.85, margin: "0 0 16px" }}>
               Running this same {currency(result.businessProfit)} as plain self-employment income (no wages/draw
               split) would cost about <strong>{currency(result.potentialSavingsVsSelfEmployed)} more</strong> in
               payroll/self-employment tax.
@@ -175,23 +241,24 @@ export default function TaxEstimatorPublicClient() {
           )}
 
           {result.overQbiThreshold && (
-            <p className="text-xs mt-3" style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)" }}>
+            <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 16px", fontSize: 15, lineHeight: 1.6 }}>
               Heads up: at this income the 20% qualified business income deduction used here starts phasing out for
               some business types -- worth a real accountant's review at this level.
-            </p>
+            </div>
           )}
-        </Card>
+        </div>
 
-        <Card style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", padding: "18px 22px", marginBottom: 20 }}>
-          <p className="text-sm m-0" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+        {/* CTA banner */}
+        <div style={{ background: "#EDE6FF", borderRadius: 26, padding: "28px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
+          <p style={{ fontSize: 19, fontWeight: 700, margin: 0, color: "var(--color-text)" }}>
             Want this set aside automatically every time you get paid?
           </p>
           <PrimaryButton onClick={() => router.push("/signup")}>
             Get started free <ArrowRight size={14} />
           </PrimaryButton>
-        </Card>
+        </div>
 
-        <p className="text-xs" style={{ color: "color-mix(in srgb, var(--color-text) 45%, transparent)" }}>
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)" }}>
           Estimate only, based on 2026 federal brackets and standard deductions -- not tax advice. Doesn't account
           for state tax, credits, itemized deductions, or other income. Talk to a real accountant for your specific
           situation.

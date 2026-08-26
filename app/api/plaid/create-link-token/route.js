@@ -33,7 +33,7 @@ export async function POST(request) {
     const products = TRANSFER_EXECUTION_MODE === "dwolla_auto" ? [Products.Auth, Products.Transactions] : [Products.Transactions];
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
-      client_name: "PriorityPay Simple",
+      client_name: "PriorityPay",
       products,
       country_codes: [CountryCode.Us],
       language: "en",

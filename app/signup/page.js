@@ -30,10 +30,11 @@ function SignupPageInner() {
     setLoading(true);
     setError(null);
     const supabase = supabaseBrowser();
-    // Dwolla's app-approval review requires that end users explicitly agree
-    // to both PriorityPay's and Dwolla's Terms of Service/Privacy Policy
-    // before their account can move money. Recording the timestamp in
-    // Supabase auth user_metadata (rather than a separate DB table) means
+    // Dwolla never actually originates a transfer in manual_approval mode
+    // (see lib/runSplit.js), so there's no Dwolla-governed identity
+    // verification or money movement happening here to consent to --
+    // just PriorityPay's own Terms/Privacy. Still recording the timestamp
+    // in Supabase auth user_metadata (rather than a separate DB table) so
     // it's captured at the moment of signup with no extra migration or
     // authenticated follow-up call needed -- it persists even if email
     // confirmation is still pending.
@@ -102,25 +103,7 @@ function SignupPageInner() {
               <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
                 Privacy Policy
               </a>
-              , and Dwolla&apos;s{" "}
-              <a
-                href="https://www.dwolla.com/legal/dwolla-account-terms-of-service"
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}
-              >
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a
-                href="https://www.dwolla.com/legal/privacy"
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}
-              >
-                Privacy Policy
-              </a>
-              , which govern the identity verification and money movement Dwolla provides for PriorityPay.
+              .
             </span>
           </label>
         ) : null
