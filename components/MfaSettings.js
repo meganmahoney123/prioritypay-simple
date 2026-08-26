@@ -3,17 +3,9 @@
 import { useEffect, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
-import { ledgerInputStyle } from "@/lib/ledgerTheme";
+import { bloomInputStyle } from "@/lib/bloomTheme";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
-// Optional two-factor authentication (TOTP, via any authenticator app) --
-// this is what makes "Yes - Non-phishing-resistant MFA is performed" an
-// honest answer on Plaid's security questionnaire instead of "No". Opt-in
-// per user, enforced at the session level by middleware.js (see
-// MFA_EXEMPT_PREFIXES there) rather than here -- this component only
-// handles enrolling/removing the factor itself. Supabase's own
-// auth.mfa.* API manages the underlying factor rows; nothing here touches
-// our own schema.
 export default function MfaSettings() {
   const [loading, setLoading] = useState(true);
   const [factor, setFactor] = useState(null); // verified factor, if any
@@ -69,7 +61,6 @@ export default function MfaSettings() {
   };
 
   const cancelEnroll = async () => {
-    // Clean up the half-finished factor so it doesn't linger unverified.
     if (enrolling) {
       const supabase = supabaseBrowser();
       await supabase.auth.mfa.unenroll({ factorId: enrolling.factorId }).catch(() => {});
@@ -133,8 +124,6 @@ export default function MfaSettings() {
             6-digit code it shows you.
           </p>
           {enrolling.qrCode && (
-            // Supabase returns this as an inline SVG data URI -- safe to
-            // drop straight into an <img> src, no extra rendering needed.
             <img src={enrolling.qrCode} alt="Scan with your authenticator app" width={180} height={180} style={{ borderRadius: 8 }} />
           )}
           <details>
@@ -152,10 +141,10 @@ export default function MfaSettings() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))}
               placeholder="123456"
-              style={ledgerInputStyle({ fontSize: 18, letterSpacing: "0.2em", textAlign: "center", padding: "11px 2px" })}
+              style={bloomInputStyle({ fontSize: 18, letterSpacing: "0.2em", textAlign: "center", padding: "11px 2px" })}
             />
           </div>
-          {error && <p style={{ fontSize: 13.5, color: "#7a2f2a", margin: 0 }}>{error}</p>}
+          {error && <p style={{ fontSize: 13.5, color: "#9C3B22", margin: 0 }}>{error}</p>}
           <div className="flex items-center gap-3">
             <PrimaryButton type="submit" disabled={busy || code.length !== 6}>
               {busy && <Loader2 size={14} className="animate-spin" style={{ marginRight: 6 }} />}
@@ -171,7 +160,7 @@ export default function MfaSettings() {
           <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
             Add an authenticator app as a second step when you sign in, on top of your password.
           </p>
-          {error && <p style={{ fontSize: 13.5, color: "#7a2f2a", margin: "0 0 16px" }}>{error}</p>}
+          {error && <p style={{ fontSize: 13.5, color: "#9C3B22", margin: "0 0 16px" }}>{error}</p>}
           <PrimaryButton onClick={startEnroll} disabled={busy}>
             {busy ? "Loading…" : "Set up two-factor authentication"}
           </PrimaryButton>
