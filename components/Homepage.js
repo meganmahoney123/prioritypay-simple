@@ -136,15 +136,15 @@ const FAQS = [
   },
   {
     q: "Does PriorityPay manage or invest my money?",
-    a: "No. PriorityPay only moves money between accounts you already own and control. It is not a bank, broker-dealer, or investment adviser, and never holds or invests your funds. You stay in control of every account.",
+    a: "No. PriorityPay calculates how to split each deposit between accounts you already own and control, and shows you exactly what to send — you complete every transfer yourself. It is not a bank, broker-dealer, or investment adviser, and never holds, invests, or moves your funds. You stay in control of every account.",
   },
   {
     q: "Can I change my percentages later?",
     a: "Anytime, from Split Rules in your dashboard. Add or remove categories, adjust any percentage, and reconnect accounts whenever your income or goals change.",
   },
   {
-    q: "Is my identity and money movement secure?",
-    a: "Yes. PriorityPay verifies your identity before any money can move, and all account connections and transfers run through Plaid and Dwolla, the same infrastructure trusted by banks and other financial apps.",
+    q: "Is my account information secure?",
+    a: "Yes. Account connections run through Plaid, the same infrastructure trusted by banks and other financial apps — PriorityPay only ever gets read-only access to balances and transaction data, never the ability to move money.",
   },
 ];
 

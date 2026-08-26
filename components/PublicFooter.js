@@ -6,10 +6,10 @@ import PriorityPayLogo from "./PriorityPayLogo";
 // /w2 pages). Previously only Homepage had any footer at all -- every
 // other public page had no legal links or business identification
 // anywhere on the page, and Terms/Privacy were reachable only from the
-// signup screen. That's a real gap for a business applying for Dwolla's
-// Access API: reviewers check that a live, public site clearly names
-// the legal entity and links its Terms/Privacy, not just that the pages
-// exist somewhere.
+// signup screen. That's a real gap for a business handling financial
+// data: reviewers (Plaid, App Store, anyone doing diligence) check that a
+// live, public site clearly names the legal entity and links its
+// Terms/Privacy, not just that the pages exist somewhere.
 //
 // Restyled per the Aug 2026 Bloom redesign (spec 02): light footer
 // (#FAF7FD, 1px #EFE7FA top rule, purple logo) replacing the old dark
@@ -71,9 +71,10 @@ export default function PublicFooter() {
         </div>
 
         <p style={{ fontSize: 13, lineHeight: 1.7, margin: 0, maxWidth: "60em", color: "#6B5E7A" }}>
-          PriorityPay routes money between accounts you connect and control. It is not a bank, broker-dealer, or
-          investment adviser, and does not hold or invest your funds. Money movement is performed by Dwolla, Inc., a
-          licensed payment processor; account connections are made through Plaid Inc.
+          PriorityPay calculates how to split deposits between accounts you connect and control, and shows you
+          exactly what to send. It is not a bank, broker-dealer, or investment adviser, and does not hold, invest, or
+          move your funds — every transfer is one you complete yourself. Account connections are made through Plaid
+          Inc.
         </p>
       </div>
     </footer>
