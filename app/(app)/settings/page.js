@@ -6,6 +6,7 @@ import { Card, PrimaryButton } from "@/components/ui";
 import { bloomInputStyle, bloomSelectStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import MfaSettings from "@/components/MfaSettings";
 import AppLockSettingsCard from "@/components/AppLockSettingsCard";
+import DeleteAccountCard from "@/components/DeleteAccountCard";
 
 function daysLeft(trialEndsAt) {
   if (!trialEndsAt) return null;
@@ -262,6 +263,8 @@ function SettingsPageInner() {
         <PrimaryButton onClick={save}>Save</PrimaryButton>
         {saved && <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontStyle: "italic", color: "var(--color-accent-700)" }}>Saved.</span>}
       </div>
+
+      <DeleteAccountCard />
     </div>
   );
 }
