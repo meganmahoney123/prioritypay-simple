@@ -64,9 +64,9 @@ export default function PublicFooter() {
             <Link href="/privacy" style={{ color: "#4B3D5E", fontSize: 13.5, textDecoration: "none" }}>
               Privacy Policy
             </Link>
-            <a href="mailto:megan@ignitemysite.com" style={{ color: "#4B3D5E", fontSize: 13.5, textDecoration: "none" }}>
+            <Link href="/contact" style={{ color: "#4B3D5E", fontSize: 13.5, textDecoration: "none" }}>
               Contact
-            </a>
+            </Link>
           </div>
         </div>
 

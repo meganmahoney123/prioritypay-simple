@@ -1,7 +1,7 @@
 export default function RetirementNote({ label, theme }) {
   const text = (
     <>
-      Connect a regular savings account here, not your real {label}. The account (ideally savings) you connect
+      Connect a regular savings account here, <strong>not your real {label}</strong>. The account (ideally savings) you connect
       here will hold this money. At the end of the month, when you confirm your net income, you can transfer it to
       your {label}. This process avoids over (and under) contributing.
     </>

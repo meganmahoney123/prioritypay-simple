@@ -1,0 +1,28 @@
+{
+  "appId": "co.prioritypay.app",
+  "appName": "PriorityPay",
+  "webDir": "public",
+  "server": {
+    "url": "https://www.prioritypay.co",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#FAF7FD"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#3B1C7A",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#FAF7FD"
+    }
+  }
+}

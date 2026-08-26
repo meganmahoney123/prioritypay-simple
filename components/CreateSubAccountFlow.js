@@ -162,12 +162,6 @@ export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLin
               See how to open one at {bank} ↗
             </a>
           </li>
-          <li>
-            Open a brand-new savings account — not a labeled &quot;bucket&quot; or &quot;goal&quot; inside an
-            account you already have. Some banks offer those, but they share one account number and can&apos;t be
-            linked separately.
-          </li>
-          <li>Name it whatever helps you recognize it, then come back here — you can assign this same account to other costs later too</li>
         </ol>
         <PlaidLinkButton
           label="I opened it — link it now"
@@ -212,12 +206,6 @@ export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLin
             See how to open one at {bank} ↗
           </a>
         </li>
-        <li>
-          Open a brand-new savings account — not a labeled &quot;bucket&quot; or &quot;goal&quot; inside an
-          account you already have. Some banks offer those, but they share one account number and can&apos;t be
-          linked separately.
-        </li>
-        <li>Name it whatever helps you recognize it, then come back here — you can assign this same account to other costs later too</li>
       </ol>
       <PlaidLinkButton
         label="I opened it — link it now"

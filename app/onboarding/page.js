@@ -316,6 +316,27 @@ function OnboardingPageInner() {
     next();
   };
 
+  // Bug fix: `finish()` below sets submitting=true, then hard-navigates to
+  // Stripe Checkout via `window.location.href`. If someone hits their
+  // browser's Back button from Checkout, Chrome/Safari often restore this
+  // page from bfcache (back-forward cache) instead of reloading it --
+  // which means React state is frozen exactly as it was the instant they
+  // left, with submitting still stuck at `true`. The Continue button stays
+  // disabled forever, permanently showing "Redirecting to checkout..."
+  // with no way to retry short of a manual page refresh. `pageshow` fires
+  // on both a normal load AND a bfcache restore, and its `persisted` flag
+  // is only true for the latter -- exactly the case that needs the stuck
+  // state cleared.
+  useEffect(() => {
+    const onPageShow = (event) => {
+      if (event.persisted) {
+        setSubmitting(false);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   // No more 30-day free trial for anyone signing up from here on -- $7/mo
   // is collected via Stripe Checkout right here, before onboarding
   // actually finishes, since PriorityPay now incurs real costs (Plaid,
@@ -649,10 +670,8 @@ function OnboardingPageInner() {
 
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
-              {accounts.length > 0 ? (
+              {accounts.length > 0 && (
                 <PrimaryBtn onClick={() => setShowConfirmAccountsModal(true)} flex>Continue &nbsp;→</PrimaryBtn>
-              ) : (
-                <GhostBtn onClick={next} flex>Skip for now</GhostBtn>
               )}
             </div>
           </div>
@@ -665,7 +684,7 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              Decide what share of each deposit goes where — set savings to 10% and a $100 deposit tells you to
+              Decide what share of each deposit goes where. Set savings to 10% and a $100 deposit tells you to
               send $10 to savings.
             </p>
 
@@ -683,21 +702,6 @@ function OnboardingPageInner() {
               </button>
               {howOpen && (
                 <div style={{ padding: "0 20px 20px", display: "grid", gap: 12 }}>
-                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                    Decide what percentage of each deposit received you want sent to each account.
-                  </p>
-                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                    For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100
-                    deposit, it&apos;ll tell you to send $10 to the savings account connected.
-                  </p>
-                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                    If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot;
-                    and no money will be set aside for that account.
-                  </p>
-                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--color-accent-700)", background: "var(--color-accent-100)", borderRadius: 14, padding: "12px 14px", margin: 0 }}>
-                    Note: Any percentage not assigned to one of the accounts below stays wherever the deposit
-                    landed.
-                  </p>
                   <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
                     <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly cap
                     stops routing to a bucket once it has received that much in a month (it resets
@@ -883,9 +887,8 @@ function OnboardingPageInner() {
             </div>
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
-                PriorityPay is $7/month, billed today to get started — there&apos;s no free trial for new
-                accounts. You&apos;ll enter payment details on Stripe&apos;s secure checkout page next, and can
-                cancel anytime from Settings.
+                PriorityPay is $7/month, billed today to get started. You&apos;ll enter payment details on
+                Stripe&apos;s secure checkout page next, and can cancel anytime from Settings.
               </p>
             </div>
             {paymentError && (
