@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton } from "@/components/ui";
-import { LEDGER_TOKENS, ledgerInputStyle, ledgerSelectStyle } from "@/lib/ledgerTheme";
+import { bloomInputStyle, bloomSelectStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import MfaSettings from "@/components/MfaSettings";
 
 function daysLeft(trialEndsAt) {
@@ -23,14 +23,6 @@ function SettingsPageInner() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [billingBusy, setBillingBusy] = useState(false);
-  // ?billing=success / ?billing=cancelled -- set by the redirect back from
-  // Stripe Checkout / the Stripe billing portal (see success_url/
-  // cancel_url in app/api/billing/checkout, return_url in
-  // app/api/billing/portal). The real subscription_status update comes
-  // from the Stripe webhook, which usually lands within a second or two
-  // of checkout completing but isn't guaranteed to have arrived by the
-  // time this redirect does -- this banner is just an immediate
-  // acknowledgement, not the source of truth (profile.billing is).
   const billingRedirect = searchParams.get("billing");
 
   useEffect(() => {
@@ -72,7 +64,7 @@ function SettingsPageInner() {
   const isActive = billing.subscriptionStatus === "active";
 
   return (
-    <div className="max-w-2xl space-y-6" style={LEDGER_TOKENS}>
+    <div className="max-w-2xl space-y-6">
       <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Billing</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 20 }} />
@@ -99,23 +91,23 @@ function SettingsPageInner() {
           </>
         ) : billing.readOnly ? (
           <>
-            <p style={{ fontSize: 15, margin: "0 0 16px", color: "#a15c2a" }}>
+            <div className="text-sm" style={{ ...bloomWarningCardStyle(), padding: 16, margin: "0 0 16px" }}>
               Your 30-day free trial ended{billing.trialEndsAt ? ` on ${formatDate(billing.trialEndsAt)}` : ""}.
               You can still see your split rules and history, but connecting new accounts and moving money are
               paused until you subscribe.
-            </p>
+            </div>
             <PrimaryButton onClick={subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Subscribe — $7/month"}
             </PrimaryButton>
           </>
         ) : (
           <>
-            <p style={{ fontSize: 15, margin: "0 0 16px" }}>
+            <div className="text-sm" style={{ ...bloomNoticeCardStyle(), padding: 16, margin: "0 0 16px" }}>
               {remaining === null
                 ? "You're on PriorityPay's 30-day free trial."
                 : `${remaining} day${remaining === 1 ? "" : "s"} left in your free trial`}
               {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}. $7/month after that.
-            </p>
+            </div>
             <PrimaryButton onClick={subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Subscribe now"}
             </PrimaryButton>
@@ -138,7 +130,7 @@ function SettingsPageInner() {
             <input
               value={profile.businessName || ""}
               onChange={(e) => { setSaved(false); setProfile((p) => ({ ...p, businessName: e.target.value })); }}
-              style={ledgerInputStyle({ fontSize: 16, padding: "11px 2px" })}
+              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
             />
           </div>
           <div>
@@ -150,7 +142,7 @@ function SettingsPageInner() {
             <select
               value={profile.entityType || ""}
               onChange={(e) => { setSaved(false); setProfile((p) => ({ ...p, entityType: e.target.value })); }}
-              style={ledgerSelectStyle({ fontSize: 16, padding: "11px 2px" })}
+              style={bloomSelectStyle({ fontSize: 16, padding: "11px 2px" })}
             >
               <option>Sole proprietor / freelancer</option>
               <option>LLC</option>
@@ -196,7 +188,7 @@ function SettingsPageInner() {
               const v = Math.max(100, Number(e.target.value) || 100);
               setProfile((p) => ({ ...p, minDepositThreshold: v }));
             }}
-            style={ledgerInputStyle({ fontSize: 16, padding: "11px 2px" })}
+            style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
           />
         </div>
       </Card>
@@ -236,7 +228,7 @@ function SettingsPageInner() {
                 setSaved(false);
                 setProfile((p) => ({ ...p, notifications: { ...p.notifications, phoneNumber: e.target.value } }));
               }}
-              style={ledgerInputStyle({ fontSize: 16, padding: "11px 2px" })}
+              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
             />
           </div>
           <div>
@@ -257,7 +249,7 @@ function SettingsPageInner() {
                 const v = e.target.value === "" ? "" : Number(e.target.value);
                 setProfile((p) => ({ ...p, notifications: { ...p.notifications, smsThreshold: v } }));
               }}
-              style={ledgerInputStyle({ fontSize: 16, padding: "11px 2px" })}
+              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
             />
           </div>
         </div>
@@ -271,11 +263,6 @@ function SettingsPageInner() {
   );
 }
 
-// useSearchParams() (used above to read ?billing=success/cancelled off the
-// Stripe Checkout/portal redirect) requires a Suspense boundary in the app
-// router, or Next.js fails the build with "missing-suspense-with-csr-
-// bailout" -- everything else on this page loads instantly from one
-// fetch, so the fallback is never visibly shown in practice.
 export default function SettingsPage() {
   return (
     <Suspense fallback={null}>
