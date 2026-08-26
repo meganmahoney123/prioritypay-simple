@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
+import AppLockGate from "@/components/AppLockGate";
 
 // Payments tab removed -- every deposit splits automatically the moment
 // Plaid's webhook detects it (see app/api/plaid/webhook), so there's no
@@ -107,6 +108,7 @@ export default function AppShell({ children, isSandbox = false }) {
   };
 
   return (
+    <AppLockGate>
     <div
       className="pp-ledger-shell"
       style={{
@@ -377,5 +379,6 @@ export default function AppShell({ children, isSandbox = false }) {
         }
       `}</style>
     </div>
+    </AppLockGate>
   );
 }

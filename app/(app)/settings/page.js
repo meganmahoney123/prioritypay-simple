@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton } from "@/components/ui";
 import { bloomInputStyle, bloomSelectStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import MfaSettings from "@/components/MfaSettings";
+import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 
 function daysLeft(trialEndsAt) {
   if (!trialEndsAt) return null;
@@ -254,6 +255,8 @@ function SettingsPageInner() {
           </div>
         </div>
       </Card>
+
+      <AppLockSettingsCard />
 
       <div className="flex items-center gap-4">
         <PrimaryButton onClick={save}>Save</PrimaryButton>
