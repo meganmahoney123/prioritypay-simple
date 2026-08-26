@@ -1,16 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Badge, currency } from "@/components/ui";
+import { Card, currency } from "@/components/ui";
+import { bloomBadgeStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 
-// Transaction history -- required by Dwolla's app-approval review, which
-// expects end users to be able to access at least two years of
-// transaction history in-app (date, amount, status, and enough detail to
-// identify what each transaction was). This reads the same
-// simple_transfers/simple_transfer_allocations rows that already power
-// the Dashboard's month/year totals, just rendered per-transaction
-// instead of aggregated, and with no date-range limit (so it naturally
-// covers the account's full history, not just a recent window).
 function formatDate(iso) {
   return new Date(iso).toLocaleString("en-US", {
     dateStyle: "medium",
@@ -19,14 +12,19 @@ function formatDate(iso) {
 }
 
 function statusTone(status) {
-  if (status === "completed" || status === "processed") return "emerald";
+  if (status === "completed" || status === "processed") return "accent";
   if (status === "failed" || status === "cancelled") return "neutral";
-  return "amber"; // pending / reserved / processing / needs_approval
+  return "accent"; // pending / reserved / processing / needs_approval
 }
 
-// 'needs_approval' is a manual-approval-mode allocation the user hasn't
-// confirmed sending yet (see TRANSFER_EXECUTION_MODE in lib/runSplit.js) --
-// worth a plainer label here than the raw status string.
+function StatusPill({ tone = "accent", children }) {
+  const tones = {
+    accent: {},
+    neutral: { color: "var(--color-neutral-700)", background: "var(--color-neutral-200)" },
+  };
+  return <span style={bloomBadgeStyle(tones[tone])}>{children}</span>;
+}
+
 function statusLabel(status) {
   if (status === "needs_approval") return "awaiting you";
   return status;
@@ -57,19 +55,19 @@ export default function HistoryPage() {
 
   if (error) {
     return (
-      <Card className="p-4 text-sm" style={{ color: "#7a2f2a" }}>
+      <Card className="p-4 text-sm" style={bloomWarningCardStyle()}>
         {error}
       </Card>
     );
   }
 
   if (!transfers) {
-    return <p className="text-sm text-neutral-500">Loading…</p>;
+    return <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>Loading…</p>;
   }
 
   if (transfers.length === 0) {
     return (
-      <Card className="p-4 text-sm" style={{ color: "var(--color-text)" }}>
+      <Card className="p-4 text-sm" style={{ color: "var(--color-neutral-700)" }}>
         No transactions yet. Once a deposit lands in a linked account and gets split, it&apos;ll show up here.
       </Card>
     );
@@ -78,15 +76,17 @@ export default function HistoryPage() {
   return (
     <div className="space-y-3">
       {transfers.map((t) => (
-        <Card key={t.id} className="p-4">
+        <Card key={t.id} className="p-4" style={{ borderRadius: 20 }}>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <div style={{ minWidth: 160 }}>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 15 }}>{currency(t.source_amount)} split</div>
-              <div style={{ fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, color: "var(--color-accent-700)" }}>
+                {currency(t.source_amount)} split
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--color-neutral-700)" }}>
                 {formatDate(t.created_at)} · <TriggerLabel trigger={t.trigger} />
               </div>
             </div>
-            <Badge tone={statusTone(t.status)}>{statusLabel(t.status)}</Badge>
+            <StatusPill tone={statusTone(t.status)}>{statusLabel(t.status)}</StatusPill>
           </div>
 
           {Array.isArray(t.simple_transfer_allocations) && t.simple_transfer_allocations.length > 0 && (
@@ -104,8 +104,8 @@ export default function HistoryPage() {
                 <div key={i} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 13.5 }}>
                   <span>{a.label}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span>{currency(a.amount)}</span>
-                    <Badge tone={statusTone(a.status)}>{a.reserved_only ? "reserved" : statusLabel(a.status)}</Badge>
+                    <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-text)" }}>{currency(a.amount)}</span>
+                    <StatusPill tone={statusTone(a.status)}>{a.reserved_only ? "reserved" : statusLabel(a.status)}</StatusPill>
                   </span>
                 </div>
               ))}
