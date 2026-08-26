@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { LEDGER_TOKENS } from "@/lib/ledgerTheme";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 
 // Payments tab removed -- every deposit splits automatically the moment
@@ -48,19 +48,21 @@ function NavLink({ href, label, active, onClick }) {
     <a
       href={href}
       onClick={onClick}
-      className="pp-ledger-navlink"
+      aria-current={active ? "page" : undefined}
+      className="pp-bloom-navlink"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 10,
         width: "100%",
         textAlign: "left",
-        background: active ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
-        borderLeft: `2px solid ${active ? "var(--color-accent)" : "transparent"}`,
+        background: active ? "var(--color-accent-200)" : "transparent",
+        borderRadius: 14,
         cursor: "pointer",
         padding: "12px 13px",
         fontFamily: "var(--font-heading)",
         fontSize: 16,
+        fontWeight: active ? 700 : 500,
         letterSpacing: "0.01em",
         whiteSpace: "nowrap",
         color: active ? "var(--color-accent-700)" : "var(--color-text)",
@@ -72,7 +74,7 @@ function NavLink({ href, label, active, onClick }) {
           width: 5,
           height: 5,
           borderRadius: "50%",
-          background: active ? "var(--color-accent)" : "color-mix(in srgb, var(--color-text) 25%, transparent)",
+          background: active ? "var(--color-accent)" : "var(--color-neutral-400)",
           flex: "none",
         }}
       />
@@ -108,16 +110,17 @@ export default function AppShell({ children, isSandbox = false }) {
     <div
       className="pp-ledger-shell"
       style={{
-        ...LEDGER_TOKENS,
+        ...BLOOM_TOKENS,
         minHeight: "100vh",
         display: "flex",
         flexWrap: "wrap",
         alignItems: "stretch",
+        background: "var(--color-bg)",
       }}
     >
       <aside
         className="pp-shell-aside"
-        style={{ flex: "1 1 232px", minWidth: 0, borderRight: "1px solid var(--color-divider)", background: "var(--color-neutral-100)" }}
+        style={{ flex: "1 1 250px", minWidth: 0, borderRight: "1px solid var(--color-divider)", background: "var(--color-surface)" }}
       >
           <div style={{ position: "sticky", top: 0, padding: "20px 0 22px" }}>
             <div style={{ display: "flex", alignItems: "center", padding: "0 22px 20px" }}>
@@ -132,14 +135,16 @@ export default function AppShell({ children, isSandbox = false }) {
               <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
               <button
                 onClick={handleLogout}
+                className="pp-bloom-logout"
                 style={{
                   background: "transparent",
                   border: 0,
                   cursor: "pointer",
                   padding: 0,
                   fontFamily: "var(--font-body)",
-                  fontSize: 14,
-                  color: "color-mix(in srgb, var(--color-text) 52%, transparent)",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: "var(--color-neutral-700)",
                 }}
               >
                 Log out
@@ -161,7 +166,7 @@ export default function AppShell({ children, isSandbox = false }) {
             gap: "10px 20px",
             padding: "22px clamp(20px, 3.5vw, 44px)",
             borderBottom: "1px solid var(--color-divider)",
-            background: "color-mix(in srgb, var(--color-bg) 92%, transparent)",
+            background: "rgba(250,247,253,0.92)",
             backdropFilter: "blur(10px)",
           }}
         >
@@ -178,7 +183,7 @@ export default function AppShell({ children, isSandbox = false }) {
                 width: 40,
                 height: 40,
                 background: "transparent",
-                border: "1px solid var(--color-divider)",
+                border: "1px solid var(--color-neutral-300)",
                 borderRadius: "var(--radius-sm)",
                 cursor: "pointer",
                 color: "var(--color-text)",
@@ -186,7 +191,7 @@ export default function AppShell({ children, isSandbox = false }) {
             >
               <Menu size={18} />
             </button>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 400, margin: 0, letterSpacing: "-0.01em" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
               {titleFor(pathname)}
             </h1>
           </span>
@@ -195,11 +200,13 @@ export default function AppShell({ children, isSandbox = false }) {
               className="pp-shell-badge"
               style={{
                 fontFamily: "var(--font-heading)",
-                fontSize: 11,
-                letterSpacing: "0.18em",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.14em",
                 textTransform: "uppercase",
                 color: "var(--color-accent-700)",
-                border: "1px solid var(--color-accent)",
+                background: "var(--color-accent-100)",
+                border: "1px solid var(--color-accent-400)",
                 borderRadius: 999,
                 padding: "6px 14px",
                 whiteSpace: "nowrap",
@@ -217,14 +224,14 @@ export default function AppShell({ children, isSandbox = false }) {
       {narrow && menuOpen && (
         <div
           onClick={() => setMenuOpen(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 70, background: "color-mix(in srgb, #171614 48%, transparent)", display: "flex" }}
+          style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(36,22,52,0.5)", display: "flex" }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "min(84vw, 300px)",
-              background: "var(--color-neutral-100)",
-              borderRight: "1px solid var(--color-divider)",
+              background: "var(--color-surface)",
+              borderRadius: "0 24px 24px 0",
               boxShadow: "var(--shadow-lg)",
               padding: "20px 0 26px",
               display: "flex",
@@ -236,7 +243,7 @@ export default function AppShell({ children, isSandbox = false }) {
               <button
                 onClick={() => setMenuOpen(false)}
                 aria-label="Close menu"
-                style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "color-mix(in srgb, var(--color-text) 50%, transparent)", padding: 4 }}
+                style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "var(--color-neutral-700)", padding: 4 }}
               >
                 <X size={20} />
               </button>
@@ -258,7 +265,7 @@ export default function AppShell({ children, isSandbox = false }) {
               <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
               <button
                 onClick={handleLogout}
-                style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, fontFamily: "var(--font-body)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 52%, transparent)" }}
+                style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: "var(--color-neutral-700)" }}
               >
                 Log out
               </button>
@@ -294,25 +301,29 @@ export default function AppShell({ children, isSandbox = false }) {
           .pp-shell-badge {
             font-size: 10px !important;
             padding: 5px 10px !important;
-            letter-spacing: 0.12em !important;
+            letter-spacing: 0.1em !important;
           }
         }
-        .pp-ledger-navlink:hover {
+        .pp-bloom-navlink:hover {
+          background: var(--color-accent-100) !important;
+          color: var(--color-accent-700) !important;
+        }
+        .pp-bloom-logout:hover {
           color: var(--color-accent-700) !important;
         }
         .pp-ledger-btn-primary:hover {
-          background: var(--color-accent-600) !important;
-          border-color: var(--color-accent-600) !important;
+          background: var(--color-accent-700) !important;
+          border-color: var(--color-accent-700) !important;
         }
         .pp-ledger-btn-ghost:hover {
           border-color: var(--color-accent) !important;
           color: var(--color-accent-700) !important;
         }
         body {
-          background: var(--color-bg, #f3f2f2);
+          background: var(--color-bg, #FAF7FD);
         }
         /* Section headings across Dashboard/Accounts/Income Split Rules/Close
-           Out/Settings inherit the Ledger serif heading font -- weight
+           Out/Settings inherit the shared heading font -- weight
            still comes from each element's own Tailwind font-* class, this
            only swaps the typeface. */
         .pp-ledger-shell h1,
@@ -320,7 +331,7 @@ export default function AppShell({ children, isSandbox = false }) {
         .pp-ledger-shell h3,
         .pp-ledger-shell h4 {
           font-family: var(--font-heading);
-          letter-spacing: -0.005em;
+          letter-spacing: -0.01em;
         }
         .pp-ledger-shell input,
         .pp-ledger-shell select,
@@ -331,8 +342,11 @@ export default function AppShell({ children, isSandbox = false }) {
            borders/backgrounds/text left inside page-specific markup (card
            containers, info banners, muted copy) across Dashboard/
            Accounts/Income Split Rules/Close Out/Settings -- keeps every leftover
-           spot visually consistent with the Ledger palette without
-           needing to hand-convert every className. */
+           spot visually consistent with the Bloom palette without
+           needing to hand-convert every className. Screens not yet migrated
+           off Ledger tokens still render inside this same shell, so these
+           mappings intentionally target Bloom colors now that the shell
+           itself has moved. */
         .pp-ledger-shell .border-neutral-200,
         .pp-ledger-shell .border-neutral-100 {
           border-color: var(--color-divider) !important;
@@ -347,15 +361,15 @@ export default function AppShell({ children, isSandbox = false }) {
         }
         .pp-ledger-shell .bg-neutral-50,
         .pp-ledger-shell .bg-white {
-          background: var(--color-bg) !important;
+          background: var(--color-surface) !important;
         }
         .pp-ledger-shell .text-neutral-400,
         .pp-ledger-shell .text-neutral-500 {
-          color: color-mix(in srgb, var(--color-text) 55%, transparent) !important;
+          color: var(--color-neutral-700) !important;
         }
         .pp-ledger-shell .text-neutral-600,
         .pp-ledger-shell .text-neutral-700 {
-          color: color-mix(in srgb, var(--color-text) 75%, transparent) !important;
+          color: var(--color-neutral-800) !important;
         }
         .pp-ledger-shell input,
         .pp-ledger-shell select {
