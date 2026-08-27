@@ -21,6 +21,7 @@ export default function sitemap() {
     { path: "/business-owner", priority: 0.6, changeFrequency: "weekly" },
     { path: "/w2", priority: 0.6, changeFrequency: "weekly" },
     { path: "/self-employed/sole-proprietor-vs-llc-vs-s-corp", priority: 0.8, changeFrequency: "monthly" },
+    { path: "/self-employed/self-employed-tax-guide", priority: 0.85, changeFrequency: "monthly" },
   ];
 
   return routes.map((r) => ({

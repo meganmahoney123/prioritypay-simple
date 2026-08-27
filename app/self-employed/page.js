@@ -14,6 +14,11 @@ export const metadata = {
 
 const ARTICLES = [
   {
+    href: "/self-employed/self-employed-tax-guide",
+    title: "Taxes for Self Employed: The Complete Guide",
+    dek: "Every form, deadline, deduction and credit that applies to self-employment taxes, in plain English -- plus a 4-question filter that shortens the guide to just your situation.",
+  },
+  {
     href: "/self-employed/sole-proprietor-vs-llc-vs-s-corp",
     title: "Sole Proprietor vs. LLC vs. S-Corp",
     dek: "See what a year looks like as each structure side by side, using your own numbers. Free 2026 calculator plus a plain-English guide.",
