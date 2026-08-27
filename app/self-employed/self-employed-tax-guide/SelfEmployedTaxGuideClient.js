@@ -13,9 +13,18 @@ import guideStyles from "./guideStyles";
 // inconsistent with the rest of the redesigned site. Same 39-topic content,
 // restyled to match. guideHtml.js/guideStyles.js are extracted straight from
 // the approved design file (see the comments in each) with one change:
-// guideStyles.js's CSS is wrapped in @scope (.se-guide) so its :root-level
-// color/font variables and bare-tag selectors (body, p, a, h1...) can never
-// leak onto PublicHeader/PublicFooter or any other page. The design file's
+// guideStyles.js's CSS has every selector prefixed with ".se-guide " (its
+// :root/body rules become plain ".se-guide") so its color/font variables and
+// bare-tag selectors (body, p, a, h1...) can never leak onto PublicHeader/
+// PublicFooter or any other page. This is a manual-prefix scope rather than
+// the CSS @scope at-rule -- an earlier version used @scope and merged the
+// "se-guide" class directly onto the .wrap div, which silently broke that
+// div's own ".wrap{max-width:1000px...}" centering rule (rendering the page
+// flush to the left edge instead of centered) because @scope's handling of
+// non-:scope selectors matching the scope root itself proved unreliable.
+// guideHtml's .wrap div is now nested inside a real <div className="se-guide">
+// wrapper below, so ".se-guide .wrap" is a genuine, unambiguous descendant
+// selector. The design file's
 // own <header class="site-head">/<footer class="site-foot"> are dropped in
 // favor of the real PublicHeader/PublicFooter components below -- also why
 // this doesn't reintroduce the design file's own footer copy, which still
@@ -173,7 +182,9 @@ export default function SelfEmployedTaxGuideClient() {
           is needed here. */}
       <style dangerouslySetInnerHTML={{ __html: guideStyles }} />
       <PublicHeader />
-      <div dangerouslySetInnerHTML={{ __html: guideHtml }} />
+      <div className="se-guide">
+        <div dangerouslySetInnerHTML={{ __html: guideHtml }} />
+      </div>
       <PublicFooter />
     </>
   );
