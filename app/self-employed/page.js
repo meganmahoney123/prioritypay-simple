@@ -16,7 +16,7 @@ const ARTICLES = [
   {
     href: "/self-employed/self-employed-tax-guide",
     title: "Taxes for Self Employed: The Complete Guide",
-    dek: "Every form, deadline, deduction and credit that applies to self-employment taxes, in plain English -- plus a 4-question filter that shortens the guide to just your situation.",
+    dek: "Understand the basics of how taxes work for self employed individuals. This guide discusses every form, deadline, deduction and credit that applies to self-employment taxes, in plain English.",
   },
   {
     href: "/self-employed/sole-proprietor-vs-llc-vs-s-corp",
