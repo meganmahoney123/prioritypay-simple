@@ -6,15 +6,21 @@ import PublicFooter from "@/components/PublicFooter";
 import guideHtml from "./guideHtml";
 import guideStyles from "./guideStyles";
 
-// Renders the authored long-form guide (se-basics-guide_3.html) essentially
-// verbatim -- its own gold/serif "editorial" look was designed as a complete
-// standalone document, distinct on purpose from the rest of the site's
-// purple Bloom theme, so this doesn't try to force it into Bloom's tokens.
-// guideHtml.js/guideStyles.js are extracted straight from that file (see the
-// comments in each) with one change: guideStyles.js's CSS is wrapped in
-// @scope (.se-guide) so its :root-level color/font variables and bare-tag
-// selectors (body, p, a, h1...) can never leak onto PublicHeader/
-// PublicFooter or any other page.
+// Renders the approved Bloom-theme design ("PriorityPay SE Tax Guide.html",
+// from the Aug 2026 redesign handoff zip) essentially verbatim -- this
+// replaced an earlier version built from a different draft
+// (se-basics-guide_3.html) that used its own gold/serif "editorial" look,
+// inconsistent with the rest of the redesigned site. Same 39-topic content,
+// restyled to match. guideHtml.js/guideStyles.js are extracted straight from
+// the approved design file (see the comments in each) with one change:
+// guideStyles.js's CSS is wrapped in @scope (.se-guide) so its :root-level
+// color/font variables and bare-tag selectors (body, p, a, h1...) can never
+// leak onto PublicHeader/PublicFooter or any other page. The design file's
+// own <header class="site-head">/<footer class="site-foot"> are dropped in
+// favor of the real PublicHeader/PublicFooter components below -- also why
+// this doesn't reintroduce the design file's own footer copy, which still
+// says "Money movement is performed by Dwolla, Inc." (stale, already
+// corrected sitewide in PublicFooter.js).
 //
 // The interactive "shorten this guide to my situation" filter (four
 // dropdowns + checkboxes that hide irrelevant rows) is the same vanilla JS
@@ -162,10 +168,9 @@ export default function SelfEmployedTaxGuideClient() {
 
   return (
     <>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
-      />
+      {/* Figtree + IBM Plex Mono (the design's --display/--body/--util fonts)
+          are already loaded globally in app/layout.js, so no font <link>
+          is needed here. */}
       <style dangerouslySetInnerHTML={{ __html: guideStyles }} />
       <PublicHeader />
       <div dangerouslySetInnerHTML={{ __html: guideHtml }} />
