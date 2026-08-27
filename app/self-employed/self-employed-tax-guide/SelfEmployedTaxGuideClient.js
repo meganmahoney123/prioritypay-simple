@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import guideHtml from "./guideHtml";
 import guideStyles from "./guideStyles";
 
@@ -24,7 +25,12 @@ import guideStyles from "./guideStyles";
 // non-:scope selectors matching the scope root itself proved unreliable.
 // guideHtml's .wrap div is now nested inside a real <div className="se-guide">
 // wrapper below, so ".se-guide .wrap" is a genuine, unambiguous descendant
-// selector. The design file's
+// selector. PublicHeader/PublicFooter are also wrapped in BLOOM_TOKENS here
+// (as every other page that renders them directly does, e.g.
+// sole-proprietor-vs-llc-vs-s-corp/EntityScenarioClient.js) -- an earlier
+// version omitted this, which left CSS vars like --color-accent undefined
+// for the header, so its "Get started" button rendered with a transparent
+// background instead of solid purple. The design file's
 // own <header class="site-head">/<footer class="site-foot"> are dropped in
 // favor of the real PublicHeader/PublicFooter components below -- also why
 // this doesn't reintroduce the design file's own footer copy, which still
@@ -176,7 +182,7 @@ export default function SelfEmployedTaxGuideClient() {
   }, []);
 
   return (
-    <>
+    <div style={BLOOM_TOKENS}>
       {/* Figtree + IBM Plex Mono (the design's --display/--body/--util fonts)
           are already loaded globally in app/layout.js, so no font <link>
           is needed here. */}
@@ -186,6 +192,6 @@ export default function SelfEmployedTaxGuideClient() {
         <div dangerouslySetInnerHTML={{ __html: guideHtml }} />
       </div>
       <PublicFooter />
-    </>
+    </div>
   );
 }
