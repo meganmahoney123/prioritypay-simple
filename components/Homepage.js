@@ -124,19 +124,15 @@ const STRATEGIES = [
 const FAQS = [
   {
     q: "Who is PriorityPay for?",
-    a: "PriorityPay is built for self-employed people — freelancers, sole proprietors, single-member LLCs, and S-Corps — along with anyone earning side income, even if you also have a W2 job. If you get paid in a way that doesn't automatically set aside money for taxes and retirement the way a traditional payroll job does, PriorityPay is for you.",
+    a: "PriorityPay is built primarily for self-employed people, W2 employees with side income, and entrepreneurs to manage their spend more efficiently. You can set rules to route a percentage of each deposit to specific accounts, like savings, tax reserve, investments, retirement, and specific savings like a wedding, a down payment on a house, or college.",
   },
   {
-    q: "Do I need to already have a Solo 401k or SEP IRA?",
-    a: "Yes. PriorityPay isn't a bank or an investment custodian, so it doesn't open retirement or brokerage accounts for you. You open a Solo 401k, SEP IRA, or investment account with a provider of your choice, then connect it to PriorityPay so your percentage split routes money there automatically.",
-  },
-  {
-    q: "What accounts and apps can I connect?",
-    a: "Any US bank or credit union checking or savings account through Plaid — including all the major banks and roughly 12,000 smaller banks and credit unions.",
+    q: "What accounts can I connect?",
+    a: "Any US bank, credit union, or investment/retirement account through Plaid — including all the major banks and roughly 12,000 smaller banks and credit unions.",
   },
   {
     q: "Does PriorityPay manage or invest my money?",
-    a: "No. PriorityPay calculates how to split each deposit between accounts you already own and control, and shows you exactly what to send — you complete every transfer yourself. It is not a bank, broker-dealer, or investment adviser, and never holds, invests, or moves your funds. You stay in control of every account.",
+    a: "No. PriorityPay allows you to set percentage rules to send a portion of each deposit to specific accounts. For example, you can set rules to send 10% of each deposit to a tax reserve account, 15% of each deposit to savings, and 15% of each deposit to retirement. However, PriorityPay does not actually touch your money or move it for you. You complete every transfer yourself. PriorityPay is not a bank, broker-dealer, or investment adviser, and never holds, invests, or moves your funds. You stay in control of every account.",
   },
   {
     q: "Can I change my percentages later?",
@@ -144,7 +140,7 @@ const FAQS = [
   },
   {
     q: "Is my account information secure?",
-    a: "Yes. Account connections run through Plaid, the same infrastructure trusted by banks and other financial apps — PriorityPay only ever gets read-only access to balances and transaction data, never the ability to move money.",
+    a: "Yes. Account connections run through Plaid, the same infrastructure trusted by banks and other financial apps. PriorityPay only ever gets read-only access to balances and transaction data, never the ability to move money. Sensitive account credentials are encrypted (AES-256) before they're stored, and you can turn on two-factor authentication for your PriorityPay account in Settings.",
   },
 ];
 
