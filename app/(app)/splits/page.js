@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
+import SplitPercentPieChart from "@/components/SplitPercentPieChart";
 import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
@@ -198,6 +199,8 @@ function SplitRulesPageInner() {
           Note: Any percentage not assigned to one of the accounts below stays wherever the deposit landed.
         </p>
       </div>
+
+      <SplitPercentPieChart percent={percent} remainingPct={remainingPct} />
 
       <PercentSplitEditor
         percent={percent}
