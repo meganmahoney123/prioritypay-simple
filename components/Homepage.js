@@ -274,12 +274,12 @@ export default function Homepage() {
               margin: "24px 0 0",
             }}
           >
-            Automatically route income to investments and savings.{" "}
+            Route a % of each deposit to savings and investments.{" "}
             <span style={{ color: "var(--color-accent)" }}>Before you spend it.</span>
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.6, color: "#574A68", margin: "22px 0 0", maxWidth: "30em" }}>
-            PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement,
-            savings, and taxes automatically.{" "}
+            PriorityPay lets you set rules to split each deposit and send it to retirement, savings, investments,
+            a tax reserve, or any other goal, like a wedding or college fund.{" "}
             <em style={{ color: "var(--color-text)", fontStyle: "italic" }}>Spend the rest, guilt free.</em>
           </p>
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 30 }}>
