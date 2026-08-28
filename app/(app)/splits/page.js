@@ -172,35 +172,25 @@ function SplitRulesPageInner() {
           Split every deposit by percentage
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
+        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
           Each deposit you receive will be split by percentage into the following accounts, and you&apos;ll get a
           checklist to confirm and send each transfer yourself. Here, set the percentages you want sent to each
           account.
         </p>
+      </div>
+
+      <SplitPercentPieChart percent={percent} remainingPct={remainingPct} />
+
+      <div>
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
           For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, it&apos;ll
           tell you to send $10 to the savings account connected.
         </p>
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 16px" }}>
+        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
           If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no money
           will be set aside for that account.
         </p>
-        <p
-          style={{
-            fontSize: 17,
-            lineHeight: 1.7,
-            color: "#3B1C7A",
-            background: "#F4EEFF",
-            borderRadius: 18,
-            padding: "16px 20px",
-            margin: 0,
-          }}
-        >
-          Note: Any percentage not assigned to one of the accounts below stays wherever the deposit landed.
-        </p>
       </div>
-
-      <SplitPercentPieChart percent={percent} remainingPct={remainingPct} />
 
       <PercentSplitEditor
         percent={percent}
