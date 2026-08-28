@@ -9,16 +9,26 @@ import { currency } from "@/lib/allocations";
 // Forward-looking "what could this become" projection card, deliberately
 // separate from AccountBalances' two pie charts (which only ever look
 // backward at real history) -- this is the Dashboard's section that
-// projects forward. Rendered twice on the Dashboard (app/(app)/dashboard/
-// page.js), once per group -- "Your Investment Projections" (group=
-// "Investments") and "Your Retirement Projections" (group="Retirement",
-// taxNote) -- each fetching its own group from
-// /api/allocations/investment-projection?group=... rather than blending
-// the two together.
+// projects forward, rendered ABOVE "How your money has been distributed"
+// / "Where your money has gone" (see app/(app)/dashboard/page.js) so the
+// encouraging, forward-looking number is the first thing someone sees.
+//
+// One <InvestmentGrowthProjection> renders one Card, but a Card can hold
+// more than one projection "block" -- Investments only ever needs one
+// (the whole "Investments" group blended together), but Retirement needs
+// two side by side, Solo 401k and SEP IRA, since those are meaningfully
+// different accounts with different tax treatment. Each block fetches its
+// own slice from /api/allocations/investment-projection independently
+// (?group=...&retirementType=...) and renders its own starting-balance
+// figure, its own editable inputs, and its own chart -- nothing is shared
+// across blocks except the card's title/tax-note/disclaimer.
 //
 // Three shades of purple from the app's existing Bloom palette
 // (lib/bloomTheme.js / PriorityPayLogo.js), darkest -> lightest tracking
-// scenario 1 -> 3 so the bars visually read as "least" to "most":
+// scenario 1 -> 3 so the bars visually read as "least" to "most". Bars use
+// rounded top corners and a celebratory "by year 50" callout pill (a la
+// Duolingo-style positive-reinforcement UI) instead of a plain chart, to
+// lean into the "promote positivity, encourage continued investing" goal.
 const COLOR_STARTING = "#3B1C7A"; // scenario 1: Pre-PriorityPay
 const COLOR_FROZEN = "#6D3BE0"; // scenario 2: Current Progress
 const COLOR_ONGOING = "#9A72F0"; // scenario 3: Future Progress
@@ -40,24 +50,25 @@ function futureValueWithContributions(principal, monthlyRate, months, monthlyCon
   return growthOfPrincipal + annuity;
 }
 
-export default function InvestmentGrowthProjection({ group, title, emptyStateText, taxNote = false }) {
+function ProjectionBlock({ group, retirementType, startingLabel, subHeading, emptyStateText }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [ratePct, setRatePct] = useState(DEFAULT_RATE_PCT);
   // Scenario 3 ("Future Progress") only -- Scenarios 1 and 2 never use
-  // this. Defaults to $50/mo, fully user-editable, same as the return-rate
-  // input below it.
+  // this. Defaults to $50/mo, fully user-editable.
   const [monthlyContribution, setMonthlyContribution] = useState(DEFAULT_MONTHLY_CONTRIBUTION);
 
   useEffect(() => {
-    fetch(`/api/allocations/investment-projection?group=${encodeURIComponent(group)}`)
+    const params = new URLSearchParams({ group });
+    if (retirementType) params.set("retirementType", retirementType);
+    fetch(`/api/allocations/investment-projection?${params.toString()}`)
       .then((r) => r.json())
       .then((d) => {
         setData(d);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [group]);
+  }, [group, retirementType]);
 
   const chartData = useMemo(() => {
     if (!data) return [];
@@ -75,35 +86,38 @@ export default function InvestmentGrowthProjection({ group, title, emptyStateTex
     });
   }, [data, ratePct, monthlyContribution]);
 
+  const year50Total = chartData.length ? chartData[chartData.length - 1].futureProgress : 0;
+
   if (loading) {
-    return (
-      <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
-        <p className="text-sm text-neutral-400">Loading…</p>
-      </Card>
-    );
+    return <p className="text-sm text-neutral-400">Loading…</p>;
   }
 
   const isEmpty = !data || !data.hasGroupedCategories;
+  const uid = `${group}-${retirementType || "all"}`;
 
   return (
-    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", margin: "0 0 4px" }}>
-        {title}
-      </h2>
-      <p className="text-xs text-neutral-500 mb-4">
-        A projection of your {group} category, if its growth compounds monthly.
-      </p>
+    <div>
+      {subHeading && (
+        <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontWeight: 700, color: "var(--color-text)", margin: "0 0 8px" }}>
+          {subHeading}
+        </h3>
+      )}
 
       {isEmpty ? (
         <p className="text-sm text-neutral-400">{emptyStateText}</p>
       ) : (
         <>
+          <p className="text-sm mb-3" style={{ color: "var(--color-text)" }}>
+            {startingLabel} Total Before PriorityPay:{" "}
+            <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}>{currency(data.startingOnly)}</span>
+          </p>
+
           <div className="flex items-center gap-3 mb-1">
-            <label htmlFor={`pp-growth-rate-${group}`} className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
+            <label htmlFor={`pp-growth-rate-${uid}`} className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
               Assumed annual return
             </label>
             <input
-              id={`pp-growth-rate-${group}`}
+              id={`pp-growth-rate-${uid}`}
               type="number"
               min={0}
               max={30}
@@ -121,12 +135,12 @@ export default function InvestmentGrowthProjection({ group, title, emptyStateTex
           </p>
 
           <div className="flex items-center gap-3 mb-4">
-            <label htmlFor={`pp-monthly-contribution-${group}`} className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
+            <label htmlFor={`pp-monthly-contribution-${uid}`} className="text-sm font-medium" style={{ color: "var(--color-text)" }}>
               Monthly Contribution Amount
             </label>
             <span className="text-sm text-neutral-500">$</span>
             <input
-              id={`pp-monthly-contribution-${group}`}
+              id={`pp-monthly-contribution-${uid}`}
               type="number"
               min={0}
               step={10}
@@ -139,13 +153,30 @@ export default function InvestmentGrowthProjection({ group, title, emptyStateTex
             <span className="text-xs text-neutral-500">only affects Future Progress, below</span>
           </div>
 
+          {/* Duolingo-style celebratory pill -- the payoff number up front,
+              before the chart, so the encouraging figure lands first. */}
+          <div
+            className="flex items-center gap-2 mb-4 px-4 py-3"
+            style={{
+              borderRadius: 999,
+              background: "linear-gradient(90deg, #6D3BE0 0%, #9A72F0 100%)",
+              boxShadow: "0 2px 0 rgba(59, 28, 122, 0.35)",
+            }}
+          >
+            <span style={{ fontSize: 20 }} aria-hidden="true">🚀</span>
+            <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>
+              Keep it up — by Year 50 you could have{" "}
+              <span style={{ fontWeight: 800, fontFamily: "var(--font-mono)" }}>{currency(year50Total)}</span>
+            </span>
+          </div>
+
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-divider)" />
-                <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                <YAxis tickFormatter={(v) => currency(v)} width={80} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => currency(v)} />
+              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-divider)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => currency(v)} width={80} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v) => currency(v)} cursor={{ fill: "rgba(154, 114, 240, 0.08)" }} />
                 <Legend
                   formatter={(value) => {
                     if (value === "prePriorityPay") return "Pre-PriorityPay";
@@ -154,9 +185,9 @@ export default function InvestmentGrowthProjection({ group, title, emptyStateTex
                     return value;
                   }}
                 />
-                <Bar dataKey="prePriorityPay" fill={COLOR_STARTING} isAnimationActive={false} />
-                <Bar dataKey="currentProgress" fill={COLOR_FROZEN} isAnimationActive={false} />
-                <Bar dataKey="futureProgress" fill={COLOR_ONGOING} isAnimationActive={false} />
+                <Bar dataKey="prePriorityPay" fill={COLOR_STARTING} radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="currentProgress" fill={COLOR_FROZEN} radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="futureProgress" fill={COLOR_ONGOING} radius={[8, 8, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -178,19 +209,38 @@ export default function InvestmentGrowthProjection({ group, title, emptyStateTex
               continuing to contribute the Monthly Contribution Amount above, assuming the return rate above.
             </p>
           </div>
-
-          {taxNote && (
-            <p className="text-xs mt-3" style={{ color: "var(--color-accent-700)" }}>
-              This reflects pre-tax contributions — you&apos;ll still owe income tax on withdrawals in retirement.
-            </p>
-          )}
-
-          <p className="text-xs text-neutral-500 mt-4">
-            This is a hypothetical illustration based on the return rate you choose, not a guarantee or investment
-            advice. PriorityPay is not an investment adviser.
-          </p>
         </>
       )}
+    </div>
+  );
+}
+
+export default function InvestmentGrowthProjection({ title, blocks, taxNote = false }) {
+  return (
+    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", margin: "0 0 4px" }}>
+        {title}
+      </h2>
+      <p className="text-xs text-neutral-500 mb-4">
+        A projection of {blocks.length > 1 ? "these categories" : "this category"}, if growth compounds monthly.
+      </p>
+
+      <div className={blocks.length > 1 ? "grid grid-cols-1 md:grid-cols-2 gap-6" : ""}>
+        {blocks.map((block) => (
+          <ProjectionBlock key={block.retirementType || block.group} {...block} />
+        ))}
+      </div>
+
+      {taxNote && (
+        <p className="text-xs mt-4" style={{ color: "var(--color-accent-700)" }}>
+          This reflects pre-tax contributions — you&apos;ll still owe income tax on withdrawals in retirement.
+        </p>
+      )}
+
+      <p className="text-xs text-neutral-500 mt-4">
+        This is a hypothetical illustration based on the return rate you choose, not a guarantee or investment
+        advice. PriorityPay is not an investment adviser.
+      </p>
     </Card>
   );
 }
