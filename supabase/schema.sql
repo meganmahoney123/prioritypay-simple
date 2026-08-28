@@ -461,3 +461,77 @@ update simple_profiles set sms_notifications_enabled = true where sms_notificati
 alter table simple_profiles alter column min_deposit_threshold set default 50;
 alter table simple_profiles drop constraint if exists simple_profiles_min_deposit_threshold_floor;
 alter table simple_profiles add constraint simple_profiles_min_deposit_threshold_floor check (min_deposit_threshold >= 50);
+
+-- PHASE O: expense/withdrawal tracking -- the reverse of the deposit-split
+-- model above (simple_transfers / simple_transfer_allocations). A
+-- "withdrawal" is one spending event confirmed through Close-Out (see
+-- app/(app)/closeout/page.js), and simple_withdrawal_allocations records
+-- which category (or categories, if a shortfall cascades across more than
+-- one -- see WithdrawalAllocator) actually funded it, mirroring how a
+-- deposit's allocations are recorded per-category. label is matched by
+-- text, not a foreign key to simple_split_rules_percent.id, for the exact
+-- same reason simple_transfer_allocations.label is: PUT /api/split-rules
+-- deletes and reinserts every row on every save, so a category's real
+-- database id regenerates constantly -- its label is the one stable,
+-- user-facing anchor.
+--
+-- mileage_miles/mileage_purpose/meal_purpose/meal_attendees are nullable
+-- structured fields, only populated when the chosen category matches
+-- "Mileage" or "Meals" (by label, case-insensitive substring -- see
+-- app/(app)/closeout/page.js) -- kept as plain columns rather than a
+-- jsonb blob so a future Tax Summary query can filter/sum them directly
+-- without unpacking json.
+create table if not exists simple_withdrawals (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  amount numeric not null,
+  description text,
+  occurred_at timestamptz not null default now(),
+  category_label text, -- the primary category chosen (or 'Other'), for display
+  receipt_url text,
+  mileage_miles numeric,
+  mileage_purpose text,
+  meal_purpose text,
+  meal_attendees text,
+  created_at timestamptz not null default now()
+);
+
+-- One row per category (or external source) this withdrawal actually drew
+-- from. source_type = 'category' means `label` names a real, currently or
+-- formerly tracked split-rule category (its balance is debited -- see the
+-- balance calc in app/api/allocations/balances/route.js); 'external' means
+-- the money came from outside any tracked category (plain cash/checking,
+-- or the user explicitly said "from outside savings" during the shortfall
+-- cascade) -- NOT its own fake category, just a flag, so `label` is
+-- typically null for an 'external' row (may be a plain description like
+-- "Other" for display when the whole withdrawal was categorized as
+-- untracked "Other" spending).
+create table if not exists simple_withdrawal_allocations (
+  id uuid primary key default uuid_generate_v4(),
+  withdrawal_id uuid not null references simple_withdrawals(id) on delete cascade,
+  label text,
+  amount numeric not null,
+  source_type text not null default 'category', -- 'category' | 'external'
+  created_at timestamptz not null default now()
+);
+
+-- One-time (editable) user-declared opening balance for a category --
+-- money already saved for that goal before joining PriorityPay, set
+-- optionally at category-creation time in Split Rules (see
+-- components/PercentSplitEditor.js) and folded into that category's
+-- current-balance calculation alongside real transfer/withdrawal history
+-- (see app/api/allocations/balances/route.js). Null, not 0, is the
+-- "never set" state, same convention as `cap`/`balance_cap` above.
+alter table simple_split_rules_percent add column if not exists starting_balance numeric;
+
+alter table simple_withdrawals enable row level security;
+alter table simple_withdrawal_allocations enable row level security;
+
+create policy "own withdrawals" on simple_withdrawals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own withdrawal allocations" on simple_withdrawal_allocations for all using (
+  exists (select 1 from simple_withdrawals w where w.id = withdrawal_id and w.user_id = auth.uid())
+);
+
+create index if not exists simple_withdrawals_user_occurred_idx on simple_withdrawals (user_id, occurred_at);
+create index if not exists simple_withdrawal_allocations_withdrawal_idx on simple_withdrawal_allocations (withdrawal_id);
+create index if not exists simple_withdrawal_allocations_label_idx on simple_withdrawal_allocations (label);

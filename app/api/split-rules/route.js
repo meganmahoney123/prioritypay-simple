@@ -21,6 +21,7 @@ function rowToPercent(r) {
     accountId: r.account_id,
     retirementType: r.retirement_type || null,
     investmentType: r.investment_type || null,
+    startingBalance: r.starting_balance === null || r.starting_balance === undefined ? null : Number(r.starting_balance),
   };
 }
 
@@ -84,6 +85,7 @@ export async function PUT(request) {
       color: r.color,
       account_id: r.accountId || null,
       retirement_type: r.retirementType || null,
+      starting_balance: r.startingBalance === null || r.startingBalance === undefined || r.startingBalance === "" ? null : Number(r.startingBalance),
       // Derived server-side from group + retirementType + label, same
       // reasoning as the original app: multiple distinct investment-flavored
       // categories (a brokerage AND a crypto exchange, say) get separate

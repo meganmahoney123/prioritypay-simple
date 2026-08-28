@@ -1,0 +1,185 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Card, currency } from "@/components/ui";
+
+// Same fallback palette as MoneyDistributionChart, kept as its own copy
+// (rather than importing) so the two charts can diverge visually later
+// without one accidentally changing the other.
+const FALLBACK_PALETTE = ["#E0813B", "#B85C22", "#7A3C1C", "#F0A972", "#FAC4A9"];
+
+function currentPeriod() {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+function shiftPeriod(period, delta) {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+function periodLabel(period) {
+  const [y, m] = period.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+const MODES = [
+  { key: "month", label: "By month" },
+  { key: "6mo", label: "Last 6 months" },
+  { key: "12mo", label: "Last 12 months" },
+];
+
+// Monarch-style "where did this money go" pie chart -- the spend-side
+// mirror of components/MoneyDistributionChart.js. Sourced from real
+// simple_withdrawal_allocations rows (source_type='category' only -- see
+// app/api/withdrawals/history) instead of simple_transfer_allocations, so
+// this shows what's actually been spent OUT of each tracked category, not
+// what's been split INTO it. Rendered directly below the inflow chart on
+// the Dashboard (see components/AccountBalances.js) so the two read as a
+// pair: money in, by category, then money out, by category.
+export default function SpendDistributionChart({ rules = [] }) {
+  const maxPeriod = useMemo(() => currentPeriod(), []);
+  const [mode, setMode] = useState("month");
+  const [period, setPeriod] = useState(maxPeriod);
+  const [earliestPeriod, setEarliestPeriod] = useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const url =
+      mode === "month"
+        ? `/api/withdrawals/history/${period}`
+        : `/api/withdrawals/history/range?months=${mode === "6mo" ? 6 : 12}`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((res) => {
+        setData(res);
+        if (res.earliestPeriod) setEarliestPeriod(res.earliestPeriod);
+      })
+      .finally(() => setLoading(false));
+  }, [mode, period]);
+
+  const colorByLabel = useMemo(() => Object.fromEntries(rules.map((r) => [r.label, r.color])), [rules]);
+
+  const categories = data?.categories || [];
+  const total = data?.total || 0;
+  const pieData = categories.map((c, i) => ({
+    name: c.label,
+    value: c.amount,
+    color: colorByLabel[c.label] || FALLBACK_PALETTE[i % FALLBACK_PALETTE.length],
+  }));
+
+  const atEarliest = earliestPeriod ? period <= earliestPeriod : false;
+  const atLatest = period >= maxPeriod;
+  const rangeLabel = mode === "6mo" ? "last 6 months" : "last 12 months";
+  const emptyLabel = mode === "month" ? periodLabel(period) : `the ${rangeLabel}`;
+
+  return (
+    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
+      <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>Where your money has gone</h2>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {MODES.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMode(m.key)}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: 13,
+                letterSpacing: "0.06em",
+                color: mode === m.key ? "var(--color-accent-700)" : "var(--color-neutral-700)",
+                background: "transparent",
+                border: `1px solid ${mode === m.key ? "var(--color-accent)" : "var(--color-divider)"}`,
+                borderRadius: 999,
+                padding: "8px 16px",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+          {mode === "month" && (
+            <div className="flex items-center gap-1.5 ml-1">
+              <button
+                onClick={() => !atEarliest && setPeriod((p) => shiftPeriod(p, -1))}
+                disabled={atEarliest}
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 30, height: 30, borderRadius: "50%", background: "transparent",
+                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
+                  cursor: atEarliest ? "not-allowed" : "pointer", opacity: atEarliest ? 0.3 : 1,
+                }}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, width: 108, textAlign: "center" }}>{periodLabel(period)}</span>
+              <button
+                onClick={() => !atLatest && setPeriod((p) => shiftPeriod(p, 1))}
+                disabled={atLatest}
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 30, height: 30, borderRadius: "50%", background: "transparent",
+                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
+                  cursor: atLatest ? "not-allowed" : "pointer", opacity: atLatest ? 0.3 : 1,
+                }}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      <p className="text-xs text-neutral-500 mb-4">
+        {mode === "month"
+          ? "Real spending confirmed through Close Out this month, by category. Updates as more expenses are categorized."
+          : `Real spending confirmed over the ${rangeLabel}, by category — not a projection.`}
+      </p>
+
+      {loading ? (
+        <p className="text-sm text-neutral-400">Loading…</p>
+      ) : categories.length === 0 ? (
+        <p className="text-sm text-neutral-400">No categorized spending found for {emptyLabel}.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={75} paddingAngle={2} isAnimationActive={false}>
+                  {pieData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => currency(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div>
+            <div className="flex items-center justify-between text-sm mb-2 pb-2 border-b border-neutral-100">
+              <span className="font-semibold text-neutral-700">Total spent</span>
+              <span className="font-bold font-mono">{currency(total)}</span>
+            </div>
+            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+              {pieData.map((c) => (
+                <div key={c.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                    <span className="text-neutral-700 truncate">{c.name}</span>
+                  </div>
+                  <span className="font-semibold shrink-0 font-mono">
+                    {currency(c.value)}
+                    <span className="text-neutral-400 font-normal ml-1">
+                      ({total > 0 ? Math.round((c.value / total) * 100) : 0}%)
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
