@@ -183,7 +183,7 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
 // `mtdByLabel`/`ytdByLabel`/`allTimeTotal` are fetched by the Dashboard
 // page (see app/(app)/dashboard/page.js) from the allocations history API
 // and passed down -- this component stays purely presentational.
-export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0, rules = [] }) {
+export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0, rules = [], belowDistribution = null }) {
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   const sections = useMemo(() => percentSections(splitRules?.percent || []), [splitRules]);
@@ -250,6 +250,8 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
       </Card>
 
       <MoneyDistributionChart rules={rules} />
+
+      {belowDistribution}
 
       <SpendDistributionChart rules={rules} />
 

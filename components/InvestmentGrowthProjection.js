@@ -191,26 +191,35 @@ function ProjectionBlock({ group, retirementType, startingLabel, subHeading, emp
               </BarChart>
             </ResponsiveContainer>
           </div>
-
-          <div className="mt-4 space-y-2 text-xs text-neutral-500">
-            <p>
-              <strong style={{ color: COLOR_STARTING }}>Pre-PriorityPay:</strong> projections based only on the money
-              you had invested before joining PriorityPay, assuming the return rate above. Assumes you never
-              contribute another dollar.
-            </p>
-            <p>
-              <strong style={{ color: COLOR_FROZEN }}>Current Progress:</strong> projections based on your
-              investments before PriorityPay and all of the contributions you&apos;ve made since joining, assuming
-              the return rate above. Assumes you never contribute another dollar.
-            </p>
-            <p>
-              <strong style={{ color: COLOR_ONGOING }}>Future Progress:</strong> projections based on your
-              investments before PriorityPay and all of the contributions you&apos;ve made since joining, plus
-              continuing to contribute the Monthly Contribution Amount above, assuming the return rate above.
-            </p>
-          </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Scenario descriptions used to repeat under every single block (three
+// times over when Investments + Solo 401k + SEP IRA all render together),
+// which read as a wall of near-duplicate text -- now shown exactly once
+// per card, underneath every block's chart, since the definitions don't
+// change block to block.
+function ScenarioLegendNote() {
+  return (
+    <div className="mt-2 space-y-2 text-xs text-neutral-500">
+      <p>
+        <strong style={{ color: COLOR_STARTING }}>Pre-PriorityPay:</strong> projections based only on the money you
+        had invested before joining PriorityPay, assuming the return rate above. Assumes you never contribute
+        another dollar.
+      </p>
+      <p>
+        <strong style={{ color: COLOR_FROZEN }}>Current Progress:</strong> projections based on your investments
+        before PriorityPay and all of the contributions you&apos;ve made since joining, assuming the return rate
+        above. Assumes you never contribute another dollar.
+      </p>
+      <p>
+        <strong style={{ color: COLOR_ONGOING }}>Future Progress:</strong> projections based on your investments
+        before PriorityPay and all of the contributions you&apos;ve made since joining, plus continuing to
+        contribute the Monthly Contribution Amount above, assuming the return rate above.
+      </p>
     </div>
   );
 }
@@ -225,11 +234,16 @@ export default function InvestmentGrowthProjection({ title, blocks, taxNote = fa
         A projection of {blocks.length > 1 ? "these categories" : "this category"}, if growth compounds monthly.
       </p>
 
-      <div className={blocks.length > 1 ? "grid grid-cols-1 md:grid-cols-2 gap-6" : ""}>
+      {/* Always laid out as a single row on wider screens -- up to three
+          blocks (Investments, Solo 401k, SEP IRA) side by side -- rather
+          than stacking Investments above a two-column Retirement row. */}
+      <div className={blocks.length > 1 ? "grid grid-cols-1 md:grid-cols-3 gap-6" : ""}>
         {blocks.map((block) => (
           <ProjectionBlock key={block.retirementType || block.group} {...block} />
         ))}
       </div>
+
+      <ScenarioLegendNote />
 
       {taxNote && (
         <p className="text-xs mt-4" style={{ color: "var(--color-accent-700)" }}>
