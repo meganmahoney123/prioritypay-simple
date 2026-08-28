@@ -40,7 +40,7 @@ export async function GET() {
 
   const [{ data: profile }, { data: rules }, { data: allocRows }, { data: withdrawalRows }] = await Promise.all([
     admin.from("simple_profiles").select("created_at").eq("id", user.id).single(),
-    admin.from("simple_split_rules_percent").select("label, group, starting_balance").eq("user_id", user.id),
+    admin.from("simple_split_rules_percent").select("label, group_name, starting_balance").eq("user_id", user.id),
     admin
       .from("simple_transfer_allocations")
       .select("label, amount, simple_transfers!inner(user_id, status, created_at)")
@@ -55,7 +55,7 @@ export async function GET() {
   ]);
 
   const grouped = new Set(
-    (rules || []).filter((r) => r.group === "Investments" || r.group === "Retirement").map((r) => r.label)
+    (rules || []).filter((r) => r.group_name === "Investments" || r.group_name === "Retirement").map((r) => r.label)
   );
 
   let startingOnly = 0;
