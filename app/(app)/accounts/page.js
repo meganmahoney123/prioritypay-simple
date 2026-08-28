@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Landmark, CreditCard, Briefcase } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
+import AccountCategoryBreakdown from "@/components/AccountCategoryBreakdown";
 import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 
 // Identity verification (Dwolla KYC) used to gate this whole page -- see
@@ -15,13 +16,22 @@ import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 // connecting an account.
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
+  const [categoryBalances, setCategoryBalances] = useState({});
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState(null);
   const [disconnectError, setDisconnectError] = useState(null);
 
   const load = async () => {
-    const accountsRes = await fetch("/api/accounts").then((r) => r.json());
+    // Fetched once here (not per-account inside AccountCategoryBreakdown)
+    // to avoid N duplicate /api/allocations/account-balances requests for
+    // N connected accounts -- the whole payload is small and each account
+    // Card just reads its own slice out of the lookup below.
+    const [accountsRes, categoryBalancesRes] = await Promise.all([
+      fetch("/api/accounts").then((r) => r.json()),
+      fetch("/api/allocations/account-balances").then((r) => r.json()),
+    ]);
     setAccounts(accountsRes.accounts || []);
+    setCategoryBalances(Object.fromEntries((categoryBalancesRes.accounts || []).map((a) => [a.accountId, a])));
     setLoading(false);
   };
 
@@ -154,6 +164,7 @@ export default function AccountsPage() {
                 {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
               </button>
             </div>
+            <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} />
           </Card>
         ))}
       </div>
