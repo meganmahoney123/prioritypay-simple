@@ -546,9 +546,23 @@ export default function CloseoutPage() {
                             style={{
                               fontFamily: "var(--font-heading)",
                               letterSpacing: "0.08em",
-                              border: `1px solid ${cat === c.value ? "var(--color-accent)" : "transparent"}`,
-                              color: cat === c.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                              background: cat === c.value ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+                              // "Expense" doesn't get confirmed_category='expense'
+                              // until saveExpense succeeds (see comment above) --
+                              // while the categorization panel is open, treat it
+                              // as the active/highlighted pill anyway so opening
+                              // it doesn't leave a stale category (e.g. "Income")
+                              // looking selected underneath it.
+                              border: `1px solid ${
+                                cat === c.value || (c.value === "expense" && panel?.open) ? "var(--color-accent)" : "transparent"
+                              }`,
+                              color:
+                                cat === c.value || (c.value === "expense" && panel?.open)
+                                  ? "var(--color-accent-700)"
+                                  : "color-mix(in srgb, var(--color-text) 45%, transparent)",
+                              background:
+                                cat === c.value || (c.value === "expense" && panel?.open)
+                                  ? "color-mix(in srgb, var(--color-accent) 8%, transparent)"
+                                  : "transparent",
                             }}
                           >
                             {c.label}

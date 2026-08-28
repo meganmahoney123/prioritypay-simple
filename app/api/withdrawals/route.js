@@ -38,6 +38,10 @@ export async function POST(request) {
       description: body.description || null,
       occurred_at: body.occurredAt || new Date().toISOString(),
       category_label: body.categoryLabel || null,
+      // receipt_url now stores a private Supabase Storage *path* (not a
+      // public URL) -- see app/api/withdrawals/receipt/route.js for why the
+      // "receipts" bucket is private, and app/api/withdrawals/receipt/[withdrawalId]/route.js
+      // for how to turn this path into a short-lived signed URL on demand.
       receipt_url: body.receiptUrl || null,
       mileage_miles: body.mileageMiles === undefined || body.mileageMiles === "" ? null : Number(body.mileageMiles),
       mileage_purpose: body.mileagePurpose || null,
