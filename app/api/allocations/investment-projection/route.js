@@ -6,33 +6,41 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 // a single simple_split_rules_percent group at a time -- pass
 // ?group=Investments or ?group=Retirement (see lib/allocations.js
 // GROUPED_BUCKETS) -- every other group (Tax Reserve, Savings, Emergency
-// Fund, OPEX, or a custom row) is deliberately excluded, and the two
-// groups are no longer blended together: each card fetches its own group.
+// Fund, OPEX, or a custom row) is deliberately excluded.
+//
+// Retirement additionally supports narrowing to one specific account type
+// via ?retirementType=solo_401k or ?retirementType=sep_ira (matches
+// simple_split_rules_percent.retirement_type, the same fixed identifier
+// lib/allocations.js already uses to tell the two retirement rows apart
+// regardless of whatever label text the user has on them) -- this powers
+// the Retirement card showing Solo 401k and SEP IRA as two separate
+// sub-projections instead of one blended number.
 //
 // Returns:
-//   startingOnly       -- sum of starting_balance across every row in the
-//                          requested group (null treated as 0). Powers
-//                          Scenario 1, "Pre-PriorityPay".
+//   startingOnly       -- sum of starting_balance across every matching
+//                          row (null treated as 0). Powers Scenario 1,
+//                          "Pre-PriorityPay", and the "Total Before
+//                          PriorityPay" figure shown above the monthly
+//                          contribution input.
 //   currentTotalFrozen -- sum of each of those rows' real current balance
 //                          (starting_balance + lifetime transfer
 //                          allocations - lifetime category-sourced
 //                          withdrawal allocations), same math as
 //                          /api/allocations/balances, just pre-filtered
-//                          and pre-summed to the one requested group.
-//                          Powers Scenario 2, "Current Progress" (and,
-//                          client-side, Scenario 3 "Future Progress" once
-//                          the user's editable monthly-contribution amount
-//                          is added on top).
+//                          and pre-summed to the requested scope. Powers
+//                          Scenario 2, "Current Progress" (and, client-
+//                          side, Scenario 3 "Future Progress" once the
+//                          user's editable monthly-contribution amount is
+//                          added on top).
 //   hasGroupedCategories -- whether the user has any split-rule rows in
-//                          the requested group at all, so the card can
+//                          the requested scope at all, so the card can
 //                          show its empty state instead of an all-zero
 //                          chart.
 //
-// The monthly contribution used for Scenario 3 is no longer computed
-// here -- it's a plain editable number input on the card itself
-// (components/InvestmentGrowthProjection.js), defaulting to $50, so this
-// route doesn't need to know about simple_profiles account age or lifetime
-// contribution averages anymore.
+// The monthly contribution used for Scenario 3 is not computed here --
+// it's a plain editable number input on the card itself (default $50),
+// so this route doesn't need to know about simple_profiles account age or
+// lifetime contribution averages.
 export async function GET(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
@@ -40,9 +48,13 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const group = searchParams.get("group") === "Retirement" ? "Retirement" : "Investments";
+  const retirementType = searchParams.get("retirementType"); // "solo_401k" | "sep_ira" | null
 
   const [{ data: rules }, { data: allocRows }, { data: withdrawalRows }] = await Promise.all([
-    admin.from("simple_split_rules_percent").select("label, group_name, starting_balance").eq("user_id", user.id),
+    admin
+      .from("simple_split_rules_percent")
+      .select("label, group_name, retirement_type, starting_balance")
+      .eq("user_id", user.id),
     admin
       .from("simple_transfer_allocations")
       .select("label, amount, simple_transfers!inner(user_id, status)")
@@ -56,7 +68,11 @@ export async function GET(request) {
       .eq("source_type", "category"),
   ]);
 
-  const grouped = new Set((rules || []).filter((r) => r.group_name === group).map((r) => r.label));
+  const grouped = new Set(
+    (rules || [])
+      .filter((r) => r.group_name === group && (!retirementType || r.retirement_type === retirementType))
+      .map((r) => r.label)
+  );
 
   let startingOnly = 0;
   const byLabel = {};

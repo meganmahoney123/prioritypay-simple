@@ -122,6 +122,38 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      <InvestmentGrowthProjection
+        title="Your Investment Projections"
+        blocks={[
+          {
+            group: "Investments",
+            startingLabel: "Investment",
+            emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
+          },
+        ]}
+      />
+
+      <InvestmentGrowthProjection
+        title="Your Retirement Projections"
+        taxNote
+        blocks={[
+          {
+            group: "Retirement",
+            retirementType: "solo_401k",
+            startingLabel: "Solo 401k",
+            subHeading: "Solo 401k",
+            emptyStateText: "Once you're contributing to your Solo 401k, we'll show you where that could grow.",
+          },
+          {
+            group: "Retirement",
+            retirementType: "sep_ira",
+            startingLabel: "SEP IRA",
+            subHeading: "SEP IRA",
+            emptyStateText: "Once you're contributing to your SEP IRA, we'll show you where that could grow.",
+          },
+        ]}
+      />
+
       <AccountBalances
         accounts={accounts}
         splitRules={splitRules}
@@ -129,19 +161,6 @@ export default function DashboardPage() {
         ytdByLabel={ytdByLabel}
         allTimeTotal={allTimeTotal}
         rules={rules}
-      />
-
-      <InvestmentGrowthProjection
-        group="Investments"
-        title="Your Investment Projections"
-        emptyStateText="Once you're contributing to Investments, we'll show you where that could grow."
-      />
-
-      <InvestmentGrowthProjection
-        group="Retirement"
-        title="Your Retirement Projections"
-        emptyStateText="Once you're contributing to Retirement, we'll show you where that could grow."
-        taxNote
       />
 
       <CloseoutNudge />
