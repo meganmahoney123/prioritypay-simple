@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AccountBalances from "@/components/AccountBalances";
+import InvestmentGrowthProjection from "@/components/InvestmentGrowthProjection";
 import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS } from "@/lib/allocations";
@@ -131,6 +132,8 @@ export default function DashboardPage() {
       />
 
       <CloseoutNudge />
+
+      <InvestmentGrowthProjection />
 
       {accounts.length === 0 && (
         <Card className="p-4 text-sm" style={{ color: "var(--color-text)" }}>
