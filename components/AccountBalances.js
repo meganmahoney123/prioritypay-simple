@@ -5,6 +5,7 @@ import { Card, currency } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { percentSections } from "@/lib/allocations";
 import MoneyDistributionChart from "./MoneyDistributionChart";
+import SpendDistributionChart from "./SpendDistributionChart";
 
 function accountLabel(acc) {
   if (!acc) return null;
@@ -249,6 +250,8 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
       </Card>
 
       <MoneyDistributionChart rules={rules} />
+
+      <SpendDistributionChart rules={rules} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GroupBox title="Retirement" rows={retirementRows} accountsById={accountsById} ytdByLabel={ytdByLabel} mtdByLabel={mtdByLabel} />

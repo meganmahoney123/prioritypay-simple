@@ -154,6 +154,11 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // rather than lifted to the parent, since nothing outside this row ever
   // needs to know whether its caps panel happens to be open.
   const [showLimits, setShowLimits] = useState(false);
+  // Collapsed by default, same reasoning as showLimits above -- most
+  // people creating a category are starting from $0, so this stays out
+  // of the way until someone clicks "$X saved already" / "Already have
+  // money saved?" to reveal it.
+  const [showStartingBalance, setShowStartingBalance] = useState(rule.startingBalance !== null && rule.startingBalance !== undefined && rule.startingBalance !== "");
 
   if (theme === "ledger") {
     return (
@@ -317,6 +322,55 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             )}
           </div>
         )}
+        <div style={{ marginTop: 4 }}>
+          {showStartingBalance ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                Already have money saved for this?
+              </span>
+              <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                <input
+                  type="number"
+                  onFocus={(e) => e.target.select()}
+                  min={0}
+                  step={1}
+                  placeholder="0"
+                  value={rule.startingBalance ?? ""}
+                  onChange={(e) => onUpdate(rule.id, { startingBalance: e.target.value })}
+                  style={{
+                    width: 90,
+                    textAlign: "right",
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 15,
+                    color: "var(--color-text)",
+                    background: "transparent",
+                    border: 0,
+                    borderBottom: "1px solid var(--color-divider)",
+                    padding: "3px 2px",
+                  }}
+                />
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowStartingBalance(true)}
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontWeight: 600,
+                fontSize: 13,
+                color: "var(--color-accent)",
+                background: "transparent",
+                border: 0,
+                padding: "10px 0 0",
+                cursor: "pointer",
+              }}
+            >
+              Already have money saved for this? Add your starting balance
+            </button>
+          )}
+        </div>
         {connecting[rule.id] && (
           <div style={{ marginTop: 10 }}>
             <PlaidLinkButton
@@ -410,6 +464,34 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           />
         </>
       )}
+      <div className="mt-2">
+        {showStartingBalance ? (
+          <label className="flex items-center gap-1.5 text-xs text-neutral-500">
+            Already have money saved for this?
+            <span className="flex items-center gap-0.5">
+              $
+              <input
+                type="number"
+                onFocus={(e) => e.target.select()}
+                min={0}
+                step={1}
+                placeholder="0"
+                value={rule.startingBalance ?? ""}
+                onChange={(e) => onUpdate(rule.id, { startingBalance: e.target.value })}
+                className="w-20 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
+              />
+            </span>
+          </label>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowStartingBalance(true)}
+            className="text-xs font-medium text-emerald-700"
+          >
+            Already have money saved for this? Add your starting balance
+          </button>
+        )}
+      </div>
       <div className="mt-2">
         <span className="block text-xs text-neutral-500 mb-1">I want to route my money to this account:</span>
         <AccountSelect

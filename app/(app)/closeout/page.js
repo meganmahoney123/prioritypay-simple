@@ -8,6 +8,8 @@ import { BLOOM_TOKENS, bloomBadgeStyle, bloomNoticeCardStyle, bloomWarningCardSt
 import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
 import ContributionCalculatorModal from "@/components/ContributionCalculatorModal";
+import WithdrawalAllocator from "@/components/WithdrawalAllocator";
+import { Paperclip } from "lucide-react";
 import Link from "next/link";
 import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS } from "@/lib/allocations";
 
@@ -85,6 +87,24 @@ export default function CloseoutPage() {
   const TEAM_OBLIGATIONS_LABEL = "Team & Plan Obligations";
   const teamObligationsRow = splitRulesPercent.find((r) => r.label === TEAM_OBLIGATIONS_LABEL);
 
+  // Real, netted per-category balances (starting_balance + transfer
+  // allocations - category-sourced withdrawal allocations -- see
+  // app/api/allocations/balances/route.js) -- fetched once and used by the
+  // Expense categorization panel below to know whether a category can
+  // cover the whole amount or needs the shortfall cascade
+  // (components/WithdrawalAllocator.js).
+  const [categoryBalances, setCategoryBalances] = useState({});
+  // Per-transaction-id state for the "which category did this Expense
+  // actually come out of" panel opened by clicking the Expense pill (see
+  // cats.map below) -- { open, categoryLabel ('Other' or a tracked
+  // label), mileageMiles, mileagePurpose, mealPurpose, mealAttendees,
+  // receiptFile, receiptUrl, uploading, allocations, allocationsComplete,
+  // saving }. Not persisted anywhere until "Save expense" actually
+  // succeeds -- a transaction only ever gets confirmed_category='expense'
+  // once this whole panel is complete (see saveExpense below), which is
+  // what enforces "no Expense without a category."
+  const [expensePanels, setExpensePanels] = useState({});
+
   const load = async (p) => {
     setLoading(true);
     setRecommendations(null);
@@ -101,6 +121,10 @@ export default function CloseoutPage() {
       fetch("/api/split-rules")
         .then((r) => r.json())
         .then((d) => setSplitRulesPercent(d.splitRules?.percent || []))
+        .catch(() => {});
+      fetch("/api/allocations/balances")
+        .then((r) => r.json())
+        .then((d) => setCategoryBalances(d.balances || {}))
         .catch(() => {});
     }
     const [closeoutRes, accountsRes, realRes] = await Promise.all([
@@ -206,6 +230,103 @@ export default function CloseoutPage() {
       return;
     }
     if (isConfirmed) handleConfirm();
+  };
+
+  // Label-matching heuristic -- this app has no dedicated "Mileage"/"Meals"
+  // categories pre-seeded anywhere (checked DEFAULT_SPLIT_RULES and
+  // SUGGESTED_EXTRA_CATEGORIES in lib/allocations.js), so a category only
+  // triggers the extra structured tax fields if the user happens to have
+  // named one that way -- case-insensitive substring match, same pattern
+  // used elsewhere in this app for best-effort label matching (see
+  // institutionLoginUrl in lib/allocations.js).
+  const isMileageLabel = (label) => (label || "").toLowerCase().includes("mileage");
+  const isMealsLabel = (label) => (label || "").toLowerCase().includes("meal");
+
+  const openExpensePanel = (txnId) => {
+    setExpensePanels((prev) => ({
+      ...prev,
+      [txnId]: prev[txnId] || {
+        open: true,
+        categoryLabel: null,
+        mileageMiles: "",
+        mileagePurpose: "",
+        mealPurpose: "",
+        mealAttendees: "",
+        receiptFile: null,
+        receiptUrl: null,
+        uploading: false,
+        allocations: [],
+        allocationsComplete: false,
+        saving: false,
+        error: null,
+      },
+    }));
+  };
+  const updateExpensePanel = (txnId, patch) => {
+    setExpensePanels((prev) => ({ ...prev, [txnId]: { ...prev[txnId], ...patch } }));
+  };
+  const closeExpensePanel = (txnId) => {
+    setExpensePanels((prev) => {
+      const next = { ...prev };
+      delete next[txnId];
+      return next;
+    });
+  };
+
+  const uploadReceipt = async (txnId, file) => {
+    updateExpensePanel(txnId, { uploading: true, error: null });
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/withdrawals/receipt", { method: "POST", body: fd }).then((r) => r.json());
+    if (res.error) {
+      updateExpensePanel(txnId, { uploading: false, error: res.error });
+      return;
+    }
+    updateExpensePanel(txnId, { uploading: false, receiptFile: file, receiptUrl: res.url });
+  };
+
+  const saveExpense = async (txn) => {
+    const panel = expensePanels[txn.id];
+    if (!panel || !panel.categoryLabel) {
+      updateExpensePanel(txn.id, { error: "Pick a category (or Other) before saving." });
+      return;
+    }
+    if (!panel.allocationsComplete) {
+      updateExpensePanel(txn.id, { error: "Finish accounting for the full amount before saving." });
+      return;
+    }
+    const mileage = isMileageLabel(panel.categoryLabel);
+    const meals = isMealsLabel(panel.categoryLabel);
+    updateExpensePanel(txn.id, { saving: true, error: null });
+    const res = await fetch("/api/withdrawals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: Number(txn.amount) || 0,
+        description: txn.name,
+        occurredAt: txn.txn_date,
+        categoryLabel: panel.categoryLabel,
+        receiptUrl: panel.receiptUrl,
+        mileageMiles: mileage ? panel.mileageMiles : null,
+        mileagePurpose: mileage ? panel.mileagePurpose : null,
+        mealPurpose: meals ? panel.mealPurpose : null,
+        mealAttendees: meals ? panel.mealAttendees : null,
+        allocations: panel.allocations,
+      }),
+    }).then((r) => r.json());
+    if (res.error) {
+      updateExpensePanel(txn.id, { saving: false, error: res.error });
+      return;
+    }
+    // Refresh balances -- this withdrawal just debited one or more
+    // categories, and the panel/allocator for the NEXT expense should see
+    // the updated room, not stale pre-withdrawal numbers.
+    fetch("/api/allocations/balances")
+      .then((r) => r.json())
+      .then((d) => setCategoryBalances(d.balances || {}))
+      .catch(() => {});
+    closeExpensePanel(txn.id);
+    await setCategory(txn.id, "expense");
   };
 
   const handleContribute = async (retirementType, room, holdingAccountId) => {
@@ -382,39 +503,161 @@ export default function CloseoutPage() {
             {transactions.map((t) => {
               const cat = t.confirmed_category || t.suggested_category;
               const acc = accountsById[t.account_id];
+              const panel = expensePanels[t.id];
+              const canEdit = !isConfirmed || editingConfirmed;
+              const mileage = panel && isMileageLabel(panel.categoryLabel);
+              const meals = panel && isMealsLabel(panel.categoryLabel);
               return (
-                <div key={t.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-[var(--color-divider)] pb-2">
-                  <div className="min-w-[110px] flex-1">
-                    <div className="text-sm font-medium truncate">{t.name}</div>
-                    <div className="text-xs text-[var(--color-neutral-700)]">
-                      {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
+                <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                    <div className="min-w-[110px] flex-1">
+                      <div className="text-sm font-medium truncate">{t.name}</div>
+                      <div className="text-xs text-[var(--color-neutral-700)]">
+                        {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-mono text-[var(--color-neutral-700)]">
+                        {t.direction === "in" ? "+" : "-"}
+                        {currency(t.amount)}
+                      </span>
+                      <div className="flex gap-1 flex-wrap justify-end">
+                        {cats.map((c) => (
+                          <button
+                            key={c.value}
+                            onClick={() => {
+                              if (!canEdit) return;
+                              // "Expense" always opens (or re-opens) the
+                              // categorization panel below instead of
+                              // saving right away -- an Expense transaction
+                              // isn't allowed to save without picking a
+                              // tracked category or "Other" first (see
+                              // saveExpense above). Every other category
+                              // (Income, W2 Income, Exclude, Business)
+                              // saves immediately, same as before.
+                              if (c.value === "expense") openExpensePanel(t.id);
+                              else {
+                                closeExpensePanel(t.id);
+                                setCategory(t.id, c.value);
+                              }
+                            }}
+                            disabled={!canEdit}
+                            className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
+                            style={{
+                              fontFamily: "var(--font-heading)",
+                              letterSpacing: "0.08em",
+                              border: `1px solid ${cat === c.value ? "var(--color-accent)" : "transparent"}`,
+                              color: cat === c.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
+                              background: cat === c.value ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+                            }}
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-mono text-[var(--color-neutral-700)]">
-                      {t.direction === "in" ? "+" : "-"}
-                      {currency(t.amount)}
-                    </span>
-                    <div className="flex gap-1 flex-wrap justify-end">
-                      {cats.map((c) => (
-                        <button
-                          key={c.value}
-                          onClick={() => (!isConfirmed || editingConfirmed) && setCategory(t.id, c.value)}
-                          disabled={isConfirmed && !editingConfirmed}
-                          className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
-                          style={{
-                            fontFamily: "var(--font-heading)",
-                            letterSpacing: "0.08em",
-                            border: `1px solid ${cat === c.value ? "var(--color-accent)" : "transparent"}`,
-                            color: cat === c.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                            background: cat === c.value ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
-                          }}
+                  {panel?.open && (
+                    <div
+                      className="mt-2 p-3 space-y-2.5"
+                      style={{ background: "var(--color-neutral-100)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)" }}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold">What category did this come out of?</span>
+                        <select
+                          value={panel.categoryLabel || ""}
+                          onChange={(e) => updateExpensePanel(t.id, { categoryLabel: e.target.value || null })}
+                          className="text-xs border border-neutral-200 rounded-lg px-2 py-1"
                         >
-                          {c.label}
-                        </button>
-                      ))}
+                          <option value="">Select…</option>
+                          {splitRulesPercent.map((r) => (
+                            <option key={r.id} value={r.label}>{r.label}</option>
+                          ))}
+                          <option value="Other">Other (not tracked)</option>
+                        </select>
+                      </div>
+
+                      {mileage && (
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                          <label className="flex items-center gap-1">
+                            Miles driven
+                            <input
+                              type="number"
+                              min={0}
+                              value={panel.mileageMiles}
+                              onChange={(e) => updateExpensePanel(t.id, { mileageMiles: e.target.value })}
+                              className="w-20 border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
+                            />
+                          </label>
+                          <label className="flex items-center gap-1 flex-1 min-w-[160px]">
+                            Business purpose
+                            <input
+                              type="text"
+                              value={panel.mileagePurpose}
+                              onChange={(e) => updateExpensePanel(t.id, { mileagePurpose: e.target.value })}
+                              className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
+                            />
+                          </label>
+                        </div>
+                      )}
+                      {meals && (
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                          <label className="flex items-center gap-1 flex-1 min-w-[160px]">
+                            Business purpose
+                            <input
+                              type="text"
+                              value={panel.mealPurpose}
+                              onChange={(e) => updateExpensePanel(t.id, { mealPurpose: e.target.value })}
+                              className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
+                            />
+                          </label>
+                          <label className="flex items-center gap-1 flex-1 min-w-[160px]">
+                            Who attended
+                            <input
+                              type="text"
+                              value={panel.mealAttendees}
+                              onChange={(e) => updateExpensePanel(t.id, { mealAttendees: e.target.value })}
+                              className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      {panel.categoryLabel && (
+                        <WithdrawalAllocator
+                          totalAmount={t.amount}
+                          primaryLabel={panel.categoryLabel === "Other" ? null : panel.categoryLabel}
+                          balances={categoryBalances}
+                          trackedLabels={splitRulesPercent.map((r) => r.label)}
+                          onChange={(allocations, complete) => updateExpensePanel(t.id, { allocations, allocationsComplete: complete })}
+                        />
+                      )}
+
+                      <div className="flex items-center gap-2 flex-wrap text-xs">
+                        <label className="flex items-center gap-1.5 cursor-pointer" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
+                          <Paperclip size={13} />
+                          {panel.uploading ? "Uploading…" : panel.receiptUrl ? "Receipt attached — replace" : "Attach receipt"}
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            className="hidden"
+                            onChange={(e) => e.target.files?.[0] && uploadReceipt(t.id, e.target.files[0])}
+                          />
+                        </label>
+                      </div>
+
+                      {panel.error && <p className="text-xs" style={{ color: "#9C3B22" }}>{panel.error}</p>}
+
+                      <div className="flex items-center gap-2">
+                        <PrimaryButton onClick={() => saveExpense(t)} disabled={panel.saving} className="text-xs px-3 py-1.5">
+                          {panel.saving ? "Saving…" : "Save expense"}
+                        </PrimaryButton>
+                        <GhostButton onClick={() => closeExpensePanel(t.id)} className="text-xs px-3 py-1.5">
+                          Cancel
+                        </GhostButton>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
