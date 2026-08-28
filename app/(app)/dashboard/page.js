@@ -131,9 +131,20 @@ export default function DashboardPage() {
         rules={rules}
       />
 
-      <CloseoutNudge />
+      <InvestmentGrowthProjection
+        group="Investments"
+        title="Your Investment Projections"
+        emptyStateText="Once you're contributing to Investments, we'll show you where that could grow."
+      />
 
-      <InvestmentGrowthProjection />
+      <InvestmentGrowthProjection
+        group="Retirement"
+        title="Your Retirement Projections"
+        emptyStateText="Once you're contributing to Retirement, we'll show you where that could grow."
+        taxNote
+      />
+
+      <CloseoutNudge />
 
       {accounts.length === 0 && (
         <Card className="p-4 text-sm" style={{ color: "var(--color-text)" }}>
