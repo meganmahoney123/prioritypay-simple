@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Card, currency } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { percentSections } from "@/lib/allocations";
+import MoneyDistributionChart from "./MoneyDistributionChart";
 
 function accountLabel(acc) {
   if (!acc) return null;
@@ -181,7 +182,7 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
 // `mtdByLabel`/`ytdByLabel`/`allTimeTotal` are fetched by the Dashboard
 // page (see app/(app)/dashboard/page.js) from the allocations history API
 // and passed down -- this component stays purely presentational.
-export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0 }) {
+export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0, rules = [] }) {
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   const sections = useMemo(() => percentSections(splitRules?.percent || []), [splitRules]);
@@ -246,6 +247,8 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
           Every dollar PriorityPay has calculated and confirmed out of a deposit, ever.
         </div>
       </Card>
+
+      <MoneyDistributionChart rules={rules} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GroupBox title="Retirement" rows={retirementRows} accountsById={accountsById} ytdByLabel={ytdByLabel} mtdByLabel={mtdByLabel} />

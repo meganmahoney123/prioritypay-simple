@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import AccountBalances from "@/components/AccountBalances";
 import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
-import MoneyDistributionChart from "@/components/MoneyDistributionChart";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS } from "@/lib/allocations";
 import { Card } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
@@ -128,6 +127,7 @@ export default function DashboardPage() {
         mtdByLabel={mtdByLabel}
         ytdByLabel={ytdByLabel}
         allTimeTotal={allTimeTotal}
+        rules={rules}
       />
 
       <CloseoutNudge />
@@ -187,8 +187,6 @@ export default function DashboardPage() {
           </span>
         </Card>
       )}
-
-      <MoneyDistributionChart rules={rules} />
     </div>
   );
 }
