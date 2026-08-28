@@ -177,17 +177,10 @@ function ProjectionBlock({ group, retirementType, startingLabel, subHeading, emp
                 <XAxis dataKey="label" tick={{ fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(v) => currency(v)} width={80} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => currency(v)} cursor={{ fill: "rgba(154, 114, 240, 0.08)" }} />
-                <Legend
-                  formatter={(value) => {
-                    if (value === "prePriorityPay") return "Pre-PriorityPay";
-                    if (value === "currentProgress") return "Current Progress";
-                    if (value === "futureProgress") return "Future Progress";
-                    return value;
-                  }}
-                />
-                <Bar dataKey="prePriorityPay" fill={COLOR_STARTING} radius={[8, 8, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="currentProgress" fill={COLOR_FROZEN} radius={[8, 8, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="futureProgress" fill={COLOR_ONGOING} radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                <Legend />
+                <Bar dataKey="prePriorityPay" name="Pre-PriorityPay" fill={COLOR_STARTING} radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="currentProgress" name="Current Progress" fill={COLOR_FROZEN} radius={[8, 8, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="futureProgress" name="Future Progress" fill={COLOR_ONGOING} radius={[8, 8, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
