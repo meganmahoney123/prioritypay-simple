@@ -62,11 +62,22 @@ export default function CloseoutPage() {
   const [annualNetIncome, setAnnualNetIncome] = useState("");
   const [annualTaxRatePct, setAnnualTaxRatePct] = useState(25);
   const [w2PopupStep, setW2PopupStep] = useState("ask");
+  // Whether "W2 Income" should be offered as a category option on the
+  // transaction rows below. Defaults true (matches the always-shown
+  // behavior before this existed) so nothing changes until the popup is
+  // actually answered "No" -- at that point there's no reason to keep
+  // showing a category the person just said doesn't apply this month, so
+  // it's dropped from `cats`. Like `w2PopupStep`, this is plain client
+  // state that resets to true on every load/period change rather than
+  // being persisted server-side (there's no has_w2_income column on
+  // closeout) -- consistent with the popup itself re-asking every visit.
+  const [hasW2Income, setHasW2Income] = useState(true);
   const [editingConfirmed, setEditingConfirmed] = useState(false);
   const [persona, setPersona] = useState(null);
   const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
-  const cats = isBusinessOwnerWithEmployees ? [...CATS, { value: "business", label: "Business" }] : CATS;
+  const baseCats = hasW2Income ? CATS : CATS.filter((c) => c.value !== "w2_income");
+  const cats = isBusinessOwnerWithEmployees ? [...baseCats, { value: "business", label: "Business" }] : baseCats;
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
   const [savingObligations, setSavingObligations] = useState(false);
   const [editingObligations, setEditingObligations] = useState(false);
@@ -899,7 +910,13 @@ export default function CloseoutPage() {
                   much you should set aside for taxes.
                 </p>
                 <div className="flex gap-3">
-                  <GhostButton onClick={() => setW2PopupStep("closed")} className="flex-1 justify-center">
+                  <GhostButton
+                    onClick={() => {
+                      setHasW2Income(false);
+                      setW2PopupStep("closed");
+                    }}
+                    className="flex-1 justify-center"
+                  >
                     No
                   </GhostButton>
                   <PrimaryButton onClick={() => setW2PopupStep("flagging")} className="flex-1 justify-center">
