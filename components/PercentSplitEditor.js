@@ -333,7 +333,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           {showStartingBalance ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                {forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Already have money saved for this?"}
+                {forceShowStartingBalance
+                  ? "Starting balance for this category (enter 0 if none):"
+                  : "Already have money saved for this? Add a Starting Balance:"}
               </span>
               <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
@@ -474,7 +476,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       <div className="mt-2">
         {showStartingBalance ? (
           <label className="flex items-center gap-1.5 text-xs text-neutral-500">
-            {forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Already have money saved for this?"}
+            {forceShowStartingBalance
+              ? "Starting balance for this category (enter 0 if none):"
+              : "Already have money saved for this? Add a Starting Balance:"}
             <span className="flex items-center gap-0.5">
               $
               <input
