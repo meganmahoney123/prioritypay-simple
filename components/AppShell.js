@@ -26,7 +26,6 @@ const NAV_ITEMS = [
   { href: "/transfers", label: "One-Time Transfer" },
   { href: "/withdrawals", label: "Withdrawals" },
   { href: "/closeout", label: "Close Out" },
-  { href: "/tax-summary", label: "Tax Summary" },
   { href: "/advisor", label: "Tax Savings Quiz" },
   { href: "/settings", label: "Settings" },
 ];
@@ -39,7 +38,6 @@ const TITLES = {
   "/transfers": "One-Time Transfer",
   "/withdrawals": "Withdrawals",
   "/closeout": "Monthly Close-Out",
-  "/tax-summary": "Tax Summary",
   "/history": "Transaction History",
   "/advisor": "Tax Savings Quiz",
   "/settings": "Settings",

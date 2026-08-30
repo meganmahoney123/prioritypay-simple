@@ -290,10 +290,7 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
         // "find," so this skips the Find the discrepancy breakdown
         // entirely and just explains what the two numbers mean.
         <div className="text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
-          You&apos;ve put {currency(overCategorizedBy + accountBalance)} total into these categories, but this account
-          is currently worth {currency(accountBalance)} -- a {currency(overCategorizedBy)} difference from market
-          performance (or a withdrawal made outside PriorityPay), not a tracking error. Percentages above are shown
-          against what you&apos;ve put in so nothing reads over 100%.
+          Investment accounts may show a higher contribution amount than total balance due to market fluctuations.
         </div>
       )}
 

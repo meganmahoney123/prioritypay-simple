@@ -9,6 +9,7 @@ import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
 import ContributionCalculatorModal from "@/components/ContributionCalculatorModal";
 import WithdrawalAllocator from "@/components/WithdrawalAllocator";
+import TaxSummarySection from "@/components/TaxSummarySection";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
 import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS } from "@/lib/allocations";
@@ -1391,6 +1392,12 @@ export default function CloseoutPage() {
       )}
       </>
       )}
+
+      {/* Formerly its own top-level nav tab -- moved to live under Close
+          Out per explicit request. Shown regardless of which month is
+          selected above/whether this month is closeable yet, since it's
+          its own independent year picker (see TaxSummarySection). */}
+      <TaxSummarySection />
 
       {calculatorPlanType && (
         <ContributionCalculatorModal
