@@ -7,6 +7,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import AppLockGate from "@/components/AppLockGate";
+import { isW2NoSideHustle } from "@/lib/allocations";
 
 // Payments tab removed -- every deposit splits automatically the moment
 // Plaid's webhook detects it (see app/api/plaid/webhook), so there's no
@@ -96,6 +97,24 @@ export default function AppShell({ children, isSandbox = false }) {
   const router = useRouter();
   const [narrow, setNarrow] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Tax Savings Quiz doesn't apply to a plain W2 employee with no
+  // self-employment/side income -- its strategies are almost entirely
+  // self-employment/business-focused (see lib/quizEngine.js). Hidden from
+  // nav for that one persona rather than removed outright, since it's
+  // still relevant to every other persona (including W2 + side hustle,
+  // since side income IS self-employment income).
+  const [navItems, setNavItems] = useState(NAV_ITEMS);
+
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (isW2NoSideHustle(d.profile?.persona)) {
+          setNavItems(NAV_ITEMS.filter((n) => n.href !== "/advisor"));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const onResize = () => {
@@ -136,7 +155,7 @@ export default function AppShell({ children, isSandbox = false }) {
               <PriorityPayLogo size={19} />
             </div>
             <nav style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "0 12px", flexDirection: "column" }}>
-              {NAV_ITEMS.map((n) => (
+              {navItems.map((n) => (
                 <NavLink key={n.href} href={n.href} label={n.label} active={pathname === n.href || pathname.startsWith(`${n.href}/`)} />
               ))}
             </nav>
@@ -259,7 +278,7 @@ export default function AppShell({ children, isSandbox = false }) {
             </div>
             <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 12 }} />
             <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px" }}>
-              {NAV_ITEMS.map((n) => (
+              {navItems.map((n) => (
                 <NavLink
                   key={n.href}
                   href={n.href}

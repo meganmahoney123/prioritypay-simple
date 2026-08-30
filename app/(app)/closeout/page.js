@@ -12,7 +12,7 @@ import WithdrawalAllocator from "@/components/WithdrawalAllocator";
 import TaxSummarySection from "@/components/TaxSummarySection";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
-import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS } from "@/lib/allocations";
+import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, isW2NoSideHustle } from "@/lib/allocations";
 
 function defaultPeriod() {
   const now = new Date();
@@ -91,6 +91,10 @@ export default function CloseoutPage() {
   const [persona, setPersona] = useState(null);
   const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
+  // No self-employment income for this persona, so Solo 401k/SEP IRA
+  // pitches don't apply here (see the retirement recommendation cards
+  // below) -- they get Traditional 401(k)/IRA/HSA copy instead.
+  const isW2NoSideHustlePersona = isW2NoSideHustle(persona);
   const baseDepositCats = hasW2Income ? DEPOSIT_CATS : DEPOSIT_CATS.filter((c) => c.value !== "w2_income");
   const depositCats = isBusinessOwnerWithEmployees ? [...baseDepositCats, { value: "business", label: "Business" }] : baseDepositCats;
   const chargeCats = isBusinessOwnerWithEmployees ? [...CHARGE_CATS, { value: "business", label: "Business" }] : CHARGE_CATS;
@@ -971,20 +975,30 @@ export default function CloseoutPage() {
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-1">Step 2: Contribute to Retirement</h2>
             <p className="text-xs text-[var(--color-neutral-700)] mb-4">
-              A solo 401(k) is a specialized retirement savings plan built for self-employed individuals and
-              business owners who have no employees, other than a spouse. For 2026, the combined annual limit is{" "}
-              {currency(overallDCLimit(recommendations.ageBracket))}, including up to{" "}
-              {currency(electiveDeferralLimit(recommendations.ageBracket))} as your own employee-style deferral.
+              {isW2NoSideHustlePersona ? (
+                <>
+                  A Traditional 401(k), Traditional IRA, and HSA are the retirement (and HSA) accounts available
+                  to a W2 employee. For 2026, the elective-deferral limit relevant to a 401(k) is{" "}
+                  {currency(electiveDeferralLimit(recommendations.ageBracket))}.
+                </>
+              ) : (
+                <>
+                  A solo 401(k) is a specialized retirement savings plan built for self-employed individuals and
+                  business owners who have no employees, other than a spouse. For 2026, the combined annual limit is{" "}
+                  {currency(overallDCLimit(recommendations.ageBracket))}, including up to{" "}
+                  {currency(electiveDeferralLimit(recommendations.ageBracket))} as your own employee-style deferral.
+                </>
+              )}
             </p>
             {recommendations.retirement.length === 0 ? (
               <div className="space-y-5">
                 <p className="text-sm text-[var(--color-neutral-700)]">
-                  You haven&apos;t added a Solo 401k category to your Income Split Rules yet. You can still
-                  calculate what you&apos;d be able to contribute below, and see how to open one, before deciding
-                  what to route toward retirement.
+                  {isW2NoSideHustlePersona
+                    ? "You haven't added a retirement category to your Income Split Rules yet. You can still calculate what you'd be able to contribute below, and see how to open one, before deciding what to route toward retirement."
+                    : "You haven't added a Solo 401k category to your Income Split Rules yet. You can still calculate what you'd be able to contribute below, and see how to open one, before deciding what to route toward retirement."}
                 </p>
 
-                {!isBusinessOwnerWithEmployees && (
+                {!isBusinessOwnerWithEmployees && !isW2NoSideHustlePersona && (
                   <div className="border border-[var(--color-divider)] rounded-[20px] p-4">
                     <div className="text-sm font-semibold mb-1">Solo 401k</div>
                     <p className="text-xs text-[var(--color-neutral-700)] mb-3">
@@ -1018,7 +1032,9 @@ export default function CloseoutPage() {
                     untouched and still render normally in the
                     `recommendations.retirement.length > 0` branch below. */}
                 <p className="text-xs text-[var(--color-neutral-700)]">
-                  Want a SEP IRA or another retirement account instead?{" "}
+                  {isW2NoSideHustlePersona
+                    ? "Want a Traditional 401(k), Traditional IRA, HSA, or another retirement account?"
+                    : "Want a SEP IRA or another retirement account instead?"}{" "}
                   <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Connect another retirement account</Link> in
                   Income Split Rules so a share of every deposit gets set aside for it automatically.
                 </p>

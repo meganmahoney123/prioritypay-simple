@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
@@ -46,7 +46,8 @@ const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "
 const BUSINESS_TYPES = [
   "Self Employed (No Employees)",
   "Business Owner (With Employees)",
-  "W2 Employee + Side Hustle",
+  PERSONA_W2_WITH_SIDE_HUSTLE,
+  PERSONA_W2_NO_SIDE_HUSTLE,
 ];
 const HAS_EMPLOYEES_TYPE = "Business Owner (With Employees)";
 
@@ -372,7 +373,7 @@ function OnboardingPageInner() {
         entityType,
         retirementProfile: {
           incomeHandling: isBusinessOwnerWithEmployees ? incomeHandling || "separate" : "n/a",
-          hasW2Plan: businessType === "W2 Employee + Side Hustle",
+          hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,
           w2ElectiveDeferralYTD: 0,
           // No age-bracket question in onboarding anymore -- defaults to
           // the under-50 IRS limit tier. Adjustable later from Split Rules
@@ -514,7 +515,19 @@ function OnboardingPageInner() {
                 </label>
                 <select
                   value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value)}
+                  onChange={(e) => {
+                    const nextType = e.target.value;
+                    setBusinessType(nextType);
+                    // Retirement's default sub-account(s) depend on
+                    // persona -- Solo 401k doesn't apply without
+                    // self-employment income, so switching to/from W2 (No
+                    // Side Hustle/Business) swaps the Retirement row(s) to
+                    // match (see getDefaultSplitRules in
+                    // lib/allocations.js). Safe to always reset here since
+                    // this is Step 1, before anyone's had a chance to
+                    // customize their split on Step 3.
+                    setPercent(getDefaultSplitRules(nextType).percent);
+                  }}
                   style={bloomInputStyle({ fontSize: 16 })}
                 >
                   {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -744,6 +757,7 @@ function OnboardingPageInner() {
               hideCapDetails
               theme="ledger"
               forceShowStartingBalance
+              persona={businessType}
             />
 
             <button

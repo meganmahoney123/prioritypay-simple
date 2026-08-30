@@ -5,7 +5,7 @@ import AccountBalances from "@/components/AccountBalances";
 import InvestmentGrowthProjection from "@/components/InvestmentGrowthProjection";
 import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
-import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS } from "@/lib/allocations";
+import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { AlertTriangle } from "lucide-react";
@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [billing, setBilling] = useState(null);
   const [pendingTransfers, setPendingTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [persona, setPersona] = useState(null);
 
   const loadAll = async () => {
     const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes, profileRes, pendingRes] = await Promise.all([
@@ -57,6 +58,7 @@ export default function DashboardPage() {
     setYtdByLabel(toByLabel(ytdRes.categories));
     setAllTimeTotal(allTimeRes.total || 0);
     setBilling(profileRes.profile?.billing || null);
+    setPersona(profileRes.profile?.persona || null);
     setPendingTransfers(pendingRes.transfers || []);
     setLoading(false);
   };
@@ -133,21 +135,46 @@ export default function DashboardPage() {
           <InvestmentGrowthProjection
             title="Your Investment & Retirement Projections"
             taxNote
-            blocks={[
-              {
-                group: "Investments",
-                startingLabel: "Investment",
-                subHeading: "Investments",
-                emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
-              },
-              {
-                group: "Retirement",
-                retirementType: "solo_401k",
-                startingLabel: "Solo 401k",
-                subHeading: "Solo 401k",
-                emptyStateText: "Once you're contributing to your Solo 401k, we'll show you where that could grow.",
-              },
-            ]}
+            blocks={
+              isW2NoSideHustle(persona)
+                ? [
+                    {
+                      group: "Investments",
+                      startingLabel: "Investment",
+                      subHeading: "Investments",
+                      emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
+                    },
+                    {
+                      group: "Retirement",
+                      retirementType: "traditional_401k",
+                      startingLabel: "Traditional 401(k)",
+                      subHeading: "Traditional 401(k)",
+                      emptyStateText: "Once you're contributing to your Traditional 401(k), we'll show you where that could grow.",
+                    },
+                    {
+                      group: "Retirement",
+                      retirementType: "traditional_ira",
+                      startingLabel: "Traditional IRA",
+                      subHeading: "Traditional IRA",
+                      emptyStateText: "Once you're contributing to your Traditional IRA, we'll show you where that could grow.",
+                    },
+                  ]
+                : [
+                    {
+                      group: "Investments",
+                      startingLabel: "Investment",
+                      subHeading: "Investments",
+                      emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
+                    },
+                    {
+                      group: "Retirement",
+                      retirementType: "solo_401k",
+                      startingLabel: "Solo 401k",
+                      subHeading: "Solo 401k",
+                      emptyStateText: "Once you're contributing to your Solo 401k, we'll show you where that could grow.",
+                    },
+                  ]
+            }
           />
         }
       />
@@ -178,9 +205,11 @@ export default function DashboardPage() {
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
-            Consider setting up a Solo 401k to start contributing to retirement.{" "}
+            {isW2NoSideHustle(persona)
+              ? " Consider setting up a Traditional 401(k), Traditional IRA, or HSA to start contributing to retirement."
+              : " Consider setting up a Solo 401k to start contributing to retirement."}{" "}
             <a
-              href={RETIREMENT_SETUP_LINKS.solo_401k}
+              href={isW2NoSideHustle(persona) ? RETIREMENT_SETUP_LINKS.traditional_401k : RETIREMENT_SETUP_LINKS.solo_401k}
               target="_blank"
               rel="noreferrer"
               style={{ fontWeight: 600, textDecoration: "underline" }}

@@ -17,16 +17,29 @@
 //   - No "try PriorityPay free" closing CTA, since they're already a
 //     customer.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { QUIZ_QUESTIONS, matchStrategies } from "@/lib/quizEngine";
 import { OptionButton } from "@/components/quiz/QuizShared";
 import QuizResultsView from "@/components/quiz/QuizResultsView";
+import { isW2NoSideHustle } from "@/lib/allocations";
 
 export default function AdvisorPage() {
   const [answers, setAnswers] = useState({});
   const [stepIndex, setStepIndex] = useState(0);
   const [results, setResults] = useState(null);
+  // The quiz's strategies are almost entirely self-employment/business
+  // focused -- doesn't apply to a plain W2 employee with no side income
+  // (see the matching nav-item hide in components/AppShell.js). Guards
+  // the route itself too, in case someone lands here directly rather than
+  // through nav.
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => setBlocked(isW2NoSideHustle(d.profile?.persona)))
+      .catch(() => {});
+  }, []);
 
   const visibleQuestions = useMemo(
     () => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)),
@@ -76,6 +89,18 @@ export default function AdvisorPage() {
     setAnswers({});
     setStepIndex(0);
     setResults(null);
+  }
+
+  if (blocked) {
+    return (
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <Card className="p-6 text-sm">
+          The Tax Savings Quiz is built around self-employment and business tax strategies, so it isn&apos;t
+          relevant for a W2-only income setup. If that ever changes, updating your profile to reflect side income
+          will bring this back.
+        </Card>
+      </div>
+    );
   }
 
   return (

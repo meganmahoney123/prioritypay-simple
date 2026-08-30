@@ -62,7 +62,7 @@ create table if not exists simple_split_rules_percent (
   cap numeric, -- optional MONTHLY TOTAL cap, resets every calendar month
   color text not null default '#065f46',
   account_id uuid references simple_accounts(id) on delete set null,
-  retirement_type text, -- 'solo_401k' | 'sep_ira' | null
+  retirement_type text, -- 'solo_401k' | 'sep_ira' | 'traditional_401k' | 'traditional_ira' | 'hsa' | null
   investment_type text, -- slug derived from label for investment-flavored rows, or null
   created_at timestamptz not null default now()
 );
@@ -551,3 +551,19 @@ create policy "own withdrawal allocations" on simple_withdrawal_allocations for 
 create index if not exists simple_withdrawals_user_occurred_idx on simple_withdrawals (user_id, occurred_at);
 create index if not exists simple_withdrawal_allocations_withdrawal_idx on simple_withdrawal_allocations (withdrawal_id);
 create index if not exists simple_withdrawal_allocations_label_idx on simple_withdrawal_allocations (label);
+
+-- PHASE P: W2 personas (No Side Hustle / With Side Hustle)
+-- Two new persona values were added to `simple_profiles.persona`
+-- (free-text, no CHECK constraint -- see the column definition above) so a
+-- plain W2 employee, with or without a side hustle, can onboard too: "W2
+-- Employee (No Side Hustle/Business)" and "W2 Employee (With Side Hustle/
+-- Business)" (see BUSINESS_TYPES in app/onboarding/page.js). No column
+-- change needed for that -- persona was always arbitrary text.
+--
+-- `simple_split_rules_percent.retirement_type` (see comment above) gained
+-- three new values for the no-self-employment-income persona, since Solo
+-- 401k/SEP IRA don't apply without self-employment income: 'traditional_
+-- 401k', 'traditional_ira', 'hsa'. No column/constraint change needed
+-- there either -- retirement_type was always a plain nullable text column
+-- with no CHECK constraint, just a documented convention (see
+-- RETIREMENT_LABELS in lib/allocations.js for the authoritative list).

@@ -6,7 +6,7 @@ import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
-import { DEFAULT_SPLIT_RULES, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -29,13 +29,22 @@ function SplitRulesPageInner() {
   // "Undo" can put it back exactly where it was. Cleared automatically
   // after a few seconds or as soon as it's used.
   const [lastDeleted, setLastDeleted] = useState(null);
+  // Persona (see lib/allocations.js's PERSONA_* constants) -- only changes
+  // which Retirement default this page falls back to for someone who
+  // never finished onboarding (see savedPercent fallback below), and
+  // which rows/copy PercentSplitEditor locks as core vs. treats as a
+  // normal deletable row.
+  const [persona, setPersona] = useState(null);
 
   useEffect(() => {
     (async () => {
-      const [rulesRes, accountsRes] = await Promise.all([
+      const [rulesRes, accountsRes, profileRes] = await Promise.all([
         fetch("/api/split-rules").then((r) => r.json()),
         fetch("/api/accounts").then((r) => r.json()),
+        fetch("/api/profile").then((r) => r.json()).catch(() => null),
       ]);
+      const userPersona = profileRes?.profile?.persona || null;
+      setPersona(userPersona);
       // A person arriving from the Money Simulator (dashboard tab or the
       // public one under Resources -> via signup+onboarding first) via
       // "Update my real split rules" carries their simulated split in
@@ -52,7 +61,7 @@ function SplitRulesPageInner() {
       // to look at and build from, instead of a blank page that gives no
       // hint what to set up. These aren't saved until the user hits Save
       // or connects an account on a row, exactly like a fresh onboarding.
-      setPercent(simmed || (savedPercent && savedPercent.length ? savedPercent : DEFAULT_SPLIT_RULES.percent));
+      setPercent(simmed || (savedPercent && savedPercent.length ? savedPercent : getDefaultSplitRules(userPersona).percent));
       if (simmed) setSaved(false);
       setAccounts(accountsRes.accounts || []);
       setLoading(false);
@@ -222,6 +231,7 @@ function SplitRulesPageInner() {
         setCreating={setCreating}
         connecting={connecting}
         setConnecting={setConnecting}
+        persona={persona}
         totalPct={totalPct}
         pctOverflow={pctOverflow}
         theme="ledger"

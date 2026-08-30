@@ -6,7 +6,7 @@ import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
-import { percentSections, groupPctTotal, connectSavingsOnly, RETIREMENT_GROUP_SUBTEXT, isCoreRow, roundPct } from "@/lib/allocations";
+import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, roundPct } from "@/lib/allocations";
 
 // Purple ramp used for each row's colour dot in the Bloom-styled ("ledger"
 // theme prop) editor -- replaces the old per-row hex values from
@@ -139,8 +139,8 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance }) {
-  const locked = isCoreRow(rule);
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, persona }) {
+  const locked = isCoreRow(rule, persona);
   // Cap $ (a monthly dollar cap -- see computeAllocations in
   // lib/allocations.js) only applies to flat categories (Tax Reserve,
   // Emergency Fund, OPEX, Savings, anything a person adds themselves).
@@ -599,6 +599,13 @@ export default function PercentSplitEditor({
   // percentage would have been clamped).
   pctOverflow,
   theme,
+  // Optional -- persona string (see lib/allocations.js's PERSONA_*
+  // constants). Only changes behavior for W2 (No Side Hustle/Business):
+  // its Retirement group locks Traditional 401(k)/IRA/HSA instead of
+  // Solo 401k (isCoreRow) and swaps the group's explainer copy
+  // (retirementGroupSubtext). Omitted entirely == the original
+  // self-employed/business-owner behavior, unchanged.
+  persona,
   // Onboarding Pass 2 (Aug 2026 handoff) folds this same cap explanation
   // into a page-level "How splits work" panel above the whole editor, so
   // the caller can suppress this component's own copy of it here rather
@@ -698,7 +705,7 @@ export default function PercentSplitEditor({
               <div style={{ padding: "18px 22px 22px" }}>
                 {section.group === "Retirement" && (
                   <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 18px", maxWidth: "40em" }}>
-                    {RETIREMENT_GROUP_SUBTEXT}
+                    {retirementGroupSubtext(persona)}
                   </p>
                 )}
                 <div style={{ display: "grid", gap: 14 }}>
@@ -719,6 +726,7 @@ export default function PercentSplitEditor({
                       overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
                       dotColor={dotColorFor(rule.id)}
+                      persona={persona}
                     />
                   ))}
                 </div>
@@ -761,6 +769,7 @@ export default function PercentSplitEditor({
               overflowMessage={overflowMessageFor(section.row.id)}
               theme="ledger"
               dotColor={dotColorFor(section.row.id)}
+              persona={persona}
             />
           )
         )}
@@ -815,7 +824,7 @@ export default function PercentSplitEditor({
               <span className="text-xs font-mono text-neutral-500">{groupPctTotal(section.rows)}% total</span>
             </div>
             {section.group === "Retirement" && (
-              <p className="text-[11px] text-neutral-500 leading-snug mb-2 px-0.5">{RETIREMENT_GROUP_SUBTEXT}</p>
+              <p className="text-[11px] text-neutral-500 leading-snug mb-2 px-0.5">{retirementGroupSubtext(persona)}</p>
             )}
             <div className="space-y-2">
               {section.rows.map((rule) => (
@@ -833,6 +842,7 @@ export default function PercentSplitEditor({
                   showRowWarnings={showRowWarnings}
                   forceShowStartingBalance={forceShowStartingBalance}
                   overflowMessage={overflowMessageFor(rule.id)}
+                  persona={persona}
                 />
               ))}
             </div>
@@ -858,6 +868,7 @@ export default function PercentSplitEditor({
             showRowWarnings={showRowWarnings}
             forceShowStartingBalance={forceShowStartingBalance}
             overflowMessage={overflowMessageFor(section.row.id)}
+            persona={persona}
           />
         )
       )}
