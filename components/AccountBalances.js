@@ -191,10 +191,6 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
       <CategoryDistributionSection />
 
       {belowDistribution}
-
-      <OtherAccountsBox accounts={accounts} flatRows={flatRows} ytdByLabel={ytdByLabel} mtdByLabel={mtdByLabel} />
-
-      <UnassignedAccountsBox accounts={accounts || []} assignedAccountIds={assignedAccountIds} />
     </div>
   );
 }
