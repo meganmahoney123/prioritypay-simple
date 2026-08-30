@@ -26,6 +26,14 @@ function SettingsPageInner() {
   const [loading, setLoading] = useState(true);
   const [billingBusy, setBillingBusy] = useState(false);
   const billingRedirect = searchParams.get("billing");
+  // Testing-only: lets you switch your OWN account between the four
+  // onboarding personas (see BUSINESS_TYPES, app/onboarding/page.js)
+  // without creating a second account -- resets your split rules to that
+  // persona's defaults via /api/dev/set-persona, same insert/delete
+  // pattern as /api/dev/reset-split-rules. Real accounts wouldn't need
+  // this button and could have it removed later; harmless to leave in the
+  // meantime since it only ever touches the signed-in user's own data.
+  const [personaSwitchBusy, setPersonaSwitchBusy] = useState(null);
 
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then((d) => {
@@ -57,6 +65,26 @@ function SettingsPageInner() {
     const data = await res.json();
     if (data.url) window.location.href = data.url;
     else setBillingBusy(false);
+  };
+
+  const switchPersona = async (persona) => {
+    setPersonaSwitchBusy(persona);
+    const res = await fetch("/api/dev/set-persona", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ persona }),
+    });
+    const data = await res.json();
+    setPersonaSwitchBusy(null);
+    if (!res.ok || data.error) {
+      alert(data.error || "Could not switch persona.");
+      return;
+    }
+    // Split rules and dashboard/close-out copy both read from the DB fresh
+    // on load -- a full reload is the simplest way to see the new
+    // persona's defaults everywhere at once, same as actually finishing
+    // onboarding would.
+    window.location.href = "/dashboard";
   };
 
   if (loading || !profile) return <p className="text-sm text-neutral-500">Loading…</p>;
@@ -263,6 +291,43 @@ function SettingsPageInner() {
         <PrimaryButton onClick={save}>Save</PrimaryButton>
         {saved && <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontStyle: "italic", color: "var(--color-accent-700)" }}>Saved.</span>}
       </div>
+
+      <Card className="p-6" style={{ maxWidth: "40em" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Testing: switch persona</h2>
+        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
+          Instantly switches your own account to a different onboarding persona and resets your split rules to
+          that persona&apos;s defaults — no need to sign up a second account to see how Dashboard, Close Out, and
+          Split Rules look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            "Self Employed (No Employees)",
+            "Business Owner (With Employees)",
+            "W2 Employee (With Side Hustle/Business)",
+            "W2 Employee (No Side Hustle/Business)",
+          ].map((p) => (
+            <button
+              key={p}
+              onClick={() => switchPersona(p)}
+              disabled={!!personaSwitchBusy}
+              className="text-xs"
+              style={{
+                padding: "8px 14px",
+                borderRadius: "var(--radius-pill)",
+                border: `1px solid ${profile.persona === p ? "var(--color-accent-700)" : "var(--color-divider)"}`,
+                background: profile.persona === p ? "color-mix(in srgb, var(--color-accent) 10%, transparent)" : "transparent",
+                fontWeight: 600,
+                color: "var(--color-text)",
+                cursor: personaSwitchBusy ? "not-allowed" : "pointer",
+                opacity: personaSwitchBusy && personaSwitchBusy !== p ? 0.5 : 1,
+              }}
+            >
+              {personaSwitchBusy === p ? "Switching…" : p}
+            </button>
+          ))}
+        </div>
+      </Card>
 
       <DeleteAccountCard />
     </div>
