@@ -516,6 +516,16 @@ export default function CloseoutPage() {
     setEditingObligations(false);
   };
 
+  // Declared here (not just below the loading-gate return) because
+  // canEditNow and the render* functions right below reference it --
+  // `const` bindings are in their temporal dead zone until the line that
+  // declares them runs, so this MUST come before any use, not after (a
+  // duplicate `const isConfirmed` used to also exist further down, past
+  // the loading-gate return, which threw "Cannot access before
+  // initialization" on every render since JS evaluates this whole
+  // function body top-to-bottom regardless of the `if (loading) return`
+  // in between two of its statements).
+  const isConfirmed = closeout?.status === "confirmed";
   const canEditNow = !isConfirmed || editingConfirmed;
   const depositTxns = transactions.filter((t) => t.direction === "in");
   const chargeTxns = transactions.filter((t) => t.direction === "out");
@@ -804,7 +814,6 @@ export default function CloseoutPage() {
   if (loading) return <p className="text-sm text-[var(--color-neutral-700)]">Loading…</p>;
 
   const isTooEarlyToClose = period >= currentPeriod() && !(period === currentPeriod() && isLastDayOfCurrentMonthUTC());
-  const isConfirmed = closeout?.status === "confirmed";
   const displayNetIncome = isConfirmed ? Number(closeout?.net_income) || 0 : netIncomePreview;
   const displayW2Income = recommendations?.w2Income ?? w2IncomePreview;
   const displayBusiness = recommendations?.business ?? businessPreview;
