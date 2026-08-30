@@ -117,7 +117,20 @@ export default function MoneySimulator({
             min={0}
             step={0.01}
             value={income}
-            onChange={(e) => setIncome(Math.max(0, Math.round((Number(e.target.value) || 0) * 100) / 100))}
+            onChange={(e) => {
+              const num = Math.max(0, Math.round((Number(e.target.value) || 0) * 100) / 100);
+              // A pasted or fast-typed value can leave the native number
+              // input's own DOM text carrying a leading zero (e.g.
+              // "0100000") even when the parsed/stored number is already
+              // correct -- React skips re-writing the DOM's value if the
+              // new state happens to equal what it already had (a known
+              // controlled-<input type=number> quirk). Writing the clean
+              // string back onto the element directly, instead of relying
+              // solely on React's value prop, guarantees the display can
+              // never show a leading zero.
+              e.target.value = String(num);
+              setIncome(num);
+            }}
             style={bloomInputStyle({ width: 130, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600 })}
           />
         </span>

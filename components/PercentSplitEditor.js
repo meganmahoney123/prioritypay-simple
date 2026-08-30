@@ -346,7 +346,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                   step={1}
                   placeholder="0"
                   value={rule.startingBalance ?? ""}
-                  onChange={(e) => onUpdate(rule.id, { startingBalance: e.target.value })}
+                  onChange={(e) => onUpdate(rule.id, { startingBalance: e.target.value.replace(/^0+(?=\d)/, "") })}
                   style={{
                     width: 90,
                     textAlign: "right",
