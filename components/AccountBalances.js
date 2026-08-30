@@ -5,6 +5,7 @@ import { Card, currency } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { percentSections } from "@/lib/allocations";
 import CategoryDistributionSection from "./CategoryDistributionSection";
+import TotalAllocationSection from "./TotalAllocationSection";
 
 // Plain account-balance card, no split-category info -- used for accounts
 // that aren't assigned as the destination of any split-rule category at
@@ -189,6 +190,8 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
       </Card>
 
       <CategoryDistributionSection />
+
+      <TotalAllocationSection />
 
       {belowDistribution}
     </div>
