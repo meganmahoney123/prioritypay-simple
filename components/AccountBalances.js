@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Card, currency } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { percentSections } from "@/lib/allocations";
-import MoneyDistributionChart from "./MoneyDistributionChart";
+import CategoryDistributionSection from "./CategoryDistributionSection";
 import SpendDistributionChart from "./SpendDistributionChart";
 
 function accountLabel(acc) {
@@ -249,7 +249,7 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
         </div>
       </Card>
 
-      <MoneyDistributionChart rules={rules} />
+      <CategoryDistributionSection />
 
       {belowDistribution}
 
