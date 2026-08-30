@@ -156,6 +156,9 @@ create table if not exists simple_closeout_transactions (
   direction text not null,
   suggested_category text not null,
   confirmed_category text,
+  -- Free-text "who was this from" note, settable inline once a row is
+  -- confirmed as Income (see app/(app)/closeout/page.js) -- null otherwise.
+  income_source text,
   created_at timestamptz not null default now(),
   unique (closeout_id, plaid_transaction_id)
 );

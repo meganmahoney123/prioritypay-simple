@@ -272,6 +272,58 @@ export default function CloseoutPage() {
       return next;
     });
   };
+  // Backs the inline "categorize" column added at the end of each Expense
+  // row (see the transactions.map render below) -- lets someone pick the
+  // category straight from the row instead of having to open/scroll to
+  // the full panel first. It's the same categoryLabel the full panel's own
+  // "What category did this come out of?" select writes to (opening/
+  // reusing the panel, not a separate piece of state), so mileage/meals/
+  // the withdrawal allocator/Save button below still work exactly the
+  // same either way -- this is just a faster way to set categoryLabel.
+  const setExpenseCategoryInline = (txnId, categoryLabel) => {
+    setExpensePanels((prev) => ({
+      ...prev,
+      [txnId]: {
+        ...(prev[txnId] || {
+          open: true,
+          categoryLabel: null,
+          mileageMiles: "",
+          mileagePurpose: "",
+          mealPurpose: "",
+          mealAttendees: "",
+          receiptFile: null,
+          receiptUrl: null,
+          uploading: false,
+          allocations: [],
+          allocationsComplete: false,
+          saving: false,
+          error: null,
+        }),
+        open: true,
+        categoryLabel: categoryLabel || null,
+      },
+    }));
+  };
+
+  // Backs the inline "who was this from" column added at the end of each
+  // Income row -- a free-text note (simple_closeout_transactions.income_source),
+  // saved on blur only if it actually changed, mirroring setCategory's
+  // optimistic-update-with-rollback pattern above.
+  const saveIncomeSource = async (txnId, value) => {
+    const previous = transactions.find((t) => t.id === txnId)?.income_source ?? null;
+    const trimmed = value.trim();
+    if (trimmed === (previous || "")) return;
+    setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: trimmed || null } : t)));
+    const res = await fetch(`/api/closeout/transactions/${txnId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ incomeSource: trimmed || null }),
+    });
+    if (!res.ok) {
+      setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: previous } : t)));
+      alert("Couldn't save that — please try again.");
+    }
+  };
 
   const uploadReceipt = async (txnId, file) => {
     updateExpensePanel(txnId, { uploading: true, error: null });
@@ -569,6 +621,37 @@ export default function CloseoutPage() {
                           </button>
                         ))}
                       </div>
+                      {/* Rightmost inline column -- only shown once this row
+                          is actually labeled Expense or Income, so it never
+                          crowds a row that doesn't need it yet. Expense gets
+                          a quick categorize dropdown (still opens/feeds the
+                          full panel below for mileage/meals/receipt/the
+                          withdrawal allocator and Save button); Income gets
+                          a free-text "who was this from" note. */}
+                      {cat === "expense" && (
+                        <select
+                          value={panel?.categoryLabel || ""}
+                          onChange={(e) => setExpenseCategoryInline(t.id, e.target.value || null)}
+                          disabled={!canEdit}
+                          className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 disabled:opacity-60"
+                        >
+                          <option value="">Categorize…</option>
+                          {splitRulesPercent.map((r) => (
+                            <option key={r.id} value={r.label}>{r.label}</option>
+                          ))}
+                          <option value="Other">Other (not tracked)</option>
+                        </select>
+                      )}
+                      {cat === "income" && (
+                        <input
+                          type="text"
+                          placeholder="Who was this from?"
+                          defaultValue={t.income_source || ""}
+                          onBlur={(e) => saveIncomeSource(t.id, e.target.value)}
+                          disabled={!canEdit}
+                          className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 w-32 disabled:opacity-60"
+                        />
+                      )}
                     </div>
                   </div>
                   {panel?.open && (
@@ -714,9 +797,9 @@ export default function CloseoutPage() {
             {recommendations.retirement.length === 0 ? (
               <div className="space-y-5">
                 <p className="text-sm text-[var(--color-neutral-700)]">
-                  You haven&apos;t added a Solo 401k or SEP IRA category to your Income Split Rules yet. You can
-                  still calculate what you&apos;d be able to contribute below, and see how to open either account,
-                  before deciding what to route toward retirement.
+                  You haven&apos;t added a Solo 401k category to your Income Split Rules yet. You can still
+                  calculate what you&apos;d be able to contribute below, and see how to open one, before deciding
+                  what to route toward retirement.
                 </p>
 
                 {!isBusinessOwnerWithEmployees && (
@@ -743,31 +826,19 @@ export default function CloseoutPage() {
                   </div>
                 )}
 
-                <div className="border border-[var(--color-divider)] rounded-[20px] p-4">
-                  <div className="text-sm font-semibold mb-1">SEP IRA</div>
-                  <p className="text-xs text-[var(--color-neutral-700)] mb-3">
-                    A Simplified Employee Pension (SEP) IRA lets business owners and self-employed individuals
-                    make tax-deductible contributions for themselves and their eligible employees.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <GhostButton onClick={() => setCalculatorPlanType("sep_ira")} className="text-xs px-3 py-1.5">
-                      <Calculator size={14} /> Calculate Your Contribution Amount
-                    </GhostButton>
-                    <a
-                      href={RETIREMENT_SETUP_LINKS.sep_ira}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs px-3 py-1.5 inline-flex items-center"
-                      style={{ color: "var(--color-accent-700)", fontWeight: 600 }}
-                    >
-                      How do I open one?
-                    </a>
-                  </div>
-                </div>
-
+                {/* SEP IRA is no longer pushed as a default option here (see
+                    the same removal in lib/allocations.js's
+                    DEFAULT_SPLIT_RULES) -- Solo 401k alone covers the
+                    common case. Someone who specifically wants a SEP IRA
+                    (or another retirement account entirely) can still add
+                    it themselves via Split Rules -- existing SEP IRA rows
+                    for people who already had one before this change are
+                    untouched and still render normally in the
+                    `recommendations.retirement.length > 0` branch below. */}
                 <p className="text-xs text-[var(--color-neutral-700)]">
-                  Ready to actually start funding one? <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Add it to your Income Split Rules</Link> so
-                  a share of every deposit gets set aside for it automatically.
+                  Want a SEP IRA or another retirement account instead?{" "}
+                  <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Connect another retirement account</Link> in
+                  Income Split Rules so a share of every deposit gets set aside for it automatically.
                 </p>
               </div>
             ) : (

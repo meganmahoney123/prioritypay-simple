@@ -14,19 +14,37 @@ const VALID = ["income", "expense", "exclude", "w2_income", "business"];
 // Auto-saves as the person taps through the transaction review list on the
 // close-out screen -- one call per toggle, no separate "save" step, same
 // immediacy as everywhere else in the app that edits a single field.
+//
+// Also accepts `incomeSource` on its own (confirmedCategory is optional in
+// that case) -- the free-text "who was this from" note on an Income row
+// (simple_closeout_transactions.income_source), saved on blur from the
+// inline column next to the category pills. Kept as a separate optional
+// field rather than folded into confirmedCategory so noting a source
+// doesn't require re-sending/re-validating the category too.
 export async function PATCH(request, { params }) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  const { confirmedCategory } = await request.json();
-  if (!VALID.includes(confirmedCategory)) {
-    return Response.json({ error: "Invalid category." }, { status: 400 });
+  const { confirmedCategory, incomeSource } = await request.json();
+
+  const update = {};
+  if (confirmedCategory !== undefined) {
+    if (!VALID.includes(confirmedCategory)) {
+      return Response.json({ error: "Invalid category." }, { status: 400 });
+    }
+    update.confirmed_category = confirmedCategory;
+  }
+  if (incomeSource !== undefined) {
+    update.income_source = incomeSource || null;
+  }
+  if (Object.keys(update).length === 0) {
+    return Response.json({ error: "Nothing to update." }, { status: 400 });
   }
 
   const admin = supabaseAdmin();
   const { id } = await params;
   const { error } = await admin
     .from("simple_closeout_transactions")
-    .update({ confirmed_category: confirmedCategory })
+    .update(update)
     .eq("id", id)
     .eq("user_id", user.id);
 
