@@ -236,7 +236,7 @@ export default function CategoryDistributionSection() {
     <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>
-          How your money has been distributed
+          How your income has been distributed
         </h2>
         <div className="flex items-center gap-1.5 ml-1">
           <button
