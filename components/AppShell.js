@@ -12,6 +12,12 @@ import AppLockGate from "@/components/AppLockGate";
 // Plaid's webhook detects it (see app/api/plaid/webhook), so there's no
 // longer a manual trigger someone needs a dedicated nav item for. Recent
 // transfers are still visible on the Dashboard.
+//
+// History tab removed by request -- it wasn't pulling its weight and just
+// added clutter; the transfers it showed are still visible on the
+// Dashboard, and the route itself (app/(app)/history/page.js) is left in
+// place rather than deleted in case it's wanted again later, it's just no
+// longer linked from anywhere in the nav.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/accounts", label: "Accounts" },
@@ -19,7 +25,6 @@ const NAV_ITEMS = [
   { href: "/simulator", label: "Income Split Simulator" },
   { href: "/closeout", label: "Close Out" },
   { href: "/tax-summary", label: "Tax Summary" },
-  { href: "/history", label: "History" },
   { href: "/advisor", label: "Tax Savings Quiz" },
   { href: "/settings", label: "Settings" },
 ];

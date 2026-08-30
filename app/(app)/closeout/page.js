@@ -1035,7 +1035,7 @@ export default function CloseoutPage() {
             </p>
             {!topUp.open ? (
               <GhostButton onClick={() => setTopUp((prev) => ({ ...prev, open: true }))} className="text-xs px-3 py-1.5">
-                <Plus size={14} /> Add money to an account
+                <Plus size={14} /> Add Money to Your Tax Reserve
               </GhostButton>
             ) : (
               <div className="border border-[var(--color-divider)] rounded-[20px] p-3 space-y-2">

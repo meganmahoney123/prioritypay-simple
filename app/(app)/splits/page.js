@@ -80,12 +80,31 @@ function SplitRulesPageInner() {
     return () => clearTimeout(t);
   }, [pctOverflow]);
 
+  // Surfaces the server's validation error (e.g. a starting balance that
+  // would put an account's categories over what it actually holds -- see
+  // app/api/split-rules/route.js's PUT) instead of silently pretending the
+  // save succeeded. Auto-cleared like pctOverflow above, but given longer
+  // to read since this message is usually more involved.
+  const [saveError, setSaveError] = useState(null);
+  useEffect(() => {
+    if (!saveError) return;
+    const t = setTimeout(() => setSaveError(null), 12000);
+    return () => clearTimeout(t);
+  }, [saveError]);
+
   const saveNow = async (nextPercent) => {
-    await fetch("/api/split-rules", {
+    setSaveError(null);
+    const res = await fetch("/api/split-rules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ percent: settleCaps(nextPercent) }),
     });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) {
+      setSaveError(data.error || "Couldn't save — please try again.");
+      setSaved(false);
+      return;
+    }
     setSaved(true);
   };
 
@@ -276,6 +295,22 @@ function SplitRulesPageInner() {
         </PrimaryButton>
         {saved && <span className="text-sm" style={{ color: "#4E22B8", fontFamily: "var(--font-heading)", fontWeight: 700 }}>Saved.</span>}
       </div>
+
+      {saveError && (
+        <div
+          className="text-sm"
+          style={{
+            color: "#9C3B22",
+            background: "#FBEEEA",
+            border: "1px solid #F0C9C0",
+            borderRadius: "var(--radius-md)",
+            padding: "12px 16px",
+            lineHeight: 1.5,
+          }}
+        >
+          {saveError}
+        </div>
+      )}
 
       {lastDeleted && (
         <div

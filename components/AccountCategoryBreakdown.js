@@ -20,12 +20,15 @@ function formatCloseoutDate(iso) {
 // Shown inline under an overdrawn category (rawBalance < 0 -- a withdrawal
 // spent more than that category had). Per spec, the pie/line item already
 // clamp that category to $0 / 0%; this is where the person answers "where
-// did the extra money come from" -- either another category sharing this
-// same account (debited by the same amount, via POST /api/allocations/
-// category-transfer) or unallocated cash already sitting in the account
-// (a no-op -- nothing to move, the account's own real balance already
-// covered it).
-function FundingSourcePrompt({ accountId, category, otherCategories, onResolved }) {
+// did the extra money come from" -- either another category (from ANY
+// connected account, not just this one -- money moving between categories
+// doesn't require they share a bank account, debited by the same amount
+// via POST /api/allocations/category-transfer) or unallocated cash
+// already sitting in THIS account (which actually moves too -- it credits
+// the category and Unallocated visibly shrinks by the same amount on the
+// next fetch, since Unallocated is just accountBalance minus whatever's
+// categorized).
+function FundingSourcePrompt({ category, otherCategories, onResolved }) {
   const [source, setSource] = useState("unallocated");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -51,6 +54,15 @@ function FundingSourcePrompt({ accountId, category, otherCategories, onResolved 
     onResolved();
   };
 
+  // Group by account so it's clear which bank account each option would
+  // actually pull from -- money can move across accounts, but the person
+  // should know that's what's happening, not assume it's staying local.
+  const byAccount = {};
+  otherCategories.forEach((c) => {
+    const key = c.accountLabel || "Not linked to an account";
+    (byAccount[key] ||= []).push(c);
+  });
+
   return (
     <div className="mt-2 p-2.5" style={{ ...bloomWarningCardStyle(), borderRadius: "var(--radius-sm)" }}>
       <p className="text-xs font-semibold mb-1.5">
@@ -63,20 +75,31 @@ function FundingSourcePrompt({ accountId, category, otherCategories, onResolved 
         style={{ borderRadius: "var(--radius-sm)", border: "1px solid var(--color-divider)", padding: "6px 8px", background: "#fff", color: "var(--color-text)" }}
       >
         <option value="unallocated">Unallocated cash in this account</option>
-        {otherCategories.map((label) => (
-          <option key={label} value={label}>{label}</option>
+        {Object.entries(byAccount).map(([accountLabel, cats]) => (
+          <optgroup key={accountLabel} label={accountLabel}>
+            {cats.map((c) => (
+              <option key={c.label} value={c.label}>{c.label}</option>
+            ))}
+          </optgroup>
         ))}
       </select>
       {error && <p className="text-xs mb-1.5" style={{ color: "#9C3B22" }}>{error}</p>}
-      <button
-        type="button"
-        onClick={submit}
-        disabled={saving}
-        className="text-xs"
-        style={bloomGhostButtonStyle({ padding: "6px 12px", fontSize: 12, opacity: saving ? 0.6 : 1 })}
-      >
-        {saving ? "Saving…" : "Confirm"}
-      </button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={saving}
+          className="text-xs"
+          style={bloomGhostButtonStyle({ padding: "6px 12px", fontSize: 12, opacity: saving ? 0.6 : 1 })}
+        >
+          {saving ? "Saving…" : "Confirm"}
+        </button>
+        <span className="text-[11px]" style={{ color: "var(--color-neutral-700)" }}>
+          Money came from an account you haven&apos;t connected yet?{" "}
+          <a href="#connect" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Connect it above</a> first,
+          then come back to this.
+        </span>
+      </div>
     </div>
   );
 }
@@ -100,12 +123,12 @@ function FundingSourcePrompt({ accountId, category, otherCategories, onResolved 
 // itself -- avoids N duplicate requests for N accounts. Renders nothing
 // if this account has no linked categories (data is undefined/null), same
 // as the parent already handles.
-export default function AccountCategoryBreakdown({ accountId, data, onChanged }) {
+export default function AccountCategoryBreakdown({ accountId, data, allCategories = [], onChanged }) {
   const [resolvingLabel, setResolvingLabel] = useState(null);
 
   if (!data || !data.categories || data.categories.length === 0) return null;
 
-  const { categories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance } = data;
+  const { categories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance, overCategorizedBy } = data;
 
   const pieData = categories.map((c, i) => ({
     name: c.label,
@@ -175,6 +198,15 @@ export default function AccountCategoryBreakdown({ accountId, data, onChanged })
         </div>
       </div>
 
+      {overCategorizedBy > 0 && (
+        <div className="text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
+          Categories here add up to {currency(overCategorizedBy)} more than this account&apos;s real balance
+          ({currency(accountBalance)}) -- percentages above are shown against the categorized total instead so
+          nothing reads over 100%, but a category balance is out of sync with the bank. Check starting balances
+          and recent withdrawals for accuracy.
+        </div>
+      )}
+
       {categories
         .filter((c) => c.overdrawnBy > 0 && resolvingLabel !== c.label)
         .map((c) => (
@@ -198,9 +230,8 @@ export default function AccountCategoryBreakdown({ accountId, data, onChanged })
         .map((c) => (
           <FundingSourcePrompt
             key={c.label}
-            accountId={accountId}
             category={c}
-            otherCategories={categories.filter((o) => o.label !== c.label).map((o) => o.label)}
+            otherCategories={allCategories.filter((o) => o.label !== c.label)}
             onResolved={() => {
               setResolvingLabel(null);
               if (onChanged) onChanged();

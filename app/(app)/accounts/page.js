@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Landmark, CreditCard, Briefcase } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
@@ -39,6 +39,27 @@ export default function AccountsPage() {
     load();
   }, []);
 
+  // Every category the person has, across EVERY connected account -- not
+  // just the account whose card this is -- so the "where did the extra
+  // money come from" prompt on an overdrawn category (see
+  // AccountCategoryBreakdown/FundingSourcePrompt) can offer a category
+  // from a different account too. Money moving between two categories
+  // doesn't require they share a bank account.
+  const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
+  const allCategories = useMemo(
+    () =>
+      Object.values(categoryBalances).flatMap((a) =>
+        (a.categories || []).map((c) => ({
+          label: c.label,
+          accountId: a.accountId,
+          accountLabel: accountsById[a.accountId]
+            ? `${accountsById[a.accountId].institution_name} •••• ${accountsById[a.accountId].mask}`
+            : null,
+        }))
+      ),
+    [categoryBalances, accountsById]
+  );
+
   const disconnect = async (acc) => {
     const confirmed = window.confirm(
       `Disconnect ${acc.institution_name} ${acc.account_name} •••• ${acc.mask}? ` +
@@ -66,7 +87,7 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div id="connect">
         {/* "...or app" was dropped here on purpose -- Plaid's Transactions
             product links real bank/credit union accounts, not P2P apps
             like Venmo or Cash App, so the old copy overpromised what this
@@ -164,7 +185,7 @@ export default function AccountsPage() {
                 {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
               </button>
             </div>
-            <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} onChanged={load} />
+            <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} allCategories={allCategories} onChanged={load} />
           </Card>
         ))}
       </div>

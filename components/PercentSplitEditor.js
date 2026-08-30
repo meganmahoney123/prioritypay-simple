@@ -139,7 +139,7 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance }) {
   const locked = isCoreRow(rule);
   // Cap $ (a monthly dollar cap -- see computeAllocations in
   // lib/allocations.js) only applies to flat categories (Tax Reserve,
@@ -157,8 +157,15 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // Collapsed by default, same reasoning as showLimits above -- most
   // people creating a category are starting from $0, so this stays out
   // of the way until someone clicks "$X saved already" / "Already have
-  // money saved?" to reveal it.
-  const [showStartingBalance, setShowStartingBalance] = useState(rule.startingBalance !== null && rule.startingBalance !== undefined && rule.startingBalance !== "");
+  // money saved?" to reveal it. Onboarding passes forceShowStartingBalance
+  // to skip the toggle entirely and always show the input -- per product
+  // decision, onboarding should explicitly ask for a starting balance on
+  // every category (even a $0 one is an answer), not leave it as an
+  // easy-to-miss optional reveal the way the Splits page (editing an
+  // existing category later) still does.
+  const [showStartingBalance, setShowStartingBalance] = useState(
+    forceShowStartingBalance || (rule.startingBalance !== null && rule.startingBalance !== undefined && rule.startingBalance !== "")
+  );
 
   if (theme === "ledger") {
     return (
@@ -326,7 +333,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           {showStartingBalance ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Already have money saved for this?
+                {forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Already have money saved for this?"}
               </span>
               <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
@@ -467,7 +474,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       <div className="mt-2">
         {showStartingBalance ? (
           <label className="flex items-center gap-1.5 text-xs text-neutral-500">
-            Already have money saved for this?
+            {forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Already have money saved for this?"}
             <span className="flex items-center gap-0.5">
               $
               <input
@@ -594,6 +601,10 @@ export default function PercentSplitEditor({
   // than showing the same explanation twice. Defaults to false so Split
   // Rules (which has no such page-level panel) keeps this disclosure.
   hideCapDetails = false,
+  // Passed through to every PercentRow -- see the forceShowStartingBalance
+  // comment on PercentRow itself. Defaults to false so Split Rules keeps
+  // the existing optional-toggle behavior; onboarding passes true.
+  forceShowStartingBalance = false,
 }) {
   const overflowMessageFor = (id) => (pctOverflow && pctOverflow.id === id ? pctOverflow.message : null);
 
@@ -700,6 +711,7 @@ export default function PercentSplitEditor({
                       setConnecting={setConnecting}
                       onAccountLinked={onAccountLinked}
                       showRowWarnings={showRowWarnings}
+                      forceShowStartingBalance={forceShowStartingBalance}
                       overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
                       dotColor={dotColorFor(rule.id)}
@@ -741,6 +753,7 @@ export default function PercentSplitEditor({
               setConnecting={setConnecting}
               onAccountLinked={onAccountLinked}
               showRowWarnings={showRowWarnings}
+              forceShowStartingBalance={forceShowStartingBalance}
               overflowMessage={overflowMessageFor(section.row.id)}
               theme="ledger"
               dotColor={dotColorFor(section.row.id)}
@@ -814,6 +827,7 @@ export default function PercentSplitEditor({
                   setConnecting={setConnecting}
                   onAccountLinked={onAccountLinked}
                   showRowWarnings={showRowWarnings}
+                  forceShowStartingBalance={forceShowStartingBalance}
                   overflowMessage={overflowMessageFor(rule.id)}
                 />
               ))}
@@ -838,6 +852,7 @@ export default function PercentSplitEditor({
             setConnecting={setConnecting}
             onAccountLinked={onAccountLinked}
             showRowWarnings={showRowWarnings}
+            forceShowStartingBalance={forceShowStartingBalance}
             overflowMessage={overflowMessageFor(section.row.id)}
           />
         )

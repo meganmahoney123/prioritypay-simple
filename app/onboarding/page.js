@@ -224,6 +224,18 @@ function OnboardingPageInner() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ percent: settleCaps(nextPercent) }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        // Same account-capacity check as Split Rules (see app/api/split-
+        // rules/route.js's PUT) -- less likely to trip during onboarding
+        // since a freshly-connected account rarely already has other
+        // categories claiming it, but still possible if two rows in this
+        // step point at the same account with too much starting balance
+        // between them.
+        alert(data.error || "Couldn't save that -- please try again.");
+      }
+      return res;
     });
   // Someone typing a percentage that would push the total over 100% gets
   // silently clamped (see clampPctToRemaining in lib/allocations.js) --
@@ -579,9 +591,13 @@ function OnboardingPageInner() {
               Connect everywhere money reaches you
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 12px" }}>
               PriorityPay can only tell you to split a deposit it actually sees. Connect every bank account
               you could receive a client payment into. You can always add more inside the dashboard.
+            </p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+              Also connect any credit cards you use for business spending — Close Out uses those to catch
+              expenses that never touch a bank account, so your tax reserve and category tracking stay accurate.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
               <PlaidLinkButton
@@ -727,6 +743,7 @@ function OnboardingPageInner() {
               pctOverflow={pctOverflow}
               hideCapDetails
               theme="ledger"
+              forceShowStartingBalance
             />
 
             <button

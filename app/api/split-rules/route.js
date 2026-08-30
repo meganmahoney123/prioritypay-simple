@@ -68,6 +68,54 @@ export async function PUT(request) {
   }
   const admin = supabaseAdmin();
 
+  // A starting balance is someone declaring "I already had this much saved
+  // in this category before PriorityPay." That can't exceed what's
+  // actually sitting in the bank account it's linked to -- two categories
+  // sharing one account (Savings + Wedding, say) can't each separately
+  // claim more of that account's real balance than the account holds in
+  // total. Since PUT replaces the whole rule set in one shot, `percent`
+  // here already contains every row (unchanged ones included), so summing
+  // startingBalance per accountId across just this payload is a complete
+  // picture -- no need to merge with what's currently in the DB.
+  const accountIds = [...new Set(percent.map((r) => r.accountId).filter(Boolean))];
+  if (accountIds.length) {
+    const { data: accountRows } = await admin
+      .from("simple_accounts")
+      .select("id, institution_name, account_name, mask, current_balance")
+      .in("id", accountIds);
+    const accountsById = Object.fromEntries((accountRows || []).map((a) => [a.id, a]));
+
+    const startingByAccount = {};
+    percent.forEach((r) => {
+      if (!r.accountId) return;
+      const sb = r.startingBalance === null || r.startingBalance === undefined || r.startingBalance === "" ? 0 : Number(r.startingBalance) || 0;
+      if (!startingByAccount[r.accountId]) startingByAccount[r.accountId] = [];
+      startingByAccount[r.accountId].push({ label: r.label, startingBalance: sb });
+    });
+
+    for (const [accountId, rows] of Object.entries(startingByAccount)) {
+      const acct = accountsById[accountId];
+      if (!acct) continue;
+      const total = rows.reduce((s, r) => s + r.startingBalance, 0);
+      const accountBalance = Number(acct.current_balance) || 0;
+      if (total > accountBalance) {
+        const overBy = total - accountBalance;
+        const acctLabel = `${acct.institution_name} ${acct.account_name} •••• ${acct.mask}`;
+        const others = rows.filter((r) => r.startingBalance > 0).map((r) => r.label).join(", ");
+        return Response.json(
+          {
+            error:
+              `Starting balances for ${acctLabel} add up to ${overBy > 0 ? "$" + overBy.toFixed(2) : ""} more than that ` +
+              `account actually holds (${"$" + accountBalance.toFixed(2)} available, ${"$" + total.toFixed(2)} claimed across ` +
+              `${others || "these categories"}). Lower one category's starting balance by that amount -- or move it from ` +
+              `another category already linked to this account -- before saving.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const { data: existingRows } = await admin
     .from("simple_split_rules_percent")
     .select("id")

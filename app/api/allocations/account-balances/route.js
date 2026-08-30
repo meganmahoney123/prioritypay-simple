@@ -147,11 +147,24 @@ export async function GET() {
     const unallocated = accountBalance === null ? null : Math.max(0, accountBalance - categorized);
     // Percent of the ACCOUNT's real balance, not just of what's
     // categorized -- so the pie always reads as "100% of what's actually
-    // in this account," Unallocated slice included, per spec.
-    const pctBase = accountBalance && accountBalance > 0 ? accountBalance : categorized || 1;
+    // in this account," Unallocated slice included, per spec. BUT: the
+    // category ledger (starting_balance + contributions - withdrawals,
+    // computed above) can drift ahead of Plaid's real current_balance --
+    // e.g. a starting_balance entered too high, or a withdrawal recorded
+    // against the wrong account -- and if it does, using the smaller real
+    // balance as the denominator would push slices over 100%, which is
+    // never a valid reading (a pie can't be more than whole). So the
+    // denominator is whichever is LARGER: once categorized balances
+    // exceed the real balance, the categorized total itself becomes the
+    // 100% baseline (unallocated correctly reads $0/0% in that case,
+    // rather than going negative), and `overCategorizedBy` flags the drift
+    // so the UI can surface it instead of silently normalizing it away.
+    const overCategorizedBy = accountBalance !== null ? Math.max(0, categorized - accountBalance) : 0;
+    const pctBase = Math.max(accountBalance || 0, categorized) || 1;
     return {
       accountId,
       accountBalance,
+      overCategorizedBy,
       lastCloseoutAt: lastCloseout?.confirmed_at || null,
       uncategorizedCount: uncategorizedByAccount[accountId] || 0,
       categories: categories.map((c) => ({ ...c, pct: Math.round((c.balance / pctBase) * 100) })),
