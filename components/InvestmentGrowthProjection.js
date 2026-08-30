@@ -127,10 +127,25 @@ function ProjectionBlock({ group, retirementType, startingLabel, subHeading, emp
         <p className="text-sm text-neutral-400">{emptyStateText}</p>
       ) : (
         <>
-          <p className="text-sm mb-3" style={{ color: "var(--color-text)" }}>
+          <p className="text-sm mb-1" style={{ color: "var(--color-text)" }}>
             {startingLabel} Total Before PriorityPay:{" "}
             <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}>{currency(data.startingOnly)}</span>
           </p>
+          {/* The real, live Plaid balance behind this scope right now --
+              distinct from data.currentTotalFrozen, which is this app's
+              own tracked ledger number and can drift from what's actually
+              in the real account (market growth, contributions made
+              outside PriorityPay, etc). Omitted entirely once nothing in
+              scope has a real account connected yet, rather than showing
+              a misleading $0. */}
+          {data.liveBalanceKnown && (
+            <p className="text-sm mb-3" style={{ color: "var(--color-text)" }}>
+              Current Balance:{" "}
+              <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--color-accent-700)" }}>
+                {currency(data.liveBalance)}
+              </span>
+            </p>
+          )}
 
           {/* Label stacked above its input (rather than inline) so a
               narrower column -- each block only gets ~1/3 of the card's

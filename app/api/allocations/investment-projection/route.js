@@ -36,6 +36,24 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 //                          the requested scope at all, so the card can
 //                          show its empty state instead of an all-zero
 //                          chart.
+//   liveBalance         -- the REAL, live Plaid balance behind this scope
+//                          right now, as opposed to currentTotalFrozen's
+//                          tracked ledger number. For Retirement, this is
+//                          the actual linked 401k/IRA account's real
+//                          balance (simple_retirement_accounts.account_id
+//                          -> simple_accounts.current_balance), which can
+//                          run ahead of or behind currentTotalFrozen since
+//                          real market growth/contributions there aren't
+//                          reflected in the ledger math at all. For
+//                          Investments there's no equivalent separate
+//                          "real account" link table -- this sums the real
+//                          balance of whatever account(s) the matching
+//                          categories are actually linked to (deduped, so
+//                          two categories sharing one brokerage account
+//                          aren't double-counted).
+//   liveBalanceKnown    -- false when nothing in scope has a real account
+//                          linked yet, so the UI can omit the row instead
+//                          of showing a misleading $0.
 //
 // The monthly contribution used for Scenario 3 is not computed here --
 // it's a plain editable number input on the card itself (default $50),
@@ -50,10 +68,10 @@ export async function GET(request) {
   const group = searchParams.get("group") === "Retirement" ? "Retirement" : "Investments";
   const retirementType = searchParams.get("retirementType"); // "solo_401k" | "sep_ira" | null
 
-  const [{ data: rules }, { data: allocRows }, { data: withdrawalRows }] = await Promise.all([
+  const [{ data: rules }, { data: allocRows }, { data: withdrawalRows }, { data: accountRows }, { data: retirementLinkRows }] = await Promise.all([
     admin
       .from("simple_split_rules_percent")
-      .select("label, group_name, retirement_type, starting_balance")
+      .select("label, group_name, retirement_type, starting_balance, account_id")
       .eq("user_id", user.id),
     admin
       .from("simple_transfer_allocations")
@@ -66,7 +84,14 @@ export async function GET(request) {
       .select("label, amount, source_type, simple_withdrawals!inner(user_id)")
       .eq("simple_withdrawals.user_id", user.id)
       .eq("source_type", "category"),
+    admin.from("simple_accounts").select("id, current_balance").eq("user_id", user.id),
+    admin.from("simple_retirement_accounts").select("retirement_type, account_id").eq("user_id", user.id),
   ]);
+
+  const accountBalanceById = {};
+  (accountRows || []).forEach((a) => {
+    accountBalanceById[a.id] = Number(a.current_balance) || 0;
+  });
 
   const grouped = new Set(
     (rules || [])
@@ -94,9 +119,26 @@ export async function GET(request) {
 
   const currentTotalFrozen = Object.values(byLabel).reduce((s, v) => s + v, 0);
 
+  // Real accounts backing this scope, deduped -- see the liveBalance
+  // comment above for why Retirement and Investments resolve this
+  // differently.
+  const realAccountIds = new Set();
+  if (group === "Retirement") {
+    (retirementLinkRows || [])
+      .filter((r) => !retirementType || r.retirement_type === retirementType)
+      .forEach((r) => realAccountIds.add(r.account_id));
+  } else {
+    (rules || []).forEach((r) => {
+      if (grouped.has(r.label) && r.account_id) realAccountIds.add(r.account_id);
+    });
+  }
+  const liveBalance = [...realAccountIds].reduce((s, id) => s + (accountBalanceById[id] || 0), 0);
+
   return Response.json({
     startingOnly,
     currentTotalFrozen,
     hasGroupedCategories: grouped.size > 0,
+    liveBalance,
+    liveBalanceKnown: realAccountIds.size > 0,
   });
 }
