@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, currency } from "@/components/ui";
@@ -44,9 +44,25 @@ function formatShortDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function CategoryCard({ category, color }) {
+function CategoryCard({ category, color, onSavePct, savingPct }) {
   const { label, monthlyContribution, balance, cap, lastWithdrawal } = category;
-  const pct = cap && cap > 0 ? Math.min(100, Math.round((balance / cap) * 100)) : null;
+  const capPct = cap && cap > 0 ? Math.min(100, Math.round((balance / cap) * 100)) : null;
+  const [draftPct, setDraftPct] = useState(category.pct);
+  const [editingPct, setEditingPct] = useState(false);
+
+  // Keep the draft in sync if the underlying data refreshes (e.g. after
+  // saving, or after a different card's edit shifted the "remaining"
+  // room) while this one isn't actively being edited.
+  useEffect(() => {
+    if (!editingPct) setDraftPct(category.pct);
+  }, [category.pct, editingPct]);
+
+  const commitPct = async () => {
+    setEditingPct(false);
+    const next = Math.max(0, Number(draftPct) || 0);
+    if (next === category.pct) return;
+    await onSavePct(label, next);
+  };
 
   return (
     <div
@@ -57,9 +73,35 @@ function CategoryCard({ category, color }) {
         padding: "16px 18px",
       }}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{label}</span>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+          <span className="truncate" style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{label}</span>
+        </div>
+        {/* Current split percentage, editable right here -- saves via
+            PUT /api/split-rules the moment the field loses focus or Enter
+            is pressed, same "clamp to whatever's left" rule the Splits
+            page itself uses, so two categories can never add up past
+            100% no matter which page someone edits from. */}
+        <span className="flex items-center gap-0.5 shrink-0 text-xs font-mono" style={{ color: "var(--color-neutral-700)" }}>
+          <input
+            type="number"
+            min={0}
+            step={0.1}
+            value={draftPct}
+            disabled={savingPct === label}
+            onFocus={(e) => {
+              setEditingPct(true);
+              e.target.select();
+            }}
+            onChange={(e) => setDraftPct(e.target.value)}
+            onBlur={commitPct}
+            onKeyDown={(e) => e.key === "Enter" && e.target.blur()}
+            className="text-right disabled:opacity-60"
+            style={{ width: 40, background: "transparent", border: "none", outline: "none", color: "var(--color-text)", fontWeight: 700 }}
+          />
+          %
+        </span>
       </div>
 
       <div className="flex items-end justify-between gap-3 mb-1">
@@ -72,13 +114,13 @@ function CategoryCard({ category, color }) {
         <span className="font-mono font-semibold">{currency(monthlyContribution)}</span>
       </div>
 
-      {pct !== null && (
+      {capPct !== null && (
         <div className="mb-2">
           <div style={{ height: 6, borderRadius: 999, background: "var(--color-neutral-300)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: color }} />
+            <div style={{ height: "100%", width: `${capPct}%`, borderRadius: 999, background: color }} />
           </div>
           <div className="flex items-center justify-between text-[11px] mt-1" style={{ color: "var(--color-neutral-700)" }}>
-            <span>{pct}% of {currency(cap)} goal</span>
+            <span>{capPct}% of {currency(cap)} goal</span>
           </div>
         </div>
       )}
@@ -102,10 +144,12 @@ export default function CategoryDistributionSection() {
   const [earliestPeriod, setEarliestPeriod] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [savingPct, setSavingPct] = useState(null);
+  const [pctError, setPctError] = useState(null);
 
-  useEffect(() => {
+  const loadSummary = useCallback(() => {
     setLoading(true);
-    fetch(`/api/allocations/category-summary?period=${period}`)
+    return fetch(`/api/allocations/category-summary?period=${period}`)
       .then((r) => r.json())
       .then((res) => {
         setData(res);
@@ -113,6 +157,43 @@ export default function CategoryDistributionSection() {
       })
       .finally(() => setLoading(false));
   }, [period]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+
+  // Lets a category's % be edited right from its card here on the
+  // Dashboard instead of requiring a trip to the Splits page -- reads the
+  // FULL split-rules payload (needed since PUT /api/split-rules replaces
+  // the whole percent array at once), patches just this label's pct
+  // clamped to whatever room is left across every other category (same
+  // rule Splits' own editor enforces), and reloads the summary so the pie
+  // and every other card reflect it immediately.
+  const savePct = async (label, requestedPct) => {
+    setSavingPct(label);
+    setPctError(null);
+    try {
+      const rulesRes = await fetch("/api/split-rules").then((r) => r.json());
+      const percent = rulesRes.splitRules?.percent || [];
+      const otherTotal = percent.filter((r) => r.label !== label).reduce((s, r) => s + (Number(r.pct) || 0), 0);
+      const maxForThis = Math.max(0, Math.round((100 - otherTotal) * 100) / 100);
+      const clamped = Math.min(requestedPct, maxForThis);
+      const nextPercent = percent.map((r) => (r.label === label ? { ...r, pct: clamped } : r));
+      const res = await fetch("/api/split-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ percent: nextPercent }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setPctError(body.error || "Couldn't save that percentage.");
+        return;
+      }
+      await loadSummary();
+    } finally {
+      setSavingPct(null);
+    }
+  };
 
   const categories = data?.categories || [];
   const unallocated = data?.unallocated || 0;
@@ -244,10 +325,20 @@ export default function CategoryDistributionSection() {
         </div>
       )}
 
+      {pctError && (
+        <p className="text-xs mt-3" style={{ color: "#9C3B22" }}>{pctError}</p>
+      )}
+
       {!loading && cardCategories.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
           {cardCategories.map((c) => (
-            <CategoryCard key={c.label} category={c} color={colorByLabel[c.label] || FALLBACK_PALETTE[0]} />
+            <CategoryCard
+              key={c.label}
+              category={c}
+              color={colorByLabel[c.label] || FALLBACK_PALETTE[0]}
+              onSavePct={savePct}
+              savingPct={savingPct}
+            />
           ))}
         </div>
       )}
