@@ -33,12 +33,25 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 //
 // Accounts with zero linked categories are omitted from the response
 // entirely; the Accounts page just skips rendering a chart for those.
+//
+// Each category also carries its RAW balance (which can go negative if a
+// withdrawal overdrew it -- e.g. spent more on Wedding than Wedding had)
+// alongside a DISPLAY balance/pct clamped to zero, per an explicit product
+// decision: a category that's been spent past zero still shows up in the
+// account's pie at $0 / 0%, not as a negative slice. `overdrawnBy` on that
+// category is how much past zero it went, so the UI can prompt "where did
+// the extra money come from" (see POST /api/allocations/category-transfer)
+// instead of just silently clamping. The account's own real balance
+// (simple_accounts.current_balance) is included as `accountBalance`, and
+// `unallocated` is whatever's left of that real balance once every
+// category's (clamped) claim is subtracted -- money physically sitting in
+// the account that isn't earmarked for any category yet.
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
   const admin = supabaseAdmin();
 
-  const [{ data: rules }, { data: allocRows }, { data: withdrawalRows }, { data: lastCloseout }, { data: pendingTxns }] =
+  const [{ data: rules }, { data: allocRows }, { data: withdrawalRows }, { data: lastCloseout }, { data: pendingTxns }, { data: accountRows }] =
     await Promise.all([
       admin
         .from("simple_split_rules_percent")
@@ -69,7 +82,19 @@ export async function GET() {
         .select("account_id")
         .eq("user_id", user.id)
         .is("confirmed_category", null),
+      // Manual top-ups/category-to-category transfers (see
+      // simple_manual_contributions / POST /api/allocations/manual-
+      // contribution and /api/allocations/category-transfer) also affect a
+      // category's balance here -- covered below via a second pass rather
+      // than a third query, since it shares the same table as the
+      // Dashboard's category-summary route.
+      admin.from("simple_accounts").select("id, current_balance").eq("user_id", user.id),
     ]);
+
+  const { data: manualRows } = await admin
+    .from("simple_manual_contributions")
+    .select("label, amount")
+    .eq("user_id", user.id);
 
   // label -> account_id, so the (net) transfer/withdrawal passes below
   // can attribute dollars to the right account without a second query.
@@ -80,6 +105,10 @@ export async function GET() {
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.starting_balance) || 0);
   });
   (allocRows || []).forEach((r) => {
+    if (!(r.label in accountByLabel)) return;
+    balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.amount) || 0);
+  });
+  (manualRows || []).forEach((r) => {
     if (!(r.label in accountByLabel)) return;
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.amount) || 0);
   });
@@ -94,21 +123,44 @@ export async function GET() {
     uncategorizedByAccount[t.account_id] = (uncategorizedByAccount[t.account_id] || 0) + 1;
   });
 
+  const accountBalanceById = {};
+  (accountRows || []).forEach((a) => {
+    accountBalanceById[a.id] = Number(a.current_balance) || 0;
+  });
+
   const byAccount = {};
-  Object.entries(balanceByLabel).forEach(([label, balance]) => {
+  Object.entries(balanceByLabel).forEach(([label, rawBalance]) => {
     const accountId = accountByLabel[label];
     if (!accountId) return;
     if (!byAccount[accountId]) byAccount[accountId] = [];
-    byAccount[accountId].push({ label, balance });
+    byAccount[accountId].push({
+      label,
+      balance: Math.max(0, rawBalance),
+      rawBalance,
+      overdrawnBy: rawBalance < 0 ? Math.abs(rawBalance) : 0,
+    });
   });
 
-  const accounts = Object.entries(byAccount).map(([accountId, categories]) => ({
-    accountId,
-    lastCloseoutAt: lastCloseout?.confirmed_at || null,
-    uncategorizedCount: uncategorizedByAccount[accountId] || 0,
-    categories,
-    totalBalance: categories.reduce((s, c) => s + c.balance, 0),
-  }));
+  const accounts = Object.entries(byAccount).map(([accountId, categories]) => {
+    const accountBalance = accountBalanceById[accountId] ?? null;
+    const categorized = categories.reduce((s, c) => s + c.balance, 0);
+    const unallocated = accountBalance === null ? null : Math.max(0, accountBalance - categorized);
+    // Percent of the ACCOUNT's real balance, not just of what's
+    // categorized -- so the pie always reads as "100% of what's actually
+    // in this account," Unallocated slice included, per spec.
+    const pctBase = accountBalance && accountBalance > 0 ? accountBalance : categorized || 1;
+    return {
+      accountId,
+      accountBalance,
+      lastCloseoutAt: lastCloseout?.confirmed_at || null,
+      uncategorizedCount: uncategorizedByAccount[accountId] || 0,
+      categories: categories.map((c) => ({ ...c, pct: Math.round((c.balance / pctBase) * 100) })),
+      otherCategoryLabels: categories.map((c) => c.label),
+      unallocated,
+      unallocatedPct: unallocated === null ? null : Math.round((unallocated / pctBase) * 100),
+      totalBalance: categorized,
+    };
+  });
 
   return Response.json({ accounts });
 }
