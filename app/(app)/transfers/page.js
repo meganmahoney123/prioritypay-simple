@@ -5,25 +5,28 @@ import { ArrowRight } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomNoticeCardStyle } from "@/lib/bloomTheme";
 
+const UNALLOCATED = "__unallocated__";
+
 // One-time, ad-hoc moves of money into (or between) tracked categories --
 // distinct from the automatic paycheck splits (see lib/runSplit.js) and
-// from recording an expense (Withdrawals tab). Two source types:
-//   1. "An account" -- e.g. extra cash sitting in checking that isn't
-//      earmarked for anything yet. This is pure bookkeeping (no real ACH
-//      transfer is fired -- see POST /api/allocations/category-transfer's
-//      "unallocated" branch), the same model the Accounts page already
-//      uses for "where did the extra money come from" on an overdrawn
-//      category. The chosen account is recorded in the note for context
-//      but its own balance isn't debited, since Plaid is the source of
-//      truth for real account balances and this app never fakes those.
-//   2. "A category" -- moving already-tracked money from one fund to
-//      another (e.g. $3,000 from Wedding to Maintenance). Reuses the same
-//      route's fromLabel branch, which debits the source category and
-//      credits the destination, both logged as simple_manual_contributions
-//      rows so the money stays accounted for.
-// Both paths land on the same category balances shown everywhere else
-// (Accounts page pies, Close-Out shortfall cascade, Withdrawals category
-// picker), since they all read from the same underlying tables.
+// from recording an expense (Withdrawals tab). Both the "from" and "to"
+// side use the SAME picker: every tracked category, plus "Unallocated"
+// (cash sitting in a connected account that isn't earmarked for any
+// category yet). Picking Unallocated on either side reveals a second
+// dropdown asking which account that cash is in/going to, since someone
+// can have unallocated cash sitting in more than one account. Both sides
+// can be a category, both can't be Unallocated at once (moving
+// uncommitted cash between accounts isn't something this app tracks --
+// there's no category event to log), and same-category-both-sides is
+// blocked server-side too.
+//
+// Everything posts through POST /api/allocations/category-transfer, the
+// same route the Accounts page's "where did the extra money come from?"
+// overdraw prompt already uses -- so a transfer here updates category
+// balances everywhere else in the product immediately (Dashboard, the
+// per-account pies on Accounts, the Close-Out shortfall cascade, the
+// Withdrawals category picker), since they all read the same underlying
+// ledger.
 export default function TransfersPage() {
   const [accounts, setAccounts] = useState([]);
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
@@ -31,10 +34,10 @@ export default function TransfersPage() {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [sourceType, setSourceType] = useState("account"); // "account" | "category"
+  const [fromLabel, setFromLabel] = useState(""); // "" | UNALLOCATED | category label
   const [fromAccountId, setFromAccountId] = useState("");
-  const [fromLabel, setFromLabel] = useState("");
   const [toLabel, setToLabel] = useState("");
+  const [toAccountId, setToAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -58,39 +61,61 @@ export default function TransfersPage() {
   }, []);
 
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
+  const fromIsUnallocated = fromLabel === UNALLOCATED;
+  const toIsUnallocated = toLabel === UNALLOCATED;
+
+  // A category picked on one side can't also be picked on the other --
+  // Unallocated is excluded from this filter since it's fine to reference
+  // the concept on both sides (just not both at once, blocked below).
+  const fromOptions = splitRulesPercent.filter((r) => r.label !== toLabel);
   const toOptions = splitRulesPercent.filter((r) => r.label !== fromLabel);
-  const fromCategoryOptions = splitRulesPercent.filter((r) => r.label !== toLabel);
-  const fromBalance = sourceType === "category" && fromLabel ? Number(categoryBalances[fromLabel]) || 0 : null;
+
+  const fromBalance = !fromIsUnallocated && fromLabel ? Number(categoryBalances[fromLabel]) || 0 : null;
   const amt = Number(amount) || 0;
-  const insufficientCategoryFunds = sourceType === "category" && fromLabel && amt > 0 && amt > fromBalance;
+  const insufficientCategoryFunds = fromBalance !== null && amt > 0 && amt > fromBalance;
+  const bothUnallocated = fromIsUnallocated && toIsUnallocated;
 
   const resetForm = () => {
-    setFromAccountId("");
     setFromLabel("");
+    setFromAccountId("");
     setToLabel("");
+    setToAccountId("");
     setAmount("");
     setNote("");
     setError(null);
   };
 
   const canSubmit =
+    fromLabel &&
     toLabel &&
+    !bothUnallocated &&
     amt > 0 &&
-    (sourceType === "account" ? !!fromAccountId : !!fromLabel && !insufficientCategoryFunds);
+    (!fromIsUnallocated || !!fromAccountId) &&
+    (!toIsUnallocated || !!toAccountId) &&
+    !insufficientCategoryFunds;
+
+  const accountLabel = (id) => {
+    const a = accountsById[id];
+    return a ? `${a.institution_name} ${a.account_name} •••• ${a.mask}` : "that account";
+  };
 
   const submit = async () => {
     if (!canSubmit) return;
     setSaving(true);
     setError(null);
     setSuccess(null);
-    const body =
-      sourceType === "account"
-        ? {
-            toLabel,
-            amount: amt,
-            note: note || `Transferred from ${accountsById[fromAccountId]?.institution_name || "account"} ${accountsById[fromAccountId]?.account_name || ""} •••• ${accountsById[fromAccountId]?.mask || ""}`,
-          }
-        : { toLabel, fromLabel, amount: amt, note: note || undefined };
+    const body = {
+      fromLabel: fromIsUnallocated ? null : fromLabel,
+      toLabel: toIsUnallocated ? null : toLabel,
+      amount: amt,
+      note:
+        note ||
+        (fromIsUnallocated
+          ? `Moved from unallocated cash in ${accountLabel(fromAccountId)}`
+          : toIsUnallocated
+          ? `Moved to unallocated cash in ${accountLabel(toAccountId)}`
+          : undefined),
+    };
     const res = await fetch("/api/allocations/category-transfer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -101,15 +126,24 @@ export default function TransfersPage() {
       setError(res.error);
       return;
     }
-    setSuccess(`Moved ${currency(amt)} into ${toLabel}.`);
+    setSuccess(
+      `Moved ${currency(amt)} from ${fromIsUnallocated ? `unallocated cash (${accountLabel(fromAccountId)})` : fromLabel} to ${
+        toIsUnallocated ? `unallocated cash (${accountLabel(toAccountId)})` : toLabel
+      }.`
+    );
     setRecent((prev) => [
-      { id: `${Date.now()}`, toLabel, fromLabel: sourceType === "category" ? fromLabel : null, fromAccountLabel: sourceType === "account" ? accountsById[fromAccountId] : null, amount: amt, at: new Date().toISOString() },
+      {
+        id: `${Date.now()}`,
+        fromDisplay: fromIsUnallocated ? `Unallocated — ${accountLabel(fromAccountId)}` : fromLabel,
+        toDisplay: toIsUnallocated ? `Unallocated — ${accountLabel(toAccountId)}` : toLabel,
+        amount: amt,
+      },
       ...prev,
     ]);
     resetForm();
-    // Category balances just changed on both ends -- refresh so the next
-    // transfer (or the "available" note under the From-category select)
-    // reflects it immediately.
+    // Both sides' category balances just changed -- refresh so the next
+    // transfer's "available" note reflects it immediately, same as
+    // everywhere else in the product that reads this endpoint.
     fetch("/api/allocations/balances")
       .then((r) => r.json())
       .then((d) => setCategoryBalances(d.balances || {}))
@@ -123,103 +157,103 @@ export default function TransfersPage() {
       <div>
         <h1 className="text-lg font-semibold mb-1">One-Time Transfer</h1>
         <p className="text-sm text-[var(--color-neutral-700)]">
-          Move extra money into a category, or shift money from one tracked fund to another — like putting $3,000
-          from Wedding toward Maintenance. This doesn&apos;t touch your automatic paycheck splits.
+          Move money between two tracked categories — like $3,000 from Wedding to Maintenance — or in/out of
+          unallocated cash sitting in an account. This doesn&apos;t touch your automatic paycheck splits, and both
+          balances update everywhere else in PriorityPay right away.
         </p>
       </div>
 
       <Card className="p-6 space-y-5">
         <div>
-          <p className="text-xs font-semibold mb-2">Transfer from</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => { setSourceType("account"); setFromLabel(""); }}
-              className="flex-1 text-sm px-3 py-2 rounded-lg border"
-              style={{
-                borderColor: sourceType === "account" ? "var(--color-accent)" : "var(--color-divider)",
-                background: sourceType === "account" ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
-                fontWeight: sourceType === "account" ? 700 : 500,
-              }}
-            >
-              An account
-            </button>
-            <button
-              onClick={() => { setSourceType("category"); setFromAccountId(""); }}
-              className="flex-1 text-sm px-3 py-2 rounded-lg border"
-              style={{
-                borderColor: sourceType === "category" ? "var(--color-accent)" : "var(--color-divider)",
-                background: sourceType === "category" ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
-                fontWeight: sourceType === "category" ? 700 : 500,
-              }}
-            >
-              A category / fund
-            </button>
-          </div>
-        </div>
-
-        {sourceType === "account" ? (
-          <div>
-            <label className="text-xs font-semibold block mb-1">Which account?</label>
-            <select
-              value={fromAccountId}
-              onChange={(e) => setFromAccountId(e.target.value)}
-              className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
-            >
-              <option value="">Select an account…</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.institution_name} {a.account_name} •••• {a.mask}
-                  {a.current_balance != null ? ` — ${currency(a.current_balance)}` : ""}
-                </option>
-              ))}
-            </select>
+          <label className="text-xs font-semibold block mb-1">Transfer from</label>
+          <select
+            value={fromLabel}
+            onChange={(e) => {
+              setFromLabel(e.target.value);
+              setFromAccountId("");
+            }}
+            className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
+          >
+            <option value="">Select…</option>
+            <option value={UNALLOCATED}>Unallocated (cash not in a category)</option>
+            {fromOptions.map((r) => (
+              <option key={r.id} value={r.label}>
+                {r.label} — {currency(categoryBalances[r.label] || 0)} available
+              </option>
+            ))}
+          </select>
+          {fromIsUnallocated && (
+            <div className="mt-2">
+              <label className="text-xs font-semibold block mb-1">Which account is that cash in?</label>
+              <select
+                value={fromAccountId}
+                onChange={(e) => setFromAccountId(e.target.value)}
+                className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
+              >
+                <option value="">Select an account…</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.institution_name} {a.account_name} •••• {a.mask}
+                    {a.current_balance != null ? ` — ${currency(a.current_balance)}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {fromBalance !== null && (
             <p className="text-xs mt-1.5" style={{ color: "var(--color-neutral-700)" }}>
-              This is just for your records — we won&apos;t move real money out of this account. It only credits the
-              category you pick below.
+              {currency(fromBalance)} currently available in {fromLabel}.
             </p>
-          </div>
-        ) : (
-          <div>
-            <label className="text-xs font-semibold block mb-1">Which category or fund?</label>
-            <select
-              value={fromLabel}
-              onChange={(e) => setFromLabel(e.target.value)}
-              className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
-            >
-              <option value="">Select a category…</option>
-              {fromCategoryOptions.map((r) => (
-                <option key={r.id} value={r.label}>
-                  {r.label} — {currency(categoryBalances[r.label] || 0)} available
-                </option>
-              ))}
-            </select>
-            {fromLabel && (
-              <p className="text-xs mt-1.5" style={{ color: "var(--color-neutral-700)" }}>
-                {currency(fromBalance)} currently available in {fromLabel}.
-              </p>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="flex items-center justify-center">
           <ArrowRight size={16} className="text-[var(--color-neutral-400)]" />
         </div>
 
         <div>
-          <label className="text-xs font-semibold block mb-1">Transfer to (category)</label>
+          <label className="text-xs font-semibold block mb-1">Transfer to</label>
           <select
             value={toLabel}
-            onChange={(e) => setToLabel(e.target.value)}
+            onChange={(e) => {
+              setToLabel(e.target.value);
+              setToAccountId("");
+            }}
             className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
           >
-            <option value="">Select a category…</option>
+            <option value="">Select…</option>
+            <option value={UNALLOCATED}>Unallocated (cash not in a category)</option>
             {toOptions.map((r) => (
               <option key={r.id} value={r.label}>
                 {r.label} — {currency(categoryBalances[r.label] || 0)} available
               </option>
             ))}
           </select>
+          {toIsUnallocated && (
+            <div className="mt-2">
+              <label className="text-xs font-semibold block mb-1">Which account should it land in?</label>
+              <select
+                value={toAccountId}
+                onChange={(e) => setToAccountId(e.target.value)}
+                className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
+              >
+                <option value="">Select an account…</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.institution_name} {a.account_name} •••• {a.mask}
+                    {a.current_balance != null ? ` — ${currency(a.current_balance)}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        {bothUnallocated && (
+          <p className="text-xs" style={{ color: "#9C3B22" }}>
+            Pick at least one category — moving cash between accounts isn&apos;t tracked here.
+          </p>
+        )}
 
         <div>
           <label className="text-xs font-semibold block mb-1">Amount</label>
@@ -279,9 +313,7 @@ export default function TransfersPage() {
             {recent.map((r) => (
               <div key={r.id} className="flex items-center justify-between text-sm">
                 <span>
-                  {r.fromLabel ? r.fromLabel : r.fromAccountLabel ? `${r.fromAccountLabel.institution_name} •••• ${r.fromAccountLabel.mask}` : "Account"}
-                  {" → "}
-                  {r.toLabel}
+                  {r.fromDisplay} {" → "} {r.toDisplay}
                 </span>
                 <span className="font-mono">{currency(r.amount)}</span>
               </div>
