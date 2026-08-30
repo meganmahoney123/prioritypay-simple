@@ -1,6 +1,24 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
+// Plaid's investment/retirement account subtypes -- an account with one of
+// these fluctuates with the market (or, for retirement ones, is also
+// subject to contribution/withdrawal rules outside this app's control),
+// so "categorized total > real balance" there is much more likely to mean
+// "you've put in more than it's currently worth" than an actual
+// bookkeeping mistake. Everything else (checking, savings, CD, money
+// market, prepaid, or unknown) keeps the "check for a mistake" framing,
+// since a plain deposit account's balance only moves by real dollars
+// actually entering or leaving it.
+const MARKET_BASED_SUBTYPES = new Set([
+  "401k", "401a", "403b", "457b", "529", "brokerage", "cash isa", "crypto exchange",
+  "education savings account", "fixed annuity", "gic", "health reimbursement arrangement",
+  "hsa", "isa", "ira", "lif", "lira", "lrif", "lrsp", "mutual fund", "non-taxable brokerage account",
+  "pension", "prif", "profit sharing plan", "rdsp", "resp", "retirement", "rlif", "roth",
+  "roth 401k", "rrif", "rrsp", "sarsep", "sep ira", "simple ira", "sipp", "stock plan",
+  "thrift savings plan", "tfsa", "trust", "ugma", "utma", "variable annuity",
+]);
+
 // Per-account breakdown of category balances, for the small pie chart
 // under each account Card on the Accounts page (components/
 // AccountCategoryBreakdown.js). Same current-balance math as
@@ -88,7 +106,7 @@ export async function GET() {
       // category's balance here -- covered below via a second pass rather
       // than a third query, since it shares the same table as the
       // Dashboard's category-summary route.
-      admin.from("simple_accounts").select("id, current_balance").eq("user_id", user.id),
+      admin.from("simple_accounts").select("id, current_balance, subtype").eq("user_id", user.id),
     ]);
 
   const { data: manualRows } = await admin
@@ -149,8 +167,10 @@ export async function GET() {
   });
 
   const accountBalanceById = {};
+  const accountSubtypeById = {};
   (accountRows || []).forEach((a) => {
     accountBalanceById[a.id] = Number(a.current_balance) || 0;
+    accountSubtypeById[a.id] = a.subtype || null;
   });
 
   const byAccount = {};
@@ -190,6 +210,7 @@ export async function GET() {
     return {
       accountId,
       accountBalance,
+      isMarketBased: MARKET_BASED_SUBTYPES.has((accountSubtypeById[accountId] || "").toLowerCase()),
       overCategorizedBy,
       lastCloseoutAt: lastCloseout?.confirmed_at || null,
       uncategorizedCount: uncategorizedByAccount[accountId] || 0,

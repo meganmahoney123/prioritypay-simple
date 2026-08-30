@@ -212,7 +212,7 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
 
   if (!data || !data.categories || data.categories.length === 0) return null;
 
-  const { categories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance, overCategorizedBy } = data;
+  const { categories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance, overCategorizedBy, isMarketBased } = data;
 
   const pieData = categories.map((c, i) => ({
     name: c.label,
@@ -282,7 +282,22 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
         </div>
       </div>
 
-      {overCategorizedBy > 0 && (
+      {overCategorizedBy > 0 && isMarketBased && (
+        // Investment/retirement accounts fluctuate with the market, so
+        // "categorized more than the real balance" here almost always
+        // means real performance (or a withdrawal made outside
+        // PriorityPay), not a bookkeeping mistake -- there's nothing to
+        // "find," so this skips the Find the discrepancy breakdown
+        // entirely and just explains what the two numbers mean.
+        <div className="text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
+          You&apos;ve put {currency(overCategorizedBy + accountBalance)} total into these categories, but this account
+          is currently worth {currency(accountBalance)} -- a {currency(overCategorizedBy)} difference from market
+          performance (or a withdrawal made outside PriorityPay), not a tracking error. Percentages above are shown
+          against what you&apos;ve put in so nothing reads over 100%.
+        </div>
+      )}
+
+      {overCategorizedBy > 0 && !isMarketBased && (
         <div className="text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span>
