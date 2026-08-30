@@ -496,6 +496,19 @@ create table if not exists simple_withdrawals (
   mileage_purpose text,
   meal_purpose text,
   meal_attendees text,
+  -- 'cash' (default) | 'card' -- whether this withdrawal was paid for with
+  -- cash/a bank transfer (no matching bank/card transaction expected) or a
+  -- credit card (in which case closeout_transaction_id below usually
+  -- points at the matching simple_closeout_transactions row). Set from the
+  -- Withdrawals tab (app/(app)/withdrawals/page.js).
+  source_type text not null default 'cash',
+  -- When a withdrawal is matched to a specific credit-card transaction
+  -- (rather than a plain cash expense), this points at that row in
+  -- simple_closeout_transactions -- lets Monthly Close-Out recognize "this
+  -- transaction was already categorized from the Withdrawals tab" and
+  -- render it read-only instead of asking the person to categorize it
+  -- again. Null for cash expenses with nothing to match.
+  closeout_transaction_id uuid references simple_closeout_transactions(id) on delete set null,
   created_at timestamptz not null default now()
 );
 

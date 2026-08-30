@@ -81,6 +81,13 @@ export default function CloseoutPage() {
   const baseCats = hasW2Income ? CATS : CATS.filter((c) => c.value !== "w2_income");
   const cats = isBusinessOwnerWithEmployees ? [...baseCats, { value: "business", label: "Business" }] : baseCats;
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
+  // Transactions already recorded from the Withdrawals tab (see
+  // app/(app)/withdrawals/page.js) as a matched credit-card charge --
+  // keyed by simple_closeout_transactions.id. Those rows render read-only
+  // below (see the transactions.map render) instead of the normal pills,
+  // since categorizing them again here would just create a second,
+  // conflicting record of the same real expense.
+  const [linkedWithdrawalsByTxnId, setLinkedWithdrawalsByTxnId] = useState({});
   const [savingObligations, setSavingObligations] = useState(false);
   const [editingObligations, setEditingObligations] = useState(false);
   const [obligationsForm, setObligationsForm] = useState({ pct: "", cap: "", accountId: null });
@@ -127,11 +134,17 @@ export default function CloseoutPage() {
         .then((d) => setCategoryBalances(d.balances || {}))
         .catch(() => {});
     }
-    const [closeoutRes, accountsRes, realRes] = await Promise.all([
+    const [closeoutRes, accountsRes, realRes, withdrawalsRes] = await Promise.all([
       fetch(`/api/closeout/${p}`).then((r) => r.json()),
       fetch("/api/accounts").then((r) => r.json()),
       fetch("/api/retirement/real-accounts").then((r) => r.json()),
+      fetch("/api/withdrawals").then((r) => r.json()),
     ]);
+    const linkedMap = {};
+    (withdrawalsRes.withdrawals || []).forEach((w) => {
+      if (w.closeoutTransactionId) linkedMap[w.closeoutTransactionId] = w;
+    });
+    setLinkedWithdrawalsByTxnId(linkedMap);
     setCloseout(closeoutRes.closeout);
     setTransactions(closeoutRes.transactions || []);
     setAccounts(accountsRes.accounts || []);
@@ -559,6 +572,47 @@ export default function CloseoutPage() {
               const canEdit = !isConfirmed || editingConfirmed;
               const mileage = panel && isMileageLabel(panel.categoryLabel);
               const meals = panel && isMealsLabel(panel.categoryLabel);
+              const linked = linkedWithdrawalsByTxnId[t.id];
+
+              // Already recorded from the Withdrawals tab as a matched
+              // card charge -- render read-only instead of the normal
+              // pills/panel, so this real expense never gets a second,
+              // conflicting category assigned to it here. Edit it from
+              // Withdrawals instead.
+              if (linked) {
+                return (
+                  <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                      <div className="min-w-[110px] flex-1">
+                        <div className="text-sm font-medium truncate">{t.name}</div>
+                        <div className="text-xs text-[var(--color-neutral-700)]">
+                          {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-mono text-[var(--color-neutral-700)]">
+                          {t.direction === "in" ? "+" : "-"}
+                          {currency(t.amount)}
+                        </span>
+                        <Link
+                          href="/withdrawals"
+                          className="text-[10px] font-semibold px-2 py-1 rounded-full"
+                          style={{
+                            fontFamily: "var(--font-heading)",
+                            letterSpacing: "0.08em",
+                            border: "1px solid var(--color-accent)",
+                            color: "var(--color-accent-700)",
+                            background: "color-mix(in srgb, var(--color-accent) 8%, transparent)",
+                          }}
+                        >
+                          Logged: {linked.allocations.length ? linked.allocations.map((a) => a.label || "Other").join(" + ") : linked.categoryLabel || "Other"}
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
                   <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
