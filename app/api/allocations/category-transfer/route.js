@@ -1,5 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { checkAccountRoomForLabel } from "@/lib/categoryRoom";
 
 // Moves money between any two of: a tracked category, or "Unallocated"
 // cash in a specific account. Both `fromLabel` and `toLabel` are nullable
@@ -48,12 +49,34 @@ export async function POST(request) {
   const labelsToCheck = [fromLabel, toLabel].filter(Boolean);
   const { data: ruleRows } = await admin
     .from("simple_split_rules_percent")
-    .select("label")
+    .select("label, account_id")
     .eq("user_id", user.id)
     .in("label", labelsToCheck);
-  const found = new Set((ruleRows || []).map((r) => r.label));
-  if ((toLabel && !found.has(toLabel)) || (fromLabel && !found.has(fromLabel))) {
+  const ruleByLabel = Object.fromEntries((ruleRows || []).map((r) => [r.label, r]));
+  if ((toLabel && !ruleByLabel[toLabel]) || (fromLabel && !ruleByLabel[fromLabel])) {
     return Response.json({ error: "One of those categories no longer exists." }, { status: 404 });
+  }
+
+  // Never let a credit push the destination category's account past its
+  // real, connected bank balance -- whether the credit came from another
+  // category or from "Unallocated" cash, see lib/categoryRoom.js. Skipped
+  // when fromLabel and toLabel share the same account: debiting one and
+  // crediting the other there is a net-zero move for that account's
+  // categorized total, so it can never be the cause of over-categorization
+  // and shouldn't be blocked by a snapshot taken before the debit lands.
+  // (A pure debit, toLabel === null, only ever removes money from the
+  // ledger, so it never needs this check either.)
+  const sameAccount = fromLabel && toLabel && ruleByLabel[fromLabel]?.account_id && ruleByLabel[fromLabel].account_id === ruleByLabel[toLabel]?.account_id;
+  if (toLabel && !sameAccount) {
+    const room = await checkAccountRoomForLabel(admin, user.id, toLabel, amount);
+    if (!room.ok) {
+      return Response.json(
+        {
+          error: `That would put ${toLabel}'s account $${(amount - room.room).toFixed(2)} over its real balance ($${room.accountBalance.toFixed(2)}). Only $${room.room.toFixed(2)} is available to move in right now.`,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   const occurredAt = body.occurredAt || new Date().toISOString();

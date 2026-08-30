@@ -1,5 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { checkAccountRoomForLabel } from "@/lib/categoryRoom";
 
 // One-time, out-of-band top-up to a single category's balance -- e.g.
 // someone has extra cash on hand and wants to throw an extra $200 at their
@@ -39,6 +40,18 @@ export async function POST(request) {
     .eq("label", label)
     .maybeSingle();
   if (!rule) return Response.json({ error: "No category with that label." }, { status: 404 });
+
+  // Never let a manual top-up push this category's account past what's
+  // actually in the real, connected bank account -- see lib/categoryRoom.js.
+  const room = await checkAccountRoomForLabel(admin, user.id, label, amount);
+  if (!room.ok) {
+    return Response.json(
+      {
+        error: `That would put ${label}'s account $${(amount - room.room).toFixed(2)} over its real balance ($${room.accountBalance.toFixed(2)}). Only $${room.room.toFixed(2)} is available to add right now.`,
+      },
+      { status: 400 }
+    );
+  }
 
   const { error } = await admin.from("simple_manual_contributions").insert({
     user_id: user.id,

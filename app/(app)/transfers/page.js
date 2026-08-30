@@ -20,13 +20,26 @@ const UNALLOCATED = "__unallocated__";
 // there's no category event to log), and same-category-both-sides is
 // blocked server-side too.
 //
-// Everything posts through POST /api/allocations/category-transfer, the
-// same route the Accounts page's "where did the extra money come from?"
-// overdraw prompt already uses -- so a transfer here updates category
-// balances everywhere else in the product immediately (Dashboard, the
-// per-account pies on Accounts, the Close-Out shortfall cascade, the
-// Withdrawals category picker), since they all read the same underlying
-// ledger.
+// Two different things can happen when you hit "Transfer", depending on
+// whether the two sides actually live in the same bank account:
+//   - SAME account (or a side with no linked account at all) -- pure
+//     bookkeeping through POST /api/allocations/category-transfer, same
+//     route the Accounts page's overdraw "where did the extra money come
+//     from?" prompt already uses. No real money needs to move since it's
+//     already sitting in the one account both categories share.
+//   - DIFFERENT accounts -- real money actually has to travel from one
+//     bank account to the other, or the categorized totals would drift
+//     out of sync with what's really in each account (the exact problem
+//     lib/categoryRoom.js exists to prevent). Clicking Transfer in that
+//     case doesn't submit anything yet -- it drops into a confirmation
+//     step naming the two real accounts and the real ACH amount, and only
+//     firing the actual transfer (via POST /api/allocations/execute-real-
+//     transfer, the same Dwolla mechanism Close-Out's "top up" button
+//     uses) once that's explicitly confirmed.
+// Either way, category balances update everywhere else in the product
+// immediately afterward (Dashboard, the per-account pies on Accounts, the
+// Close-Out shortfall cascade, the Withdrawals category picker), since
+// they all read the same underlying ledger.
 export default function TransfersPage() {
   const [accounts, setAccounts] = useState([]);
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
@@ -43,6 +56,7 @@ export default function TransfersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [confirming, setConfirming] = useState(false);
 
   const load = async () => {
     const [accountsRes, rulesRes, balancesRes] = await Promise.all([
@@ -61,6 +75,7 @@ export default function TransfersPage() {
   }, []);
 
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
+  const rulesByLabel = useMemo(() => Object.fromEntries(splitRulesPercent.map((r) => [r.label, r])), [splitRulesPercent]);
   const fromIsUnallocated = fromLabel === UNALLOCATED;
   const toIsUnallocated = toLabel === UNALLOCATED;
 
@@ -75,6 +90,15 @@ export default function TransfersPage() {
   const insufficientCategoryFunds = fromBalance !== null && amt > 0 && amt > fromBalance;
   const bothUnallocated = fromIsUnallocated && toIsUnallocated;
 
+  // The real bank account each side lives in -- picked explicitly if that
+  // side is Unallocated, or looked up from the category's own linked
+  // account otherwise. If these differ, real money has to travel between
+  // them (see the file-level comment above); if they match (or either
+  // side has no linked account at all), it's pure bookkeeping.
+  const resolvedFromAccountId = fromIsUnallocated ? fromAccountId : rulesByLabel[fromLabel]?.accountId || null;
+  const resolvedToAccountId = toIsUnallocated ? toAccountId : rulesByLabel[toLabel]?.accountId || null;
+  const needsRealTransfer = !!resolvedFromAccountId && !!resolvedToAccountId && resolvedFromAccountId !== resolvedToAccountId;
+
   const resetForm = () => {
     setFromLabel("");
     setFromAccountId("");
@@ -83,6 +107,7 @@ export default function TransfersPage() {
     setAmount("");
     setNote("");
     setError(null);
+    setConfirming(false);
   };
 
   const canSubmit =
@@ -99,8 +124,40 @@ export default function TransfersPage() {
     return a ? `${a.institution_name} ${a.account_name} •••• ${a.mask}` : "that account";
   };
 
-  const submit = async () => {
+  const afterSuccess = (message) => {
+    setSuccess(message);
+    setRecent((prev) => [
+      {
+        id: `${Date.now()}`,
+        fromDisplay: fromIsUnallocated ? `Unallocated — ${accountLabel(fromAccountId)}` : fromLabel,
+        toDisplay: toIsUnallocated ? `Unallocated — ${accountLabel(toAccountId)}` : toLabel,
+        amount: amt,
+      },
+      ...prev,
+    ]);
+    resetForm();
+    // Both sides' category balances just changed -- refresh so the next
+    // transfer's "available" note reflects it immediately, same as
+    // everywhere else in the product that reads this endpoint.
+    fetch("/api/allocations/balances")
+      .then((r) => r.json())
+      .then((d) => setCategoryBalances(d.balances || {}))
+      .catch(() => {});
+  };
+
+  // Clicking "Transfer" either submits directly (same account, or nothing
+  // real to move) or drops into the confirm step below -- it never fires
+  // a real ACH transfer on the first click.
+  const handleTransferClick = () => {
     if (!canSubmit) return;
+    if (needsRealTransfer) {
+      setConfirming(true);
+      return;
+    }
+    submitBookkeeping();
+  };
+
+  const submitBookkeeping = async () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -126,28 +183,41 @@ export default function TransfersPage() {
       setError(res.error);
       return;
     }
-    setSuccess(
+    afterSuccess(
       `Moved ${currency(amt)} from ${fromIsUnallocated ? `unallocated cash (${accountLabel(fromAccountId)})` : fromLabel} to ${
         toIsUnallocated ? `unallocated cash (${accountLabel(toAccountId)})` : toLabel
       }.`
     );
-    setRecent((prev) => [
-      {
-        id: `${Date.now()}`,
-        fromDisplay: fromIsUnallocated ? `Unallocated — ${accountLabel(fromAccountId)}` : fromLabel,
-        toDisplay: toIsUnallocated ? `Unallocated — ${accountLabel(toAccountId)}` : toLabel,
+  };
+
+  // Actually fires the real ACH transfer between the two real accounts,
+  // once the person has explicitly confirmed it below.
+  const confirmRealTransfer = async () => {
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    const res = await fetch("/api/allocations/execute-real-transfer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fromAccountId: resolvedFromAccountId,
+        toAccountId: resolvedToAccountId,
+        fromLabel: fromIsUnallocated ? null : fromLabel,
+        toLabel: toIsUnallocated ? null : toLabel,
         amount: amt,
-      },
-      ...prev,
-    ]);
-    resetForm();
-    // Both sides' category balances just changed -- refresh so the next
-    // transfer's "available" note reflects it immediately, same as
-    // everywhere else in the product that reads this endpoint.
-    fetch("/api/allocations/balances")
-      .then((r) => r.json())
-      .then((d) => setCategoryBalances(d.balances || {}))
-      .catch(() => {});
+        note,
+      }),
+    }).then((r) => r.json());
+    setSaving(false);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    afterSuccess(
+      `Sent ${currency(amt)} from ${accountLabel(resolvedFromAccountId)} to ${accountLabel(resolvedToAccountId)} — ${
+        fromIsUnallocated ? "unallocated cash" : fromLabel
+      } → ${toIsUnallocated ? "unallocated cash" : toLabel}.`
+    );
   };
 
   if (loading) return <p className="text-sm text-[var(--color-neutral-700)]">Loading…</p>;
@@ -294,14 +364,42 @@ export default function TransfersPage() {
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          <PrimaryButton onClick={submit} disabled={!canSubmit || saving} className="text-sm px-4 py-2">
-            {saving ? "Transferring…" : "Transfer"}
-          </PrimaryButton>
-          <GhostButton onClick={resetForm} className="text-sm px-4 py-2">
-            Clear
-          </GhostButton>
-        </div>
+        {confirming ? (
+          <div
+            className="p-4 space-y-3"
+            style={{ background: "var(--color-neutral-100)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)" }}
+          >
+            <p className="text-sm font-semibold">Confirm real transfer</p>
+            <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+              {fromLabel && !fromIsUnallocated ? fromLabel : "Unallocated cash"} and{" "}
+              {toLabel && !toIsUnallocated ? toLabel : "Unallocated cash"} live in different bank accounts, so this
+              needs a real ACH transfer, not just a bookkeeping update:
+            </p>
+            <div className="flex items-center justify-between text-sm px-3 py-2" style={{ background: "var(--color-surface)", borderRadius: "var(--radius-md)" }}>
+              <span className="truncate">{accountLabel(resolvedFromAccountId)}</span>
+              <ArrowRight size={14} className="mx-2 shrink-0 text-[var(--color-neutral-400)]" />
+              <span className="truncate">{accountLabel(resolvedToAccountId)}</span>
+              <span className="font-mono font-semibold ml-3 shrink-0">{currency(amt)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <PrimaryButton onClick={confirmRealTransfer} disabled={saving} className="text-xs px-3 py-1.5">
+                {saving ? "Sending…" : "Confirm & send"}
+              </PrimaryButton>
+              <GhostButton onClick={() => setConfirming(false)} disabled={saving} className="text-xs px-3 py-1.5">
+                Cancel
+              </GhostButton>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <PrimaryButton onClick={handleTransferClick} disabled={!canSubmit || saving} className="text-sm px-4 py-2">
+              {saving ? "Transferring…" : "Transfer"}
+            </PrimaryButton>
+            <GhostButton onClick={resetForm} className="text-sm px-4 py-2">
+              Clear
+            </GhostButton>
+          </div>
+        )}
       </Card>
 
       {recent.length > 0 && (
