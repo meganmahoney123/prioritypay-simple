@@ -1,39 +1,121 @@
 "use client";
 
+import { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import Link from "next/link";
 import { currency } from "@/components/ui";
-import { bloomWarningCardStyle } from "@/lib/bloomTheme";
+import { bloomWarningCardStyle, bloomGhostButtonStyle } from "@/lib/bloomTheme";
 
 // Same fallback palette family as MoneyDistributionChart/
 // SpendDistributionChart, kept as its own copy on purpose (see those
 // files) so this chart can diverge visually later without affecting them.
 const FALLBACK_PALETTE = ["#2E8B78", "#1F5F4F", "#164536", "#5FB59F", "#A6D9CB"];
+const UNALLOCATED_COLOR = "#D9D3C7";
 
 function formatCloseoutDate(iso) {
   if (!iso) return "not yet closed out";
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+// Shown inline under an overdrawn category (rawBalance < 0 -- a withdrawal
+// spent more than that category had). Per spec, the pie/line item already
+// clamp that category to $0 / 0%; this is where the person answers "where
+// did the extra money come from" -- either another category sharing this
+// same account (debited by the same amount, via POST /api/allocations/
+// category-transfer) or unallocated cash already sitting in the account
+// (a no-op -- nothing to move, the account's own real balance already
+// covered it).
+function FundingSourcePrompt({ accountId, category, otherCategories, onResolved }) {
+  const [source, setSource] = useState("unallocated");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const submit = async () => {
+    setSaving(true);
+    setError(null);
+    const res = await fetch("/api/allocations/category-transfer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        toLabel: category.label,
+        fromLabel: source === "unallocated" ? null : source,
+        amount: category.overdrawnBy,
+      }),
+    });
+    const data = await res.json();
+    setSaving(false);
+    if (!res.ok || data.error) {
+      setError(data.error || "Couldn't save that.");
+      return;
+    }
+    onResolved();
+  };
+
+  return (
+    <div className="mt-2 p-2.5" style={{ ...bloomWarningCardStyle(), borderRadius: "var(--radius-sm)" }}>
+      <p className="text-xs font-semibold mb-1.5">
+        {category.label} is overdrawn by {currency(category.overdrawnBy)}. Where did the extra money come from?
+      </p>
+      <select
+        value={source}
+        onChange={(e) => setSource(e.target.value)}
+        className="text-xs w-full mb-1.5"
+        style={{ borderRadius: "var(--radius-sm)", border: "1px solid var(--color-divider)", padding: "6px 8px", background: "#fff", color: "var(--color-text)" }}
+      >
+        <option value="unallocated">Unallocated cash in this account</option>
+        {otherCategories.map((label) => (
+          <option key={label} value={label}>{label}</option>
+        ))}
+      </select>
+      {error && <p className="text-xs mb-1.5" style={{ color: "#9C3B22" }}>{error}</p>}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={saving}
+        className="text-xs"
+        style={bloomGhostButtonStyle({ padding: "6px 12px", fontSize: 12, opacity: saving ? 0.6 : 1 })}
+      >
+        {saving ? "Saving…" : "Confirm"}
+      </button>
+    </div>
+  );
+}
+
 // Small "what's inside this account" pie chart, rendered inside each
 // account's existing Card on the Accounts page (app/(app)/accounts/
 // page.js) -- one chart per connected account, breaking that account's
-// current balance down by the split-rule categories linked to it (see
-// simple_split_rules_percent.account_id). Data for every account is
-// fetched ONCE at the page level from /api/allocations/account-balances
-// and passed down per-account as `data`, rather than each instance of
-// this component fetching for itself -- avoids N duplicate requests for
-// N accounts. Renders nothing if this account has no linked categories
-// (data is undefined/null), same as the parent already handles.
-export default function AccountCategoryBreakdown({ accountId, data }) {
+// REAL current balance down by every split-rule category linked to it
+// (see simple_split_rules_percent.account_id), plus an "Unallocated"
+// slice for whatever's sitting in the account that no category has
+// claimed. Two accounts can each hold several categories (a savings
+// account with both a Maintenance fund and a Wedding fund) -- all of them
+// show up here as separate slices/line items, each with its own $ amount
+// and % of the account. A category spent past zero still appears, but
+// clamped to $0 / 0% (see account-balances route), with a prompt below it
+// to record where the extra money came from.
+//
+// Data for every account is fetched ONCE at the page level from
+// /api/allocations/account-balances and passed down per-account as
+// `data`, rather than each instance of this component fetching for
+// itself -- avoids N duplicate requests for N accounts. Renders nothing
+// if this account has no linked categories (data is undefined/null), same
+// as the parent already handles.
+export default function AccountCategoryBreakdown({ accountId, data, onChanged }) {
+  const [resolvingLabel, setResolvingLabel] = useState(null);
+
   if (!data || !data.categories || data.categories.length === 0) return null;
 
-  const { categories, totalBalance, lastCloseoutAt, uncategorizedCount } = data;
+  const { categories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance } = data;
+
   const pieData = categories.map((c, i) => ({
     name: c.label,
     value: c.balance,
+    pct: c.pct,
     color: FALLBACK_PALETTE[i % FALLBACK_PALETTE.length],
   }));
+  if (unallocated > 0) {
+    pieData.push({ name: "Unallocated", value: unallocated, pct: unallocatedPct, color: UNALLOCATED_COLOR });
+  }
 
   return (
     <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
@@ -45,33 +127,87 @@ export default function AccountCategoryBreakdown({ accountId, data }) {
                   SpendDistributionChart -- avoids the same class of
                   enter-animation/re-render race those charts already
                   work around. */}
-              <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={28} outerRadius={44} paddingAngle={2} isAnimationActive={false}>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={28}
+                outerRadius={44}
+                paddingAngle={2}
+                isAnimationActive={false}
+                // Percentage right on the slice (not just the legend) --
+                // skip labeling slivers under 6% so text doesn't overlap
+                // itself on a crowded chart.
+                label={({ pct }) => (pct >= 6 ? `${pct}%` : "")}
+                labelLine={false}
+                fontSize={9}
+                fontWeight={700}
+              >
                 {pieData.map((entry) => (
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v) => currency(v)} />
+              <Tooltip formatter={(v, n, p) => [`${currency(v)} (${p.payload.pct}%)`, n]} />
             </PieChart>
           </ResponsiveContainer>
         </div>
         <div>
           <div className="flex items-center justify-between text-xs mb-1.5 pb-1.5 border-b" style={{ borderColor: "var(--color-divider)" }}>
-            <span className="font-semibold" style={{ color: "var(--color-neutral-700)" }}>Categorized here</span>
-            <span className="font-bold font-mono">{currency(totalBalance)}</span>
+            <span className="font-semibold" style={{ color: "var(--color-neutral-700)" }}>
+              {accountBalance === null ? "Categorized here" : "Account balance"}
+            </span>
+            <span className="font-bold font-mono">{currency(accountBalance === null ? totalBalance : accountBalance)}</span>
           </div>
-          <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+          <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
             {pieData.map((c) => (
               <div key={c.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
                   <span className="truncate" style={{ color: "var(--color-neutral-700)" }}>{c.name}</span>
                 </div>
-                <span className="font-semibold shrink-0 font-mono">{currency(c.value)}</span>
+                <span className="font-semibold shrink-0 font-mono">
+                  {currency(c.value)}
+                  <span className="text-neutral-400 font-normal ml-1">({c.pct}%)</span>
+                </span>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {categories
+        .filter((c) => c.overdrawnBy > 0 && resolvingLabel !== c.label)
+        .map((c) => (
+          <div key={c.label} className="text-xs mt-2 p-2 flex items-center justify-between gap-2" style={bloomWarningCardStyle()}>
+            <span>
+              <span style={{ fontWeight: 600 }}>{c.label}</span> is overdrawn by {currency(c.overdrawnBy)}.
+            </span>
+            <button
+              type="button"
+              onClick={() => setResolvingLabel(c.label)}
+              className="text-xs underline shrink-0"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit" }}
+            >
+              Explain
+            </button>
+          </div>
+        ))}
+
+      {categories
+        .filter((c) => c.label === resolvingLabel)
+        .map((c) => (
+          <FundingSourcePrompt
+            key={c.label}
+            accountId={accountId}
+            category={c}
+            otherCategories={categories.filter((o) => o.label !== c.label).map((o) => o.label)}
+            onResolved={() => {
+              setResolvingLabel(null);
+              if (onChanged) onChanged();
+            }}
+          />
+        ))}
+
       <p className="text-xs mt-2" style={{ color: "var(--color-neutral-700)" }}>
         As of your last close-out ({formatCloseoutDate(lastCloseoutAt)}).
       </p>

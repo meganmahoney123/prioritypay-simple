@@ -4,69 +4,7 @@ import { useMemo } from "react";
 import { Card, currency } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { percentSections } from "@/lib/allocations";
-import MoneyDistributionChart from "./MoneyDistributionChart";
-import SpendDistributionChart from "./SpendDistributionChart";
-
-function accountLabel(acc) {
-  if (!acc) return null;
-  return `${acc.institution_name} ${acc.account_name} •••• ${acc.mask}`;
-}
-
-// One row inside a Retirement/Investments group box -- a single
-// sub-account's connected account, live balance, and how much has landed
-// there this year / this month. `ytd`/`mtd` are dollars already allocated
-// to this row's label (see lib/allocations.js `group` + the Dashboard's
-// range-query fetches), not a balance -- a connected account's balance can
-// differ from what PriorityPay has tracked if money moves in/out of it
-// outside of PriorityPay's own splits.
-function CategoryRow({ label, account, ytd, mtd }) {
-  return (
-    <div className="flex items-center justify-between py-3 gap-3" style={{ borderBottom: "1px solid var(--color-divider)" }}>
-      <div className="min-w-0">
-        <div className="truncate" style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{label}</div>
-        <div className="text-xs truncate" style={{ color: "var(--color-neutral-700)" }}>
-          {account ? accountLabel(account) : "Not connected yet"}
-        </div>
-      </div>
-      <div className="text-right shrink-0">
-        <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 20 }}>
-          {account ? (account.current_balance === null || account.current_balance === undefined ? "—" : currency(account.current_balance)) : "—"}
-        </div>
-        <div className="text-[11px]" style={{ color: "var(--color-neutral-700)" }}>
-          {currency(ytd)} this year · {currency(mtd)} this month
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function GroupBox({ title, rows, accountsById, ytdByLabel, mtdByLabel }) {
-  if (!rows.length) return null;
-  return (
-    <Card className="p-6">
-      <div
-        style={{
-          fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase",
-          color: "var(--color-neutral-700)", paddingBottom: 16,
-          borderBottom: "1px solid var(--color-divider)",
-        }}
-      >
-        {title}
-      </div>
-      <div>
-        {rows.map((r) => (
-          <CategoryRow
-            key={r.id}
-            label={r.label}
-            account={r.accountId ? accountsById[r.accountId] : null}
-            ytd={ytdByLabel[r.label] || 0}
-            mtd={mtdByLabel[r.label] || 0}
-          />
-        ))}
-      </div>
-    </Card>
-  );
-}
+import CategoryDistributionSection from "./CategoryDistributionSection";
 
 // Plain account-balance card, no split-category info -- used for accounts
 // that aren't assigned as the destination of any split-rule category at
@@ -92,11 +30,12 @@ function PlainAccountCard({ acc }) {
 // Every connected account is assigned to at least one split-rule category
 // EXCEPT the account a deposit actually lands in, which is usually left
 // unassigned on purpose (it's the source, not a destination). Those
-// accounts don't appear in GroupBox (Retirement/Investments) or
-// OtherAccountsBox below -- both only render accounts referenced by a
-// split-rule row -- so without this box, a connected account with zero
-// category assignments was invisible on the dashboard even though its
-// balance was tracked correctly.
+// accounts don't appear in OtherAccountsBox below (which only renders
+// accounts referenced by a split-rule row) -- so without this box, a
+// connected account with zero category assignments was invisible on the
+// dashboard even though its balance was tracked correctly. (The old
+// Retirement/Investments account-boxes section was removed per request --
+// that detail now lives on the Accounts tab instead.)
 function UnassignedAccountsBox({ accounts, assignedAccountIds }) {
   const unassigned = accounts.filter((a) => !assignedAccountIds.has(a.id));
   if (!unassigned.length) return null;
@@ -249,16 +188,9 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
         </div>
       </Card>
 
-      <MoneyDistributionChart rules={rules} />
+      <CategoryDistributionSection />
 
       {belowDistribution}
-
-      <SpendDistributionChart rules={rules} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GroupBox title="Retirement" rows={retirementRows} accountsById={accountsById} ytdByLabel={ytdByLabel} mtdByLabel={mtdByLabel} />
-        <GroupBox title="Investments" rows={investmentRows} accountsById={accountsById} ytdByLabel={ytdByLabel} mtdByLabel={mtdByLabel} />
-      </div>
 
       <OtherAccountsBox accounts={accounts} flatRows={flatRows} ytdByLabel={ytdByLabel} mtdByLabel={mtdByLabel} />
 

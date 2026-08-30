@@ -164,7 +164,7 @@ export default function AccountsPage() {
                 {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
               </button>
             </div>
-            <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} />
+            <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} onChanged={load} />
           </Card>
         ))}
       </div>
