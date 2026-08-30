@@ -210,9 +210,10 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
   const [resolvingLabel, setResolvingLabel] = useState(null);
   const [showDiscrepancy, setShowDiscrepancy] = useState(false);
 
-  if (!data || !data.categories || data.categories.length === 0) return null;
+  if (!data) return null;
 
-  const { categories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance, overCategorizedBy, isMarketBased } = data;
+  const { categories: rawCategories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance, overCategorizedBy, isMarketBased } = data;
+  const categories = rawCategories || [];
 
   const pieData = categories.map((c, i) => ({
     name: c.label,
@@ -222,6 +223,13 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
   }));
   if (unallocated > 0) {
     pieData.push({ name: "Unallocated", value: unallocated, pct: unallocatedPct, color: UNALLOCATED_COLOR });
+  }
+  // An account with zero linked categories and a $0 (or null) real balance
+  // would otherwise leave pieData empty -- always show a full "Unallocated"
+  // ring instead of rendering nothing, per spec: no account should ever be
+  // chartless.
+  if (pieData.length === 0) {
+    pieData.push({ name: "Unallocated", value: 1, pct: 100, color: UNALLOCATED_COLOR });
   }
 
   return (
@@ -328,7 +336,7 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
               className="text-xs underline shrink-0"
               style={{ background: "none", border: "none", cursor: "pointer", color: "inherit" }}
             >
-              Explain
+              Where additional money came from
             </button>
           </div>
         ))}

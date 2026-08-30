@@ -49,8 +49,12 @@ const MARKET_BASED_SUBTYPES = new Set([
 //                         a signal that recent activity on this account
 //                         hasn't been fully accounted for yet.
 //
-// Accounts with zero linked categories are omitted from the response
-// entirely; the Accounts page just skips rendering a chart for those.
+// Every non-credit, non-business account is included, even ones with ZERO
+// linked categories -- those still get a chart, just 100% "Unallocated"
+// (see the accounts loop below, which now iterates every eligible account
+// rather than only ones that show up in byAccount). A depository/
+// investment account is never invisible on the Accounts page just because
+// nothing's been categorized into it yet.
 //
 // Each category also carries its RAW balance (which can go negative if a
 // withdrawal overdrew it -- e.g. spent more on Wedding than Wedding had)
@@ -106,7 +110,7 @@ export async function GET() {
       // category's balance here -- covered below via a second pass rather
       // than a third query, since it shares the same table as the
       // Dashboard's category-summary route.
-      admin.from("simple_accounts").select("id, current_balance, subtype").eq("user_id", user.id),
+      admin.from("simple_accounts").select("id, current_balance, subtype, account_type").eq("user_id", user.id),
     ]);
 
   const { data: manualRows } = await admin
@@ -172,6 +176,13 @@ export async function GET() {
     accountBalanceById[a.id] = Number(a.current_balance) || 0;
     accountSubtypeById[a.id] = a.subtype || null;
   });
+  // Credit and business accounts get their own dedicated UI on the
+  // Accounts page (spending/visibility notices, not a category pie) and
+  // are never a split-rule destination in the first place, so they're
+  // excluded here same as everywhere else category balances are computed.
+  const eligibleAccountIds = (accountRows || [])
+    .filter((a) => a.account_type !== "credit" && a.account_type !== "business")
+    .map((a) => a.id);
 
   const byAccount = {};
   Object.entries(balanceByLabel).forEach(([label, rawBalance]) => {
@@ -187,7 +198,8 @@ export async function GET() {
     });
   });
 
-  const accounts = Object.entries(byAccount).map(([accountId, categories]) => {
+  const accounts = eligibleAccountIds.map((accountId) => {
+    const categories = byAccount[accountId] || [];
     const accountBalance = accountBalanceById[accountId] ?? null;
     const categorized = categories.reduce((s, c) => s + c.balance, 0);
     const unallocated = accountBalance === null ? null : Math.max(0, accountBalance - categorized);
