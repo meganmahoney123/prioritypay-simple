@@ -16,6 +16,89 @@ function formatCloseoutDate(iso) {
   if (!iso) return "not yet closed out";
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+function formatShortDate(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// The two ingredients that can push a category's ledger balance ahead of
+// what's really in the bank: a starting balance entered too high when the
+// category was created, and a one-time manual contribution/transfer not
+// backed by a real ACH move (see lib/categoryRoom.js -- both are guarded
+// against NEW writes now, but a category set up before that guard existed
+// can still be carrying old drift). Real transfer_allocations dollars are
+// excluded from this score since those are tied to an actual settled
+// Dwolla transfer and can't be the cause. Used only to rank which
+// category to point at first in the discrepancy breakdown below.
+function likelyCauseScore(breakdown) {
+  if (!breakdown) return 0;
+  return Math.max(0, breakdown.startingBalance || 0) + Math.max(0, breakdown.manualContributions || 0);
+}
+
+// Expandable, per-category breakdown of WHY an account's categorized
+// total exceeds its real balance -- shown when the person clicks "Find
+// the discrepancy" under the warning banner below. Categories are ranked
+// by likelyCauseScore so the most probable culprit (usually a starting
+// balance set too high, or an untethered one-time contribution) surfaces
+// first instead of making the person scan every category themselves.
+function DiscrepancyBreakdown({ categories }) {
+  const ranked = [...categories]
+    .filter((c) => c.breakdown)
+    .sort((a, b) => likelyCauseScore(b.breakdown) - likelyCauseScore(a.breakdown));
+
+  return (
+    <div className="mt-2 space-y-2">
+      {ranked.map((c, i) => {
+        const b = c.breakdown;
+        const isTopSuspect = i === 0 && likelyCauseScore(b) > 0;
+        return (
+          <div
+            key={c.label}
+            className="p-2.5 text-xs"
+            style={{
+              background: "#fff",
+              borderRadius: "var(--radius-sm)",
+              border: isTopSuspect ? "1px solid #C9713F" : "1px solid var(--color-divider)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold">{c.label}</span>
+              {isTopSuspect && (
+                <span style={{ color: "#9C3B22", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Most likely
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between" style={{ color: "var(--color-neutral-700)" }}>
+              <span>Starting balance (entered by hand)</span>
+              <span className="font-mono">{currency(b.startingBalance)}</span>
+            </div>
+            <div className="flex justify-between" style={{ color: "var(--color-neutral-700)" }}>
+              <span>Real transfers in (settled ACH)</span>
+              <span className="font-mono">{currency(b.transferAllocations)}</span>
+            </div>
+            <div className="flex justify-between" style={{ color: "var(--color-neutral-700)" }}>
+              <span>One-time contributions / transfers</span>
+              <span className="font-mono">{currency(b.manualContributions)}</span>
+            </div>
+            <div className="flex justify-between" style={{ color: "var(--color-neutral-700)" }}>
+              <span>Withdrawals recorded</span>
+              <span className="font-mono">-{currency(b.withdrawals)}</span>
+            </div>
+            {b.recentManual?.length > 0 && (
+              <div className="mt-1.5 pt-1.5" style={{ borderTop: "1px solid var(--color-divider)", color: "var(--color-neutral-700)" }}>
+                Recent one-time entries:{" "}
+                {b.recentManual
+                  .map((m) => `${currency(m.amount)} on ${formatShortDate(m.occurredAt)}${m.note ? ` (${m.note})` : ""}`)
+                  .join(", ")}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // Shown inline under an overdrawn category (rawBalance < 0 -- a withdrawal
 // spent more than that category had). Per spec, the pie/line item already
@@ -125,6 +208,7 @@ function FundingSourcePrompt({ category, otherCategories, onResolved }) {
 // as the parent already handles.
 export default function AccountCategoryBreakdown({ accountId, data, allCategories = [], onChanged }) {
   const [resolvingLabel, setResolvingLabel] = useState(null);
+  const [showDiscrepancy, setShowDiscrepancy] = useState(false);
 
   if (!data || !data.categories || data.categories.length === 0) return null;
 
@@ -200,10 +284,22 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
 
       {overCategorizedBy > 0 && (
         <div className="text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
-          Categories here add up to {currency(overCategorizedBy)} more than this account&apos;s real balance
-          ({currency(accountBalance)}) -- percentages above are shown against the categorized total instead so
-          nothing reads over 100%, but a category balance is out of sync with the bank. Check starting balances
-          and recent withdrawals for accuracy.
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span>
+              Categories here add up to {currency(overCategorizedBy)} more than this account&apos;s real balance
+              ({currency(accountBalance)}) -- percentages above are shown against the categorized total instead so
+              nothing reads over 100%, but a category balance is out of sync with the bank.
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowDiscrepancy((v) => !v)}
+              className="underline shrink-0"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", fontWeight: 600 }}
+            >
+              {showDiscrepancy ? "Hide breakdown" : "Find the discrepancy"}
+            </button>
+          </div>
+          {showDiscrepancy && <DiscrepancyBreakdown categories={categories} />}
         </div>
       )}
 

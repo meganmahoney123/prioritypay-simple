@@ -66,7 +66,7 @@ export async function GET() {
         .neq("status", "needs_approval"),
       admin
         .from("simple_withdrawal_allocations")
-        .select("label, amount, source_type, simple_withdrawals!inner(user_id)")
+        .select("label, amount, source_type, simple_withdrawals!inner(user_id, occurred_at)")
         .eq("simple_withdrawals.user_id", user.id)
         .eq("source_type", "category"),
       admin
@@ -93,28 +93,53 @@ export async function GET() {
 
   const { data: manualRows } = await admin
     .from("simple_manual_contributions")
-    .select("label, amount")
+    .select("label, amount, note, occurred_at")
     .eq("user_id", user.id);
 
   // label -> account_id, so the (net) transfer/withdrawal passes below
   // can attribute dollars to the right account without a second query.
   const accountByLabel = {};
   const balanceByLabel = {};
+  // Same totals as balanceByLabel, but split out by SOURCE instead of
+  // summed together -- only used to build `breakdown` below, so a person
+  // staring at an "over the real balance" warning can see which of the
+  // four ingredients (a starting balance entered too high, a real
+  // transfer, a manual one-time contribution, or a withdrawal recorded
+  // against the wrong category) is actually driving the drift, instead of
+  // just being told a discrepancy exists. See componentsByLabel usage
+  // further down.
+  const componentsByLabel = {};
+  const ensureComponents = (label) =>
+    (componentsByLabel[label] ||= { startingBalance: 0, transferAllocations: 0, manualContributions: 0, withdrawals: 0, recentManual: [], recentWithdrawals: [] });
   (rules || []).forEach((r) => {
     accountByLabel[r.label] = r.account_id;
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.starting_balance) || 0);
+    ensureComponents(r.label).startingBalance += Number(r.starting_balance) || 0;
   });
   (allocRows || []).forEach((r) => {
     if (!(r.label in accountByLabel)) return;
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.amount) || 0);
+    ensureComponents(r.label).transferAllocations += Number(r.amount) || 0;
   });
   (manualRows || []).forEach((r) => {
     if (!(r.label in accountByLabel)) return;
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.amount) || 0);
+    const c = ensureComponents(r.label);
+    c.manualContributions += Number(r.amount) || 0;
+    c.recentManual.push({ amount: Number(r.amount) || 0, note: r.note || null, occurredAt: r.occurred_at });
   });
   (withdrawalRows || []).forEach((r) => {
     if (!r.label || !(r.label in accountByLabel)) return;
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) - (Number(r.amount) || 0);
+    const c = ensureComponents(r.label);
+    c.withdrawals += Number(r.amount) || 0;
+    c.recentWithdrawals.push({ amount: Number(r.amount) || 0, occurredAt: r.simple_withdrawals?.occurred_at || null });
+  });
+  // Trim each category's recent-activity lists to the 3 most recent so the
+  // response stays small -- these are diagnostic hints, not a full ledger.
+  Object.values(componentsByLabel).forEach((c) => {
+    c.recentManual = c.recentManual.sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt)).slice(0, 3);
+    c.recentWithdrawals = c.recentWithdrawals.sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt)).slice(0, 3);
   });
 
   const uncategorizedByAccount = {};
@@ -138,6 +163,7 @@ export async function GET() {
       balance: Math.max(0, rawBalance),
       rawBalance,
       overdrawnBy: rawBalance < 0 ? Math.abs(rawBalance) : 0,
+      breakdown: componentsByLabel[label] || null,
     });
   });
 

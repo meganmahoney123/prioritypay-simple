@@ -32,7 +32,10 @@ export default function MoneySimulator({
   incomeNote,
   onSetUpReal,
 }) {
-  const [income, setIncome] = useState(initialIncome);
+  // Defensive floor at $0 even if a caller passes a negative initialIncome
+  // (e.g. a confirmed month that went net-negative) -- every %/$ split
+  // calculation below assumes income can't be negative.
+  const [income, setIncome] = useState(Math.max(0, Number(initialIncome) || 0));
   const [rows, setRows] = useState(initialRows);
   const [goals, setGoals] = useState(initialGoals);
 

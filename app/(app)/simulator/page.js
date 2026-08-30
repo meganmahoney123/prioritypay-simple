@@ -58,7 +58,13 @@ export default function MoneySimulatorDashboardPage() {
         try {
           const closeoutRes = await fetch(`/api/closeout/${statusRes.period}`).then((r) => r.json());
           if (typeof closeoutRes?.closeout?.net_income === "number") {
-            setIncome(Math.round(closeoutRes.closeout.net_income * 100) / 100);
+            // A confirmed month CAN have gone net-negative for real (more
+            // categorized as expenses than income that month) -- but the
+            // simulator models a monthly income to split, and a negative
+            // number there breaks every downstream %/$ calculation (see
+            // the clamp on MoneySimulator's own income input). Floor at
+            // $0 rather than carrying the negative number in.
+            setIncome(Math.max(0, Math.round(closeoutRes.closeout.net_income * 100) / 100));
             setIncomeSource(`Pulled from your confirmed net income for ${statusRes.period}. Edit anytime.`);
             gotConfirmedIncome = true;
           }
