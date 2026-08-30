@@ -129,7 +129,8 @@ export default function CategoryDistributionSection() {
     if (unallocated > 0) {
       slices.push({ name: "Unallocated", value: unallocated, color: UNALLOCATED_COLOR });
     }
-    return slices;
+    const total = slices.reduce((s, c) => s + c.value, 0);
+    return slices.map((c) => ({ ...c, pct: total > 0 ? Math.round((c.value / total) * 100) : 0 }));
   }, [categories, unallocated]);
 
   const colorByLabel = useMemo(() => {
@@ -197,7 +198,19 @@ export default function CategoryDistributionSection() {
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={75} paddingAngle={2} isAnimationActive={false}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={75}
+                  paddingAngle={2}
+                  isAnimationActive={false}
+                  label={({ pct }) => (pct >= 6 ? `${pct}%` : "")}
+                  labelLine={false}
+                  fontSize={10}
+                  fontWeight={700}
+                >
                   {pieData.map((entry) => (
                     <Cell key={entry.name} fill={entry.color} />
                   ))}

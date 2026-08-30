@@ -127,7 +127,22 @@ export default function AccountCategoryBreakdown({ accountId, data, onChanged })
                   SpendDistributionChart -- avoids the same class of
                   enter-animation/re-render race those charts already
                   work around. */}
-              <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={28} outerRadius={44} paddingAngle={2} isAnimationActive={false}>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={28}
+                outerRadius={44}
+                paddingAngle={2}
+                isAnimationActive={false}
+                // Percentage right on the slice (not just the legend) --
+                // skip labeling slivers under 6% so text doesn't overlap
+                // itself on a crowded chart.
+                label={({ pct }) => (pct >= 6 ? `${pct}%` : "")}
+                labelLine={false}
+                fontSize={9}
+                fontWeight={700}
+              >
                 {pieData.map((entry) => (
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
