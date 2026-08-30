@@ -38,9 +38,21 @@ function isLastDayOfCurrentMonthUTC() {
   return tomorrow.getUTCDate() === 1;
 }
 
-const CATS = [
+// Split into two lists instead of one shared set -- Deposits (money in)
+// only ever needs an income-side classification, Charges (money out) only
+// ever needs an expense-side one, and mixing them into one pill row per
+// transaction (the old layout) was the actual source of confusion this
+// redesign fixes: a still-"income"-suggested row could show its Charges-
+// only "who was this from" input at the same time an Expense panel was
+// open underneath it, because the two concepts were tracked independently
+// but rendered together. Now a transaction only ever sees the set that
+// applies to its own direction.
+const DEPOSIT_CATS = [
   { value: "income", label: "Income" },
   { value: "w2_income", label: "W2 Income" },
+  { value: "exclude", label: "Exclude" },
+];
+const CHARGE_CATS = [
   { value: "expense", label: "Expense" },
   { value: "exclude", label: "Exclude" },
 ];
@@ -78,8 +90,9 @@ export default function CloseoutPage() {
   const [persona, setPersona] = useState(null);
   const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
-  const baseCats = hasW2Income ? CATS : CATS.filter((c) => c.value !== "w2_income");
-  const cats = isBusinessOwnerWithEmployees ? [...baseCats, { value: "business", label: "Business" }] : baseCats;
+  const baseDepositCats = hasW2Income ? DEPOSIT_CATS : DEPOSIT_CATS.filter((c) => c.value !== "w2_income");
+  const depositCats = isBusinessOwnerWithEmployees ? [...baseDepositCats, { value: "business", label: "Business" }] : baseDepositCats;
+  const chargeCats = isBusinessOwnerWithEmployees ? [...CHARGE_CATS, { value: "business", label: "Business" }] : CHARGE_CATS;
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
   // Transactions already recorded from the Withdrawals tab (see
   // app/(app)/withdrawals/page.js) as a matched credit-card charge --
@@ -318,19 +331,45 @@ export default function CloseoutPage() {
     }));
   };
 
-  // Backs the inline "who was this from" column added at the end of each
-  // Income row -- a free-text note (simple_closeout_transactions.income_source),
-  // saved on blur only if it actually changed, mirroring setCategory's
-  // optimistic-update-with-rollback pattern above.
-  const saveIncomeSource = async (txnId, value) => {
+  // The Charges column's category dropdown calls this directly (see the
+  // transactions render below). Two outcomes:
+  //   - The chosen category's own balance covers the full amount (the
+  //     common case) -- saves immediately with a single-category
+  //     allocation, no separate button, no shortfall UI. This is what
+  //     makes picking a category feel like "select it and the dashboard
+  //     updates," per explicit feedback that a whole extra panel/button
+  //     for the common case was more friction than needed.
+  //   - It doesn't cover the full amount -- falls back to the existing
+  //     panel (WithdrawalAllocator + explicit Save button) so the person
+  //     can say where the rest came from, same as before.
+  const selectExpenseCategory = (t, label) => {
+    setExpenseCategoryInline(t.id, label);
+    if (!label) return;
+    const amt = Number(t.amount) || 0;
+    const balance = label === "Other" ? Infinity : Number(categoryBalances[label]) || 0;
+    if (balance >= amt) {
+      const allocations =
+        label === "Other" ? [{ label: "Other", amount: amt, sourceType: "external" }] : [{ label, amount: amt, sourceType: "category" }];
+      updateExpensePanel(t.id, { allocations, allocationsComplete: true });
+      saveExpense(t, allocations);
+    }
+  };
+
+  // Backs the "Paid by" / "For" columns added on each Deposit row -- two
+  // free-text notes folded into one string in
+  // simple_closeout_transactions.income_source ("Acme Corp — Website
+  // redesign"), saved on blur only if it actually changed, mirroring
+  // setCategory's optimistic-update-with-rollback pattern above.
+  const [incomeSourceDrafts, setIncomeSourceDrafts] = useState({});
+  const saveIncomeSource = async (txnId, payer, purpose) => {
     const previous = transactions.find((t) => t.id === txnId)?.income_source ?? null;
-    const trimmed = value.trim();
-    if (trimmed === (previous || "")) return;
-    setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: trimmed || null } : t)));
+    const next = [payer.trim(), purpose.trim()].filter(Boolean).join(" — ") || null;
+    if (next === previous) return;
+    setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: next } : t)));
     const res = await fetch(`/api/closeout/transactions/${txnId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ incomeSource: trimmed || null }),
+      body: JSON.stringify({ incomeSource: next }),
     });
     if (!res.ok) {
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: previous } : t)));
@@ -350,16 +389,25 @@ export default function CloseoutPage() {
     updateExpensePanel(txnId, { uploading: false, receiptFile: file, receiptUrl: res.url });
   };
 
-  const saveExpense = async (txn) => {
+  // `overrideAllocations`, when passed, skips the "did WithdrawalAllocator
+  // report complete" check entirely -- used by selectExpenseCategory below
+  // for the common case where the chosen category's own balance covers
+  // the whole amount, so the person never has to see the allocator or
+  // click a separate Save at all; picking the category IS the save. The
+  // shortfall-cascade path (category can't cover it) still goes through
+  // the allocator + explicit Save button exactly as before, with
+  // overrideAllocations left undefined.
+  const saveExpense = async (txn, overrideAllocations) => {
     const panel = expensePanels[txn.id];
     if (!panel || !panel.categoryLabel) {
       updateExpensePanel(txn.id, { error: "Pick a category (or Other) before saving." });
       return;
     }
-    if (!panel.allocationsComplete) {
+    if (!overrideAllocations && !panel.allocationsComplete) {
       updateExpensePanel(txn.id, { error: "Finish accounting for the full amount before saving." });
       return;
     }
+    const allocations = overrideAllocations || panel.allocations;
     const mileage = isMileageLabel(panel.categoryLabel);
     const meals = isMealsLabel(panel.categoryLabel);
     updateExpensePanel(txn.id, { saving: true, error: null });
@@ -376,7 +424,7 @@ export default function CloseoutPage() {
         mileagePurpose: mileage ? panel.mileagePurpose : null,
         mealPurpose: meals ? panel.mealPurpose : null,
         mealAttendees: meals ? panel.mealAttendees : null,
-        allocations: panel.allocations,
+        allocations,
       }),
     }).then((r) => r.json());
     if (res.error) {
@@ -466,6 +514,291 @@ export default function CloseoutPage() {
     setSplitRulesPercent(nextPercent);
     setObligationsForm({ pct: "", cap: "", accountId: null });
     setEditingObligations(false);
+  };
+
+  const canEditNow = !isConfirmed || editingConfirmed;
+  const depositTxns = transactions.filter((t) => t.direction === "in");
+  const chargeTxns = transactions.filter((t) => t.direction === "out");
+
+  // Shared by both Deposits and Charges: a transaction already recorded
+  // from the Withdrawals tab as a matched card charge renders read-only
+  // instead of the normal pills/panel, so it never gets a second,
+  // conflicting category assigned to it here. Edit it from Withdrawals.
+  const renderLinkedRow = (t, acc, linked) => (
+    <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <div className="min-w-[110px] flex-1">
+          <div className="text-sm font-medium truncate">{t.name}</div>
+          <div className="text-xs text-[var(--color-neutral-700)]">
+            {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-mono text-[var(--color-neutral-700)]">
+            {t.direction === "in" ? "+" : "-"}
+            {currency(t.amount)}
+          </span>
+          <Link
+            href="/withdrawals"
+            className="text-[10px] font-semibold px-2 py-1 rounded-full"
+            style={{
+              fontFamily: "var(--font-heading)",
+              letterSpacing: "0.08em",
+              border: "1px solid var(--color-accent)",
+              color: "var(--color-accent-700)",
+              background: "color-mix(in srgb, var(--color-accent) 8%, transparent)",
+            }}
+          >
+            Logged: {linked.allocations.length ? linked.allocations.map((a) => a.label || "Other").join(" + ") : linked.categoryLabel || "Other"}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDepositRow = (t) => {
+    const acc = accountsById[t.account_id];
+    const linked = linkedWithdrawalsByTxnId[t.id];
+    if (linked) return renderLinkedRow(t, acc, linked);
+    const cat = t.confirmed_category || t.suggested_category;
+    const [defaultPayer, defaultPurpose] = (t.income_source || "").split(" — ");
+    return (
+      <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          <div className="min-w-[110px] flex-1">
+            <div className="text-sm font-medium truncate">{t.name}</div>
+            <div className="text-xs text-[var(--color-neutral-700)]">
+              {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-mono text-[var(--color-neutral-700)]">+{currency(t.amount)}</span>
+            <div className="flex gap-1 flex-wrap justify-end">
+              {depositCats.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => canEditNow && setCategory(t.id, c.value)}
+                  disabled={!canEditNow}
+                  className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    letterSpacing: "0.08em",
+                    border: `1px solid ${cat === c.value ? "var(--color-accent)" : "transparent"}`,
+                    color: cat === c.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
+                    background: cat === c.value ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        {(cat === "income" || cat === "w2_income") && (
+          <div className="flex items-center gap-2 flex-wrap mt-1.5">
+            <input
+              type="text"
+              placeholder="Paid by"
+              defaultValue={defaultPayer || ""}
+              onChange={(e) => setIncomeSourceDrafts((prev) => ({ ...prev, [t.id]: { ...prev[t.id], payer: e.target.value } }))}
+              onBlur={(e) => {
+                const purpose = incomeSourceDrafts[t.id]?.purpose ?? defaultPurpose ?? "";
+                saveIncomeSource(t.id, e.target.value, purpose);
+              }}
+              disabled={!canEditNow}
+              className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 w-32 disabled:opacity-60"
+            />
+            <input
+              type="text"
+              placeholder="For what?"
+              defaultValue={defaultPurpose || ""}
+              onChange={(e) => setIncomeSourceDrafts((prev) => ({ ...prev, [t.id]: { ...prev[t.id], purpose: e.target.value } }))}
+              onBlur={(e) => {
+                const payer = incomeSourceDrafts[t.id]?.payer ?? defaultPayer ?? "";
+                saveIncomeSource(t.id, payer, e.target.value);
+              }}
+              disabled={!canEditNow}
+              className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 w-36 disabled:opacity-60"
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderChargeRow = (t) => {
+    const acc = accountsById[t.account_id];
+    const linked = linkedWithdrawalsByTxnId[t.id];
+    if (linked) return renderLinkedRow(t, acc, linked);
+    const cat = t.confirmed_category || t.suggested_category;
+    const panel = expensePanels[t.id];
+    const mileage = panel && isMileageLabel(panel.categoryLabel);
+    const meals = panel && isMealsLabel(panel.categoryLabel);
+    return (
+      <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          <div className="min-w-[110px] flex-1">
+            <div className="text-sm font-medium truncate">{t.name}</div>
+            <div className="text-xs text-[var(--color-neutral-700)]">
+              {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-mono text-[var(--color-neutral-700)]">-{currency(t.amount)}</span>
+            <div className="flex gap-1 flex-wrap justify-end">
+              {chargeCats.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => {
+                    if (!canEditNow) return;
+                    if (c.value === "expense") openExpensePanel(t.id);
+                    else {
+                      closeExpensePanel(t.id);
+                      setCategory(t.id, c.value);
+                    }
+                  }}
+                  disabled={!canEditNow}
+                  className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    letterSpacing: "0.08em",
+                    border: `1px solid ${cat === c.value || (c.value === "expense" && panel?.open) ? "var(--color-accent)" : "transparent"}`,
+                    color:
+                      cat === c.value || (c.value === "expense" && panel?.open)
+                        ? "var(--color-accent-700)"
+                        : "color-mix(in srgb, var(--color-text) 45%, transparent)",
+                    background:
+                      cat === c.value || (c.value === "expense" && panel?.open)
+                        ? "color-mix(in srgb, var(--color-accent) 8%, transparent)"
+                        : "transparent",
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            {cat === "expense" && (
+              <select
+                value={panel?.categoryLabel || ""}
+                onChange={(e) => selectExpenseCategory(t, e.target.value || null)}
+                disabled={!canEditNow}
+                className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 disabled:opacity-60"
+              >
+                <option value="">Categorize…</option>
+                {splitRulesPercent.map((r) => (
+                  <option key={r.id} value={r.label}>{r.label}</option>
+                ))}
+                <option value="Other">Other (not tracked)</option>
+              </select>
+            )}
+            <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
+              <Paperclip size={12} />
+              {panel?.uploading ? "Uploading…" : panel?.receiptUrl ? "Receipt ✓" : "Add receipt"}
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && uploadReceipt(t.id, e.target.files[0])}
+              />
+            </label>
+          </div>
+        </div>
+        {/* Only surfaces when the chosen category can't cover the full
+            amount -- selectExpenseCategory already auto-saved the common
+            case above, so this panel is reserved for the shortfall
+            cascade, mileage/meals detail, and the explicit Save/Cancel. */}
+        {panel?.open && (
+          <div
+            className="mt-2 p-3 space-y-2.5"
+            style={{ background: "var(--color-neutral-100)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)" }}
+          >
+            {!panel.categoryLabel && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-semibold">What category did this come out of?</span>
+                <select
+                  value={panel.categoryLabel || ""}
+                  onChange={(e) => updateExpensePanel(t.id, { categoryLabel: e.target.value || null })}
+                  className="text-xs border border-neutral-200 rounded-lg px-2 py-1"
+                >
+                  <option value="">Select…</option>
+                  {splitRulesPercent.map((r) => (
+                    <option key={r.id} value={r.label}>{r.label}</option>
+                  ))}
+                  <option value="Other">Other (not tracked)</option>
+                </select>
+              </div>
+            )}
+
+            {mileage && (
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <label className="flex items-center gap-1">
+                  Miles driven
+                  <input
+                    type="number"
+                    min={0}
+                    value={panel.mileageMiles}
+                    onChange={(e) => updateExpensePanel(t.id, { mileageMiles: e.target.value })}
+                    className="w-20 border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
+                  />
+                </label>
+                <label className="flex items-center gap-1 flex-1 min-w-[160px]">
+                  Business purpose
+                  <input
+                    type="text"
+                    value={panel.mileagePurpose}
+                    onChange={(e) => updateExpensePanel(t.id, { mileagePurpose: e.target.value })}
+                    className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
+                  />
+                </label>
+              </div>
+            )}
+            {meals && (
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <label className="flex items-center gap-1 flex-1 min-w-[160px]">
+                  Business purpose
+                  <input
+                    type="text"
+                    value={panel.mealPurpose}
+                    onChange={(e) => updateExpensePanel(t.id, { mealPurpose: e.target.value })}
+                    className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
+                  />
+                </label>
+                <label className="flex items-center gap-1 flex-1 min-w-[160px]">
+                  Who attended
+                  <input
+                    type="text"
+                    value={panel.mealAttendees}
+                    onChange={(e) => updateExpensePanel(t.id, { mealAttendees: e.target.value })}
+                    className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
+                  />
+                </label>
+              </div>
+            )}
+
+            {panel.categoryLabel && (
+              <WithdrawalAllocator
+                totalAmount={t.amount}
+                primaryLabel={panel.categoryLabel === "Other" ? null : panel.categoryLabel}
+                balances={categoryBalances}
+                trackedLabels={splitRulesPercent.map((r) => r.label)}
+                onChange={(allocations, complete) => updateExpensePanel(t.id, { allocations, allocationsComplete: complete })}
+              />
+            )}
+
+            {panel.error && <p className="text-xs" style={{ color: "#9C3B22" }}>{panel.error}</p>}
+
+            <div className="flex items-center gap-2">
+              <PrimaryButton onClick={() => saveExpense(t)} disabled={panel.saving} className="text-xs px-3 py-1.5">
+                {panel.saving ? "Saving…" : "Save expense"}
+              </PrimaryButton>
+              <GhostButton onClick={() => closeExpensePanel(t.id)} className="text-xs px-3 py-1.5">
+                Cancel
+              </GhostButton>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) return <p className="text-sm text-[var(--color-neutral-700)]">Loading…</p>;
@@ -564,254 +897,39 @@ export default function CloseoutPage() {
         {transactions.length === 0 ? (
           <p className="text-sm text-[var(--color-neutral-700)]">No transactions found for this month.</p>
         ) : (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {transactions.map((t) => {
-              const cat = t.confirmed_category || t.suggested_category;
-              const acc = accountsById[t.account_id];
-              const panel = expensePanels[t.id];
-              const canEdit = !isConfirmed || editingConfirmed;
-              const mileage = panel && isMileageLabel(panel.categoryLabel);
-              const meals = panel && isMealsLabel(panel.categoryLabel);
-              const linked = linkedWithdrawalsByTxnId[t.id];
-
-              // Already recorded from the Withdrawals tab as a matched
-              // card charge -- render read-only instead of the normal
-              // pills/panel, so this real expense never gets a second,
-              // conflicting category assigned to it here. Edit it from
-              // Withdrawals instead.
-              if (linked) {
-                return (
-                  <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                      <div className="min-w-[110px] flex-1">
-                        <div className="text-sm font-medium truncate">{t.name}</div>
-                        <div className="text-xs text-[var(--color-neutral-700)]">
-                          {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-mono text-[var(--color-neutral-700)]">
-                          {t.direction === "in" ? "+" : "-"}
-                          {currency(t.amount)}
-                        </span>
-                        <Link
-                          href="/withdrawals"
-                          className="text-[10px] font-semibold px-2 py-1 rounded-full"
-                          style={{
-                            fontFamily: "var(--font-heading)",
-                            letterSpacing: "0.08em",
-                            border: "1px solid var(--color-accent)",
-                            color: "var(--color-accent-700)",
-                            background: "color-mix(in srgb, var(--color-accent) 8%, transparent)",
-                          }}
-                        >
-                          Logged: {linked.allocations.length ? linked.allocations.map((a) => a.label || "Other").join(" + ") : linked.categoryLabel || "Other"}
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                    <div className="min-w-[110px] flex-1">
-                      <div className="text-sm font-medium truncate">{t.name}</div>
-                      <div className="text-xs text-[var(--color-neutral-700)]">
-                        {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-mono text-[var(--color-neutral-700)]">
-                        {t.direction === "in" ? "+" : "-"}
-                        {currency(t.amount)}
-                      </span>
-                      <div className="flex gap-1 flex-wrap justify-end">
-                        {cats.map((c) => (
-                          <button
-                            key={c.value}
-                            onClick={() => {
-                              if (!canEdit) return;
-                              // "Expense" always opens (or re-opens) the
-                              // categorization panel below instead of
-                              // saving right away -- an Expense transaction
-                              // isn't allowed to save without picking a
-                              // tracked category or "Other" first (see
-                              // saveExpense above). Every other category
-                              // (Income, W2 Income, Exclude, Business)
-                              // saves immediately, same as before.
-                              if (c.value === "expense") openExpensePanel(t.id);
-                              else {
-                                closeExpensePanel(t.id);
-                                setCategory(t.id, c.value);
-                              }
-                            }}
-                            disabled={!canEdit}
-                            className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
-                            style={{
-                              fontFamily: "var(--font-heading)",
-                              letterSpacing: "0.08em",
-                              // "Expense" doesn't get confirmed_category='expense'
-                              // until saveExpense succeeds (see comment above) --
-                              // while the categorization panel is open, treat it
-                              // as the active/highlighted pill anyway so opening
-                              // it doesn't leave a stale category (e.g. "Income")
-                              // looking selected underneath it.
-                              border: `1px solid ${
-                                cat === c.value || (c.value === "expense" && panel?.open) ? "var(--color-accent)" : "transparent"
-                              }`,
-                              color:
-                                cat === c.value || (c.value === "expense" && panel?.open)
-                                  ? "var(--color-accent-700)"
-                                  : "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                              background:
-                                cat === c.value || (c.value === "expense" && panel?.open)
-                                  ? "color-mix(in srgb, var(--color-accent) 8%, transparent)"
-                                  : "transparent",
-                            }}
-                          >
-                            {c.label}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Rightmost inline column -- only shown once this row
-                          is actually labeled Expense or Income, so it never
-                          crowds a row that doesn't need it yet. Expense gets
-                          a quick categorize dropdown (still opens/feeds the
-                          full panel below for mileage/meals/receipt/the
-                          withdrawal allocator and Save button); Income gets
-                          a free-text "who was this from" note. */}
-                      {cat === "expense" && (
-                        <select
-                          value={panel?.categoryLabel || ""}
-                          onChange={(e) => setExpenseCategoryInline(t.id, e.target.value || null)}
-                          disabled={!canEdit}
-                          className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 disabled:opacity-60"
-                        >
-                          <option value="">Categorize…</option>
-                          {splitRulesPercent.map((r) => (
-                            <option key={r.id} value={r.label}>{r.label}</option>
-                          ))}
-                          <option value="Other">Other (not tracked)</option>
-                        </select>
-                      )}
-                      {cat === "income" && (
-                        <input
-                          type="text"
-                          placeholder="Who was this from?"
-                          defaultValue={t.income_source || ""}
-                          onBlur={(e) => saveIncomeSource(t.id, e.target.value)}
-                          disabled={!canEdit}
-                          className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 w-32 disabled:opacity-60"
-                        />
-                      )}
-                    </div>
-                  </div>
-                  {panel?.open && (
-                    <div
-                      className="mt-2 p-3 space-y-2.5"
-                      style={{ background: "var(--color-neutral-100)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)" }}
-                    >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold">What category did this come out of?</span>
-                        <select
-                          value={panel.categoryLabel || ""}
-                          onChange={(e) => updateExpensePanel(t.id, { categoryLabel: e.target.value || null })}
-                          className="text-xs border border-neutral-200 rounded-lg px-2 py-1"
-                        >
-                          <option value="">Select…</option>
-                          {splitRulesPercent.map((r) => (
-                            <option key={r.id} value={r.label}>{r.label}</option>
-                          ))}
-                          <option value="Other">Other (not tracked)</option>
-                        </select>
-                      </div>
-
-                      {mileage && (
-                        <div className="flex items-center gap-2 flex-wrap text-xs">
-                          <label className="flex items-center gap-1">
-                            Miles driven
-                            <input
-                              type="number"
-                              min={0}
-                              value={panel.mileageMiles}
-                              onChange={(e) => updateExpensePanel(t.id, { mileageMiles: e.target.value })}
-                              className="w-20 border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
-                            />
-                          </label>
-                          <label className="flex items-center gap-1 flex-1 min-w-[160px]">
-                            Business purpose
-                            <input
-                              type="text"
-                              value={panel.mileagePurpose}
-                              onChange={(e) => updateExpensePanel(t.id, { mileagePurpose: e.target.value })}
-                              className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
-                            />
-                          </label>
-                        </div>
-                      )}
-                      {meals && (
-                        <div className="flex items-center gap-2 flex-wrap text-xs">
-                          <label className="flex items-center gap-1 flex-1 min-w-[160px]">
-                            Business purpose
-                            <input
-                              type="text"
-                              value={panel.mealPurpose}
-                              onChange={(e) => updateExpensePanel(t.id, { mealPurpose: e.target.value })}
-                              className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
-                            />
-                          </label>
-                          <label className="flex items-center gap-1 flex-1 min-w-[160px]">
-                            Who attended
-                            <input
-                              type="text"
-                              value={panel.mealAttendees}
-                              onChange={(e) => updateExpensePanel(t.id, { mealAttendees: e.target.value })}
-                              className="flex-1 border border-neutral-200 rounded-lg px-2 py-1"
-                            />
-                          </label>
-                        </div>
-                      )}
-
-                      {panel.categoryLabel && (
-                        <WithdrawalAllocator
-                          totalAmount={t.amount}
-                          primaryLabel={panel.categoryLabel === "Other" ? null : panel.categoryLabel}
-                          balances={categoryBalances}
-                          trackedLabels={splitRulesPercent.map((r) => r.label)}
-                          onChange={(allocations, complete) => updateExpensePanel(t.id, { allocations, allocationsComplete: complete })}
-                        />
-                      )}
-
-                      <div className="flex items-center gap-2 flex-wrap text-xs">
-                        <label className="flex items-center gap-1.5 cursor-pointer" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
-                          <Paperclip size={13} />
-                          {panel.uploading ? "Uploading…" : panel.receiptUrl ? "Receipt attached — replace" : "Attach receipt"}
-                          <input
-                            type="file"
-                            accept="image/*,application/pdf"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && uploadReceipt(t.id, e.target.files[0])}
-                          />
-                        </label>
-                      </div>
-
-                      {panel.error && <p className="text-xs" style={{ color: "#9C3B22" }}>{panel.error}</p>}
-
-                      <div className="flex items-center gap-2">
-                        <PrimaryButton onClick={() => saveExpense(t)} disabled={panel.saving} className="text-xs px-3 py-1.5">
-                          {panel.saving ? "Saving…" : "Save expense"}
-                        </PrimaryButton>
-                        <GhostButton onClick={() => closeExpensePanel(t.id)} className="text-xs px-3 py-1.5">
-                          Cancel
-                        </GhostButton>
-                      </div>
-                    </div>
-                  )}
+          <div className="space-y-6">
+            {/* Two columns instead of one shared list -- Deposits (money
+                in) and Charges (money out) each only need their own
+                category set, so a row never shows classification options
+                (or inline fields, like the old "who was this from" input)
+                that don't apply to its own direction. This includes every
+                synced credit-card charge alongside bank debits -- cards
+                aren't split out separately, just shown with their account
+                name/mask like any other row (see `acc` below). */}
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-neutral-700)" }}>
+                Deposits
+              </h3>
+              {depositTxns.length === 0 ? (
+                <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>No deposits found.</p>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {depositTxns.map((t) => renderDepositRow(t))}
                 </div>
-              );
-            })}
+              )}
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-neutral-700)" }}>
+                Charges
+              </h3>
+              {chargeTxns.length === 0 ? (
+                <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>No charges found.</p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {chargeTxns.map((t) => renderChargeRow(t))}
+                </div>
+              )}
+            </div>
           </div>
         )}
         <div className="pt-4 mt-4 border-t border-[var(--color-divider)] flex items-center justify-between">

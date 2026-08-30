@@ -5,6 +5,7 @@ import { Paperclip, ReceiptText, CreditCard } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import WithdrawalAllocator from "@/components/WithdrawalAllocator";
+import PlaidLinkButton from "@/components/PlaidLinkButton";
 
 // One place to record "I spent money" instead of it being spread across
 // category cards on the Dashboard/Accounts pages and an inline panel
@@ -235,9 +236,16 @@ export default function WithdrawalsPage() {
         {sourceType === "card" && (
           <div className="mb-4">
             {cardAccounts.length === 0 ? (
-              <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
-                No credit cards connected yet — connect one from the Accounts page, or switch to Cash expense.
-              </p>
+              <div className="text-xs p-3 flex items-center justify-between gap-3 flex-wrap" style={bloomNoticeCardStyle()}>
+                <span>No credit cards connected yet.</span>
+                <PlaidLinkButton
+                  label="Click here to connect your credit card"
+                  creditCard
+                  onLinked={load}
+                  className="text-xs px-3 py-1.5"
+                  style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700 }}
+                />
+              </div>
             ) : matchedTxnId ? (
               <div className="text-xs p-3 flex items-center justify-between gap-2" style={bloomNoticeCardStyle()}>
                 <span>
