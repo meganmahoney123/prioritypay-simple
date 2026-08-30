@@ -97,7 +97,25 @@ export default function TransfersPage() {
   // side has no linked account at all), it's pure bookkeeping.
   const resolvedFromAccountId = fromIsUnallocated ? fromAccountId : rulesByLabel[fromLabel]?.accountId || null;
   const resolvedToAccountId = toIsUnallocated ? toAccountId : rulesByLabel[toLabel]?.accountId || null;
-  const needsRealTransfer = !!resolvedFromAccountId && !!resolvedToAccountId && resolvedFromAccountId !== resolvedToAccountId;
+
+  // Two DIFFERENT rows in simple_accounts can still be the exact same
+  // real-world bank account -- most commonly when someone reconnects the
+  // same account through Plaid Link a second time and it comes back as a
+  // fresh row instead of updating the original one. Comparing by our own
+  // internal account id alone was wrongly treating "Wedding lives in Ally
+  // •••• 4487 (row A)" and "Maintenance lives in Ally •••• 4487 (row B)"
+  // as two different accounts and prompting for a real ACH transfer that
+  // would have just moved money within the same bank account. Comparing
+  // institution + mask instead catches this -- it's the same signal a
+  // person themselves would use to recognize "that's my account."
+  const accountSignature = (id) => {
+    const a = accountsById[id];
+    if (!a) return null;
+    return `${(a.institution_name || "").trim().toLowerCase()}|${(a.mask || "").trim()}`;
+  };
+  const sameRealAccount =
+    !!resolvedFromAccountId && !!resolvedToAccountId && accountSignature(resolvedFromAccountId) === accountSignature(resolvedToAccountId);
+  const needsRealTransfer = !!resolvedFromAccountId && !!resolvedToAccountId && !sameRealAccount;
 
   const resetForm = () => {
     setFromLabel("");
@@ -227,9 +245,10 @@ export default function TransfersPage() {
       <div>
         <h1 className="text-lg font-semibold mb-1">One-Time Transfer</h1>
         <p className="text-sm text-[var(--color-neutral-700)]">
-          Move money between two tracked categories — like $3,000 from Wedding to Maintenance — or in/out of
-          unallocated cash sitting in an account. This doesn&apos;t touch your automatic paycheck splits, and both
-          balances update everywhere else in PriorityPay right away.
+          Great for boosting a category with some extra unallocated cash you&apos;re sitting on, or moving money
+          straight between two categories — like $3,000 from Wedding to Maintenance. Works category to category, or
+          from unallocated into a category (and back). This doesn&apos;t touch your automatic paycheck splits, and
+          both balances update everywhere else in PriorityPay right away.
         </p>
       </div>
 
