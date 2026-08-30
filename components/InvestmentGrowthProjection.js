@@ -314,7 +314,15 @@ export default function InvestmentGrowthProjection({ title, blocks, taxNote = fa
       {/* Always laid out as a single row on wider screens -- up to three
           blocks (Investments, Solo 401k, SEP IRA) side by side -- rather
           than stacking Investments above a two-column Retirement row. */}
-      <div className={blocks.length > 1 ? "grid grid-cols-1 md:grid-cols-3 gap-6" : ""}>
+      <div
+        className={
+          blocks.length === 3
+            ? "grid grid-cols-1 md:grid-cols-3 gap-6"
+            : blocks.length === 2
+            ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+            : ""
+        }
+      >
         {blocks.map((block, i) => (
           <ProjectionBlock
             key={block.retirementType || block.group}

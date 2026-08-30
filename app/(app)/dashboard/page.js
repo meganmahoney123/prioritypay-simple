@@ -147,13 +147,6 @@ export default function DashboardPage() {
                 subHeading: "Solo 401k",
                 emptyStateText: "Once you're contributing to your Solo 401k, we'll show you where that could grow.",
               },
-              {
-                group: "Retirement",
-                retirementType: "sep_ira",
-                startingLabel: "SEP IRA",
-                subHeading: "SEP IRA",
-                emptyStateText: "Once you're contributing to your SEP IRA, we'll show you where that could grow.",
-              },
             ]}
           />
         }
@@ -185,9 +178,9 @@ export default function DashboardPage() {
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
-            Consider setting up a Solo 401k and/or SEP IRA to start contributing to retirement.{" "}
+            Consider setting up a Solo 401k to start contributing to retirement.{" "}
             <a
-              href={RETIREMENT_SETUP_LINKS.sep_ira}
+              href={RETIREMENT_SETUP_LINKS.solo_401k}
               target="_blank"
               rel="noreferrer"
               style={{ fontWeight: 600, textDecoration: "underline" }}
