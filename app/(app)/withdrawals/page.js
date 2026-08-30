@@ -52,7 +52,10 @@ export default function WithdrawalsPage() {
   const [categoryLabel, setCategoryLabel] = useState("");
   const [allocations, setAllocations] = useState([]);
   const [allocationsComplete, setAllocationsComplete] = useState(false);
-  const [sourceType, setSourceType] = useState("cash");
+  // "card" by default -- most withdrawals are matching a real synced card
+  // charge (see the card-transactions matcher below), so that's the more
+  // common starting point; Cash expense is one click away for the rest.
+  const [sourceType, setSourceType] = useState("card");
   const [matchedTxnId, setMatchedTxnId] = useState("");
   const [mileageMiles, setMileageMiles] = useState("");
   const [mileagePurpose, setMileagePurpose] = useState("");
@@ -109,7 +112,7 @@ export default function WithdrawalsPage() {
     setCategoryLabel("");
     setAllocations([]);
     setAllocationsComplete(false);
-    setSourceType("cash");
+    setSourceType("card");
     setMatchedTxnId("");
     setMileageMiles("");
     setMileagePurpose("");

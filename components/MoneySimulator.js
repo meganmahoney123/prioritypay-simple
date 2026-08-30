@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Trash2, ArrowRight } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomInputStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { CATEGORY_COLORS } from "@/lib/allocations";
@@ -88,6 +89,22 @@ export default function MoneySimulator({
 
   const dotColorFor = (id) => BLOOM_DOT_COLORS[Math.max(0, rows.findIndex((r) => r.id === id)) % BLOOM_DOT_COLORS.length];
 
+  // Same slices the old flat bar showed (each row with pct > 0, plus
+  // whatever's left unallocated), just as a pie instead -- easier to read
+  // proportions at a glance than a thin single-row bar, and matches the
+  // pie-chart language used everywhere else in the app (Dashboard,
+  // Accounts) for "how is this money split up."
+  const pieData = useMemo(() => {
+    const slices = rows
+      .filter((r) => r.pct > 0)
+      .map((r) => ({ name: r.label, value: r.pct, color: dotColorFor(r.id) }));
+    if (remainingPct > 0) {
+      slices.push({ name: "Unallocated", value: remainingPct, color: "#E4DCF9" });
+    }
+    return slices;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, remainingPct]);
+
   return (
     <div className="space-y-6">
       <Card style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", padding: "18px 22px" }}>
@@ -129,12 +146,29 @@ export default function MoneySimulator({
               {totalPct}% allocated &middot; {remainingPct}% unallocated
             </span>
           </div>
-          <div style={{ display: "flex", gap: 2, height: 12, borderRadius: 999, background: "var(--color-divider)", overflow: "hidden", marginBottom: 14 }}>
-            {rows
-              .filter((r) => r.pct > 0)
-              .map((r) => (
-                <span key={r.id} style={{ width: `${r.pct}%`, background: dotColorFor(r.id), minWidth: 2 }} />
-              ))}
+          <div style={{ height: 180, marginBottom: 14 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={48}
+                  outerRadius={72}
+                  paddingAngle={2}
+                  isAnimationActive={false}
+                  label={({ value }) => (value >= 6 ? `${value}%` : "")}
+                  labelLine={false}
+                  fontSize={10}
+                  fontWeight={700}
+                >
+                  {pieData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v, n) => [`${v}%`, n]} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
           <div className="space-y-2.5">
             {rows.map((r) => (

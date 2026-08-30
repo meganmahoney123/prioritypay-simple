@@ -247,8 +247,7 @@ export default function TransfersPage() {
         <p className="text-sm text-[var(--color-neutral-700)]">
           Great for boosting a category with some extra unallocated cash you&apos;re sitting on, or moving money
           straight between two categories — like $3,000 from Wedding to Maintenance. Works category to category, or
-          from unallocated into a category (and back). This doesn&apos;t touch your automatic paycheck splits, and
-          both balances update everywhere else in PriorityPay right away.
+          from unallocated into a category (and back).
         </p>
       </div>
 
