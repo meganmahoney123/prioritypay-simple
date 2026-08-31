@@ -147,16 +147,16 @@ export default function DashboardPage() {
                     {
                       group: "Retirement",
                       retirementType: "traditional_401k",
-                      startingLabel: "Traditional 401(k)",
-                      subHeading: "Traditional 401(k)",
-                      emptyStateText: "Once you're contributing to your Traditional 401(k), we'll show you where that could grow.",
+                      startingLabel: "401k",
+                      subHeading: "401k",
+                      emptyStateText: "Once you're contributing to your 401k, we'll show you where that could grow.",
                     },
                     {
                       group: "Retirement",
                       retirementType: "traditional_ira",
-                      startingLabel: "Traditional IRA",
-                      subHeading: "Traditional IRA",
-                      emptyStateText: "Once you're contributing to your Traditional IRA, we'll show you where that could grow.",
+                      startingLabel: "IRA",
+                      subHeading: "IRA",
+                      emptyStateText: "Once you're contributing to your IRA, we'll show you where that could grow.",
                     },
                   ]
                 : [
@@ -206,7 +206,7 @@ export default function DashboardPage() {
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
             {isW2NoSideHustle(persona)
-              ? " Consider setting up a Traditional 401(k), Traditional IRA, or HSA to start contributing to retirement."
+              ? " Consider setting up a 401k, IRA, or HSA to start contributing to retirement."
               : " Consider setting up a Solo 401k to start contributing to retirement."}{" "}
             <a
               href={isW2NoSideHustle(persona) ? RETIREMENT_SETUP_LINKS.traditional_401k : RETIREMENT_SETUP_LINKS.solo_401k}

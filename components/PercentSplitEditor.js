@@ -601,7 +601,7 @@ export default function PercentSplitEditor({
   theme,
   // Optional -- persona string (see lib/allocations.js's PERSONA_*
   // constants). Only changes behavior for W2 (No Side Hustle/Business):
-  // its Retirement group locks Traditional 401(k)/IRA/HSA instead of
+  // its Retirement group locks 401k/IRA/HSA instead of
   // Solo 401k (isCoreRow) and swaps the group's explainer copy
   // (retirementGroupSubtext). Omitted entirely == the original
   // self-employed/business-owner behavior, unchanged.

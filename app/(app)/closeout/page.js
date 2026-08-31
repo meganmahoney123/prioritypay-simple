@@ -93,7 +93,7 @@ export default function CloseoutPage() {
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
   // No self-employment income for this persona, so Solo 401k/SEP IRA
   // pitches don't apply here (see the retirement recommendation cards
-  // below) -- they get Traditional 401(k)/IRA/HSA copy instead.
+  // below) -- they get 401k/IRA/HSA copy instead.
   const isW2NoSideHustlePersona = isW2NoSideHustle(persona);
   const baseDepositCats = hasW2Income ? DEPOSIT_CATS : DEPOSIT_CATS.filter((c) => c.value !== "w2_income");
   const depositCats = isBusinessOwnerWithEmployees ? [...baseDepositCats, { value: "business", label: "Business" }] : baseDepositCats;
@@ -977,8 +977,8 @@ export default function CloseoutPage() {
             <p className="text-xs text-[var(--color-neutral-700)] mb-4">
               {isW2NoSideHustlePersona ? (
                 <>
-                  A Traditional 401(k), Traditional IRA, and HSA are the retirement (and HSA) accounts available
-                  to a W2 employee. For 2026, the elective-deferral limit relevant to a 401(k) is{" "}
+                  A 401k, IRA, and HSA are the retirement (and HSA) accounts available
+                  to a W2 employee. For 2026, the elective-deferral limit relevant to a 401k is{" "}
                   {currency(electiveDeferralLimit(recommendations.ageBracket))}.
                 </>
               ) : (
@@ -1033,7 +1033,7 @@ export default function CloseoutPage() {
                     `recommendations.retirement.length > 0` branch below. */}
                 <p className="text-xs text-[var(--color-neutral-700)]">
                   {isW2NoSideHustlePersona
-                    ? "Want a Traditional 401(k), Traditional IRA, HSA, or another retirement account?"
+                    ? "Want a 401k, IRA, HSA, or another retirement account?"
                     : "Want a SEP IRA or another retirement account instead?"}{" "}
                   <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Connect another retirement account</Link> in
                   Income Split Rules so a share of every deposit gets set aside for it automatically.
