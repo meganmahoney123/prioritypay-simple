@@ -7,6 +7,15 @@ import { bloomInputStyle, bloomSelectStyle, bloomWarningCardStyle, bloomNoticeCa
 import MfaSettings from "@/components/MfaSettings";
 import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 import DeleteAccountCard from "@/components/DeleteAccountCard";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
+
+// The persona-switch testing panel below (see /api/dev/set-persona, which
+// enforces the same allowlist server-side -- this client-side check is
+// just so the button doesn't render as a dead end for anyone else) is
+// only ever meant for Megan's own account, never a real customer's --
+// it resets whoever clicks it's split rules to a different persona's
+// defaults, which would be a genuinely bad surprise on a live account.
+const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com"]);
 
 function daysLeft(trialEndsAt) {
   if (!trialEndsAt) return null;
@@ -34,6 +43,16 @@ function SettingsPageInner() {
   // this button and could have it removed later; harmless to leave in the
   // meantime since it only ever touches the signed-in user's own data.
   const [personaSwitchBusy, setPersonaSwitchBusy] = useState(null);
+  const [canSwitchPersona, setCanSwitchPersona] = useState(false);
+
+  useEffect(() => {
+    supabaseBrowser()
+      .auth.getUser()
+      .then(({ data }) => {
+        const email = (data?.user?.email || "").toLowerCase();
+        setCanSwitchPersona(DEV_TESTING_EMAILS.has(email));
+      });
+  }, []);
 
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then((d) => {
@@ -292,6 +311,7 @@ function SettingsPageInner() {
         {saved && <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontStyle: "italic", color: "var(--color-accent-700)" }}>Saved.</span>}
       </div>
 
+      {canSwitchPersona && (
       <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Testing: switch persona</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
@@ -328,6 +348,7 @@ function SettingsPageInner() {
           ))}
         </div>
       </Card>
+      )}
 
       <DeleteAccountCard />
     </div>
