@@ -148,6 +148,20 @@ function OnboardingPageInner() {
       .auth.getUser()
       .then(({ data }) => setEmailAddress(data?.user?.email || ""));
   }, []);
+  // Testing-only "jump to any step" panel -- same account restriction
+  // pattern as Settings' persona-switch panel (DEV_TESTING_EMAILS there) --
+  // lets Megan click through every onboarding screen to eyeball it without
+  // needing to fill in real answers first, since setStep() itself has no
+  // validation gate (only the two `disabled` Continue buttons below do, and
+  // those are bypassed for this account too). Never rendered for anyone
+  // else, so nobody can skip ahead of onboarding's real required steps.
+  const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com"]);
+  const [isDevTester, setIsDevTester] = useState(false);
+  useEffect(() => {
+    supabaseBrowser()
+      .auth.getUser()
+      .then(({ data }) => setIsDevTester(DEV_TESTING_EMAILS.has((data?.user?.email || "").toLowerCase())));
+  }, []);
   // Carried over from the Money Simulator's "Start saving for this" /
   // "Set up my real accounts" buttons (see app/(app)/simulator/page.js),
   // which base64-encode the simulated split into ?sim=. Runs once on
@@ -413,6 +427,42 @@ function OnboardingPageInner() {
     }
     window.location.href = data.url;
   };
+  // Dev-only counterpart to finish() -- same /api/onboarding/complete call,
+  // but with finalize: true right away instead of routing through Stripe
+  // Checkout, so testing the onboarding flow end-to-end doesn't require a
+  // real card charge. Restricted to isDevTester, same as the jump-to-step
+  // panel above.
+  const devFinishSkipPayment = async () => {
+    setSubmitting(true);
+    setPaymentError(null);
+    const res = await fetch("/api/onboarding/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        persona: businessType,
+        businessName,
+        entityType,
+        retirementProfile: {
+          incomeHandling: isBusinessOwnerWithEmployees ? incomeHandling || "separate" : "n/a",
+          hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,
+          w2ElectiveDeferralYTD: 0,
+          ageBracket: "under50",
+          estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
+        },
+        splitRules: { percent: settleCaps(percent) },
+        minDepositThreshold,
+        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled, emailEnabled: emailAlertsEnabled },
+        finalize: true,
+      }),
+    });
+    if (!res.ok) {
+      setSubmitting(false);
+      setPaymentError("Couldn't save -- please try again.");
+      return;
+    }
+    router.push("/dashboard");
+    router.refresh();
+  };
 
   const stepCounter = step === 0 ? "Getting started" : `Step ${step} of ${STEPS.length - 1}`;
   const progress = step === 0 ? 2 : Math.min(100, step * (100 / (STEPS.length - 1)));
@@ -445,6 +495,51 @@ function OnboardingPageInner() {
 
   return (
     <div style={{ ...BLOOM_TOKENS, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {isDevTester && (
+        // Testing-only jump-to-any-step panel, visible on every step --
+        // only megan@ignitemysite.com ever sees this (see DEV_TESTING_EMAILS
+        // above). setStep() has no validation gate of its own, so this lets
+        // every screen be previewed without filling in real answers first.
+        <div
+          style={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            zIndex: 50,
+            background: "#111",
+            color: "#fff",
+            borderRadius: 10,
+            padding: "10px 12px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 6,
+            maxWidth: 280,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+          }}
+        >
+          <span style={{ width: "100%", fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Testing: jump to step</span>
+          {STEPS.map((label, i) => (
+            <button
+              key={label}
+              onClick={() => {
+                setStep(i);
+                window.scrollTo(0, 0);
+              }}
+              style={{
+                fontSize: 12,
+                padding: "4px 8px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,0.25)",
+                background: step === i ? "#fff" : "transparent",
+                color: step === i ? "#111" : "#fff",
+                cursor: "pointer",
+              }}
+            >
+              {i}. {label}
+            </button>
+          ))}
+        </div>
+      )}
       <header
         style={{
           position: "sticky",
@@ -610,7 +705,7 @@ function OnboardingPageInner() {
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} disabled={isBusinessOwnerWithEmployees && !incomeHandling} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={next} disabled={!isDevTester && isBusinessOwnerWithEmployees && !incomeHandling} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}
@@ -937,6 +1032,15 @@ function OnboardingPageInner() {
                 {submitting ? "Redirecting to checkout…" : "Continue to payment — $7/month"} &nbsp;→
               </PrimaryBtn>
             </div>
+            {isDevTester && (
+              <button
+                onClick={devFinishSkipPayment}
+                disabled={submitting}
+                style={{ marginTop: 12, width: "100%", padding: "10px 0", fontSize: 13, borderRadius: 8, border: "1px dashed color-mix(in srgb, var(--color-text) 30%, transparent)", background: "transparent", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", cursor: submitting ? "not-allowed" : "pointer" }}
+              >
+                Testing only: finish without Stripe checkout
+              </button>
+            )}
           </div>
         )}
       </main>
