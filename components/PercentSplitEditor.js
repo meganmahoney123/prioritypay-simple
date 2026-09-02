@@ -139,7 +139,7 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, persona }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, persona }) {
   const locked = isCoreRow(rule, persona);
   // Cap $ (a monthly dollar cap -- see computeAllocations in
   // lib/allocations.js) only applies to flat categories (Tax Reserve,
@@ -329,6 +329,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             )}
           </div>
         )}
+        {!hideStartingBalance && (
         <div style={{ marginTop: 4 }}>
           {showStartingBalance ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
@@ -380,6 +381,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             </button>
           )}
         </div>
+        )}
         {connecting[rule.id] && (
           <div style={{ marginTop: 10 }}>
             <PlaidLinkButton
@@ -473,6 +475,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           />
         </>
       )}
+      {!hideStartingBalance && (
       <div className="mt-2">
         {showStartingBalance ? (
           <label className="flex items-center gap-1.5 text-xs text-neutral-500">
@@ -503,6 +506,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           </button>
         )}
       </div>
+      )}
       <div className="mt-2">
         <span className="block text-xs text-neutral-500 mb-1">I want to route my money to this account:</span>
         <AccountSelect
@@ -616,6 +620,13 @@ export default function PercentSplitEditor({
   // comment on PercentRow itself. Defaults to false so Split Rules keeps
   // the existing optional-toggle behavior; onboarding passes true.
   forceShowStartingBalance = false,
+  // Fully suppresses the starting-balance field/toggle on every row,
+  // regardless of forceShowStartingBalance or whether a row already has a
+  // value -- onboarding passes this once starting balances moved to their
+  // own dedicated step (grouped by account, with live-balance validation)
+  // instead of being asked per-category here. Defaults to false so Split
+  // Rules and the old onboarding behavior are unaffected.
+  hideStartingBalance = false,
 }) {
   const overflowMessageFor = (id) => (pctOverflow && pctOverflow.id === id ? pctOverflow.message : null);
 
@@ -723,6 +734,7 @@ export default function PercentSplitEditor({
                       onAccountLinked={onAccountLinked}
                       showRowWarnings={showRowWarnings}
                       forceShowStartingBalance={forceShowStartingBalance}
+                      hideStartingBalance={hideStartingBalance}
                       overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
                       dotColor={dotColorFor(rule.id)}
@@ -766,6 +778,7 @@ export default function PercentSplitEditor({
               onAccountLinked={onAccountLinked}
               showRowWarnings={showRowWarnings}
               forceShowStartingBalance={forceShowStartingBalance}
+              hideStartingBalance={hideStartingBalance}
               overflowMessage={overflowMessageFor(section.row.id)}
               theme="ledger"
               dotColor={dotColorFor(section.row.id)}
@@ -841,6 +854,7 @@ export default function PercentSplitEditor({
                   onAccountLinked={onAccountLinked}
                   showRowWarnings={showRowWarnings}
                   forceShowStartingBalance={forceShowStartingBalance}
+                  hideStartingBalance={hideStartingBalance}
                   overflowMessage={overflowMessageFor(rule.id)}
                   persona={persona}
                 />
@@ -867,6 +881,7 @@ export default function PercentSplitEditor({
             onAccountLinked={onAccountLinked}
             showRowWarnings={showRowWarnings}
             forceShowStartingBalance={forceShowStartingBalance}
+            hideStartingBalance={hideStartingBalance}
             overflowMessage={overflowMessageFor(section.row.id)}
             persona={persona}
           />

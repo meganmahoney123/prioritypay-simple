@@ -43,7 +43,14 @@ const ONBOARDING_LIVE = true;
 // opt into the same look via a `theme="ledger"` prop rather than being
 // forked, so the standalone Split Rules page (which reuses several of the
 // same components) keeps its original appearance untouched.
-const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Deposit Alerts", "Review"];
+// "Review" was dropped (Sept 2026) -- it added one more click with nothing
+// actionable on it (everything shown was already visible/editable on
+// earlier steps), so it was pure friction right before checkout. Payment
+// now happens from the last real step (Deposit Alerts) instead. "Starting
+// Balances" is new, inserted right after Percentage Splits -- see the
+// step === 4 block below for why it needed its own dedicated step rather
+// than staying folded into each category row on Percentage Splits.
+const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Starting Balances", "Deposit Alerts"];
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -338,6 +345,54 @@ function OnboardingPageInner() {
   };
   const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
 
+  // Step 4 (Starting Balances) -- live balance + market-based flag per
+  // connected account, fetched from the same route the Accounts page's
+  // per-account pie charts use (GET /api/allocations/account-balances).
+  // `percent` itself (already linked to accounts by the time someone
+  // reaches this step -- see saveSplitRulesNow, called on every accountId
+  // change) stays the source of truth for WHICH categories to list under
+  // each account; this fetch only supplies each account's live balance and
+  // whether it's market-based (a real brokerage/401k/IRA connected
+  // directly, as opposed to a plain savings account being used to HOLD
+  // money before an end-of-month transfer into a real retirement account --
+  // see PERSONA_* comments in lib/allocations.js). Market-based accounts
+  // are skipped entirely here since their balance already comes from Plaid
+  // live, not a starting-balance guess; a savings account holding money
+  // for e.g. a Solo 401k is NOT market-based, so it still shows.
+  const [accountBalances, setAccountBalances] = useState([]);
+  const [balancesLoading, setBalancesLoading] = useState(false);
+  useEffect(() => {
+    if (step !== 4) return;
+    setBalancesLoading(true);
+    fetch("/api/allocations/account-balances")
+      .then((r) => r.json())
+      .then((data) => setAccountBalances(data.accounts || []))
+      .finally(() => setBalancesLoading(false));
+    // Only re-fetch on entering this step, not on every percent/accounts
+    // change -- categories already save immediately as they're linked
+    // (saveSplitRulesNow), so the live balances just need to be current as
+    // of arriving here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+  const accountNameById = {};
+  accounts.forEach((a) => {
+    accountNameById[a.id] = `${a.institution_name || "Bank"} ${a.account_name || "Account"}${a.mask ? ` •••• ${a.mask}` : ""}`;
+  });
+  const startingBalanceGroups = accountBalances
+    .filter((entry) => !entry.isMarketBased)
+    .map((entry) => ({
+      ...entry,
+      rows: percent.filter((r) => r.accountId === entry.accountId),
+    }))
+    .filter((g) => g.rows.length > 0);
+  const startingBalanceOverBudget = startingBalanceGroups.some((g) => {
+    if (g.accountBalance === null) return false;
+    const sum = g.rows.reduce((s, r) => s + (Number(r.startingBalance) || 0), 0);
+    return sum > g.accountBalance;
+  });
+  const formatMoney = (n) =>
+    Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
   // Same "add your own category" capability as Split Rules -- Wedding,
   // College Fund, Hobbies, Profit, or literally anything else -- available
   // right in onboarding instead of only after finishing it. New rows start
@@ -615,24 +670,13 @@ function OnboardingPageInner() {
         {step === 1 && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Tell us about your business
+              Tell us about yourself
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 34px" }} />
             <div style={{ display: "grid", gap: 26 }}>
               <div>
                 <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                  Business name
-                </label>
-                <input
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="Business name"
-                  style={bloomInputStyle({ fontSize: 16 })}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                  Business type
+                  Select one
                 </label>
                 <select
                   value={businessType}
@@ -727,11 +771,11 @@ function OnboardingPageInner() {
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 12px" }}>
               PriorityPay can only tell you to split a deposit it actually sees. Connect every bank account
-              you could receive a client payment into. You can always add more inside the dashboard.
+              you could receive a payment from. You can always add more inside the dashboard.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              Also connect any credit cards you use for business spending — Close Out uses those to catch
-              expenses that never touch a bank account, so your tax reserve and category tracking stay accurate.
+              Also connect any credit cards. This will help you track expenses which will help you keep
+              balances accurate.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
               <PlaidLinkButton
@@ -877,7 +921,7 @@ function OnboardingPageInner() {
               pctOverflow={pctOverflow}
               hideCapDetails
               theme="ledger"
-              forceShowStartingBalance
+              hideStartingBalance
               persona={businessType}
             />
 
@@ -960,6 +1004,111 @@ function OnboardingPageInner() {
         )}
 
         {step === 4 && (
+          <div style={{ maxWidth: "40em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Starting balances
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
+              For each account you connected, tell us how much of its current balance is already set aside
+              for each category below (enter 0 if none). This keeps every category&apos;s balance accurate
+              from day one, instead of starting everything at $0 when there&apos;s really money already there.
+            </p>
+            {balancesLoading && (
+              <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                Loading your connected accounts…
+              </p>
+            )}
+            {!balancesLoading && startingBalanceGroups.length === 0 && (
+              <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                Nothing to set here yet — none of your connected accounts have categories linked to them.
+              </p>
+            )}
+            {!balancesLoading &&
+              startingBalanceGroups.map((group) => {
+                const sum = group.rows.reduce((s, r) => s + (Number(r.startingBalance) || 0), 0);
+                const over = group.accountBalance !== null && sum > group.accountBalance;
+                return (
+                  <div
+                    key={group.accountId}
+                    style={{
+                      border: `1px solid ${over ? "#b3261e" : "var(--color-divider)"}`,
+                      borderRadius: "var(--radius-md)",
+                      padding: "18px 20px",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, marginBottom: 14 }}>
+                      <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 600 }}>
+                        {accountNameById[group.accountId] || "Connected account"}
+                      </span>
+                      <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                        {group.accountBalance === null ? "" : `${formatMoney(group.accountBalance)} live balance`}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {group.rows.map((r) => (
+                        <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                          <span style={{ fontSize: 14.5 }}>{r.label}</span>
+                          <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                            <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                            <input
+                              type="number"
+                              onFocus={(e) => e.target.select()}
+                              min={0}
+                              step={1}
+                              placeholder="0"
+                              value={r.startingBalance ?? ""}
+                              onChange={(e) => updatePercent(r.id, { startingBalance: e.target.value.replace(/^0+(?=\d)/, "") })}
+                              style={{
+                                width: 100,
+                                textAlign: "right",
+                                fontFamily: "var(--font-heading)",
+                                fontSize: 15,
+                                color: "var(--color-text)",
+                                background: "transparent",
+                                border: 0,
+                                borderBottom: "1px solid var(--color-divider)",
+                                padding: "3px 2px",
+                              }}
+                            />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {over && (
+                      <p style={{ fontSize: 13, color: "#b3261e", margin: "12px 0 0" }}>
+                        That adds up to {formatMoney(sum)}, more than this account&apos;s real balance of{" "}
+                        {formatMoney(group.accountBalance)}. Please adjust so the total is{" "}
+                        {formatMoney(group.accountBalance)} or less.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={next} disabled={startingBalanceOverBudget} flex>Continue &nbsp;→</PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && confirmingPayment && (
+          <div style={{ maxWidth: "34em", margin: "0 auto", textAlign: "center" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
+              Confirming your payment…
+            </h1>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+              One moment — you&apos;ll land in your dashboard as soon as this is done.
+            </p>
+          </div>
+        )}
+
+        {/* Last real step -- "Review and finish" was dropped (Sept 2026,
+            see the STEPS comment above), so this step's own Continue button
+            now IS what kicks off payment (finish()) instead of just
+            advancing to a review page first. */}
+        {step === 5 && !confirmingPayment && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Get emailed the moment a deposit lands
@@ -1007,46 +1156,7 @@ function OnboardingPageInner() {
                 </p>
               </div>
             )}
-            <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
-              <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} flex>Continue &nbsp;→</PrimaryBtn>
-            </div>
-          </div>
-        )}
-
-        {step === 5 && confirmingPayment && (
-          <div style={{ maxWidth: "34em", margin: "0 auto", textAlign: "center" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
-              Confirming your payment…
-            </h1>
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-              One moment — you&apos;ll land in your dashboard as soon as this is done.
-            </p>
-          </div>
-        )}
-
-        {step === 5 && !confirmingPayment && (
-          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Review and finish
-            </h1>
-            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 34px" }}>
-              You can change any percentage, account, or category later from Split Rules.
-            </p>
-            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", padding: "6px 24px 8px" }}>
-              {[
-                { label: "You are", value: businessType },
-                { label: "Accounts linked", value: String(accounts.length) },
-                { label: "Percentages set", value: `${totalPct}%` },
-              ].map((r) => (
-                <div key={r.label} style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 24, padding: "16px 0", borderBottom: "1px solid color-mix(in srgb, var(--color-text) 8%, transparent)" }}>
-                  <span style={{ fontSize: 15, color: "color-mix(in srgb, var(--color-text) 66%, transparent)" }}>{r.label}</span>
-                  <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, textAlign: "right", fontVariantNumeric: "lining-nums tabular-nums" }}>{r.value}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 24, paddingTop: 24 }}>
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
                 PriorityPay is $7/month, billed today to get started. You&apos;ll enter payment details on
                 Stripe&apos;s secure checkout page next, and can cancel anytime from Settings.
