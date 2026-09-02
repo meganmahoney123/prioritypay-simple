@@ -50,6 +50,15 @@ export async function POST(request) {
       // all rather than phoneNumber (there's no phone number to gate on
       // for this channel).
       ...(notif.emailEnabled !== undefined ? { email_notifications_enabled: Boolean(notif.emailEnabled) } : {}),
+      // Optional override address for email alerts (PHASE R, supabase/
+      // schema.sql) -- e.g. a bookkeeper or assistant's inbox instead of
+      // the account's own login email. Only ever written when onboarding
+      // actually sent a value, same "only set what was asked" pattern as
+      // emailEnabled above; empty/whitespace-only normalizes to null
+      // (meaning "use my account login email," the original default).
+      ...(notif.alertEmail !== undefined
+        ? { alert_email: typeof notif.alertEmail === "string" && notif.alertEmail.trim() ? notif.alertEmail.trim() : null }
+        : {}),
       ...(finalize === false ? {} : { onboarded: true }),
     })
     .eq("id", user.id);

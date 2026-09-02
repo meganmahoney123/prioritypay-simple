@@ -586,3 +586,14 @@ create index if not exists simple_withdrawal_allocations_label_idx on simple_wit
 -- reasoning as PHASE M's original design: one number, whichever
 -- channel(s) are currently active read it.
 alter table simple_profiles add column if not exists email_notifications_enabled boolean not null default true;
+
+-- PHASE R: optional separate alert-email address
+-- Deposit email alerts (PHASE Q above) always went to the account's own
+-- login email, fetched from auth.users, with nothing to fill in. Some
+-- people want alerts to go somewhere else instead -- e.g. a bookkeeper or
+-- assistant's inbox -- so this adds one nullable override column. NULL
+-- (the default -- nobody has to touch this) means "keep using the login
+-- email," exactly the old behavior; a value here means "send alerts to
+-- this address instead." See lib/runSplit.js's email-alert block, which
+-- now prefers this column over auth.users' email when set.
+alter table simple_profiles add column if not exists alert_email text;

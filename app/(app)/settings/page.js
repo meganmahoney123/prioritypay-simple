@@ -227,6 +227,29 @@ function SettingsPageInner() {
           />
           <span style={{ fontSize: 15 }}>Email me when a deposit crosses my threshold</span>
         </label>
+        {!!profile.notifications?.emailEnabled && (
+          <div style={{ maxWidth: 340, marginBottom: 20 }}>
+            <label
+              style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
+            >
+              Send alerts to
+            </label>
+            <input
+              type="email"
+              value={profile.notifications?.alertEmail ?? ""}
+              onChange={(e) => {
+                setSaved(false);
+                setProfile((p) => ({ ...p, notifications: { ...p.notifications, alertEmail: e.target.value } }));
+              }}
+              placeholder="you@example.com"
+              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
+            />
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
+              Defaults to your account email — change it if you&apos;d rather alerts go somewhere else, like a
+              bookkeeper or assistant&apos;s inbox.
+            </p>
+          </div>
+        )}
         <div style={{ maxWidth: 220 }}>
           <label
             style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}

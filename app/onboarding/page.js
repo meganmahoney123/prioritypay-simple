@@ -144,10 +144,20 @@ function OnboardingPageInner() {
   // fetched once on mount via Supabase auth rather than asked again here.
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [emailAddress, setEmailAddress] = useState("");
+  // Where alerts actually get sent -- defaults to the account's own login
+  // email (below), same as before, but editable so someone can point
+  // alerts at a bookkeeper or assistant's inbox instead. Only ever
+  // overwritten by the emailAddress fetch below if it's still empty, so
+  // typing here before that fetch resolves is never clobbered.
+  const [alertEmail, setAlertEmail] = useState("");
   useEffect(() => {
     supabaseBrowser()
       .auth.getUser()
-      .then(({ data }) => setEmailAddress(data?.user?.email || ""));
+      .then(({ data }) => {
+        const email = data?.user?.email || "";
+        setEmailAddress(email);
+        setAlertEmail((prev) => prev || email);
+      });
   }, []);
   // Testing-only "jump to any step" panel -- same account restriction
   // pattern as Settings' persona-switch panel (DEV_TESTING_EMAILS there) --
@@ -415,7 +425,7 @@ function OnboardingPageInner() {
         },
         splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
-        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled, emailEnabled: emailAlertsEnabled },
+        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled, emailEnabled: emailAlertsEnabled, alertEmail },
         finalize: false,
       }),
     });
@@ -452,7 +462,7 @@ function OnboardingPageInner() {
         },
         splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
-        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled, emailEnabled: emailAlertsEnabled },
+        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled, emailEnabled: emailAlertsEnabled, alertEmail },
         finalize: true,
       }),
     });
@@ -963,8 +973,8 @@ function OnboardingPageInner() {
                 rebuild. */}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
               PriorityPay emails you the moment a qualifying deposit lands, with a link straight to your split
-              checklist — that&apos;s how you actually confirm and send each transfer. We&apos;ll send it to your
-              account email{emailAddress ? `, ${emailAddress}` : ""} — nothing else to enter here.
+              checklist. That&apos;s how you actually confirm and send each transfer. We&apos;ll send it to your
+              account email{emailAddress ? `, ${emailAddress}` : ""}.
             </p>
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 16 }}>
               <input
@@ -977,6 +987,26 @@ function OnboardingPageInner() {
                 Email me when a deposit crosses my threshold
               </span>
             </label>
+            {emailAlertsEnabled && (
+              <div style={{ marginTop: 24, maxWidth: 340 }}>
+                <label
+                  style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
+                >
+                  Send alerts to
+                </label>
+                <input
+                  type="email"
+                  value={alertEmail}
+                  onChange={(e) => setAlertEmail(e.target.value)}
+                  placeholder={emailAddress || "you@example.com"}
+                  style={bloomInputStyle({ fontSize: 16 })}
+                />
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
+                  Defaults to your account email — change it if you&apos;d rather alerts go somewhere else, like a
+                  bookkeeper or assistant&apos;s inbox.
+                </p>
+              </div>
+            )}
             <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
               <BackBtn onClick={back} />
               <PrimaryBtn onClick={next} flex>Continue &nbsp;→</PrimaryBtn>

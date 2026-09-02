@@ -33,6 +33,9 @@ export async function GET() {
         // Same column as smsThreshold below -- see PHASE Q, supabase/
         // schema.sql -- both channels share one dollar threshold.
         emailEnabled: data.email_notifications_enabled,
+        // Optional override address for email alerts (PHASE R) -- null
+        // means "use my account login email," same as before this existed.
+        alertEmail: data.alert_email || null,
         smsThreshold: data.sms_threshold === null ? null : Number(data.sms_threshold),
       },
       minDepositThreshold: Number(data.min_deposit_threshold ?? 50),
@@ -71,6 +74,9 @@ export async function PUT(request) {
       phone_number: notif.phoneNumber || null,
       sms_notifications_enabled: Boolean(notif.smsEnabled),
       email_notifications_enabled: Boolean(notif.emailEnabled),
+      // Trimmed, and empty string normalized to null (meaning "use my
+      // account login email") rather than stored as a blank string.
+      alert_email: typeof notif.alertEmail === "string" && notif.alertEmail.trim() ? notif.alertEmail.trim() : null,
       sms_threshold: notif.smsThreshold === "" || notif.smsThreshold === undefined ? null : notif.smsThreshold,
       ...(body.minDepositThreshold === undefined
         ? {}
