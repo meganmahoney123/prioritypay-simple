@@ -6,6 +6,7 @@ import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
+import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
 import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, isEmployerRetirementRow, roundPct } from "@/lib/allocations";
 
 // Purple ramp used for each row's colour dot in the Bloom-styled ("ledger"
@@ -166,6 +167,10 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   const [showStartingBalance, setShowStartingBalance] = useState(
     forceShowStartingBalance || (rule.startingBalance !== null && rule.startingBalance !== undefined && rule.startingBalance !== "")
   );
+  // "Not sure" link under the employer-contribution checkbox -- opens
+  // EmployerCheckEmailModal so someone who genuinely doesn't know can
+  // draft an email to HR/payroll instead of guessing at the checkbox.
+  const [showEmployerCheckModal, setShowEmployerCheckModal] = useState(false);
 
   if (theme === "ledger") {
     return (
@@ -274,6 +279,28 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             />
             My employer already pulls money from my paycheck for this
           </label>
+        )}
+        {isEmployerRetirementRow(rule) && (
+          <button
+            type="button"
+            onClick={() => setShowEmployerCheckModal(true)}
+            style={{
+              display: "block",
+              fontFamily: "var(--font-heading)",
+              fontWeight: 600,
+              fontSize: 13,
+              color: "var(--color-accent)",
+              background: "transparent",
+              border: 0,
+              padding: "6px 0 0 23px",
+              cursor: "pointer",
+            }}
+          >
+            Not sure?
+          </button>
+        )}
+        {showEmployerCheckModal && (
+          <EmployerCheckEmailModal label={rule.label} onClose={() => setShowEmployerCheckModal(false)} />
         )}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p
@@ -494,6 +521,18 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           />
           My employer already pulls money from my paycheck for this
         </label>
+      )}
+      {isEmployerRetirementRow(rule) && (
+        <button
+          type="button"
+          onClick={() => setShowEmployerCheckModal(true)}
+          className="block text-xs font-medium text-emerald-700 mt-1 ml-5"
+        >
+          Not sure?
+        </button>
+      )}
+      {showEmployerCheckModal && (
+        <EmployerCheckEmailModal label={rule.label} onClose={() => setShowEmployerCheckModal(false)} />
       )}
       {!isGrouped && (
         <>
