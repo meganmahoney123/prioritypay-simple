@@ -214,6 +214,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 min={0}
                 max={100}
                 value={rule.pct}
+                disabled={isEmployerRetirementRow(rule) && rule.employerHandles}
                 onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
                 style={{
                   width: 40,
@@ -225,6 +226,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                   background: "transparent",
                   border: 0,
                   padding: "4px 2px",
+                  opacity: isEmployerRetirementRow(rule) && rule.employerHandles ? 0.5 : 1,
                 }}
               />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "#4E22B8" }}>%</span>
@@ -258,6 +260,20 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
         {(rule.retirementType || (rule.group || "").startsWith("Retirement")) && (
           <RetirementNote label={rule.label} theme="ledger" isEmployer={isEmployerRetirementRow(rule)} />
+        )}
+        {isEmployerRetirementRow(rule) && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={!!rule.employerHandles}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                onUpdate(rule.id, checked ? { employerHandles: true, pct: 0 } : { employerHandles: false });
+              }}
+              style={{ width: 15, height: 15 }}
+            />
+            My employer already pulls money from my paycheck for this
+          </label>
         )}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p
@@ -450,8 +466,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           min={0}
           max={100}
           value={rule.pct}
+          disabled={isEmployerRetirementRow(rule) && rule.employerHandles}
           onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
-          className="w-14 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
+          className="w-14 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center disabled:opacity-50"
         />
         <span className="text-xs text-neutral-500">%</span>
         {!locked && (
@@ -464,6 +481,20 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       {rule.retirementType || (rule.group || "").startsWith("Retirement") ? (
         <RetirementNote label={rule.label} isEmployer={isEmployerRetirementRow(rule)} />
       ) : null}
+      {isEmployerRetirementRow(rule) && (
+        <label className="flex items-center gap-2 mt-2 text-xs text-neutral-600 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!!rule.employerHandles}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              onUpdate(rule.id, checked ? { employerHandles: true, pct: 0 } : { employerHandles: false });
+            }}
+            className="w-3.5 h-3.5"
+          />
+          My employer already pulls money from my paycheck for this
+        </label>
+      )}
       {!isGrouped && (
         <>
           <CapField
