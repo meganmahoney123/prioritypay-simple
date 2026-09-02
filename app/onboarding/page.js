@@ -708,7 +708,7 @@ function OnboardingPageInner() {
                       style={bloomInputStyle({ fontSize: 16 })}
                     />
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
-                      A ballpark is fine — this only shapes what a SEP IRA would cost you once your team&apos;s
+                      A ballpark is fine. This only shapes what a SEP IRA would cost you once your team&apos;s
                       required share is included. Adjustable anytime.
                     </p>
                   </div>
@@ -742,7 +742,7 @@ function OnboardingPageInner() {
                       ))}
                     </div>
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
-                      Either way, every transaction stays individually correctable later — this just sets a
+                      Either way, every transaction stays individually correctable later. This just sets a
                       sensible starting default.
                     </p>
                   </div>
@@ -1144,7 +1144,7 @@ function OnboardingPageInner() {
                   style={bloomInputStyle({ fontSize: 16 })}
                 />
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
-                  Defaults to your account email — change it if you&apos;d rather alerts go somewhere else, like a
+                  Defaults to your account email. You can change it if you&apos;d rather alerts go somewhere else, like a
                   bookkeeper or assistant&apos;s inbox.
                 </p>
               </div>

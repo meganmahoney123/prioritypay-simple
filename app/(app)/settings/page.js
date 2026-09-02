@@ -245,7 +245,7 @@ function SettingsPageInner() {
               style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
             />
             <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
-              Defaults to your account email — change it if you&apos;d rather alerts go somewhere else, like a
+              Defaults to your account email. You can change it if you&apos;d rather alerts go somewhere else, like a
               bookkeeper or assistant&apos;s inbox.
             </p>
           </div>
