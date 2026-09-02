@@ -30,6 +30,9 @@ export async function GET() {
       notifications: {
         phoneNumber: data.phone_number,
         smsEnabled: data.sms_notifications_enabled,
+        // Same column as smsThreshold below -- see PHASE Q, supabase/
+        // schema.sql -- both channels share one dollar threshold.
+        emailEnabled: data.email_notifications_enabled,
         smsThreshold: data.sms_threshold === null ? null : Number(data.sms_threshold),
       },
       minDepositThreshold: Number(data.min_deposit_threshold ?? 50),
@@ -67,6 +70,7 @@ export async function PUT(request) {
       estimated_employee_payroll: rp.estimatedEmployeePayroll ?? null,
       phone_number: notif.phoneNumber || null,
       sms_notifications_enabled: Boolean(notif.smsEnabled),
+      email_notifications_enabled: Boolean(notif.emailEnabled),
       sms_threshold: notif.smsThreshold === "" || notif.smsThreshold === undefined ? null : notif.smsThreshold,
       ...(body.minDepositThreshold === undefined
         ? {}

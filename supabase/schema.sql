@@ -567,3 +567,22 @@ create index if not exists simple_withdrawal_allocations_label_idx on simple_wit
 -- there either -- retirement_type was always a plain nullable text column
 -- with no CHECK constraint, just a documented convention (see
 -- RETIREMENT_LABELS in lib/allocations.js for the authoritative list).
+
+-- PHASE Q: email deposit alerts (SMS on hold pending Twilio approval)
+-- Twilio's A2P 10DLC business verification is stuck (D&B/DUNS secondary
+-- vetting), so text alerts and the phone-number ask are hidden from
+-- onboarding/Settings for the time being -- see SMS_ALERTS_ENABLED in
+-- lib/runSplit.js. Email alerts (lib/email.js's sendDepositAlertEmail)
+-- are standing in as the notification channel that doesn't require the
+-- app or a phone number in the meantime, sent to the account's own login
+-- email (auth.users, fetched via the admin API) rather than a separately
+-- collected address.
+--
+-- sms_notifications_enabled/phone_number/sms_threshold are all left
+-- exactly as they were -- nothing here deletes or repurposes them, so
+-- flipping SMS_ALERTS_ENABLED back to true once Twilio clears needs no
+-- further schema work. email_notifications_enabled shares sms_threshold
+-- as its dollar threshold rather than getting its own column, same
+-- reasoning as PHASE M's original design: one number, whichever
+-- channel(s) are currently active read it.
+alter table simple_profiles add column if not exists email_notifications_enabled boolean not null default true;

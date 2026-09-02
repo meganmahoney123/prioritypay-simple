@@ -43,6 +43,13 @@ export async function POST(request) {
       // currently possible, but a real future path) never gets silently
       // re-enrolled just by finishing onboarding.
       ...(notif.phoneNumber ? { sms_notifications_enabled: Boolean(notif.smsEnabled) } : {}),
+      // Email alerts standing in for SMS while Twilio's stuck (see
+      // SMS_ALERTS_ENABLED, lib/runSplit.js) -- same "only ever set it
+      // when the onboarding step actually asked" pattern as smsEnabled
+      // above, keyed on whether `notifications.emailEnabled` was sent at
+      // all rather than phoneNumber (there's no phone number to gate on
+      // for this channel).
+      ...(notif.emailEnabled !== undefined ? { email_notifications_enabled: Boolean(notif.emailEnabled) } : {}),
       ...(finalize === false ? {} : { onboarded: true }),
     })
     .eq("id", user.id);

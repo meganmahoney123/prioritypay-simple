@@ -199,65 +199,54 @@ function SettingsPageInner() {
         </div>
       </Card>
 
+      {/* Text alerts are temporarily on hold while Twilio's business
+          verification is stuck (see SMS_ALERTS_ENABLED, lib/runSplit.js)
+          -- this card asked for a phone number + smsEnabled toggle
+          before; that state/logic is untouched elsewhere (see
+          profile.notifications?.smsEnabled/phoneNumber, still read/written
+          by /api/profile), just not exposed in this UI right now. Email
+          alerts stand in below, sharing the same smsThreshold dollar
+          figure. Bringing text alerts back is restoring this card's JSX
+          from git history plus flipping SMS_ALERTS_ENABLED, not a rebuild. */}
       <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit text alerts</h2>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit email alerts</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-          PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
-          checklist — this is on by default once you add a phone number below, since it&apos;s how you&apos;ll
-          know there&apos;s something waiting on you, but you can turn it off anytime.
+          PriorityPay emails you the moment a qualifying deposit lands, with a link straight to your split
+          checklist — sent to your account email, on by default, and you can turn it off anytime.
         </p>
         <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
           <input
             type="checkbox"
-            checked={!!profile.notifications?.smsEnabled}
+            checked={!!profile.notifications?.emailEnabled}
             onChange={(e) => {
               setSaved(false);
-              setProfile((p) => ({ ...p, notifications: { ...p.notifications, smsEnabled: e.target.checked } }));
+              setProfile((p) => ({ ...p, notifications: { ...p.notifications, emailEnabled: e.target.checked } }));
             }}
             style={{ width: 16, height: 16 }}
           />
-          <span style={{ fontSize: 15 }}>Text me when a deposit crosses my threshold</span>
+          <span style={{ fontSize: 15 }}>Email me when a deposit crosses my threshold</span>
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label
-              style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-            >
-              Phone number
-            </label>
-            <input
-              type="tel"
-              placeholder="+15551234567"
-              value={profile.notifications?.phoneNumber || ""}
-              onChange={(e) => {
-                setSaved(false);
-                setProfile((p) => ({ ...p, notifications: { ...p.notifications, phoneNumber: e.target.value } }));
-              }}
-              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
-            />
-          </div>
-          <div>
-            <label
-              style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-            >
-              Threshold ($)
-            </label>
-            <input
-              type="number"
-              onFocus={(e) => e.target.select()}
-              min="0"
-              step="1"
-              placeholder="500"
-              value={profile.notifications?.smsThreshold ?? ""}
-              onChange={(e) => {
-                setSaved(false);
-                const v = e.target.value === "" ? "" : Number(e.target.value);
-                setProfile((p) => ({ ...p, notifications: { ...p.notifications, smsThreshold: v } }));
-              }}
-              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
-            />
-          </div>
+        <div style={{ maxWidth: 220 }}>
+          <label
+            style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
+          >
+            Threshold ($)
+          </label>
+          <input
+            type="number"
+            onFocus={(e) => e.target.select()}
+            min="0"
+            step="1"
+            placeholder="500"
+            value={profile.notifications?.smsThreshold ?? ""}
+            onChange={(e) => {
+              setSaved(false);
+              const v = e.target.value === "" ? "" : Number(e.target.value);
+              setProfile((p) => ({ ...p, notifications: { ...p.notifications, smsThreshold: v } }));
+            }}
+            style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
+          />
         </div>
       </Card>
 

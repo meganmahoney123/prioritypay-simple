@@ -8,7 +8,12 @@ import PercentSplitEditor from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
-import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
+// isValidUSPhone no longer used here -- the phone-number step is
+// temporarily out of onboarding (see the step === 4 note below) -- still
+// imported/used server-side and would come back with that step, so
+// lib/phone.js itself is untouched.
+import { normalizeUSPhone } from "@/lib/phone";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 // Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
@@ -131,6 +136,18 @@ function OnboardingPageInner() {
   // depending on a Settings visit nobody's prompted to make.
   const [phoneNumber, setPhoneNumber] = useState("");
   const [smsEnabled, setSmsEnabled] = useState(true);
+  // Text alerts are on hold while Twilio's business verification is stuck
+  // -- see SMS_ALERTS_ENABLED, lib/runSplit.js. Email alerts stand in for
+  // the phone-number ask in the meantime, sent to the account's own login
+  // email (no separate field to fill in) -- see emailAddress below,
+  // fetched once on mount via Supabase auth rather than asked again here.
+  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
+  const [emailAddress, setEmailAddress] = useState("");
+  useEffect(() => {
+    supabaseBrowser()
+      .auth.getUser()
+      .then(({ data }) => setEmailAddress(data?.user?.email || ""));
+  }, []);
   // Carried over from the Money Simulator's "Start saving for this" /
   // "Set up my real accounts" buttons (see app/(app)/simulator/page.js),
   // which base64-encode the simulated split into ?sim=. Runs once on
@@ -383,7 +400,7 @@ function OnboardingPageInner() {
         },
         splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
-        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled },
+        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled, emailEnabled: emailAlertsEnabled },
         finalize: false,
       }),
     });
@@ -841,45 +858,34 @@ function OnboardingPageInner() {
         {step === 4 && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Get texted the moment a deposit lands
+              Get emailed the moment a deposit lands
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            {/* Text alerts are temporarily on hold (see the same note in
+                app/(app)/settings/page.js) -- this step asked for a phone
+                number before; the phoneNumber/smsEnabled state and
+                validation above are left in place, untouched, so bringing
+                that step back later is a quick revert rather than a
+                rebuild. */}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
-              checklist — that text is how you actually confirm and send each transfer, so a working phone
-              number is required to finish setting up your account. We only support U.S. mobile numbers right
-              now.
+              PriorityPay emails you the moment a qualifying deposit lands, with a link straight to your split
+              checklist — that&apos;s how you actually confirm and send each transfer. We&apos;ll send it to your
+              account email{emailAddress ? `, ${emailAddress}` : ""} — nothing else to enter here.
             </p>
-            <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-              Phone number
-            </label>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="(555) 123-4567"
-              style={bloomInputStyle({ fontSize: 16, marginBottom: 10 })}
-            />
-            {phoneNumber && !isValidUSPhone(phoneNumber) && (
-              <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b3261e", margin: "0 0 16px" }}>
-                That doesn&apos;t look like a valid U.S. phone number — enter 10 digits, with or without
-                formatting.
-              </p>
-            )}
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 16 }}>
               <input
                 type="checkbox"
-                checked={smsEnabled}
-                onChange={(e) => setSmsEnabled(e.target.checked)}
+                checked={emailAlertsEnabled}
+                onChange={(e) => setEmailAlertsEnabled(e.target.checked)}
                 style={{ width: 16, height: 16 }}
               />
               <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                Text me when a deposit crosses my threshold
+                Email me when a deposit crosses my threshold
               </span>
             </label>
             <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} disabled={!isValidUSPhone(phoneNumber)} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={next} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}
