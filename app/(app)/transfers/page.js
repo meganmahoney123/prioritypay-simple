@@ -263,7 +263,7 @@ export default function TransfersPage() {
             className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
           >
             <option value="">Select…</option>
-            <option value={UNALLOCATED}>Unallocated (cash not in a category)</option>
+            <option value={UNALLOCATED}>Unallocated</option>
             {fromOptions.map((r) => (
               <option key={r.id} value={r.label}>
                 {r.label} — {currency(categoryBalances[r.label] || 0)} available
@@ -310,7 +310,7 @@ export default function TransfersPage() {
             className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
           >
             <option value="">Select…</option>
-            <option value={UNALLOCATED}>Unallocated (cash not in a category)</option>
+            <option value={UNALLOCATED}>Unallocated</option>
             {toOptions.map((r) => (
               <option key={r.id} value={r.label}>
                 {r.label} — {currency(categoryBalances[r.label] || 0)} available
