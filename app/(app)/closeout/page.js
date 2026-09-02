@@ -12,7 +12,7 @@ import WithdrawalAllocator from "@/components/WithdrawalAllocator";
 import TaxSummarySection from "@/components/TaxSummarySection";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
-import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, isW2NoSideHustle } from "@/lib/allocations";
+import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, pickUniqueColor, isW2NoSideHustle } from "@/lib/allocations";
 
 function defaultPeriod() {
   const now = new Date();
@@ -500,7 +500,7 @@ export default function CloseoutPage() {
       pct: Math.max(0, Math.min(pctInput || 0, remaining)),
       max: capInput,
       balanceCap: teamObligationsRow?.balanceCap ?? null,
-      color: teamObligationsRow?.color || CATEGORY_COLORS[splitRulesPercent.length % CATEGORY_COLORS.length],
+      color: teamObligationsRow?.color || pickUniqueColor(others.map((r) => r.color)),
       accountId,
       retirementType: null,
       investmentType: null,

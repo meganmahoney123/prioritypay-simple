@@ -5,7 +5,7 @@ import { Plus, Trash2, ArrowRight } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomInputStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
-import { CATEGORY_COLORS } from "@/lib/allocations";
+import { CATEGORY_COLORS, pickUniqueColor } from "@/lib/allocations";
 
 const BLOOM_DOT_COLORS = ["#D9C9FF", "#C4A9FA", "#9A72F0", "#6D3BE0", "#4E22B8", "#3B1C7A", "#2A1550"];
 
@@ -61,7 +61,7 @@ export default function MoneySimulator({
   const addRow = () =>
     setRows((prev) => [
       ...prev,
-      { id: `custom_${Date.now()}`, label: "New category", pct: 0, fixed: false, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], custom: true },
+      { id: `custom_${Date.now()}`, label: "New category", pct: 0, fixed: false, color: pickUniqueColor(prev.map((r) => r.color)), custom: true },
     ]);
 
   const addGoal = () =>

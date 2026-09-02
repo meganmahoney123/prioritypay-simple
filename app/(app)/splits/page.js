@@ -6,7 +6,7 @@ import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -144,7 +144,7 @@ function SplitRulesPageInner() {
   };
   const addSubAccount = (group) => {
     setSaved(false);
-    setPercent((prev) => [...prev, newSubAccountRow(group, prev.length)]);
+    setPercent((prev) => [...prev, newSubAccountRow(group, prev.map((r) => r.color))]);
   };
   const removeRow = (id) => {
     setSaved(false);
@@ -170,14 +170,18 @@ function SplitRulesPageInner() {
     setSaved(false);
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, balanceCap: null, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], accountId: null, startingBalance: null },
+      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null },
     ]);
   };
   const addSuggested = (suggestion) => {
     setSaved(false);
+    // Suggestions carry a static `color` for their own preview swatch, but
+    // that color can already be in use by one of this person's other rows
+    // (or by a previous suggestion) -- always re-pick a free one at the
+    // moment it's actually added, rather than trusting the static value.
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, balanceCap: null, color: suggestion.color, accountId: null, startingBalance: null },
+      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null },
     ]);
   };
 

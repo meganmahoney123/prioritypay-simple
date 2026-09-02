@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // isValidUSPhone no longer used here -- the phone-number step is
@@ -286,7 +286,7 @@ function OnboardingPageInner() {
       if (patch.accountId !== undefined) saveSplitRulesNow(next);
       return next;
     });
-  const addSubAccount = (group) => setPercent((prev) => [...prev, newSubAccountRow(group, prev.length)]);
+  const addSubAccount = (group) => setPercent((prev) => [...prev, newSubAccountRow(group, prev.map((r) => r.color))]);
   // { row, index } of the most recently deleted category/sub-account, so
   // "Undo" can put it back exactly where it was.
   const [lastDeleted, setLastDeleted] = useState(null);
@@ -321,12 +321,12 @@ function OnboardingPageInner() {
   const addPercent = () =>
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, balanceCap: null, color: CATEGORY_COLORS[prev.length % CATEGORY_COLORS.length], accountId: null },
+      { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null },
     ]);
   const addSuggested = (suggestion) =>
     setPercent((prev) => [
       ...prev,
-      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, balanceCap: null, color: suggestion.color, accountId: null },
+      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null },
     ]);
   const usedLabels = new Set(percent.map((r) => r.label));
   const availableSuggestions = SUGGESTED_EXTRA_CATEGORIES.filter((s) => !usedLabels.has(s.label));

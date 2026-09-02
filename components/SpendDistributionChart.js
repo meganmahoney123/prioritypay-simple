@@ -4,11 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, currency } from "@/components/ui";
-
-// Same fallback palette as MoneyDistributionChart, kept as its own copy
-// (rather than importing) so the two charts can diverge visually later
-// without one accidentally changing the other.
-const FALLBACK_PALETTE = ["#E0813B", "#B85C22", "#7A3C1C", "#F0A972", "#FAC4A9"];
+import { colorForIndex } from "@/lib/allocations";
 
 function currentPeriod() {
   const now = new Date();
@@ -68,7 +64,7 @@ export default function SpendDistributionChart({ rules = [] }) {
   const pieData = categories.map((c, i) => ({
     name: c.label,
     value: c.amount,
-    color: colorByLabel[c.label] || FALLBACK_PALETTE[i % FALLBACK_PALETTE.length],
+    color: colorByLabel[c.label] || colorForIndex(i),
   }));
 
   const atEarliest = earliestPeriod ? period <= earliestPeriod : false;

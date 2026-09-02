@@ -4,13 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, currency } from "@/components/ui";
-
-// Cycled for any category label that doesn't match a color already in the
-// user's current split rules (e.g. a category they've since renamed or
-// deleted) -- same look-and-feel palette as DEFAULT_SPLIT_RULES.
-const FALLBACK_PALETTE = [
-  "#6D3BE0", "#4E22B8", "#3B1C7A", "#9A72F0", "#C4A9FA",
-];
+import { colorForIndex } from "@/lib/allocations";
 
 function currentPeriod() {
   const now = new Date();
@@ -69,7 +63,7 @@ export default function MoneyDistributionChart({ rules = [] }) {
   const pieData = categories.map((c, i) => ({
     name: c.label,
     value: c.amount,
-    color: colorByLabel[c.label] || FALLBACK_PALETTE[i % FALLBACK_PALETTE.length],
+    color: colorByLabel[c.label] || colorForIndex(i),
   }));
 
   const atEarliest = earliestPeriod ? period <= earliestPeriod : false;

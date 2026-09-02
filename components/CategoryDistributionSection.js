@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, currency } from "@/components/ui";
+import { colorForIndex } from "@/lib/allocations";
 
 // Replaces the old MoneyDistributionChart -- same pie-plus-legend idea
 // ("how did this month's deposits split by category"), but now:
@@ -23,7 +24,6 @@ import { Card, currency } from "@/components/ui";
 // that route for the full balance/withdrawal/cap math). Rendered in place
 // of the old chart, directly under the "Total saved" hero card and ahead
 // of everything else on the Dashboard -- see app/(app)/dashboard/page.js.
-const FALLBACK_PALETTE = ["#6D3BE0", "#4E22B8", "#3B1C7A", "#9A72F0", "#C4A9FA"];
 const UNALLOCATED_COLOR = "#D9C9FF";
 
 function currentPeriod() {
@@ -205,7 +205,7 @@ export default function CategoryDistributionSection() {
       .map((c, i) => ({
         name: c.label,
         value: c.monthlyContribution,
-        color: c.color || FALLBACK_PALETTE[i % FALLBACK_PALETTE.length],
+        color: c.color || colorForIndex(i),
       }));
     if (unallocated > 0) {
       slices.push({ name: "Unallocated", value: unallocated, color: UNALLOCATED_COLOR });
@@ -217,7 +217,7 @@ export default function CategoryDistributionSection() {
   const colorByLabel = useMemo(() => {
     const map = {};
     categories.forEach((c, i) => {
-      map[c.label] = c.color || FALLBACK_PALETTE[i % FALLBACK_PALETTE.length];
+      map[c.label] = c.color || colorForIndex(i);
     });
     return map;
   }, [categories]);
@@ -335,7 +335,7 @@ export default function CategoryDistributionSection() {
             <CategoryCard
               key={c.label}
               category={c}
-              color={colorByLabel[c.label] || FALLBACK_PALETTE[0]}
+              color={colorByLabel[c.label] || colorForIndex(0)}
               onSavePct={savePct}
               savingPct={savingPct}
             />

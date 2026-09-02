@@ -5,11 +5,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import Link from "next/link";
 import { currency } from "@/components/ui";
 import { bloomWarningCardStyle, bloomGhostButtonStyle } from "@/lib/bloomTheme";
+import { colorForIndex } from "@/lib/allocations";
 
-// Same fallback palette family as MoneyDistributionChart/
-// SpendDistributionChart, kept as its own copy on purpose (see those
-// files) so this chart can diverge visually later without affecting them.
-const FALLBACK_PALETTE = ["#2E8B78", "#1F5F4F", "#164536", "#5FB59F", "#A6D9CB"];
 const UNALLOCATED_COLOR = "#D9D3C7";
 
 function formatCloseoutDate(iso) {
@@ -215,11 +212,17 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
   const { categories: rawCategories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance, overCategorizedBy, isMarketBased } = data;
   const categories = rawCategories || [];
 
+  // Prefer the category's own real assigned color (see lib/allocations.js
+  // pickUniqueColor -- every category is unique-colored at creation now)
+  // and only fall back to colorForIndex(i) for older rows that predate
+  // that guarantee. colorForIndex generates an effectively unlimited,
+  // never-repeating sequence rather than cycling a fixed short palette, so
+  // this account's slices stay distinct no matter how many categories it has.
   const pieData = categories.map((c, i) => ({
     name: c.label,
     value: c.balance,
     pct: c.pct,
-    color: FALLBACK_PALETTE[i % FALLBACK_PALETTE.length],
+    color: c.color || colorForIndex(i),
   }));
   if (unallocated > 0) {
     pieData.push({ name: "Unallocated", value: unallocated, pct: unallocatedPct, color: UNALLOCATED_COLOR });

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { AlertTriangle } from "lucide-react";
 import { Card, currency } from "@/components/ui";
+import { colorForIndex } from "@/lib/allocations";
 
 // Sits directly under CategoryDistributionSection ("How your money has
 // been distributed", which is scoped to one month's deposits) -- this is
@@ -19,7 +20,6 @@ import { Card, currency } from "@/components/ui";
 // (a negative number has no angle), so those are pulled out and listed to
 // the side instead, same "here's what's overdrawn" spirit as the
 // per-account breakdown on the Accounts page.
-const FALLBACK_PALETTE = ["#6D3BE0", "#4E22B8", "#3B1C7A", "#9A72F0", "#C4A9FA"];
 const UNALLOCATED_COLOR = "#D9C9FF";
 
 export default function TotalAllocationSection() {
@@ -42,7 +42,7 @@ export default function TotalAllocationSection() {
     const slices = slicesRaw.map((c, i) => ({
       name: c.label,
       value: c.amount,
-      color: c.color || FALLBACK_PALETTE[i % FALLBACK_PALETTE.length],
+      color: c.color || colorForIndex(i),
     }));
     if (unallocated > 0) {
       slices.push({ name: "Unallocated", value: unallocated, color: UNALLOCATED_COLOR });
