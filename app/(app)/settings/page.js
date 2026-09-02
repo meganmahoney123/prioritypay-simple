@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton } from "@/components/ui";
-import { bloomInputStyle, bloomSelectStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
+import { bloomInputStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import MfaSettings from "@/components/MfaSettings";
 import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 import DeleteAccountCard from "@/components/DeleteAccountCard";
@@ -165,49 +165,6 @@ function SettingsPageInner() {
       </Card>
 
       <MfaSettings />
-
-      <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Business profile</h2>
-        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 24 }} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label
-              style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-            >
-              Business name
-            </label>
-            <input
-              value={profile.businessName || ""}
-              onChange={(e) => { setSaved(false); setProfile((p) => ({ ...p, businessName: e.target.value })); }}
-              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
-            />
-          </div>
-          <div>
-            <label
-              style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-            >
-              Entity type
-            </label>
-            <select
-              value={profile.entityType || ""}
-              onChange={(e) => { setSaved(false); setProfile((p) => ({ ...p, entityType: e.target.value })); }}
-              style={bloomSelectStyle({ fontSize: 16, padding: "11px 2px" })}
-            >
-              <option>Sole proprietor / freelancer</option>
-              <option>LLC</option>
-              <option>S-Corp</option>
-              <option>C-Corp</option>
-            </select>
-          </div>
-        </div>
-        {profile.entityType && profile.entityType !== "Sole proprietor / freelancer" && (
-          <p style={{ marginTop: 20, fontSize: 13.5, color: "var(--color-neutral-700)" }}>
-            Running a separate entity means PriorityPay only sees your personal accounts, not your real business
-            numbers. <a href="/business-financials" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Add your business financials</a> so
-            your Tax Summary and reserve calculations reflect the complete picture.
-          </p>
-        )}
-      </Card>
 
       <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit splitting</h2>
