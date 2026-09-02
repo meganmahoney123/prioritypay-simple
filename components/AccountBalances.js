@@ -127,7 +127,14 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   const sections = useMemo(() => percentSections(splitRules?.percent || []), [splitRules]);
-  const retirementRows = sections.find((s) => s.type === "group" && s.group === "Retirement")?.rows || [];
+  // Includes "Retirement (Side Income)" -- W2 (With Side Hustle/Business)'s
+  // Solo 401k lives in its own group, separate from the workplace
+  // 401k/IRA/HSA lineup (see GROUPED_BUCKETS, lib/allocations.js) -- both
+  // need to count here so that group's connected account isn't wrongly
+  // flagged as unassigned below.
+  const retirementRows = sections
+    .filter((s) => s.type === "group" && (s.group === "Retirement" || s.group === "Retirement (Side Income)"))
+    .flatMap((s) => s.rows);
   const investmentRows = sections.find((s) => s.type === "group" && s.group === "Investments")?.rows || [];
   const flatRows = sections.filter((s) => s.type === "row").map((s) => s.row);
 

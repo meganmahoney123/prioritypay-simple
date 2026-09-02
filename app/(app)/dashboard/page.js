@@ -5,7 +5,7 @@ import AccountBalances from "@/components/AccountBalances";
 import InvestmentGrowthProjection from "@/components/InvestmentGrowthProjection";
 import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
-import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle } from "@/lib/allocations";
+import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { AlertTriangle } from "lucide-react";
@@ -87,7 +87,11 @@ export default function DashboardPage() {
   // kind of thing that's easy to set once during onboarding and forget --
   // this is the dashboard actively surfacing it every time, not just once.
   const retirementPct = useMemo(
-    () => groupPctTotal((splitRules?.percent || []).filter((r) => r.group === "Retirement")),
+    // Includes "Retirement (Side Income)" too -- W2 (With Side Hustle/
+    // Business) splits its retirement contributions across two groups (see
+    // GROUPED_BUCKETS, lib/allocations.js), and this warning should only
+    // fire if BOTH are at 0%, not just the workplace one.
+    () => groupPctTotal((splitRules?.percent || []).filter((r) => r.group === "Retirement" || r.group === "Retirement (Side Income)")),
     [splitRules]
   );
   const investmentsPct = useMemo(
@@ -159,6 +163,36 @@ export default function DashboardPage() {
                       emptyStateText: "Once you're contributing to your IRA, we'll show you where that could grow.",
                     },
                   ]
+                : isW2WithSideHustle(persona)
+                ? [
+                    {
+                      group: "Investments",
+                      startingLabel: "Investment",
+                      subHeading: "Investments",
+                      emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
+                    },
+                    {
+                      group: "Retirement",
+                      retirementType: "traditional_401k",
+                      startingLabel: "401k",
+                      subHeading: "401k (Job)",
+                      emptyStateText: "Once you're contributing to your 401k, we'll show you where that could grow.",
+                    },
+                    {
+                      group: "Retirement",
+                      retirementType: "traditional_ira",
+                      startingLabel: "IRA",
+                      subHeading: "IRA (Job)",
+                      emptyStateText: "Once you're contributing to your IRA, we'll show you where that could grow.",
+                    },
+                    {
+                      group: "Retirement (Side Income)",
+                      retirementType: "solo_401k",
+                      startingLabel: "Solo 401k",
+                      subHeading: "Solo 401k (Side Income)",
+                      emptyStateText: "Once you're contributing to your Solo 401k, we'll show you where that could grow.",
+                    },
+                  ]
                 : [
                     {
                       group: "Investments",
@@ -206,10 +240,12 @@ export default function DashboardPage() {
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
             {isW2NoSideHustle(persona)
-              ? " Consider setting up a 401k, IRA, or HSA to start contributing to retirement."
+              ? " Consider setting up a 401k, IRA, or HSA to start contributing to retirement -- check with your employer first, since many already route money there through payroll."
+              : isW2WithSideHustle(persona)
+              ? " Consider setting up a 401k, IRA, or HSA for your job (check with your employer first -- many already contribute through payroll) and/or a Solo 401k for your side income."
               : " Consider setting up a Solo 401k to start contributing to retirement."}{" "}
             <a
-              href={isW2NoSideHustle(persona) ? RETIREMENT_SETUP_LINKS.traditional_401k : RETIREMENT_SETUP_LINKS.solo_401k}
+              href={isW2NoSideHustle(persona) || isW2WithSideHustle(persona) ? RETIREMENT_SETUP_LINKS.traditional_401k : RETIREMENT_SETUP_LINKS.solo_401k}
               target="_blank"
               rel="noreferrer"
               style={{ fontWeight: 600, textDecoration: "underline" }}

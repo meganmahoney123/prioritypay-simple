@@ -248,23 +248,6 @@ export default function Homepage() {
         }}
       >
         <Reveal>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "var(--color-accent-200)",
-              color: "var(--color-accent-700)",
-              fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              padding: "9px 16px",
-              borderRadius: "var(--radius-pill)",
-            }}
-          >
-            Built for the self-employed
-          </span>
           <h1
             style={{
               fontSize: "clamp(36px, 5.2vw, 60px)",

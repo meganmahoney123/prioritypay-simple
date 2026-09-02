@@ -647,18 +647,11 @@ function OnboardingPageInner() {
       <main style={{ flex: 1, maxWidth: 1180, width: "100%", margin: "0 auto", padding: "clamp(40px, 7vw, 88px) clamp(18px, 4vw, 40px) 90px" }}>
         {step === 0 && (
           <div style={{ maxWidth: "44em", margin: "clamp(10px, 6vw, 60px) auto 0", textAlign: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 30 }}>
-              <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Built for the self-employed
-              </span>
-              <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
-            </div>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(38px, 7vw, 66px)", fontWeight: 400, lineHeight: 1.02, letterSpacing: "-0.02em", margin: "0 0 26px" }}>
               Know your split<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
-              Set a percentage of every deposit for investments, savings, and other accounts — PriorityPay
+              Set a percentage of every deposit for investments, savings, and other accounts. PriorityPay
               calculates it the moment a deposit lands (BEFORE you spend it).
             </p>
             <button onClick={next} className="pp-btn pp-btn-primary" style={{ fontSize: 15, padding: "15px 34px" }}>

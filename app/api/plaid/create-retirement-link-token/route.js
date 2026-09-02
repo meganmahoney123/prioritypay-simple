@@ -14,11 +14,26 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
   const { retirementType } = await request.json();
-  if (retirementType !== "sep_ira" && retirementType !== "solo_401k") {
+  // sep_ira/solo_401k: self-employed retirement accounts a person might
+  // eventually open with money they've been saving up manually elsewhere.
+  // traditional_401k/traditional_ira/hsa (added Sept 2026): the W2
+  // workplace lineup -- these are usually ALREADY funded via payroll
+  // deduction, so this scoped Link flow lets someone connect the real
+  // account directly (instead of a savings account holding money for
+  // later, the pattern the two self-employed types use) so PriorityPay can
+  // show its live balance growing. See isEmployerRetirementRow, lib/
+  // allocations.js.
+  const SUBTYPES_BY_RETIREMENT_TYPE = {
+    sep_ira: ["sep ira"],
+    solo_401k: ["401k"],
+    traditional_401k: ["401k"],
+    traditional_ira: ["ira"],
+    hsa: ["hsa"],
+  };
+  const subtypes = SUBTYPES_BY_RETIREMENT_TYPE[retirementType];
+  if (!subtypes) {
     return Response.json({ error: "Invalid retirementType." }, { status: 400 });
   }
-
-  const subtypes = retirementType === "sep_ira" ? ["sep ira"] : ["401k"];
 
   try {
     // Same Auth cost-skip as create-link-token -- see lib/executionMode.js.

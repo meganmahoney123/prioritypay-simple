@@ -14,7 +14,7 @@ import NativeHomeRedirect from "@/components/NativeHomeRedirect";
 export const metadata = {
   title: "PriorityPay -- Automatically Route Income to Savings, Taxes, and Investments",
   description:
-    "PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement, savings, and taxes automatically. Built for the self-employed.",
+    "PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement, savings, and taxes automatically.",
   alternates: {
     canonical: "https://www.prioritypay.co/",
   },

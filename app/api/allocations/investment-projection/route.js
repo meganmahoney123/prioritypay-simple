@@ -65,7 +65,13 @@ export async function GET(request) {
   const admin = supabaseAdmin();
 
   const { searchParams } = new URL(request.url);
-  const group = searchParams.get("group") === "Retirement" ? "Retirement" : "Investments";
+  // "Retirement (Side Income)" (added Sept 2026, see GROUPED_BUCKETS in
+  // lib/allocations.js) is W2-With-Side-Hustle's Solo 401k group, separate
+  // from the plain "Retirement" workplace lineup -- needs to be accepted
+  // here too, not just coerced into "Investments" the way any other
+  // unrecognized group string is.
+  const rawGroup = searchParams.get("group");
+  const group = rawGroup === "Retirement" || rawGroup === "Retirement (Side Income)" ? rawGroup : "Investments";
   const retirementType = searchParams.get("retirementType"); // "solo_401k" | "sep_ira" | null
 
   const [{ data: rules }, { data: allocRows }, { data: withdrawalRows }, { data: accountRows }, { data: retirementLinkRows }] = await Promise.all([
@@ -123,7 +129,7 @@ export async function GET(request) {
   // comment above for why Retirement and Investments resolve this
   // differently.
   const realAccountIds = new Set();
-  if (group === "Retirement") {
+  if (group === "Retirement" || group === "Retirement (Side Income)") {
     (retirementLinkRows || [])
       .filter((r) => !retirementType || r.retirement_type === retirementType)
       .forEach((r) => realAccountIds.add(r.account_id));

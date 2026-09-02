@@ -6,7 +6,7 @@ import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
-import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, roundPct } from "@/lib/allocations";
+import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, isEmployerRetirementRow, roundPct } from "@/lib/allocations";
 
 // Purple ramp used for each row's colour dot in the Bloom-styled ("ledger"
 // theme prop) editor -- replaces the old per-row hex values from
@@ -147,7 +147,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // Investments/Retirement sub-accounts don't get one: those buckets are
   // meant to keep receiving their full percentage indefinitely, not stop
   // once some dollar figure is hit.
-  const isGrouped = rule.group === "Investments" || rule.group === "Retirement";
+  const isGrouped = rule.group === "Investments" || (rule.group || "").startsWith("Retirement");
   // Collapsed by default (Onboarding Pass 2, Aug 2026 handoff) -- caps are
   // an edge case most people never touch, so hiding them behind a toggle
   // is the main density fix for this step. Local to each row's own render
@@ -256,7 +256,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         {overflowMessage && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "#9C3B22", margin: "8px 0 0" }}>{overflowMessage}</p>
         )}
-        {(rule.retirementType || rule.group === "Retirement") && <RetirementNote label={rule.label} theme="ledger" />}
+        {(rule.retirementType || (rule.group || "").startsWith("Retirement")) && (
+          <RetirementNote label={rule.label} theme="ledger" isEmployer={isEmployerRetirementRow(rule)} />
+        )}
         {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
           <p
             style={{
@@ -283,7 +285,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               value={rule.accountId}
               onChange={(v) => onUpdate(rule.id, { accountId: v })}
               accounts={accounts}
-              onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
+              onCreateNew={isEmployerRetirementRow(rule) ? undefined : () => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
               onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
               recommendCreate={false}
               excludeSubtypes={rule.group === "Investments" ? ["checking"] : undefined}
@@ -386,7 +388,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           <div style={{ marginTop: 10 }}>
             <PlaidLinkButton
               label="Connect another account"
-              savingsOnly={connectSavingsOnly(rule)}
+              savingsOnly={!isEmployerRetirementRow(rule) && connectSavingsOnly(rule)}
+              retirementType={isEmployerRetirementRow(rule) ? rule.retirementType : undefined}
               onLinked={(account) => {
                 if (account) {
                   onAccountLinked(account);
@@ -458,7 +461,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
       </div>
       {overflowMessage && <p className="text-xs text-red-700 mt-1">{overflowMessage}</p>}
-      {rule.retirementType || rule.group === "Retirement" ? <RetirementNote label={rule.label} /> : null}
+      {rule.retirementType || (rule.group || "").startsWith("Retirement") ? (
+        <RetirementNote label={rule.label} isEmployer={isEmployerRetirementRow(rule)} />
+      ) : null}
       {!isGrouped && (
         <>
           <CapField
@@ -513,7 +518,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           value={rule.accountId}
           onChange={(v) => onUpdate(rule.id, { accountId: v })}
           accounts={accounts}
-          onCreateNew={() => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
+          onCreateNew={isEmployerRetirementRow(rule) ? undefined : () => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
           onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
           recommendCreate={false}
           // Investments should never point at a plain checking account --
@@ -528,7 +533,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         <div className="mt-2">
           <PlaidLinkButton
             label="Connect another account"
-            savingsOnly={connectSavingsOnly(rule)}
+            savingsOnly={!isEmployerRetirementRow(rule) && connectSavingsOnly(rule)}
+            retirementType={isEmployerRetirementRow(rule) ? rule.retirementType : undefined}
             onLinked={(account) => {
               if (account) {
                 onAccountLinked(account);
@@ -714,9 +720,9 @@ export default function PercentSplitEditor({
                 </span>
               </div>
               <div style={{ padding: "18px 22px 22px" }}>
-                {section.group === "Retirement" && (
+                {section.group.startsWith("Retirement") && (
                   <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 18px", maxWidth: "40em" }}>
-                    {retirementGroupSubtext(persona)}
+                    {retirementGroupSubtext(persona, section.group)}
                   </p>
                 )}
                 <div style={{ display: "grid", gap: 14 }}>
@@ -760,7 +766,7 @@ export default function PercentSplitEditor({
                     whiteSpace: "nowrap",
                   }}
                 >
-                  + &nbsp;Add {section.group === "Retirement" ? "a retirement account" : "an investment account"}
+                  + &nbsp;Add {section.group.startsWith("Retirement") ? "a retirement account" : "an investment account"}
                 </button>
               </div>
             </div>
@@ -836,8 +842,8 @@ export default function PercentSplitEditor({
               <span className="text-sm font-semibold">{section.group}</span>
               <span className="text-xs font-mono text-neutral-500">{groupPctTotal(section.rows)}% total</span>
             </div>
-            {section.group === "Retirement" && (
-              <p className="text-[11px] text-neutral-500 leading-snug mb-2 px-0.5">{retirementGroupSubtext(persona)}</p>
+            {section.group.startsWith("Retirement") && (
+              <p className="text-[11px] text-neutral-500 leading-snug mb-2 px-0.5">{retirementGroupSubtext(persona, section.group)}</p>
             )}
             <div className="space-y-2">
               {section.rows.map((rule) => (
@@ -864,7 +870,7 @@ export default function PercentSplitEditor({
               onClick={() => onAddSubAccount(section.group)}
               className="mt-2 w-full text-xs font-medium text-emerald-700 border border-dashed border-emerald-300 rounded-lg py-1.5 flex items-center justify-center gap-1"
             >
-              <Plus size={12} /> Add {section.group === "Retirement" ? "a retirement account" : "an investment account"}
+              <Plus size={12} /> Add {section.group.startsWith("Retirement") ? "a retirement account" : "an investment account"}
             </button>
           </div>
         ) : (
