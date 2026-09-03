@@ -1,12 +1,20 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-// Marks a single manual-approval allocation line as sent. This is the only
-// place an allocation's status ever moves off 'needs_approval' while
-// TRANSFER_EXECUTION_MODE is 'manual_approval' (see lib/runSplit.js) --
-// PriorityPay never originates the transfer itself in that mode, so this
-// route exists purely to record that the *user* went and made the
-// transfer themselves in their own bank or app.
+// Marks a single manual-approval allocation line as sent -- BY THE USER,
+// not by PriorityPay (see TRANSFER_EXECUTION_MODE in lib/runSplit.js;
+// PriorityPay never originates the transfer itself in manual_approval
+// mode). This lands on 'in_transit', not 'completed' -- the user has
+// attested the money is moving, but nothing here has actually seen it
+// arrive yet. lib/reconcileTransfers.js (run opportunistically from
+// GET /api/accounts) checks the destination account's real Plaid
+// transactions and flips the status to 'completed' + sets settled_at the
+// moment a matching deposit shows up there; app/api/transfer-allocations/
+// [id]/settle/route.js is the manual override if reconciliation misses it.
+// 'in_transit' counts toward every totals query exactly like 'completed'
+// does (see PHASE S, supabase/schema.sql) -- this is about giving an
+// honest "still in transit" signal in the UI, not about excluding it from
+// the numbers.
 //
 // Allocations have no user_id column of their own -- ownership is enforced
 // the same way the "own transfer allocations" RLS policy in schema.sql
@@ -34,7 +42,7 @@ export async function POST(request, { params }) {
 
   const { error: updateError } = await admin
     .from("simple_transfer_allocations")
-    .update({ status: "completed", confirmed_at: new Date().toISOString() })
+    .update({ status: "in_transit", confirmed_at: new Date().toISOString() })
     .eq("id", allocationId);
   if (updateError) return Response.json({ error: updateError.message }, { status: 500 });
 

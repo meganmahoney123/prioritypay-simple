@@ -2,6 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
 import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
+import { reconcileInTransitAllocations } from "@/lib/reconcileTransfers";
 
 // How long current_balance is trusted as a running ledger before this
 // route bothers Plaid for a real reconciliation check. See PHASE K,
@@ -43,6 +44,16 @@ export async function GET() {
     .order("created_at", { ascending: true });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // Best-effort: checks any 'in_transit' manual transfers against Plaid's
+  // real transaction data and settles matches to 'completed' (see
+  // lib/reconcileTransfers.js). Runs here because this route is already
+  // the "what does Plaid actually show right now" checkpoint the app hits
+  // on every Dashboard/Accounts load -- never blocks the accounts list
+  // itself if it fails.
+  await reconcileInTransitAllocations(admin, user.id).catch((err) =>
+    console.error("[accounts] reconcile in-transit allocations failed", err?.message)
+  );
 
   const now = Date.now();
   const accounts = await Promise.all(

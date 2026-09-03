@@ -27,6 +27,8 @@ function StatusPill({ tone = "accent", children }) {
 
 function statusLabel(status) {
   if (status === "needs_approval") return "awaiting you";
+  if (status === "in_transit") return "in transition";
+  if (status === "skipped") return "removed";
   return status;
 }
 

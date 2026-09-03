@@ -597,3 +597,34 @@ alter table simple_profiles add column if not exists email_notifications_enabled
 -- this address instead." See lib/runSplit.js's email-alert block, which
 -- now prefers this column over auth.users' email when set.
 alter table simple_profiles add column if not exists alert_email text;
+
+-- PHASE S: settlement tracking for manual cross-account transfers, plus
+-- 'skipped' as a new simple_transfer_allocations.status value.
+--
+-- Every allocation the "Transfers waiting on you" checklist ever shows
+-- (see PendingTransfers.js) represents a REAL cross-account transfer the
+-- user has to go make themselves (see needsMove in lib/runSplit.js --
+-- same-account/reserved_only rows never reach 'needs_approval' at all).
+-- Confirming ("I sent this") used to jump straight to 'completed', which
+-- meant the category total counted the money as moved the instant someone
+-- clicked the button, whether or not they actually sent it. Now confirming
+-- lands on the new 'in_transit' status instead -- still counted in every
+-- totals query exactly like 'completed' is (nothing here excludes it, on
+-- purpose, since the user has attested the transfer is happening), but
+-- distinguished in the UI so "I said I sent it" and "Plaid has actually
+-- seen it land" aren't silently conflated.
+--
+-- settled_at is set the moment lib/reconcileTransfers.js finds a matching
+-- incoming Plaid transaction in the destination account (or the user
+-- manually confirms via app/api/transfer-allocations/[id]/settle), at
+-- which point status flips to 'completed'. reconcile_checked_at throttles
+-- how often that reconciliation bothers Plaid per allocation while it's
+-- still waiting (see RECHECK_INTERVAL_MS).
+--
+-- 'skipped' (app/api/transfer-allocations/[id]/skip/route.js) is the
+-- "Delete" button on a still-pending checklist line -- dismisses that one
+-- split from that one deposit without sending money and without touching
+-- the underlying split-rule category. Excluded from every totals query the
+-- same way 'needs_approval'/'failed' already were.
+alter table simple_transfer_allocations add column if not exists settled_at timestamptz;
+alter table simple_transfer_allocations add column if not exists reconcile_checked_at timestamptz;

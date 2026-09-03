@@ -59,7 +59,7 @@ export default function DashboardPage() {
     setAllTimeTotal(allTimeRes.total || 0);
     setBilling(profileRes.profile?.billing || null);
     setPersona(profileRes.profile?.persona || null);
-    setPendingTransfers(pendingRes.transfers || []);
+    setPendingTransfers(pendingRes.allocations || []);
     setLoading(false);
   };
 
@@ -105,7 +105,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PendingTransfers transfers={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
+      <PendingTransfers allocations={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
 
       {billing?.readOnly && (
         <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>
