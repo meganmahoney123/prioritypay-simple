@@ -4,29 +4,30 @@ import { plaidClient } from "@/lib/plaid";
 import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
 import { reconcileInTransitAllocations } from "@/lib/reconcileTransfers";
 
-// How long current_balance is trusted as a running ledger before this
-// route bothers Plaid for a real reconciliation check. See PHASE K,
-// supabase/schema.sql, for the full reasoning -- short version: PHASE J's
-// 24-hour cache still meant a daily-active user cost one live Balance
-// call ($0.10) per account per calendar day, scaling with app-opens, not
-// with anything PriorityPay actually needs. Now current_balance is kept
-// current by app/api/plaid/webhook adjusting it in place as each real
-// transaction syncs in (data already being fetched for auto-split,
-// costing nothing extra) -- this route only makes a live call to correct
-// for drift (a pending charge that posts for a different amount, a fee,
-// an odd hold), roughly once a month, fully decoupled from how many times
-// the app gets opened. Deposit detection, split calculation, and
-// deposit-alert SMS never touch Balance at all (see runSplit.js) -- only
-// the cosmetic "current balance" figure is affected by any of this.
-const RECONCILE_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000; // ~30 days
-
-// Reconciles each account's ledger balance against Plaid's real Balance
-// endpoint only when it's never been seeded (a brand-new account) or the
-// last reconciliation has aged past RECONCILE_INTERVAL_MS -- otherwise
-// serves current_balance exactly as the webhook last left it, with zero
-// Plaid calls. A failed reconciliation for one account (e.g. the Item
-// needs re-auth) falls back to the last known ledger value instead of
-// failing the whole list.
+// PHASE T: account balance is now ALWAYS a live Plaid Balance call, not the
+// incrementally-adjusted ledger app/api/plaid/webhook/route.js used to
+// maintain. That ledger had a real bug: Plaid's /transactions/sync
+// represents a pending transaction settling as a REMOVE of the pending
+// entry plus an ADD of a new, differently-id'd posted one -- and the
+// webhook only ever applied `added` transactions (see its comment),
+// never `removed`. So every deposit that was first seen pending and then
+// posted got applied to the ledger twice, permanently inflating the
+// balance -- confirmed against a real customer account showing several
+// thousand dollars more than Plaid's actual balance. Rather than also
+// patch the webhook to handle removed/modified transactions correctly
+// (a real fix, but one more surface to keep correct forever), the
+// simpler and more trustworthy choice is to stop trusting any locally
+// -maintained running total for the number people actually make
+// decisions from, and always ask Plaid directly. This costs one Balance
+// call ($0.10) per connected account per page load instead of roughly
+// once a month -- worth it for a number people are trusting to be
+// accurate. A failed live call (e.g. the Item needs re-auth) falls back
+// to the last known value instead of failing the whole list.
+//
+// current_balance is still kept as a column (and the webhook still
+// updates it incrementally between page loads, for other code that reads
+// it synchronously) -- this route just no longer trusts that value as
+// authoritative; it overwrites it with Plaid's real answer on every call.
 //
 // Never returns plaid_access_token or dwolla_funding_source_id to the
 // client -- those stay server-side. The client only ever sees the id it
@@ -55,15 +56,12 @@ export async function GET() {
     console.error("[accounts] reconcile in-transit allocations failed", err?.message)
   );
 
-  const now = Date.now();
   const accounts = await Promise.all(
     (data || []).map(async (acc) => {
       let balance = acc.current_balance;
       let subtype = acc.subtype || null;
-      const needsReconcile =
-        !acc.balance_reconciled_at || now - new Date(acc.balance_reconciled_at).getTime() > RECONCILE_INTERVAL_MS;
 
-      if (acc.plaid_access_token && acc.plaid_account_id && needsReconcile) {
+      if (acc.plaid_access_token && acc.plaid_account_id) {
         try {
           const accessToken = decryptToken(acc.plaid_access_token);
           const res = await plaidClient.accountsBalanceGet({ access_token: accessToken });
