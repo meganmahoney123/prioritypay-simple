@@ -71,6 +71,7 @@ export async function GET(request) {
       .eq("user_id", user.id)
       .neq("status", "failed")
       .neq("status", "needs_approval")
+    .neq("status", "skipped")
       .gte("created_at", startIso)
       .lt("created_at", endIso),
     // ALL-TIME, with dates -- powers both the running balance AND the
@@ -83,7 +84,8 @@ export async function GET(request) {
       .eq("simple_transfers.user_id", user.id)
       .eq("category_type", "percent")
       .neq("status", "failed")
-      .neq("status", "needs_approval"),
+      .neq("status", "needs_approval")
+    .neq("status", "skipped"),
     admin
       .from("simple_withdrawal_allocations")
       .select("label, amount, source_type, simple_withdrawals!inner(user_id, occurred_at)")

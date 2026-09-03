@@ -55,6 +55,7 @@ export async function GET(request) {
     // transfer hasn't happened yet and shouldn't count until the user
     // checks it off (see app/api/transfer-allocations/[id]/confirm).
     .neq("status", "needs_approval")
+    .neq("status", "skipped")
     .gte("simple_transfers.created_at", startIso)
     .lt("simple_transfers.created_at", endIso);
   if (categoryType) query = query.eq("category_type", categoryType);

@@ -20,10 +20,13 @@ function accountLabel(acc) {
 // or app. This is what keeps the product working across ANY connected
 // bank today, with zero standing transfer authority (see
 // PROJECT_HANDOFF.md).
-function TransferGroup({ transfer, accountsById, onConfirm, confirmingId }) {
+function TransferGroup({ transfer, accountsById, onConfirm, onSkip, confirmingId, skippingId }) {
   const allocations = transfer.simple_transfer_allocations || [];
   const pending = allocations.filter((a) => a.status === "needs_approval");
-  const done = allocations.filter((a) => a.status !== "needs_approval");
+  // 'skipped' lines are dismissed entirely -- they never show up here, not
+  // even struck-through. Deleting a line just means "not this one, from
+  // this deposit," so nothing about it needs to stay visible afterward.
+  const done = allocations.filter((a) => a.status !== "needs_approval" && a.status !== "skipped");
 
   return (
     <Card className="p-5" style={{ borderRadius: 24 }}>
@@ -73,13 +76,32 @@ function TransferGroup({ transfer, accountsById, onConfirm, confirmingId }) {
                   {accountLabel(destAccount)}
                 </div>
               </div>
-              <PrimaryButton
-                onClick={() => onConfirm(a.id)}
-                disabled={confirmingId === a.id}
-                style={{ padding: "10px 20px", fontSize: 15, fontWeight: 700, borderRadius: 999 }}
-              >
-                {confirmingId === a.id ? "Marking…" : "I sent this"}
-              </PrimaryButton>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => onSkip(a.id)}
+                  disabled={confirmingId === a.id || skippingId === a.id}
+                  title="Remove this split from your checklist (doesn't delete the category)"
+                  style={{
+                    padding: "10px 16px",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    borderRadius: 999,
+                    background: "transparent",
+                    border: "1px solid var(--color-divider)",
+                    color: "var(--color-neutral-700)",
+                    cursor: skippingId === a.id ? "default" : "pointer",
+                  }}
+                >
+                  {skippingId === a.id ? "Removing…" : "Delete"}
+                </button>
+                <PrimaryButton
+                  onClick={() => onConfirm(a.id)}
+                  disabled={confirmingId === a.id || skippingId === a.id}
+                  style={{ padding: "10px 20px", fontSize: 15, fontWeight: 700, borderRadius: 999 }}
+                >
+                  {confirmingId === a.id ? "Marking…" : "I sent this"}
+                </PrimaryButton>
+              </div>
             </div>
           );
         })}
@@ -108,6 +130,7 @@ function TransferGroup({ transfer, accountsById, onConfirm, confirmingId }) {
 // caught up.
 export default function PendingTransfers({ transfers, accounts, onConfirmed }) {
   const [confirmingId, setConfirmingId] = useState(null);
+  const [skippingId, setSkippingId] = useState(null);
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   if (!transfers || transfers.length === 0) return null;
@@ -119,6 +142,22 @@ export default function PendingTransfers({ transfers, accounts, onConfirmed }) {
       if (res.ok) onConfirmed();
     } finally {
       setConfirmingId(null);
+    }
+  };
+
+  // Dismisses one line from the checklist without sending money and without
+  // touching the split-rule category itself -- see
+  // app/api/transfer-allocations/[id]/skip/route.js. onConfirmed is reused
+  // here (not a separate onSkipped prop) because both actions need the same
+  // "refetch everything" effect on the parent (Dashboard's loadAll), and
+  // there's nothing skip-specific the parent needs to do differently.
+  const skip = async (allocationId) => {
+    setSkippingId(allocationId);
+    try {
+      const res = await fetch(`/api/transfer-allocations/${allocationId}/skip`, { method: "POST" });
+      if (res.ok) onConfirmed();
+    } finally {
+      setSkippingId(null);
     }
   };
 
@@ -145,7 +184,15 @@ export default function PendingTransfers({ transfers, accounts, onConfirmed }) {
         </p>
       </Card>
       {transfers.map((t) => (
-        <TransferGroup key={t.id} transfer={t} accountsById={accountsById} onConfirm={confirm} confirmingId={confirmingId} />
+        <TransferGroup
+          key={t.id}
+          transfer={t}
+          accountsById={accountsById}
+          onConfirm={confirm}
+          onSkip={skip}
+          confirmingId={confirmingId}
+          skippingId={skippingId}
+        />
       ))}
     </div>
   );

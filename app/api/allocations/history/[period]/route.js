@@ -43,6 +43,7 @@ export async function GET(request, { params }) {
     // See the identical comment in app/api/allocations/history/range/route.js
     // -- a 'needs_approval' allocation hasn't actually moved yet.
     .neq("status", "needs_approval")
+    .neq("status", "skipped")
     .gte("simple_transfers.created_at", startIso)
     .lt("simple_transfers.created_at", endIso);
   if (categoryType) query = query.eq("category_type", categoryType);

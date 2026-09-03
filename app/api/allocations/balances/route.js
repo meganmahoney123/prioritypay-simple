@@ -25,7 +25,8 @@ export async function GET() {
       .select("label, amount, simple_transfers!inner(user_id, status)")
       .eq("simple_transfers.user_id", user.id)
       .neq("status", "failed")
-      .neq("status", "needs_approval"),
+      .neq("status", "needs_approval")
+    .neq("status", "skipped"),
     admin
       .from("simple_withdrawal_allocations")
       .select("label, amount, source_type, simple_withdrawals!inner(user_id)")
