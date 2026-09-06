@@ -49,6 +49,23 @@ export default function LoginPage() {
       switchPrompt="New here?"
       switchLabel="Create an account"
       switchHref="/signup"
+      belowFields={
+        <div style={{ textAlign: "right", marginTop: -8 }}>
+          <a
+            href="/forgot-password"
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: 14,
+              fontWeight: 700,
+              color: "var(--color-accent-700)",
+              textDecoration: "underline",
+              textUnderlineOffset: "3px",
+            }}
+          >
+            Forgot password?
+          </a>
+        </div>
+      }
     />
   );
 }

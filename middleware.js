@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 // HTML page breaks every client-side JSON parse -- API routes that need
 // AAL2 enforce it themselves instead), and static/public marketing pages
 // that don't need to be gated at all.
-const MFA_EXEMPT_PREFIXES = ["/mfa-challenge", "/login", "/signup", "/api", "/terms", "/privacy"];
+const MFA_EXEMPT_PREFIXES = ["/mfa-challenge", "/login", "/signup", "/forgot-password", "/reset-password", "/api", "/terms", "/privacy"];
 
 function isMfaExempt(pathname) {
   return MFA_EXEMPT_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));

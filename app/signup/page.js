@@ -41,7 +41,17 @@ function SignupPageInner() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { terms_accepted_at: new Date().toISOString(), terms_version: "2026-08-17" } },
+      options: {
+        data: { terms_accepted_at: new Date().toISOString(), terms_version: "2026-08-17" },
+        // Without this, Supabase's confirmation link sends the user back
+        // to the bare Site URL with the session tokens in a URL hash --
+        // hash fragments never reach the server, so middleware/page.js
+        // see no user and just render the public homepage. Pointing the
+        // link straight at /onboarding means the browser Supabase client
+        // there (see lib/supabaseBrowser.js) picks the tokens up from the
+        // hash on load and establishes the session itself.
+        emailRedirectTo: `${window.location.origin}/onboarding${sim ? `?sim=${sim}` : ""}`,
+      },
     });
     setLoading(false);
     if (error) {
