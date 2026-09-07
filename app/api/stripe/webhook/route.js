@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { stripeClient } from "@/lib/stripe";
+import { stripeClient, planForPriceId } from "@/lib/stripe";
 
 // Register this URL (https://prioritypay.co/api/stripe/webhook) as a
 // webhook endpoint in the Stripe dashboard (Developers > Webhooks),
@@ -29,12 +29,37 @@ export async function POST(request) {
     case "checkout.session.completed": {
       const session = event.data.object;
       if (session.mode === "subscription" && session.subscription) {
+        // PHASE T: figure out which plan this checkout was for by
+        // reading the Price id off the underlying subscription's line
+        // items -- the session payload itself doesn't include it.
+        // Anything not the Business price falls back to "simple", which
+        // also covers every pre-PHASE-Q subscriber replaying this event
+        // (e.g. a Stripe retry) without ever downgrading a real Business
+        // subscriber by accident, since their price id still resolves
+        // correctly either way.
+        let plan = null;
+        try {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          const subscribedPriceId = subscription.items?.data?.[0]?.price?.id;
+          plan = planForPriceId(subscribedPriceId);
+        } catch (err) {
+          console.error("Stripe webhook: could not resolve plan for session", session.id, err);
+        }
+
+        const profileUpdate = {
+          stripe_subscription_id: session.subscription,
+          subscription_status: "active",
+        };
+        // Only write `plan` when it actually resolved -- a transient Stripe
+        // API error must never silently downgrade a Business subscriber to
+        // "simple". planForPriceId() already maps a genuine Simple checkout
+        // to "simple", so skipping it here only affects the rare
+        // couldn't-look-it-up case, leaving any existing plan untouched.
+        if (plan) profileUpdate.plan = plan;
+
         await admin
           .from("simple_profiles")
-          .update({
-            stripe_subscription_id: session.subscription,
-            subscription_status: "active",
-          })
+          .update(profileUpdate)
           .eq("stripe_customer_id", session.customer);
       }
       break;

@@ -40,7 +40,7 @@ export async function GET() {
 
   const { data, error } = await admin
     .from("simple_accounts")
-    .select("id, institution_name, account_name, mask, current_balance, balance_updated_at, balance_reconciled_at, subtype, plaid_access_token, plaid_account_id, plaid_cursor, account_type, created_at")
+    .select("id, institution_name, account_name, mask, current_balance, balance_updated_at, balance_reconciled_at, subtype, plaid_access_token, plaid_account_id, plaid_cursor, account_type, entity_id, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
 
@@ -110,6 +110,11 @@ export async function GET() {
         // false for accounts linked before Transactions/webhook support
         // existed, until they go through the update-mode re-consent flow.
         autoDetectEnabled: !!acc.plaid_cursor,
+        // PHASE T: which Business-tier entity this account is grouped
+        // under, or null for the single-default-pool state every account
+        // is in until a Business-plan user assigns one (see PATCH
+        // /api/accounts/[id]).
+        entityId: acc.entity_id,
         created_at: acc.created_at,
       };
     })
