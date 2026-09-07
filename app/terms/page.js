@@ -140,14 +140,21 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>12. Governing Law</h2>
+      <h2>12. Text Message Alerts (SMS)</h2>
+      <p>
+        By opting in to SMS deposit alerts, you agree to receive text messages from PriorityPay regarding your
+        account. Message and data rates may apply. Message frequency varies based on your deposit activity. Reply
+        STOP to cancel at any time, or reply HELP for assistance.
+      </p>
+
+      <h2>13. Governing Law</h2>
       <p>
         These Terms are governed by the laws of the Commonwealth of Virginia, without regard to conflict-of-law
         principles. Any dispute arising from these Terms or the Service will be subject to the exclusive
         jurisdiction of the state and federal courts located in Virginia.
       </p>
 
-      <h2>13. Customer Support</h2>
+      <h2>14. Customer Support</h2>
       <p>
         If you have a question or issue with your split calculations, account linking, or anything else about the
         Service, contact us at <a href="mailto:hello@prioritypay.co">hello@prioritypay.co</a> and we&apos;ll help
@@ -156,7 +163,7 @@ export default function TermsPage() {
         but we can&apos;t reverse or trace the transfer itself.
       </p>
 
-      <h2>14. Contact</h2>
+      <h2>15. Contact</h2>
       <p>
         Questions about these Terms? Reach us at{" "}
         <a href="mailto:hello@prioritypay.co">hello@prioritypay.co</a>.
