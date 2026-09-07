@@ -1,6 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { isReadOnly } from "@/lib/subscription";
+import { isReadOnly, isBusinessPlan } from "@/lib/subscription";
 
 export async function GET() {
   const user = await requireUser();
@@ -26,6 +26,13 @@ export async function GET() {
         subscriptionStatus: data.subscription_status,
         trialEndsAt: data.trial_ends_at,
         readOnly: isReadOnly(data),
+        // Which product tier this account is on (PHASE T). `plan` defaults
+        // to "simple" for every existing row; `isBusiness` is the same gate
+        // the Business-tier API routes enforce, surfaced here so the UI can
+        // show/hide the Business section and its upgrade CTA without
+        // duplicating the trial-vs-active logic client-side.
+        plan: data.plan || "simple",
+        isBusiness: isBusinessPlan(data),
       },
       notifications: {
         phoneNumber: data.phone_number,
