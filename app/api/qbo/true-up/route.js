@@ -1,7 +1,99 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
-import { getValidAccessToken, fetchNetIncomeForMonth } from "@/lib/qbo";
+import { getValidAccessToken, fetchNetIncomeForMonth, fetchTransactionsForMonth } from "@/lib/qbo";
+
+// Line-item reconciliation between QBO's transactions and PriorityPay's own
+// confirmed closeout transactions for the same month. Matched greedily on
+// (direction, absolute amount, date within DATE_WINDOW_DAYS) -- QBO and Plaid
+// share no transaction ids, so amount is the only hard key, but requiring the
+// same money-in/out direction stops an income being paired against a
+// same-sized expense, and the date window stops two coincidentally-equal
+// amounts in different weeks from matching. When several tracked rows are
+// eligible, the closest date wins. Whatever doesn't pair off is what's driving
+// the variance. Lists are capped so a pathological month stays bounded.
+const MAX_UNMATCHED = 50;
+const DATE_WINDOW_DAYS = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const centsKey = (amount) => Math.round(Math.abs(Number(amount) || 0) * 100);
+
+// Money-in vs money-out. PriorityPay stores it explicitly (direction). QBO's
+// TransactionList doesn't, so we infer from the transaction type first (the
+// unambiguous signal) and fall back to the natural amount's sign -- so the
+// sign convention of subt_nat_amount doesn't have to be trusted on its own.
+const QBO_OUT_TYPES = ["expense", "purchase", "bill", "check", "cash purchase", "vendor", "refund", "credit card credit"];
+const QBO_IN_TYPES = ["deposit", "sales receipt", "invoice", "payment", "credit memo", "journal"];
+function qboDirection(txn) {
+  const t = (txn.type || "").toLowerCase();
+  if (QBO_OUT_TYPES.some((k) => t.includes(k))) return "out";
+  if (QBO_IN_TYPES.some((k) => t.includes(k))) return "in";
+  return Number(txn.amount) < 0 ? "out" : "in";
+}
+const trackedDirection = (t) => (t.direction === "expense" ? "out" : "in");
+
+// Absolute day gap between two date strings; a missing/unparseable date never
+// blocks a match (returns 0), so amount+direction still pair those up.
+function dayGap(a, b) {
+  if (!a || !b) return 0;
+  const ta = Date.parse(a);
+  const tb = Date.parse(b);
+  if (Number.isNaN(ta) || Number.isNaN(tb)) return 0;
+  return Math.abs(ta - tb) / DAY_MS;
+}
+
+function reconcile(qboTxns, trackedTxns) {
+  // Bucket tracked txns by direction:absCents; within a bucket a QBO txn
+  // claims the date-closest candidate that's inside the window.
+  const pool = new Map();
+  for (const t of trackedTxns) {
+    const k = `${trackedDirection(t)}:${centsKey(t.amount)}`;
+    if (!pool.has(k)) pool.set(k, []);
+    pool.get(k).push(t);
+  }
+  const unmatchedQbo = [];
+  let matched = 0;
+  for (const q of qboTxns) {
+    const bucket = pool.get(`${qboDirection(q)}:${centsKey(q.amount)}`);
+    let bestIdx = -1;
+    let bestGap = Infinity;
+    if (bucket) {
+      for (let i = 0; i < bucket.length; i++) {
+        const gap = dayGap(q.date, bucket[i].txn_date);
+        if (gap <= DATE_WINDOW_DAYS && gap < bestGap) {
+          bestGap = gap;
+          bestIdx = i;
+        }
+      }
+    }
+    if (bestIdx >= 0) {
+      bucket.splice(bestIdx, 1);
+      matched += 1;
+    } else {
+      unmatchedQbo.push({ date: q.date, type: q.type, name: q.name, amount: q.amount });
+    }
+  }
+  const unmatchedTracked = [];
+  for (const bucket of pool.values()) {
+    for (const t of bucket) {
+      unmatchedTracked.push({
+        date: t.txn_date,
+        name: t.name,
+        amount: t.amount,
+        direction: t.direction,
+        category: t.confirmed_category,
+      });
+    }
+  }
+  return {
+    matched,
+    qboCount: qboTxns.length,
+    trackedCount: trackedTxns.length,
+    unmatchedQbo: unmatchedQbo.slice(0, MAX_UNMATCHED),
+    unmatchedTracked: unmatchedTracked.slice(0, MAX_UNMATCHED),
+    truncated: unmatchedQbo.length > MAX_UNMATCHED || unmatchedTracked.length > MAX_UNMATCHED,
+  };
+}
 
 // PHASE T. Computes one month's profit-vs-deposit true-up for an entity:
 // QBO's real ProfitAndLoss NetIncome vs. what PriorityPay itself tracked
@@ -55,6 +147,7 @@ export async function POST(request) {
   const periodEnd = new Date(year, month, 0).toISOString().slice(0, 10);
 
   let trackedDeposits = null;
+  let trackedTxns = []; // hoisted so the line-item reconciliation below can use them
   if (accountIds.length) {
     const { data: closeout } = await admin
       .from("simple_monthly_closeouts")
@@ -66,13 +159,14 @@ export async function POST(request) {
     if (closeout?.status === "confirmed") {
       const { data: txns } = await admin
         .from("simple_closeout_transactions")
-        .select("amount, direction, confirmed_category")
+        .select("txn_date, name, amount, direction, confirmed_category")
         .eq("closeout_id", closeout.id)
         .in("account_id", accountIds)
         .not("confirmed_category", "is", null)
         .neq("confirmed_category", "exclude");
 
-      trackedDeposits = (txns || []).reduce((sum, t) => {
+      trackedTxns = txns || [];
+      trackedDeposits = trackedTxns.reduce((sum, t) => {
         const signed = t.direction === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount);
         return sum + signed;
       }, 0);
@@ -80,15 +174,30 @@ export async function POST(request) {
   }
 
   let qboNetIncome = null;
+  let qboTxns = null; // null = transaction list unavailable (summary can still stand)
   try {
     const accessToken = await getValidAccessToken(admin, connection);
     qboNetIncome = await fetchNetIncomeForMonth({ accessToken, realmId: connection.realm_id, year, month });
+    // The line-item list is a second report call. If ONLY this one fails,
+    // don't sink the whole true-up -- the net summary is still useful, so we
+    // just return without a breakdown (the note below explains).
+    try {
+      qboTxns = await fetchTransactionsForMonth({ accessToken, realmId: connection.realm_id, year, month });
+    } catch (err2) {
+      console.error("QBO true-up: fetching transaction list failed", err2?.message || err2);
+    }
   } catch (err) {
     console.error("QBO true-up: fetching net income failed", err?.message || err);
     return Response.json({ error: "Could not fetch QuickBooks data for this period." }, { status: 502 });
   }
 
   const variance = qboNetIncome !== null && trackedDeposits !== null ? qboNetIncome - trackedDeposits : null;
+
+  // Line-item breakdown of what's driving the variance. Only meaningful when
+  // there's a confirmed Close-Out to compare against (trackedDeposits !== null)
+  // AND we actually got QBO's transaction list.
+  const reconciliation =
+    trackedDeposits !== null && Array.isArray(qboTxns) ? reconcile(qboTxns, trackedTxns) : null;
 
   // Manual upsert rather than .upsert({onConflict}) -- the uniqueness
   // constraint (see the migration) is a coalesce(entity_id, ...) expression
@@ -131,9 +240,12 @@ export async function POST(request) {
   return Response.json({
     snapshot,
     periodEnd,
+    reconciliation,
     note:
       trackedDeposits === null
         ? "Close-Out for this month hasn't been confirmed yet, so tracked deposits couldn't be computed."
-        : null,
+        : reconciliation === null
+          ? "QuickBooks' transaction list couldn't be loaded, so only the net comparison is shown."
+          : null,
   });
 }

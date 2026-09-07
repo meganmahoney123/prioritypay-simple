@@ -398,6 +398,44 @@ function QuickBooksCard({ entities, connections, onChange, setError }) {
   );
 }
 
+// Kept in sync with MAX_UNMATCHED in app/api/qbo/true-up/route.js -- only
+// used for the "showing the first N" note, so a drift just makes the note
+// slightly off, never breaks anything.
+const MAX_UNMATCHED_SHOWN = 50;
+
+// One side of the reconciliation: a titled, count-labelled list of the
+// transactions that didn't pair off, each rendered as date · label · amount.
+function UnmatchedList({ title, items, render }) {
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+        {title}{" "}
+        <span style={{ color: "color-mix(in srgb, var(--color-text) 50%, transparent)", fontWeight: 400 }}>
+          ({items.length})
+        </span>
+      </div>
+      {items.length === 0 ? (
+        <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: 0 }}>None.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {items.map((it, i) => {
+            const r = render(it);
+            return (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
+                <span style={{ color: "color-mix(in srgb, var(--color-text) 65%, transparent)", whiteSpace: "nowrap" }}>
+                  {r.date || "—"}
+                </span>
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+                <strong style={{ whiteSpace: "nowrap" }}>{currency(r.amount)}</strong>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---- Profit-vs-deposit true-up -----------------------------------------
 function TrueUpCard({ entities, connections, setError }) {
   const now = new Date();
@@ -497,6 +535,37 @@ function TrueUpCard({ entities, connections, setError }) {
           </div>
           {result.note && (
             <p style={{ fontSize: 13, color: "var(--color-accent-800)", margin: "12px 0 0" }}>{result.note}</p>
+          )}
+
+          {result.reconciliation && (
+            <div style={{ marginTop: 16, borderTop: "1px solid var(--color-divider)", paddingTop: 14 }}>
+              {result.reconciliation.unmatchedQbo.length === 0 && result.reconciliation.unmatchedTracked.length === 0 ? (
+                <p style={{ fontSize: 13, color: "var(--color-accent-800)", margin: 0 }}>
+                  Every QuickBooks transaction matched a tracked deposit by amount — nothing to reconcile.
+                </p>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 4 }}>
+                    What&apos;s driving the variance
+                  </div>
+                  <UnmatchedList
+                    title="In QuickBooks, not tracked by PriorityPay"
+                    items={result.reconciliation.unmatchedQbo}
+                    render={(x) => ({ date: x.date, label: x.name || x.type || "—", amount: x.amount })}
+                  />
+                  <UnmatchedList
+                    title="Tracked by PriorityPay, not in QuickBooks"
+                    items={result.reconciliation.unmatchedTracked}
+                    render={(x) => ({ date: x.date, label: x.name || x.category || "—", amount: x.amount })}
+                  />
+                  {result.reconciliation.truncated && (
+                    <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 8 }}>
+                      Showing the first {MAX_UNMATCHED_SHOWN} of each — reconcile these first, then re-run.
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
