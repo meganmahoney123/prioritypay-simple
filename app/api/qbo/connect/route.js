@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
 import { buildAuthorizeUrl } from "@/lib/qbo";
 
-// PHASE Q. Kicks off the QuickBooks OAuth flow for one entity (or "none"
+// PHASE T. Kicks off the QuickBooks OAuth flow for one entity (or "none"
 // for a Business-plan user who hasn't set up entities yet -- see the
 // migration's entity_id-nullable reasoning). Accepts entity_id as a query
 // param so Settings can offer "Connect QuickBooks" per-entity once

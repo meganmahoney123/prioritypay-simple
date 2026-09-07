@@ -2,7 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
 
-// PHASE Q. GET lists a Business-plan user's entities; POST creates one.
+// PHASE T. GET lists a Business-plan user's entities; POST creates one.
 // Gated the same way isReadOnly() gates money-moving routes elsewhere --
 // read plan at request time, no separate "entitlements" system. Simple-
 // plan users get a 402 with a clear reason code rather than an empty

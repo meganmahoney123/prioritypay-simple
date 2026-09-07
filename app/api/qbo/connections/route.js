@@ -2,7 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
 
-// PHASE Q. Lists this user's connected QBO companies (Settings reads this
+// PHASE T. Lists this user's connected QBO companies (Settings reads this
 // to show connection status per entity) and lets one be disconnected.
 // Never returns access_token/refresh_token to the client.
 export async function GET() {

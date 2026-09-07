@@ -2,11 +2,11 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { stripeClient, businessPriceId } from "@/lib/stripe";
 
-// PHASE Q. Same mechanics as /api/billing/checkout, pointed at the
+// PHASE T. Same mechanics as /api/billing/checkout, pointed at the
 // Business Price instead -- separate route rather than a `?plan=`
 // parameter on the existing one so the two checkout flows can diverge
 // later (e.g. Business ever needing seats/quantity) without a branch in
-// shared code. See lib/stripe.js's businessPriceId() and PHASE Q's schema
+// shared code. See lib/stripe.js's businessPriceId() and PHASE T's schema
 // comment for why plan is decided by the webhook off this Price id, not
 // set here.
 export async function POST(request) {

@@ -110,7 +110,7 @@ export async function GET() {
         // false for accounts linked before Transactions/webhook support
         // existed, until they go through the update-mode re-consent flow.
         autoDetectEnabled: !!acc.plaid_cursor,
-        // PHASE Q: which Business-tier entity this account is grouped
+        // PHASE T: which Business-tier entity this account is grouped
         // under, or null for the single-default-pool state every account
         // is in until a Business-plan user assigns one (see PATCH
         // /api/accounts/[id]).

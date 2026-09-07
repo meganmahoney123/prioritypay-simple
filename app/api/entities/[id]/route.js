@@ -2,7 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
 
-// PHASE Q. PATCH renames an entity (or changes its entity_type); DELETE
+// PHASE T. PATCH renames an entity (or changes its entity_type); DELETE
 // removes it. Deleting an entity does NOT delete its accounts --
 // simple_accounts.entity_id is `on delete set null` (see the migration),
 // so those accounts just fall back to the single-default-pool state

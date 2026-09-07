@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
 import { getValidAccessToken, fetchNetIncomeForMonth } from "@/lib/qbo";
 
-// PHASE Q. Computes one month's profit-vs-deposit true-up for an entity:
+// PHASE T. Computes one month's profit-vs-deposit true-up for an entity:
 // QBO's real ProfitAndLoss NetIncome vs. what PriorityPay itself tracked
 // as confirmed net income for that entity's accounts over the same month,
 // and stores the result as a durable snapshot (see the migration's

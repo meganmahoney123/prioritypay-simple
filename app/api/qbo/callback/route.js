@@ -1,8 +1,9 @@
 import { requireUser } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { exchangeCodeForTokens, fetchCompanyName } from "@/lib/qbo";
+import { encryptToken } from "@/lib/tokenCrypto";
 
-// PHASE Q. Intuit redirects here with ?code&state&realmId after the user
+// PHASE T. Intuit redirects here with ?code&state&realmId after the user
 // approves the connection in QBO's own hosted consent screen. Verifies
 // the signed-in user matches the id embedded in `state` (see
 // /api/qbo/connect's comment) before ever exchanging the code or touching
@@ -52,23 +53,26 @@ export async function GET(request) {
 
     const companyName = await fetchCompanyName({ accessToken: tokens.access_token, realmId }).catch(() => null);
 
-    // upsert on realm_id (see the migration's unique index) -- reconnecting
-    // the same QBO company replaces the stored tokens and re-points it at
-    // whichever entity was selected this time, rather than erroring or
-    // duplicating.
+    // upsert on (user_id, realm_id) (see the migration's unique index) --
+    // reconnecting the same QBO company under this user replaces the stored
+    // tokens and re-points it at whichever entity was selected this time,
+    // rather than erroring or duplicating. Scoping the conflict target to
+    // user_id too means one user's reconnect can never overwrite another
+    // user's row for the same realm.
     const { error: dbError } = await admin.from("simple_qbo_connections").upsert(
       {
         user_id: user.id,
         entity_id: entityId,
         realm_id: realmId,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        // Encrypted at rest, same as Plaid's plaid_access_token (lib/tokenCrypto.js).
+        access_token: encryptToken(tokens.access_token),
+        refresh_token: encryptToken(tokens.refresh_token),
         access_token_expires_at: accessTokenExpiresAt,
         refresh_token_expires_at: refreshTokenExpiresAt,
         company_name: companyName,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "realm_id" }
+      { onConflict: "user_id,realm_id" }
     );
     if (dbError) throw dbError;
   } catch (err) {

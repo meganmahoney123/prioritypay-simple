@@ -2,7 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
 
-// PHASE Q. The one account-level write this tier needs: assigning (or
+// PHASE T. The one account-level write this tier needs: assigning (or
 // clearing) which entity an account belongs to. Everything else about an
 // account (linking, unlinking, balance) already has its own route/flow --
 // this stays narrowly scoped to that one field rather than becoming a

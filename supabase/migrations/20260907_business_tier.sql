@@ -1,4 +1,4 @@
--- PHASE Q: Business tier -- multi-entity cash aggregation + QuickBooks
+-- PHASE T: Business tier -- multi-entity cash aggregation + QuickBooks
 -- Online sync, gated behind a separate paid plan.
 --
 -- Design decisions made before writing this (see PROJECT_HANDOFF.md's
@@ -65,9 +65,12 @@ create index if not exists simple_accounts_entity_id_idx on simple_accounts(enti
 
 -- 3. QuickBooks Online connection. One row per (user, entity) OAuth grant
 -- -- entity_id nullable for the same single-default-pool reason as above.
--- Tokens stored the same way Plaid's plaid_access_token already is
--- (service-role-only table, RLS enabled but every real read/write goes
--- through supabaseAdmin() per app convention -- see lib/supabaseServer.js).
+-- Tokens are encrypted at rest (AES-256-GCM via lib/tokenCrypto.js),
+-- exactly the way Plaid's plaid_access_token is -- encryptToken() on write
+-- in app/api/qbo/callback + lib/qbo.js's refresh, decryptToken() on read in
+-- getValidAccessToken(). Service-role-only table (RLS enabled but every
+-- real read/write goes through supabaseAdmin() per app convention -- see
+-- lib/supabaseServer.js).
 -- realm_id is QBO's own company/tenant id and is what every Accounting API
 -- call is scoped to.
 create table if not exists simple_qbo_connections (
@@ -87,12 +90,15 @@ alter table simple_qbo_connections enable row level security;
 drop policy if exists "simple_qbo_connections_owner" on simple_qbo_connections;
 create policy "simple_qbo_connections_owner" on simple_qbo_connections
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
--- One QBO company connected per (user, entity) slot -- re-connecting the
--- same entity replaces its row rather than accumulating duplicates.
--- entity_id can repeat as null across different realm_ids for users who
--- haven't set up entities yet, so this is scoped by realm_id, not a bare
--- unique(user_id, entity_id).
-create unique index if not exists simple_qbo_connections_realm_id_key on simple_qbo_connections(realm_id);
+-- Uniqueness scoped to (user_id, realm_id): re-connecting the same QBO
+-- company under the same user replaces that user's row rather than
+-- accumulating duplicates, while still letting two different PriorityPay
+-- users each connect the same realm as their own separate row (e.g. an
+-- accountant and their client). A bare unique(realm_id) would instead let
+-- one user's reconnect upsert overwrite another user's connection and
+-- reassign its user_id. entity_id is intentionally NOT part of the key --
+-- it can repeat as null for users who haven't set up entities yet.
+create unique index if not exists simple_qbo_connections_user_realm_key on simple_qbo_connections(user_id, realm_id);
 
 -- 4. Profit-vs-deposit true-up snapshots. One row per (user, entity,
 -- period) -- period is always the first of the month, matching Close-
