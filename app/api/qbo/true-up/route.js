@@ -1,7 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
-import { getValidAccessToken, fetchNetIncomeForMonth, fetchTransactionsForMonth } from "@/lib/qbo";
+import { getValidAccessToken, fetchNetIncomeForMonth, fetchTransactionsForMonth, monthEndDate } from "@/lib/qbo";
 
 // Line-item reconciliation between QBO's transactions and PriorityPay's own
 // confirmed closeout transactions for the same month. Matched greedily on
@@ -130,7 +130,13 @@ export async function POST(request) {
   // single-default-pool connection).
   let connQuery = admin.from("simple_qbo_connections").select("*").eq("user_id", user.id);
   connQuery = entityId ? connQuery.eq("entity_id", entityId) : connQuery.is("entity_id", null);
-  const { data: connection } = await connQuery.single();
+  // Not .single(): an entity (or the default pool) can legitimately hold more
+  // than one connected QBO company -- uniqueness is (user_id, realm_id), not
+  // per entity -- and .single() ERRORS (not just returns null) on 2+ rows,
+  // which would 404 a pool that actually has a connection. Take the
+  // earliest-connected one deterministically.
+  const { data: connRows } = await connQuery.order("created_at", { ascending: true }).limit(1);
+  const connection = connRows?.[0];
   if (!connection) {
     return Response.json({ error: "No QuickBooks connection for this entity." }, { status: 404 });
   }
@@ -144,7 +150,7 @@ export async function POST(request) {
   const accountIds = (accounts || []).map((a) => a.id);
 
   const period = `${year}-${String(month).padStart(2, "0")}-01`;
-  const periodEnd = new Date(year, month, 0).toISOString().slice(0, 10);
+  const periodEnd = monthEndDate(year, month);
 
   let trackedDeposits = null;
   let trackedTxns = []; // hoisted so the line-item reconciliation below can use them

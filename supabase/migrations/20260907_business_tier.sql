@@ -35,9 +35,22 @@
 -- subscription is for). Defaults every existing row to 'simple' so
 -- nothing changes for anyone until they explicitly upgrade.
 alter table simple_profiles add column if not exists plan text not null default 'simple';
-alter table simple_profiles add constraint simple_profiles_plan_check
-  check (plan in ('simple', 'business')) not valid;
-alter table simple_profiles validate constraint simple_profiles_plan_check;
+-- Guarded so the whole migration stays re-runnable (there is no
+-- `add constraint if not exists`; a bare add would abort on the second run,
+-- unlike every other statement in this file). Add + validate only when the
+-- constraint isn't already there.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'simple_profiles_plan_check'
+      and conrelid = 'simple_profiles'::regclass
+  ) then
+    alter table simple_profiles add constraint simple_profiles_plan_check
+      check (plan in ('simple', 'business')) not valid;
+    alter table simple_profiles validate constraint simple_profiles_plan_check;
+  end if;
+end $$;
 
 -- 2. Multi-entity grouping. A business-tier user can create one row per
 -- separate business/set-of-books they want aggregated and true-up'd

@@ -52,20 +52,27 @@ function BusinessPageInner() {
   const [upgradeBusy, setUpgradeBusy] = useState(false);
 
   async function loadAll() {
-    const p = await fetch("/api/profile").then((r) => r.json());
-    const business = Boolean(p.profile?.billing?.isBusiness);
-    setIsBusiness(business);
-    if (business) {
-      const [ent, conn, acct] = await Promise.all([
-        fetch("/api/entities").then((r) => r.json()),
-        fetch("/api/qbo/connections").then((r) => r.json()),
-        fetch("/api/accounts").then((r) => r.json()),
-      ]);
-      setEntities(ent.entities || []);
-      setConnections(conn.connections || []);
-      setAccounts(acct.accounts || []);
+    // try/finally so a failed fetch or non-JSON error response can't leave
+    // the page stuck on "Loading…" forever -- setLoading(false) always runs.
+    try {
+      const p = await fetch("/api/profile").then((r) => r.json());
+      const business = Boolean(p.profile?.billing?.isBusiness);
+      setIsBusiness(business);
+      if (business) {
+        const [ent, conn, acct] = await Promise.all([
+          fetch("/api/entities").then((r) => r.json()),
+          fetch("/api/qbo/connections").then((r) => r.json()),
+          fetch("/api/accounts").then((r) => r.json()),
+        ]);
+        setEntities(ent.entities || []);
+        setConnections(conn.connections || []);
+        setAccounts(acct.accounts || []);
+      }
+    } catch {
+      setError("Couldn't load your business data — please refresh.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
