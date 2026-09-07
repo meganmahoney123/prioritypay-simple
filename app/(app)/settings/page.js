@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Card, PrimaryButton } from "@/components/ui";
+import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { bloomInputStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import MfaSettings from "@/components/MfaSettings";
 import AppLockSettingsCard from "@/components/AppLockSettingsCard";
@@ -86,6 +86,19 @@ function SettingsPageInner() {
     else setBillingBusy(false);
   };
 
+  // PHASE T: start the Business-plan Stripe checkout. Separate Price/route
+  // from subscribe() above (see /api/billing/business-checkout). On success
+  // Stripe returns to /settings?billing=success and the webhook flips
+  // plan -> business, which is what makes the Business nav item + /business
+  // hub appear.
+  const upgradeToBusiness = async () => {
+    setBillingBusy(true);
+    const res = await fetch("/api/billing/business-checkout", { method: "POST" });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else setBillingBusy(false);
+  };
+
   const switchPersona = async (persona) => {
     setPersonaSwitchBusy(persona);
     const res = await fetch("/api/dev/set-persona", {
@@ -162,6 +175,28 @@ function SettingsPageInner() {
             </PrimaryButton>
           </>
         )}
+
+        {/* PHASE T: Business-tier upsell / status. The /business nav item is
+            hidden for Simple-plan users, so this is their entry point to
+            upgrade; Business-plan users get a pointer to the hub instead. */}
+        <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--color-divider)" }}>
+          {billing.isBusiness ? (
+            <p style={{ fontSize: 14, margin: 0 }}>
+              You&apos;re on the <strong>Business</strong> plan. Manage businesses and QuickBooks from the{" "}
+              <a href="/business" style={{ color: "var(--color-accent-700)" }}>Business</a> page.
+            </p>
+          ) : (
+            <>
+              <p style={{ fontSize: 14, margin: "0 0 12px" }}>
+                Running multiple businesses? <strong>PriorityPay Business</strong> adds separate entities, QuickBooks
+                sync, and a monthly profit true-up.
+              </p>
+              <GhostButton onClick={upgradeToBusiness} disabled={billingBusy}>
+                {billingBusy ? "Loading…" : "Upgrade to Business"}
+              </GhostButton>
+            </>
+          )}
+        </div>
       </Card>
 
       <MfaSettings />

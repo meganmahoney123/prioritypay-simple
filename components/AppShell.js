@@ -41,6 +41,7 @@ const TITLES = {
   "/closeout": "Monthly Close-Out",
   "/history": "Transaction History",
   "/advisor": "Tax Savings Quiz",
+  "/business": "Business",
   "/settings": "Settings",
 };
 
@@ -109,9 +110,23 @@ export default function AppShell({ children, isSandbox = false }) {
     fetch("/api/profile")
       .then((r) => r.json())
       .then((d) => {
+        let items = NAV_ITEMS;
+        // Hide the Tax Savings Quiz for a plain W2-no-side-hustle persona
+        // (see the comment on navItems above).
         if (isW2NoSideHustle(d.profile?.persona)) {
-          setNavItems(NAV_ITEMS.filter((n) => n.href !== "/advisor"));
+          items = items.filter((n) => n.href !== "/advisor");
         }
+        // Business tier (PHASE T): the /business hub only appears for a
+        // user actually on the Business plan. Simple-plan users reach the
+        // upgrade CTA from Settings instead, so the nav item stays hidden
+        // until their plan flips (via the Stripe webhook). Inserted just
+        // before Settings so it reads as the last product area.
+        if (d.profile?.billing?.isBusiness) {
+          const settingsIdx = items.findIndex((n) => n.href === "/settings");
+          const at = settingsIdx === -1 ? items.length : settingsIdx;
+          items = [...items.slice(0, at), { href: "/business", label: "Business" }, ...items.slice(at)];
+        }
+        if (items !== NAV_ITEMS) setNavItems(items);
       })
       .catch(() => {});
   }, []);

@@ -21,15 +21,22 @@ export async function GET(request) {
   const redirectUri = `${appOrigin}/api/qbo/callback`;
 
   if (error) {
-    return Response.redirect(`${appOrigin}/settings?qbo=denied`, 302);
+    return Response.redirect(`${appOrigin}/business?qbo=denied`, 302);
   }
 
   const user = await requireUser();
-  if (!user) return Response.redirect(`${appOrigin}/login?next=/settings`, 302);
+  if (!user) return Response.redirect(`${appOrigin}/login?next=/business`, 302);
 
-  const [stateUserId, stateEntityId] = state.split(":");
-  if (stateUserId !== user.id) {
-    return Response.redirect(`${appOrigin}/settings?qbo=state_mismatch`, 302);
+  // state is `nonce:userId:entityId`. Verify the CSRF nonce against the
+  // HttpOnly cookie /api/qbo/connect set for this flow, and that the id in
+  // state is the signed-in user, before trusting anything else.
+  const [stateNonce, stateUserId, stateEntityId] = state.split(":");
+  const cookieNonce = (request.headers.get("cookie") || "")
+    .split(/;\s*/)
+    .find((c) => c.startsWith("qbo_oauth_nonce="))
+    ?.slice("qbo_oauth_nonce=".length);
+  if (!stateNonce || !cookieNonce || stateNonce !== cookieNonce || stateUserId !== user.id) {
+    return Response.redirect(`${appOrigin}/business?qbo=state_mismatch`, 302);
   }
   const entityId = stateEntityId && stateEntityId !== "none" ? stateEntityId : null;
 
@@ -42,7 +49,7 @@ export async function GET(request) {
       .eq("id", entityId)
       .eq("user_id", user.id)
       .single();
-    if (!entity) return Response.redirect(`${appOrigin}/settings?qbo=entity_not_found`, 302);
+    if (!entity) return Response.redirect(`${appOrigin}/business?qbo=entity_not_found`, 302);
   }
 
   try {
@@ -77,8 +84,8 @@ export async function GET(request) {
     if (dbError) throw dbError;
   } catch (err) {
     console.error("QBO callback failed:", err?.message || err);
-    return Response.redirect(`${appOrigin}/settings?qbo=error`, 302);
+    return Response.redirect(`${appOrigin}/business?qbo=error`, 302);
   }
 
-  return Response.redirect(`${appOrigin}/settings?qbo=connected`, 302);
+  return Response.redirect(`${appOrigin}/business?qbo=connected`, 302);
 }

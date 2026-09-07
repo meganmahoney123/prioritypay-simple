@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
@@ -35,14 +36,23 @@ export async function GET(request) {
   const appOrigin = process.env.NEXT_PUBLIC_APP_URL || origin;
   const redirectUri = `${appOrigin}/api/qbo/callback`;
 
-  // state carries both the user id and entity id (or "none"), signed
-  // implicitly by requiring the callback to re-verify the user id against
-  // the session cookie present at callback time -- Intuit's redirect
-  // doesn't preserve our auth cookie context otherwise being trustworthy
-  // on its own, so the callback treats this as a hint to verify, not as
-  // authorization by itself.
-  const state = `${user.id}:${entityId || "none"}`;
+  // A random single-use nonce binds this authorize request to its callback
+  // (CSRF protection). It's stashed in an HttpOnly, SameSite=Lax cookie --
+  // Lax so it still rides along on Intuit's top-level redirect back to
+  // /api/qbo/callback -- and echoed in `state`; the callback rejects any
+  // mismatch. The user id and entity id also travel in state and are
+  // re-verified there against the session and this user's entities.
+  const nonce = crypto.randomUUID();
+  const state = `${nonce}:${user.id}:${entityId || "none"}`;
   const url = buildAuthorizeUrl({ redirectUri, state });
 
-  return Response.json({ url });
+  const secure = appOrigin.startsWith("https") ? " Secure;" : "";
+  return Response.json(
+    { url },
+    {
+      headers: {
+        "Set-Cookie": `qbo_oauth_nonce=${nonce}; HttpOnly;${secure} SameSite=Lax; Path=/; Max-Age=600`,
+      },
+    }
+  );
 }
