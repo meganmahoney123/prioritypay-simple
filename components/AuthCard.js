@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 
@@ -36,6 +37,55 @@ const fieldInputStyle = {
   padding: "0 16px",
 };
 
+// A labelled password input with a show/hide toggle. Shared by the Password
+// and (on signup) Confirm-password fields so both behave identically. The
+// toggle is tabIndex=-1 so keyboard users tabbing through the form skip
+// straight to submit, and extra right padding keeps the value clear of the
+// eye icon.
+function PasswordField({ id, label, value, onChange, placeholder, minLength, autoComplete, show, onToggleShow }) {
+  return (
+    <div>
+      <label htmlFor={id} style={fieldLabelStyle}>
+        {label}
+      </label>
+      <div style={{ position: "relative" }}>
+        <input
+          id={id}
+          type={show ? "text" : "password"}
+          required
+          minLength={minLength}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          style={{ ...fieldInputStyle, paddingRight: 52 }}
+        />
+        <button
+          type="button"
+          onClick={onToggleShow}
+          tabIndex={-1}
+          aria-label={show ? "Hide password" : "Show password"}
+          style={{
+            position: "absolute",
+            right: 14,
+            top: "50%",
+            transform: "translateY(-50%)",
+            display: "inline-flex",
+            alignItems: "center",
+            background: "none",
+            border: "none",
+            padding: 4,
+            cursor: "pointer",
+            color: "var(--color-neutral-600)",
+          }}
+        >
+          {show ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthCard({
   title,
   subtitle,
@@ -45,6 +95,10 @@ export default function AuthCard({
   onPassword,
   passwordPlaceholder,
   passwordMinLength,
+  // Optional: pass these to render a second "Confirm password" field (signup).
+  confirmPassword,
+  onConfirmPassword,
+  confirmPlaceholder,
   onSubmit,
   submitLabel,
   loading,
@@ -55,6 +109,8 @@ export default function AuthCard({
   children,
   belowFields,
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   return (
     <div
       className="pp-auth-shell"
@@ -120,22 +176,31 @@ export default function AuthCard({
                   style={fieldInputStyle}
                 />
               </div>
-              <div>
-                <label htmlFor="pp-pass" style={fieldLabelStyle}>
-                  Password
-                </label>
-                <input
-                  id="pp-pass"
-                  type="password"
-                  required
+              <PasswordField
+                id="pp-pass"
+                label="Password"
+                value={password}
+                onChange={onPassword}
+                placeholder={passwordPlaceholder}
+                minLength={passwordMinLength}
+                autoComplete={passwordMinLength ? "new-password" : "current-password"}
+                show={showPassword}
+                onToggleShow={() => setShowPassword((v) => !v)}
+              />
+
+              {onConfirmPassword && (
+                <PasswordField
+                  id="pp-pass-confirm"
+                  label="Confirm password"
+                  value={confirmPassword}
+                  onChange={onConfirmPassword}
+                  placeholder={confirmPlaceholder || "Re-enter your password"}
                   minLength={passwordMinLength}
-                  autoComplete={passwordMinLength ? "new-password" : "current-password"}
-                  value={password}
-                  onChange={onPassword}
-                  placeholder={passwordPlaceholder}
-                  style={fieldInputStyle}
+                  autoComplete="new-password"
+                  show={showConfirm}
+                  onToggleShow={() => setShowConfirm((v) => !v)}
                 />
-              </div>
+              )}
 
               {belowFields}
 

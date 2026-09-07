@@ -16,6 +16,7 @@ function SignupPageInner() {
   const sim = searchParams.get("sim");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
@@ -25,6 +26,10 @@ function SignupPageInner() {
     e.preventDefault();
     if (!agreed) {
       setError("Please agree to the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords don't match");
       return;
     }
     setLoading(true);
@@ -78,6 +83,9 @@ function SignupPageInner() {
       onPassword={(e) => setPassword(e.target.value)}
       passwordPlaceholder="At least 12 characters"
       passwordMinLength={12}
+      confirmPassword={confirmPassword}
+      onConfirmPassword={(e) => setConfirmPassword(e.target.value)}
+      confirmPlaceholder="Re-enter your password"
       onSubmit={handleSubmit}
       submitLabel="Create account"
       loading={loading}

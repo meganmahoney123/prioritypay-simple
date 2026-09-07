@@ -3,7 +3,7 @@ import LegalPage from "@/components/LegalPage";
 export const metadata = {
   title: "Privacy Policy | PriorityPay",
   description:
-    "What information PriorityPay collects, how it's used, and who it's shared with — including Plaid, Stripe, Supabase, Vercel, and, if you use optional features, Twilio and Anthropic.",
+    "What information PriorityPay collects, how it's used, and who it's shared with — including Plaid, Stripe, Supabase, Vercel, and, if you use optional features, Telnyx and Anthropic.",
   alternates: { canonical: "https://www.prioritypay.co/privacy" },
   robots: { index: false, follow: true },
 };
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
         <li>Calculate the transfers your split rules call for, and show you a checklist of what to send and where</li>
         <li>Show you your account balances, split history, and transaction history</li>
         <li>Process your subscription payment via Stripe</li>
-        <li>Send an optional text alert when a deposit crosses a threshold you set, if you&apos;ve enabled that feature</li>
+        <li>Send an optional text alert when a deposit crosses a threshold you set, if you opt in — this feature is off by default, and you can enable it anytime in Settings</li>
         <li>Answer questions you ask the optional Tax Strategy Advisor chat feature, if you use it</li>
         <li>Communicate with you about your account (for example, email confirmation and important account notices)</li>
       </ul>
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
         <li><strong>Stripe</strong> -- payment processing for your subscription. See the <a href="https://stripe.com/privacy" target="_blank" rel="noreferrer">Stripe Privacy Policy</a>.</li>
         <li><strong>Supabase</strong> — our database and authentication provider, which stores your account and app data.</li>
         <li><strong>Vercel</strong> — hosts the PriorityPay application.</li>
-        <li><strong>Twilio</strong> — sends deposit-alert text messages once you provide a phone number in Settings; enabled by default, but you can turn it off anytime in Settings.</li>
+        <li><strong>Telnyx</strong> — sends deposit-alert text messages once you provide a phone number and opt in in Settings. This feature is off by default; you can turn it off again anytime in Settings.</li>
         <li><strong>Anthropic</strong> — powers the optional Tax Strategy Advisor chat feature, only if you use it; your questions are sent to Anthropic&apos;s API to generate a response.</li>
       </ul>
       <p>We may also disclose information if required by law, or to investigate fraud or protect the security of the Service.</p>

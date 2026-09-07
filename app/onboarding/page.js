@@ -143,12 +143,13 @@ function OnboardingPageInner() {
   // being set, means alerts actually work from day one instead of quietly
   // depending on a Settings visit nobody's prompted to make.
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [smsEnabled, setSmsEnabled] = useState(true);
-  // Text alerts are on hold while Twilio's business verification is stuck
-  // -- see SMS_ALERTS_ENABLED, lib/runSplit.js. Email alerts stand in for
-  // the phone-number ask in the meantime, sent to the account's own login
-  // email (no separate field to fill in) -- see emailAddress below,
-  // fetched once on mount via Supabase auth rather than asked again here.
+  // Off by default -- users must actively opt in to SMS deposit alerts.
+  const [smsEnabled, setSmsEnabled] = useState(false);
+  // Note: actual SMS *delivery* stays gated by SMS_ALERTS_ENABLED
+  // (lib/runSplit.js) until the Telnyx toll-free number clears Toll-Free
+  // Verification -- this step only collects the opt-in + phone number and
+  // shows the required disclosures. Email alerts (below) remain the primary
+  // channel, sent to the account's own login email.
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
   const [emailAddress, setEmailAddress] = useState("");
   // Where alerts actually get sent -- defaults to the account's own login
@@ -1149,6 +1150,44 @@ function OnboardingPageInner() {
                 </p>
               </div>
             )}
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={smsEnabled}
+                  onChange={(e) => setSmsEnabled(e.target.checked)}
+                  style={{ width: 16, height: 16 }}
+                />
+                <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                  Also text me when a deposit crosses my threshold
+                </span>
+              </label>
+              {smsEnabled && (
+                <div style={{ marginTop: 20, maxWidth: 340 }}>
+                  <label
+                    style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
+                  >
+                    Mobile number
+                  </label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="(555) 123-4567"
+                    style={bloomInputStyle({ fontSize: 16 })}
+                  />
+                  <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
+                    By opting in you agree to receive deposit-alert texts from PriorityPay. Message &amp; data rates may
+                    apply; frequency varies with your deposit activity. Reply STOP to cancel or HELP for help. See our{" "}
+                    <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                      Terms
+                    </a>
+                    .
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
                 PriorityPay is $7/month, billed today to get started. You&apos;ll enter payment details on
