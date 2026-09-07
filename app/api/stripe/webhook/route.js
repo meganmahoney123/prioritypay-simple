@@ -33,7 +33,7 @@ export async function POST(request) {
         // reading the Price id off the underlying subscription's line
         // items -- the session payload itself doesn't include it.
         // Anything not the Business price falls back to "simple", which
-        // also covers every pre-PHASE-Q subscriber replaying this event
+        // also covers every pre-PHASE-T subscriber replaying this event
         // (e.g. a Stripe retry) without ever downgrading a real Business
         // subscriber by accident, since their price id still resolves
         // correctly either way.

@@ -27,8 +27,15 @@ export async function GET(request) {
   const user = await requireUser();
   if (!user) return Response.redirect(`${appOrigin}/login?next=/business`, 302);
 
-  const [stateUserId, stateEntityId] = state.split(":");
-  if (stateUserId !== user.id) {
+  // state is `nonce:userId:entityId`. Verify the CSRF nonce against the
+  // HttpOnly cookie /api/qbo/connect set for this flow, and that the id in
+  // state is the signed-in user, before trusting anything else.
+  const [stateNonce, stateUserId, stateEntityId] = state.split(":");
+  const cookieNonce = (request.headers.get("cookie") || "")
+    .split(/;\s*/)
+    .find((c) => c.startsWith("qbo_oauth_nonce="))
+    ?.slice("qbo_oauth_nonce=".length);
+  if (!stateNonce || !cookieNonce || stateNonce !== cookieNonce || stateUserId !== user.id) {
     return Response.redirect(`${appOrigin}/business?qbo=state_mismatch`, 302);
   }
   const entityId = stateEntityId && stateEntityId !== "none" ? stateEntityId : null;
