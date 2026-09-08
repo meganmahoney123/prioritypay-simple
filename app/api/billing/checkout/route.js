@@ -3,7 +3,10 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { stripeClient, priceId } from "@/lib/stripe";
 
 // Creates (or reuses) a Stripe Customer for this user, then a Checkout
-// Session for the $7/mo PriorityPay Subscription price.
+// Session for the $12/mo PriorityPay Subscription price (raised from $7/mo
+// Sep 2026 -- see supabase/migrations and the STRIPE_PRICE_ID value in Vercel,
+// which is what this route actually reads; existing subscribers were
+// migrated to the new price directly in Stripe, not through this route).
 //
 // The trial itself is NOT modeled in Stripe (no trial_period_days on the
 // subscription) -- PriorityPay's 30-day trial starts at signup

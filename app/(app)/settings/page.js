@@ -7,6 +7,7 @@ import { bloomInputStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/
 import MfaSettings from "@/components/MfaSettings";
 import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 import DeleteAccountCard from "@/components/DeleteAccountCard";
+import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 // The persona-switch testing panel below (see /api/dev/set-persona, which
@@ -54,11 +55,17 @@ function SettingsPageInner() {
       });
   }, []);
 
+  // PHASE V: shared by the initial load and by CancelSubscriptionCard's
+  // onChanged callback (after canceling/resuming/accepting the retention
+  // offer) so Settings reflects the new billing.cancelAtPeriodEnd/
+  // currentPeriodEnd/retentionOfferUsed without a full page reload.
+  const loadProfile = () => fetch("/api/profile").then((r) => r.json()).then((d) => {
+    setProfile(d.profile);
+    setLoading(false);
+  });
+
   useEffect(() => {
-    fetch("/api/profile").then((r) => r.json()).then((d) => {
-      setProfile(d.profile);
-      setLoading(false);
-    });
+    loadProfile();
   }, []);
 
   const save = async () => {
@@ -145,11 +152,18 @@ function SettingsPageInner() {
         {isActive ? (
           <>
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
-              You&apos;re subscribed to PriorityPay — <strong>$7/month</strong>.
+              You&apos;re subscribed to PriorityPay — <strong>$12/month</strong>.
             </p>
             <PrimaryButton onClick={manageBilling} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Manage billing"}
             </PrimaryButton>
+            <CancelSubscriptionCard
+              cancelAtPeriodEnd={billing.cancelAtPeriodEnd}
+              currentPeriodEnd={billing.currentPeriodEnd}
+              retentionOfferUsed={billing.retentionOfferUsed}
+              formatDate={formatDate}
+              onChanged={loadProfile}
+            />
           </>
         ) : billing.readOnly ? (
           <>
@@ -159,7 +173,7 @@ function SettingsPageInner() {
               paused until you subscribe.
             </div>
             <PrimaryButton onClick={subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : "Subscribe — $7/month"}
+              {billingBusy ? "Loading…" : "Subscribe — $12/month"}
             </PrimaryButton>
           </>
         ) : (
@@ -168,7 +182,7 @@ function SettingsPageInner() {
               {remaining === null
                 ? "You're on PriorityPay's 30-day free trial."
                 : `${remaining} day${remaining === 1 ? "" : "s"} left in your free trial`}
-              {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}. $7/month after that.
+              {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}. $12/month after that.
             </div>
             <PrimaryButton onClick={subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Subscribe now"}

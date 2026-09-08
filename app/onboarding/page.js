@@ -448,7 +448,7 @@ function OnboardingPageInner() {
     return () => window.removeEventListener("pageshow", onPageShow);
   }, []);
 
-  // No more 30-day free trial for anyone signing up from here on -- $7/mo
+  // No more 30-day free trial for anyone signing up from here on -- $12/mo
   // is collected via Stripe Checkout right here, before onboarding
   // actually finishes, since PriorityPay now incurs real costs (Plaid,
   // Twilio, Anthropic) the moment someone starts using it. Existing
@@ -1190,7 +1190,7 @@ function OnboardingPageInner() {
 
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
-                PriorityPay is $7/month, billed today to get started. You&apos;ll enter payment details on
+                PriorityPay is $12/month, billed today to get started. You&apos;ll enter payment details on
                 Stripe&apos;s secure checkout page next, and can cancel anytime from Settings.
               </p>
             </div>
@@ -1200,7 +1200,7 @@ function OnboardingPageInner() {
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <BackBtn onClick={back} />
               <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                {submitting ? "Redirecting to checkout…" : "Continue to payment — $7/month"} &nbsp;→
+                {submitting ? "Redirecting to checkout…" : "Continue to payment — $12/month"} &nbsp;→
               </PrimaryBtn>
             </div>
             {isDevTester && (
