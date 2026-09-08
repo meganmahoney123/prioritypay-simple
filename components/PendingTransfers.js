@@ -6,9 +6,15 @@ import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { resolveBankLoginUrl } from "@/lib/bankLinks";
 import { ExternalLink, Clock } from "lucide-react";
 
-function accountLabel(acc) {
-  if (!acc) return "an account that's since been disconnected or renamed";
-  return `${acc.institution_name} ${acc.account_name} •••• ${acc.mask}`;
+function accountLabel(acc, fallbackLabel) {
+  if (acc) return `${acc.institution_name} ${acc.account_name} •••• ${acc.mask}`;
+  // The account row itself may be gone (disconnected/replaced), but
+  // dest_account_label (see lib/runSplit.js) snapshots what it was called
+  // when this allocation was written, so this can still say exactly where
+  // the money needs to go instead of a dead end -- see PHASE U,
+  // supabase/schema.sql.
+  if (fallbackLabel) return `${fallbackLabel} (disconnected -- reconnect it, or send manually)`;
+  return "an account that's since been disconnected or renamed, with no record of which one";
 }
 
 // Groups allocations that share the same category label + destination
@@ -25,11 +31,15 @@ function groupByCategory(rows) {
   rows.forEach((a) => {
     const key = `${a.label}::${a.dest_account_id || ""}`;
     if (!map.has(key)) {
-      map.set(key, { key, label: a.label, dest_account_id: a.dest_account_id, amount: 0, ids: [] });
+      map.set(key, { key, label: a.label, dest_account_id: a.dest_account_id, dest_account_label: null, amount: 0, ids: [] });
     }
     const g = map.get(key);
     g.amount += Number(a.amount) || 0;
     g.ids.push(a.id);
+    // Any row in the group carrying a snapshotted label is as good as any
+    // other -- they all share the same dest_account_id key, so the label
+    // (taken at write time -- see lib/runSplit.js) should already agree.
+    if (!g.dest_account_label && a.dest_account_label) g.dest_account_label = a.dest_account_label;
   });
   return Array.from(map.values());
 }
@@ -122,6 +132,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
             {pending.map((g) => {
               const destAccount = accountsById[g.dest_account_id];
               const bankUrl = destAccount ? resolveBankLoginUrl(destAccount.institution_name) : null;
+              const destLabel = accountLabel(destAccount, g.dest_account_label);
               const busy = busyKey === g.key;
               return (
                 <div
@@ -153,7 +164,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                     )}
                     <div className="text-xs truncate" style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>
                       {bankUrl ? "Click the amount to open " : "Send to "}
-                      {accountLabel(destAccount)}
+                      {destLabel}
                       {g.ids.length > 1 ? ` — combined from ${g.ids.length} deposits` : ""}
                     </div>
                   </div>
@@ -222,7 +233,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                         {g.label} — {currency(g.amount)}
                       </div>
                       <div className="text-xs truncate" style={{ color: "var(--color-neutral-700)" }}>
-                        On its way to {accountLabel(destAccount)} — we&apos;ll mark this settled automatically once it
+                        On its way to {accountLabel(destAccount, g.dest_account_label)} — we&apos;ll mark this settled automatically once it
                         shows up there.
                       </div>
                     </div>

@@ -628,3 +628,12 @@ alter table simple_profiles add column if not exists alert_email text;
 -- same way 'needs_approval'/'failed' already were.
 alter table simple_transfer_allocations add column if not exists settled_at timestamptz;
 alter table simple_transfer_allocations add column if not exists reconcile_checked_at timestamptz;
+
+-- PHASE U: see supabase/migrations/20260908_dest_account_label.sql for the
+-- full write-up. Snapshots the destination account's readable name onto
+-- each transfer allocation at write time (lib/runSplit.js), so
+-- PendingTransfers.js can still say where a split was headed after the
+-- account itself is disconnected/removed -- dest_account_id alone (PHASE
+-- G, "on delete set null") leaves nothing to fall back on once that
+-- happens.
+alter table simple_transfer_allocations add column if not exists dest_account_label text;

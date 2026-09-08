@@ -23,7 +23,7 @@ export async function GET() {
 
   const { data: allocations, error } = await admin
     .from("simple_transfer_allocations")
-    .select("id, label, amount, status, dest_account_id, confirmed_at, simple_transfers!inner(id, source_amount, created_at, user_id)")
+    .select("id, label, amount, status, dest_account_id, dest_account_label, confirmed_at, simple_transfers!inner(id, source_amount, created_at, user_id)")
     .eq("simple_transfers.user_id", user.id)
     .in("status", ["needs_approval", "in_transit"]);
 

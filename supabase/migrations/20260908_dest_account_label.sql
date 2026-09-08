@@ -1,0 +1,24 @@
+-- PHASE U: snapshot the destination account's readable name onto each
+-- transfer allocation, so "Transfers waiting on you" (PendingTransfers.js)
+-- can still say exactly where a split was headed even after the account
+-- itself is gone.
+--
+-- dest_account_id is `on delete set null` (PHASE G) -- correct, so
+-- disconnecting/replacing an account doesn't cascade-delete real transfer
+-- history. But accountLabel() in PendingTransfers.js had nothing left to
+-- fall back on once that happened except a generic "an account that's
+-- since been disconnected or renamed" -- no bank link, no account name,
+-- nothing telling the user where the money they already calculated a
+-- split for was actually supposed to go. Reported by a real user (Ann
+-- Mahoney) via screen recording: three categories permanently stuck at
+-- "disconnected or renamed... combined from 9 deposits," each over
+-- $1,000, with a Delete button and nothing else actionable.
+--
+-- dest_account_label is written once, at the moment lib/runSplit.js sets
+-- dest_account_id (both the manual_approval and dwolla_auto branches --
+-- see the allocationRows.push() call there), and never updated afterward
+-- -- it's a point-in-time snapshot ("Chase Checking •••• 1234" as it was
+-- called then), not a live join. Existing rows stay null; there's nothing
+-- to backfill them from, since the whole bug is that the source account's
+-- info is already gone for any row affected by this today.
+alter table simple_transfer_allocations add column if not exists dest_account_label text;
