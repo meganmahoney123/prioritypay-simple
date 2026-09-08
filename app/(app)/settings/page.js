@@ -7,6 +7,7 @@ import { bloomInputStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/
 import MfaSettings from "@/components/MfaSettings";
 import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 import DeleteAccountCard from "@/components/DeleteAccountCard";
+import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 // The persona-switch testing panel below (see /api/dev/set-persona, which
@@ -54,11 +55,17 @@ function SettingsPageInner() {
       });
   }, []);
 
+  // PHASE V: shared by the initial load and by CancelSubscriptionCard's
+  // onChanged callback (after canceling/resuming/accepting the retention
+  // offer) so Settings reflects the new billing.cancelAtPeriodEnd/
+  // currentPeriodEnd/retentionOfferUsed without a full page reload.
+  const loadProfile = () => fetch("/api/profile").then((r) => r.json()).then((d) => {
+    setProfile(d.profile);
+    setLoading(false);
+  });
+
   useEffect(() => {
-    fetch("/api/profile").then((r) => r.json()).then((d) => {
-      setProfile(d.profile);
-      setLoading(false);
-    });
+    loadProfile();
   }, []);
 
   const save = async () => {
@@ -150,6 +157,13 @@ function SettingsPageInner() {
             <PrimaryButton onClick={manageBilling} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Manage billing"}
             </PrimaryButton>
+            <CancelSubscriptionCard
+              cancelAtPeriodEnd={billing.cancelAtPeriodEnd}
+              currentPeriodEnd={billing.currentPeriodEnd}
+              retentionOfferUsed={billing.retentionOfferUsed}
+              formatDate={formatDate}
+              onChanged={loadProfile}
+            />
           </>
         ) : billing.readOnly ? (
           <>

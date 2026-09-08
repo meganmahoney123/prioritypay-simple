@@ -637,3 +637,15 @@ alter table simple_transfer_allocations add column if not exists reconcile_check
 -- G, "on delete set null") leaves nothing to fall back on once that
 -- happens.
 alter table simple_transfer_allocations add column if not exists dest_account_label text;
+
+-- PHASE V: see supabase/migrations/20260908_cancel_at_period_end.sql for the
+-- full write-up. Lets a subscriber schedule cancellation (keeping their
+-- account/data, access continues until the paid period ends) instead of
+-- the only prior option, full account deletion.
+alter table simple_profiles add column if not exists cancel_at_period_end boolean not null default false;
+alter table simple_profiles add column if not exists current_period_end timestamptz;
+-- One-time discount offer shown when someone starts canceling (see
+-- app/api/billing/retention-offer) -- tracked so the same account can't
+-- redeem it repeatedly across multiple cancel attempts. Defaults false for
+-- every existing row (nobody's used it yet, by definition).
+alter table simple_profiles add column if not exists retention_offer_used boolean not null default false;

@@ -38,8 +38,12 @@ export async function POST(request) {
         // subscriber by accident, since their price id still resolves
         // correctly either way.
         let plan = null;
+        // PHASE V: hoisted out of the try block (was declared with `const`
+        // inside it) so current_period_end below can still read it even
+        // when the block itself did nothing but resolve `plan`.
+        let subscription = null;
         try {
-          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          subscription = await stripe.subscriptions.retrieve(session.subscription);
           const subscribedPriceId = subscription.items?.data?.[0]?.price?.id;
           plan = planForPriceId(subscribedPriceId);
         } catch (err) {
@@ -49,6 +53,10 @@ export async function POST(request) {
         const profileUpdate = {
           stripe_subscription_id: session.subscription,
           subscription_status: "active",
+          // PHASE V: a fresh checkout is never mid-cancellation, and this
+          // also covers someone re-subscribing after a previous
+          // cancel_at_period_end -- see app/api/billing/cancel.
+          cancel_at_period_end: false,
         };
         // Only write `plan` when it actually resolved -- a transient Stripe
         // API error must never silently downgrade a Business subscriber to
@@ -56,6 +64,14 @@ export async function POST(request) {
         // to "simple", so skipping it here only affects the rare
         // couldn't-look-it-up case, leaving any existing plan untouched.
         if (plan) profileUpdate.plan = plan;
+        // PHASE V: current_period_end mirrors Stripe's own field so
+        // Settings can show the actual renewal/end date without a live API
+        // call -- see supabase/migrations/20260908_cancel_at_period_end.sql.
+        // Guarded the same way as `plan` above: a transient lookup failure
+        // just leaves this column stale rather than writing garbage.
+        if (subscription?.current_period_end) {
+          profileUpdate.current_period_end = new Date(subscription.current_period_end * 1000).toISOString();
+        }
 
         await admin
           .from("simple_profiles")
@@ -72,9 +88,23 @@ export async function POST(request) {
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       const subscription = event.data.object;
+      // PHASE V: cancel_at_period_end and current_period_end let the
+      // Settings UI show "ending <date>" the whole stretch between someone
+      // confirming cancellation (app/api/billing/cancel) and the period
+      // actually running out -- subscription_status alone stays 'active'
+      // that entire time. A `deleted` event means Stripe already tore the
+      // subscription down, so cancel_at_period_end is meaningless by then;
+      // hardcoding it false just keeps the column from being stuck `true`
+      // forever on a canceled row.
       await admin
         .from("simple_profiles")
-        .update({ subscription_status: subscription.status })
+        .update({
+          subscription_status: subscription.status,
+          cancel_at_period_end: event.type === "customer.subscription.deleted" ? false : !!subscription.cancel_at_period_end,
+          current_period_end: subscription.current_period_end
+            ? new Date(subscription.current_period_end * 1000).toISOString()
+            : null,
+        })
         .eq("stripe_customer_id", subscription.customer);
       break;
     }
