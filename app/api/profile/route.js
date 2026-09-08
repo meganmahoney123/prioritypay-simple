@@ -26,6 +26,13 @@ export async function GET() {
         subscriptionStatus: data.subscription_status,
         trialEndsAt: data.trial_ends_at,
         readOnly: isReadOnly(data),
+        // PHASE V: lets Settings show "ending <date>" + a Resume button
+        // instead of "Manage billing" during the stretch between someone
+        // confirming cancellation and the paid period actually running
+        // out -- subscriptionStatus alone stays "active" that whole time.
+        cancelAtPeriodEnd: !!data.cancel_at_period_end,
+        currentPeriodEnd: data.current_period_end,
+        retentionOfferUsed: !!data.retention_offer_used,
         // Which product tier this account is on (PHASE T). `plan` defaults
         // to "simple" for every existing row; `isBusiness` is the same gate
         // the Business-tier API routes enforce, surfaced here so the UI can

@@ -4,7 +4,7 @@ import { stripeClient, priceId } from "@/lib/stripe";
 
 // The onboarding-specific counterpart to /api/billing/checkout -- same
 // mechanics (create-or-reuse a Stripe Customer, start a Checkout Session
-// for the $7/mo Price), just with success/cancel URLs that land back on
+// for the $12/mo Price -- raised from $7/mo Sep 2026), just with success/cancel URLs that land back on
 // the onboarding flow's Review step instead of Settings. `client_reference_id`
 // is set to this user's id so /api/onboarding/confirm-payment can verify,
 // server-side, that the session it's being asked to confirm actually
