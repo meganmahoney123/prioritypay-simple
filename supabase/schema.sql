@@ -649,3 +649,17 @@ alter table simple_profiles add column if not exists current_period_end timestam
 -- redeem it repeatedly across multiple cancel attempts. Defaults false for
 -- every existing row (nobody's used it yet, by definition).
 alter table simple_profiles add column if not exists retention_offer_used boolean not null default false;
+
+-- PHASE W: revert PHASE M -- deposit-threshold SMS alerts go back to a
+-- genuine opt-in (default off), and the 'Deposit text alerts' card is
+-- restored in Settings (see app/(app)/settings/page.js). Telnyx's toll-free
+-- verification rejected the account over this: the opt-in screenshot
+-- submitted showed the checkbox pre-checked, which doesn't satisfy a
+-- carrier's affirmative-consent requirement no matter what the UI copy
+-- says. Flips the column default back to false and reverts every existing
+-- row to false too (mirrors PHASE M's own backfill, just the opposite
+-- direction) -- there's no real user base yet, so this is a clean revert,
+-- not a decision to silently opt anyone out of something they'd
+-- already turned on for themselves.
+alter table simple_profiles alter column sms_notifications_enabled set default false;
+update simple_profiles set sms_notifications_enabled = false where sms_notifications_enabled = true;
