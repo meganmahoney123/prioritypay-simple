@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [pendingTransfers, setPendingTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [persona, setPersona] = useState(null);
+  const [notifications, setNotifications] = useState(null);
 
   const loadAll = async () => {
     const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes, profileRes, pendingRes] = await Promise.all([
@@ -59,6 +60,7 @@ export default function DashboardPage() {
     setAllTimeTotal(allTimeRes.total || 0);
     setBilling(profileRes.profile?.billing || null);
     setPersona(profileRes.profile?.persona || null);
+    setNotifications(profileRes.profile?.notifications || null);
     setPendingTransfers(pendingRes.allocations || []);
     setLoading(false);
   };
@@ -125,6 +127,25 @@ export default function DashboardPage() {
           </span>{" "}
           $12/month after that.{" "}
           <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe now</Link>
+        </Card>
+      )}
+
+      {/* Persistent (non-dismissible, same as the retirement/investments
+          0% call-outs below) nudge toward turning on SMS deposit alerts --
+          shows every time someone lands on the dashboard until they've both
+          opted in AND saved a phone number in Settings (sms_notifications_
+          enabled + phone_number, see app/api/profile/route.js). Off by
+          default is required for Telnyx's opt-in rules (see PHASE W,
+          supabase/schema.sql) -- this banner is how someone who skipped it
+          during onboarding is reminded it's available, without the
+          checkbox itself ever being pre-checked anywhere. */}
+      {notifications && !(notifications.smsEnabled && notifications.phoneNumber) && (
+        <Card className="p-4 text-sm flex items-start gap-2" style={bloomNoticeCardStyle()}>
+          <span>
+            <span style={{ fontWeight: 600 }}>Get a text the moment a deposit lands.</span>{" "}
+            Turn on SMS deposit alerts in Settings so you never have to remember to check.{" "}
+            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Turn on text alerts</Link>
+          </span>
         </Card>
       )}
 
