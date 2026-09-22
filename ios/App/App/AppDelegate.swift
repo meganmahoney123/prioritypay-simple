@@ -33,6 +33,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    // Forwards the APNs device token (or registration failure) from iOS to
+    // Capacitor's PushNotifications plugin, which re-emits it as the JS
+    // "registration"/"registrationError" events lib/native.js listens for.
+    // Required manual glue for @capacitor/push-notifications -- without
+    // this, PushNotifications.register() silently never resolves on the JS
+    // side even though permissions were granted.
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {
