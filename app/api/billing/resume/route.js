@@ -26,15 +26,23 @@ export async function POST() {
     await stripeClient().subscriptions.update(profile.stripe_subscription_id, {
       cancel_at_period_end: false,
     });
-
-    await admin
-      .from("simple_profiles")
-      .update({ cancel_at_period_end: false })
-      .eq("id", user.id);
-
-    return Response.json({ ok: true });
   } catch (err) {
+    // Only a failure here means the resume itself didn't happen.
     console.error("[billing/resume] Stripe update failed", err.message);
     return Response.json({ error: "Couldn't resume your subscription. Please try again or contact support." }, { status: 500 });
   }
+
+  // Stripe already reflects the resume at this point. Same reasoning as
+  // billing/cancel: don't report failure to the user over a local sync
+  // issue -- the webhook will reconcile simple_profiles shortly after.
+  const { error: dbError } = await admin
+    .from("simple_profiles")
+    .update({ cancel_at_period_end: false })
+    .eq("id", user.id);
+
+  if (dbError) {
+    console.error("[billing/resume] Stripe resume succeeded but local profile sync failed -- webhook will reconcile", dbError.message);
+  }
+
+  return Response.json({ ok: true });
 }

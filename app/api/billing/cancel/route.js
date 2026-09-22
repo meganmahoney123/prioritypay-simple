@@ -30,24 +30,39 @@ export async function POST() {
     return Response.json({ error: "No active subscription to cancel." }, { status: 400 });
   }
 
+  let subscription;
   try {
-    const subscription = await stripeClient().subscriptions.update(profile.stripe_subscription_id, {
+    subscription = await stripeClient().subscriptions.update(profile.stripe_subscription_id, {
       cancel_at_period_end: true,
     });
-
-    await admin
-      .from("simple_profiles")
-      .update({
-        cancel_at_period_end: true,
-        current_period_end: subscription.current_period_end
-          ? new Date(subscription.current_period_end * 1000).toISOString()
-          : null,
-      })
-      .eq("id", user.id);
-
-    return Response.json({ ok: true, currentPeriodEnd: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null });
   } catch (err) {
+    // Only a failure here means the cancellation itself didn't happen --
+    // this is the one case where it's correct to tell the user it failed.
     console.error("[billing/cancel] Stripe update failed", err.message);
     return Response.json({ error: "Couldn't cancel your subscription. Please try again or contact support." }, { status: 500 });
   }
+
+  const currentPeriodEnd = subscription.current_period_end
+    ? new Date(subscription.current_period_end * 1000).toISOString()
+    : null;
+
+  // Stripe is already the source of truth at this point -- the
+  // subscription IS canceled. This local write is just so Settings
+  // reflects it immediately instead of waiting on the webhook. If it
+  // fails, don't tell the user the cancellation failed (it didn't); the
+  // customer.subscription.updated webhook will still land shortly after
+  // and write the same values, so the account self-corrects on its own.
+  const { error: dbError } = await admin
+    .from("simple_profiles")
+    .update({
+      cancel_at_period_end: true,
+      current_period_end: currentPeriodEnd,
+    })
+    .eq("id", user.id);
+
+  if (dbError) {
+    console.error("[billing/cancel] Stripe cancellation succeeded but local profile sync failed -- webhook will reconcile", dbError.message);
+  }
+
+  return Response.json({ ok: true, currentPeriodEnd });
 }

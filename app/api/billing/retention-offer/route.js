@@ -44,15 +44,23 @@ export async function POST() {
       // discount means staying subscribed.
       cancel_at_period_end: false,
     });
-
-    await admin
-      .from("simple_profiles")
-      .update({ retention_offer_used: true, cancel_at_period_end: false })
-      .eq("id", user.id);
-
-    return Response.json({ ok: true });
   } catch (err) {
+    // Only a failure here means the discount/resume itself didn't happen.
     console.error("[billing/retention-offer] Stripe update failed", err.message);
     return Response.json({ error: "Couldn't apply the discount. Please try again or contact support." }, { status: 500 });
   }
+
+  // Stripe already reflects the offer at this point. Same reasoning as
+  // billing/cancel: don't report failure to the user over a local sync
+  // issue -- the webhook will reconcile simple_profiles shortly after.
+  const { error: dbError } = await admin
+    .from("simple_profiles")
+    .update({ retention_offer_used: true, cancel_at_period_end: false })
+    .eq("id", user.id);
+
+  if (dbError) {
+    console.error("[billing/retention-offer] Stripe update succeeded but local profile sync failed -- webhook will reconcile", dbError.message);
+  }
+
+  return Response.json({ ok: true });
 }
