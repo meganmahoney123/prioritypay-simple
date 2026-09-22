@@ -174,7 +174,17 @@ export async function GET() {
   const accountBalanceById = {};
   const accountSubtypeById = {};
   (accountRows || []).forEach((a) => {
-    accountBalanceById[a.id] = Number(a.current_balance) || 0;
+    // Preserve null (Plaid hasn't reported a balance for this account yet
+    // -- e.g. linked moments ago during onboarding, before GET /api/accounts
+    // has ever run to seed a real number) as null, rather than coercing it
+    // to a bare 0 via `Number(null) || 0`. A genuinely unknown balance and
+    // a confirmed $0 balance are not the same thing: the two callers of
+    // this route (this page's own accountBalance === null check, and
+    // onboarding's Starting Balances "over the real balance" validation)
+    // both already treat null as "skip the check, we don't know yet" --
+    // they were just never being given the chance to, since this used to
+    // hand them a fake 0 first.
+    accountBalanceById[a.id] = a.current_balance === null || a.current_balance === undefined ? null : Number(a.current_balance);
     accountSubtypeById[a.id] = a.subtype || null;
   });
   // Credit and business accounts get their own dedicated UI on the

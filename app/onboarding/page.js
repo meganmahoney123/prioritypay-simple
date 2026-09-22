@@ -365,9 +365,28 @@ function OnboardingPageInner() {
   useEffect(() => {
     if (step !== 4) return;
     setBalancesLoading(true);
-    fetch("/api/allocations/account-balances")
-      .then((r) => r.json())
-      .then((data) => setAccountBalances(data.accounts || []))
+    // An account linked earlier THIS SAME onboarding session has never had
+    // its current_balance seeded -- app/api/plaid/exchange-public-token
+    // deliberately leaves it null (Plaid's initial data pull isn't
+    // guaranteed done yet right after Link succeeds), and the only place
+    // that fills it in with a real, live Plaid number is GET /api/accounts
+    // (the Accounts page). Nothing in onboarding calls that route before
+    // now, so without this, /api/allocations/account-balances below reads
+    // a still-null current_balance, coerces it to a bare 0 ("Number(null)
+    // || 0"), and the Starting Balances step then reports every account as
+    // having a real balance of exactly $0 -- blocking anyone from entering
+    // a nonzero starting balance for an account that, in reality, Plaid
+    // just hasn't reported on yet. Firing GET /api/accounts here (fire-
+    // and-forget -- its own response isn't used, only its side effect of
+    // writing a fresh current_balance/balance_reconciled_at per account)
+    // closes that gap before the balance check below runs.
+    fetch("/api/accounts")
+      .catch((err) => console.error("[onboarding] balance reconciliation fetch failed", err))
+      .then(() =>
+        fetch("/api/allocations/account-balances")
+          .then((r) => r.json())
+          .then((data) => setAccountBalances(data.accounts || []))
+      )
       .finally(() => setBalancesLoading(false));
     // Only re-fetch on entering this step, not on every percent/accounts
     // change -- categories already save immediately as they're linked
