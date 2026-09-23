@@ -5,20 +5,25 @@ import { ArrowRight } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomNoticeCardStyle } from "@/lib/bloomTheme";
 
-const UNALLOCATED = "__unallocated__";
+const UNALLOCATED_PREFIX = "unallocated:";
+const isUnallocatedValue = (v) => typeof v === "string" && v.startsWith(UNALLOCATED_PREFIX);
+const unallocatedAccountIdFromValue = (v) => (isUnallocatedValue(v) ? v.slice(UNALLOCATED_PREFIX.length) : null);
 
 // One-time, ad-hoc moves of money into (or between) tracked categories --
 // distinct from the automatic paycheck splits (see lib/runSplit.js) and
 // from recording an expense (Withdrawals tab). Both the "from" and "to"
-// side use the SAME picker: every tracked category, plus "Unallocated"
-// (cash sitting in a connected account that isn't earmarked for any
-// category yet). Picking Unallocated on either side reveals a second
-// dropdown asking which account that cash is in/going to, since someone
-// can have unallocated cash sitting in more than one account. Both sides
-// can be a category, both can't be Unallocated at once (moving
-// uncommitted cash between accounts isn't something this app tracks --
-// there's no category event to log), and same-category-both-sides is
-// blocked server-side too.
+// picker list two kinds of things, grouped: every tracked category (each
+// one lives in exactly one linked account -- see simple_split_rules_
+// percent.account_id -- so no further account question is ever needed for
+// those), and "Unallocated cash" broken out per connected account (cash
+// sitting in that account that isn't earmarked for any category yet --
+// someone can have unallocated cash in more than one account, so this is
+// a distinct option per account rather than one generic "Unallocated"
+// that would need a follow-up "which account?" question). Both sides can
+// be a category, both can't be Unallocated at once (moving uncommitted
+// cash between accounts isn't something this app tracks -- there's no
+// category event to log), and same-category-both-sides is blocked
+// server-side too.
 //
 // Two different things can happen when you hit "Transfer", depending on
 // whether the two sides actually live in the same bank account:
@@ -44,13 +49,15 @@ export default function TransfersPage() {
   const [accounts, setAccounts] = useState([]);
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
   const [categoryBalances, setCategoryBalances] = useState({});
+  const [unallocatedByAccountId, setUnallocatedByAccountId] = useState({});
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [fromLabel, setFromLabel] = useState(""); // "" | UNALLOCATED | category label
-  const [fromAccountId, setFromAccountId] = useState("");
+  // "" | `unallocated:<accountId>` | category label -- a single value
+  // carries both what's being moved AND, for Unallocated, which real
+  // account it's in, so there's never a second "which account?" question.
+  const [fromLabel, setFromLabel] = useState("");
   const [toLabel, setToLabel] = useState("");
-  const [toAccountId, setToAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -59,14 +66,18 @@ export default function TransfersPage() {
   const [confirming, setConfirming] = useState(false);
 
   const load = async () => {
-    const [accountsRes, rulesRes, balancesRes] = await Promise.all([
+    const [accountsRes, rulesRes, balancesRes, accountBalancesRes] = await Promise.all([
       fetch("/api/accounts").then((r) => r.json()),
       fetch("/api/split-rules").then((r) => r.json()),
       fetch("/api/allocations/balances").then((r) => r.json()),
+      fetch("/api/allocations/account-balances").then((r) => r.json()),
     ]);
     setAccounts(accountsRes.accounts || []);
     setSplitRulesPercent(rulesRes.splitRules?.percent || []);
     setCategoryBalances(balancesRes.balances || {});
+    setUnallocatedByAccountId(
+      Object.fromEntries((accountBalancesRes.accounts || []).map((a) => [a.accountId, a.unallocated]))
+    );
     setLoading(false);
   };
 
@@ -76,12 +87,15 @@ export default function TransfersPage() {
 
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
   const rulesByLabel = useMemo(() => Object.fromEntries(splitRulesPercent.map((r) => [r.label, r])), [splitRulesPercent]);
-  const fromIsUnallocated = fromLabel === UNALLOCATED;
-  const toIsUnallocated = toLabel === UNALLOCATED;
+  const fromIsUnallocated = isUnallocatedValue(fromLabel);
+  const toIsUnallocated = isUnallocatedValue(toLabel);
+  const fromAccountId = unallocatedAccountIdFromValue(fromLabel);
+  const toAccountId = unallocatedAccountIdFromValue(toLabel);
 
   // A category picked on one side can't also be picked on the other --
-  // Unallocated is excluded from this filter since it's fine to reference
-  // the concept on both sides (just not both at once, blocked below).
+  // an Unallocated-cash option is excluded from this filter since it's
+  // fine to reference the same account's unallocated cash on both sides
+  // (just not both sides being Unallocated at once, blocked below).
   const fromOptions = splitRulesPercent.filter((r) => r.label !== toLabel);
   const toOptions = splitRulesPercent.filter((r) => r.label !== fromLabel);
 
@@ -90,11 +104,12 @@ export default function TransfersPage() {
   const insufficientCategoryFunds = fromBalance !== null && amt > 0 && amt > fromBalance;
   const bothUnallocated = fromIsUnallocated && toIsUnallocated;
 
-  // The real bank account each side lives in -- picked explicitly if that
-  // side is Unallocated, or looked up from the category's own linked
-  // account otherwise. If these differ, real money has to travel between
-  // them (see the file-level comment above); if they match (or either
-  // side has no linked account at all), it's pure bookkeeping.
+  // The real bank account each side lives in -- read straight off the
+  // selected value if that side is Unallocated cash, or looked up from
+  // the category's own linked account otherwise. If these differ, real
+  // money has to travel between them (see the file-level comment above);
+  // if they match (or either side has no linked account at all), it's
+  // pure bookkeeping.
   const resolvedFromAccountId = fromIsUnallocated ? fromAccountId : rulesByLabel[fromLabel]?.accountId || null;
   const resolvedToAccountId = toIsUnallocated ? toAccountId : rulesByLabel[toLabel]?.accountId || null;
 
@@ -119,9 +134,7 @@ export default function TransfersPage() {
 
   const resetForm = () => {
     setFromLabel("");
-    setFromAccountId("");
     setToLabel("");
-    setToAccountId("");
     setAmount("");
     setNote("");
     setError(null);
@@ -256,38 +269,26 @@ export default function TransfersPage() {
           <label className="text-xs font-semibold block mb-1">Transfer from</label>
           <select
             value={fromLabel}
-            onChange={(e) => {
-              setFromLabel(e.target.value);
-              setFromAccountId("");
-            }}
+            onChange={(e) => setFromLabel(e.target.value)}
             className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
           >
             <option value="">Select…</option>
-            <option value={UNALLOCATED}>Unallocated</option>
-            {fromOptions.map((r) => (
-              <option key={r.id} value={r.label}>
-                {r.label} — {currency(categoryBalances[r.label] || 0)} available
-              </option>
-            ))}
+            <optgroup label="Unallocated cash">
+              {accounts.map((a) => (
+                <option key={`from-unalloc-${a.id}`} value={`${UNALLOCATED_PREFIX}${a.id}`}>
+                  {a.institution_name} {a.account_name} •••• {a.mask}
+                  {unallocatedByAccountId[a.id] != null ? ` — ${currency(unallocatedByAccountId[a.id])} available` : ""}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Categories">
+              {fromOptions.map((r) => (
+                <option key={r.id} value={r.label}>
+                  {r.label} — {currency(categoryBalances[r.label] || 0)} available
+                </option>
+              ))}
+            </optgroup>
           </select>
-          {fromIsUnallocated && (
-            <div className="mt-2">
-              <label className="text-xs font-semibold block mb-1">Which account is that cash in?</label>
-              <select
-                value={fromAccountId}
-                onChange={(e) => setFromAccountId(e.target.value)}
-                className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
-              >
-                <option value="">Select an account…</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.institution_name} {a.account_name} •••• {a.mask}
-                    {a.current_balance != null ? ` — ${currency(a.current_balance)}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           {fromBalance !== null && (
             <p className="text-xs mt-1.5" style={{ color: "var(--color-neutral-700)" }}>
               {currency(fromBalance)} currently available in {fromLabel}.
@@ -303,38 +304,26 @@ export default function TransfersPage() {
           <label className="text-xs font-semibold block mb-1">Transfer to</label>
           <select
             value={toLabel}
-            onChange={(e) => {
-              setToLabel(e.target.value);
-              setToAccountId("");
-            }}
+            onChange={(e) => setToLabel(e.target.value)}
             className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
           >
             <option value="">Select…</option>
-            <option value={UNALLOCATED}>Unallocated</option>
-            {toOptions.map((r) => (
-              <option key={r.id} value={r.label}>
-                {r.label} — {currency(categoryBalances[r.label] || 0)} available
-              </option>
-            ))}
+            <optgroup label="Unallocated cash">
+              {accounts.map((a) => (
+                <option key={`to-unalloc-${a.id}`} value={`${UNALLOCATED_PREFIX}${a.id}`}>
+                  {a.institution_name} {a.account_name} •••• {a.mask}
+                  {unallocatedByAccountId[a.id] != null ? ` — ${currency(unallocatedByAccountId[a.id])} available` : ""}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Categories">
+              {toOptions.map((r) => (
+                <option key={r.id} value={r.label}>
+                  {r.label} — {currency(categoryBalances[r.label] || 0)} available
+                </option>
+              ))}
+            </optgroup>
           </select>
-          {toIsUnallocated && (
-            <div className="mt-2">
-              <label className="text-xs font-semibold block mb-1">Which account should it land in?</label>
-              <select
-                value={toAccountId}
-                onChange={(e) => setToAccountId(e.target.value)}
-                className="w-full text-sm border border-neutral-200 rounded-lg px-3 py-2"
-              >
-                <option value="">Select an account…</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.institution_name} {a.account_name} •••• {a.mask}
-                    {a.current_balance != null ? ` — ${currency(a.current_balance)}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
 
         {bothUnallocated && (
