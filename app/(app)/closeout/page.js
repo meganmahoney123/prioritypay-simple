@@ -12,7 +12,7 @@ import WithdrawalAllocator from "@/components/WithdrawalAllocator";
 import TaxSummarySection from "@/components/TaxSummarySection";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
-import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, pickUniqueColor, isW2NoSideHustle } from "@/lib/allocations";
+import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, pickUniqueColor, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 
 function defaultPeriod() {
   const now = new Date();
@@ -76,7 +76,7 @@ export default function CloseoutPage() {
   const [calculatorPlanType, setCalculatorPlanType] = useState(null);
   const [annualNetIncome, setAnnualNetIncome] = useState("");
   const [annualTaxRatePct, setAnnualTaxRatePct] = useState(25);
-  const [w2PopupStep, setW2PopupStep] = useState("ask");
+  const [w2PopupStep, setW2PopupStep] = useState("closed");
   // Whether "W2 Income" should be offered as a category option on the
   // transaction rows below. Defaults true (matches the always-shown
   // behavior before this existed) so nothing changes until the popup is
@@ -95,6 +95,20 @@ export default function CloseoutPage() {
   // pitches don't apply here (see the retirement recommendation cards
   // below) -- they get 401k/IRA/HSA copy instead.
   const isW2NoSideHustlePersona = isW2NoSideHustle(persona);
+
+  // The "Do you have W2 income this month?" popup only makes sense for
+  // someone whose persona actually involves a W2 paycheck -- for every
+  // other persona (self-employed, business owner, etc.) there's no W2
+  // income to ask about, so it should never appear. Decided once persona
+  // finishes loading (it starts null -- see the `load()` fetch above --
+  // so this effect fires exactly once per page load, right when the real
+  // value arrives) rather than defaulting open, which used to pop this up
+  // for every persona regardless of relevance.
+  useEffect(() => {
+    if (persona === null) return;
+    setW2PopupStep(isW2NoSideHustlePersona || isW2WithSideHustle(persona) ? "ask" : "closed");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persona]);
   const baseDepositCats = hasW2Income ? DEPOSIT_CATS : DEPOSIT_CATS.filter((c) => c.value !== "w2_income");
   const depositCats = isBusinessOwnerWithEmployees ? [...baseDepositCats, { value: "business", label: "Business" }] : baseDepositCats;
   const chargeCats = isBusinessOwnerWithEmployees ? [...CHARGE_CATS, { value: "business", label: "Business" }] : CHARGE_CATS;
