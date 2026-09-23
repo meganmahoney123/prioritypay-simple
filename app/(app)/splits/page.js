@@ -209,6 +209,47 @@ function SplitRulesPageInner() {
 
   return (
     <div className="space-y-6" style={{ maxWidth: 780 }}>
+      {/* Megan's own feedback after a first real session on this page --
+          the bottom Save button (still there below, unchanged) was easy
+          to miss entirely, and it wasn't obvious that nothing typed above
+          is actually saved until it's clicked. This bar puts the same
+          Save action right at the top AND keeps it pinned in view while
+          scrolling, with that "not saved yet" caveat spelled out, so it's
+          impossible to lose track of. `top` is an approximation of
+          AppShell's own sticky header height (see components/AppShell.js)
+          -- there's no shared CSS variable for that yet, so this is a
+          plain pixel estimate rather than something measured, and could
+          drift a few px out of alignment if that header's height ever
+          changes. */}
+      <div
+        style={{
+          position: "sticky",
+          top: 78,
+          zIndex: 10,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "8px 16px",
+          margin: "0 -4px",
+          padding: "12px 16px",
+          background: "rgba(250,247,253,0.95)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid var(--color-divider)",
+          borderRadius: "var(--radius-md)",
+        }}
+      >
+        <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+          Nothing below is saved until you hit Save.
+        </span>
+        <span className="flex items-center gap-3 flex-wrap">
+          <PrimaryButton onClick={handleSave} disabled={startingBalanceOverBudget} style={{ borderRadius: "var(--radius-pill)" }}>
+            <Save size={16} /> Save split rules
+          </PrimaryButton>
+          {saved && <span className="text-sm" style={{ color: "#4E22B8", fontFamily: "var(--font-heading)", fontWeight: 700 }}>Saved.</span>}
+        </span>
+      </div>
+
       <div>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px, 3.4vw, 36px)", fontWeight: 800, margin: "0 0 8px" }}>
           Split every deposit by percentage
