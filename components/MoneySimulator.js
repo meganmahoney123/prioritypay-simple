@@ -195,7 +195,7 @@ export default function MoneySimulator({
                   />
                 ) : (
                   <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                    {r.label}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{r.label}</span>
                     {r.fixed && (
                       <span
                         style={{
