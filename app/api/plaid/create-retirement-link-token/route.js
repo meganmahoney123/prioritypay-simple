@@ -1,7 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { plaidClient } from "@/lib/plaid";
 import { CountryCode, Products } from "plaid";
-import { TRANSFER_EXECUTION_MODE } from "@/lib/executionMode";
 
 // Same as create-link-token, but scoped with account_filters so the only
 // accounts selectable in Link are retirement accounts -- a regular checking
@@ -36,10 +35,10 @@ export async function POST(request) {
   }
 
   try {
-    // Same Auth cost-skip as create-link-token -- see lib/executionMode.js.
-    const products = TRANSFER_EXECUTION_MODE === "dwolla_auto"
-      ? [Products.Auth, Products.Transactions, Products.Investments]
-      : [Products.Transactions, Products.Investments];
+    // Same Auth cost-skip as create-link-token -- PriorityPay never
+    // originates a transfer itself, so there's no reason to request Plaid's
+    // Auth product here.
+    const products = [Products.Transactions, Products.Investments];
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
       client_name: "PriorityPay",

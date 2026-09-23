@@ -5,7 +5,7 @@ import { CountryCode, Products } from "plaid";
 // Same shape as create-credit-link-token, for the same reason: a business
 // checking/savings account linked here is for balance visibility only,
 // never a split/transfer source or destination, so it never needs the
-// Auth product or a Dwolla funding source. account_filters restricts Link
+// Auth product or ever be a transfer source. account_filters restricts Link
 // to checking/savings so this flow can't accidentally capture a credit
 // card (that already has its own dedicated flow) or an investment account.
 // Only surfaced to the "Business Owner (With Employees)" persona -- see

@@ -4,9 +4,8 @@ import { stripeClient, planForPriceId } from "@/lib/stripe";
 // Register this URL (https://prioritypay.co/api/stripe/webhook) as a
 // webhook endpoint in the Stripe dashboard (Developers > Webhooks),
 // listening for the four events below. Verifies Stripe's signature
-// before trusting the payload -- same shape as the Dwolla webhook
-// handler (app/api/dwolla/webhook/route.js), just using Stripe's own SDK
-// helper instead of doing the HMAC comparison by hand.
+// before trusting the payload, using Stripe's own SDK helper instead of
+// doing the HMAC comparison by hand.
 //
 // subscription_status is looked up by stripe_customer_id, not
 // stripe_subscription_id, because checkout.session.completed fires before

@@ -25,7 +25,7 @@ function formatShortDate(iso) {
 // against NEW writes now, but a category set up before that guard existed
 // can still be carrying old drift). Real transfer_allocations dollars are
 // excluded from this score since those are tied to an actual settled
-// Dwolla transfer and can't be the cause. Used only to rank which
+// transfer and can't be the cause. Used only to rank which
 // category to point at first in the discrepancy breakdown below.
 function likelyCauseScore(breakdown) {
   if (!breakdown) return 0;

@@ -7,11 +7,12 @@ import PlaidLinkButton from "@/components/PlaidLinkButton";
 import AccountCategoryBreakdown from "@/components/AccountCategoryBreakdown";
 import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 
-// Identity verification (Dwolla KYC) used to gate this whole page -- see
-// the removed dwollaStatus check below and the equivalent removal in
-// app/onboarding/page.js. That was required because Dwolla originated
-// real transfers on someone's behalf; manual-approval mode
-// (lib/runSplit.js) means PriorityPay never touches money itself, so
+// Identity verification used to gate this whole page -- see the removed
+// verification-status check below and the equivalent removal in
+// app/onboarding/page.js. That was required back when this app applied to
+// originate real transfers on someone's behalf, which never came through;
+// manual-approval mode (lib/runSplit.js) means PriorityPay never touches
+// money itself, so
 // there's nothing left that actually needs identity verified before
 // connecting an account.
 export default function AccountsPage() {

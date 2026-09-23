@@ -47,8 +47,8 @@ export async function GET() {
 // see /api/allocations/balances -- can't cover the whole amount). The
 // server trusts the client's math here for the same reason
 // computeAllocations' server-side caller does elsewhere in this app: the
-// user is spending their own already-in-their-account money, not moving
-// funds through Dwolla, so there's no external transfer to protect against
+// user is spending their own already-in-their-account money, not
+// originating an external transfer, so there's nothing to protect against
 // double-submission the way runSplit.js guards deposits. It does still
 // enforce that the allocations sum to the withdrawal amount, since that's
 // the one invariant the whole cascade UI exists to guarantee.

@@ -9,8 +9,8 @@ const STORAGE_KEY = "pp_plaid_link_token";
 
 // Real Plaid Link (sandbox). Fetches a link_token on mount, opens Plaid's
 // hosted UI, and on success exchanges the public_token server-side (see
-// app/api/plaid/exchange-public-token) which also wires the Dwolla funding
-// source. `onLinked(account)` fires once the whole chain finishes.
+// app/api/plaid/exchange-public-token) to store the linked account.
+// `onLinked(account)` fires once the whole chain finishes.
 //
 // Some institutions (Chase, Bank of America, Wells Fargo -- in both sandbox
 // and real life) use Plaid's OAuth flow: Link redirects the whole page out
@@ -26,9 +26,9 @@ const STORAGE_KEY = "pp_plaid_link_token";
 // Link against an *already linked* account (see
 // app/api/plaid/create-update-link-token) to grant a product it didn't
 // originally have, instead of creating a brand new one. On success there's
-// no public_token to exchange (same Item, same Dwolla funding source --
-// nothing new to attach), so it just calls /api/plaid/sync-cursor to
-// establish a baseline and reports back via `onUpdated`.
+// no public_token to exchange (same Item, nothing new to attach), so it
+// just calls /api/plaid/sync-cursor to establish a baseline and reports
+// back via `onUpdated`.
 export default function PlaidLinkButton({
   onLinked,
   onUpdated,

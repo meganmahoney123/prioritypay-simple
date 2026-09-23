@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseServer, supabaseAdmin } from "@/lib/supabaseServer";
 
-// Dwolla's app-approval checklist requires locking an account for at least
-// 30 minutes after 10 incorrect password attempts. This route is the only
+// Login security policy requires locking an account for at least 30
+// minutes after 10 incorrect password attempts. This route is the only
 // path app/login/page.js uses to sign in, so it's the single place that
 // enforcement lives -- see the comment above simple_login_lockouts in
 // supabase/schema.sql for why this is app-level rather than a Supabase Auth

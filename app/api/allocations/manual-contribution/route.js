@@ -6,8 +6,8 @@ import { checkAccountRoomForLabel } from "@/lib/categoryRoom";
 // someone has extra cash on hand and wants to throw an extra $200 at their
 // Wedding fund without waiting for it to come out of a real paycheck
 // split. Deliberately NOT modeled as a fake simple_transfers/
-// simple_transfer_allocations row (those represent a real Dwolla-moved
-// deposit split -- see lib/runSplit.js) -- this is its own small table,
+// simple_transfer_allocations row (those represent a real deposit split
+// -- see lib/runSplit.js) -- this is its own small table,
 // simple_manual_contributions, so "money PriorityPay actually split out of
 // a deposit" and "money a person told us to credit to a category by hand"
 // stay distinguishable in the data, even though

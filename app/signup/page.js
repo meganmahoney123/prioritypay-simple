@@ -35,9 +35,9 @@ function SignupPageInner() {
     setLoading(true);
     setError(null);
     const supabase = supabaseBrowser();
-    // Dwolla never actually originates a transfer in manual_approval mode
-    // (see lib/runSplit.js), so there's no Dwolla-governed identity
-    // verification or money movement happening here to consent to --
+    // PriorityPay never originates a transfer itself in manual_approval mode
+    // (see lib/runSplit.js), so there's no identity verification or money
+    // movement happening here to consent to --
     // just PriorityPay's own Terms/Privacy. Still recording the timestamp
     // in Supabase auth user_metadata (rather than a separate DB table) so
     // it's captured at the moment of signup with no extra migration or

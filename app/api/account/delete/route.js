@@ -19,13 +19,12 @@ import { stripeClient } from "@/lib/stripe";
 // cascade, this route silently stops covering it, so any new user-owned
 // table should keep that pattern.
 //
-// What this does NOT delete: the Plaid Item (bank connection) and Dwolla
-// customer records on Plaid's/Dwolla's side. Those platforms are the
-// system of record for their own data and have their own deletion/GDPR
-// processes -- PriorityPay only ever held a reference (plaid_access_token,
-// dwolla_customer_url), which is gone the moment simple_accounts /
-// simple_dwolla_customers cascade-delete. This is the same boundary the
-// privacy policy already describes for third-party processors.
+// What this does NOT delete: the Plaid Item (bank connection) on Plaid's
+// side. Plaid is the system of record for its own data and has its own
+// deletion/GDPR process -- PriorityPay only ever held a reference
+// (plaid_access_token), which is gone the moment simple_accounts
+// cascade-deletes. This is the same boundary the privacy policy already
+// describes for third-party processors.
 export async function POST() {
   const user = await requireUser();
   if (!user) return unauthorized();

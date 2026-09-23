@@ -16,8 +16,8 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     // Goes through our own API route (not supabase.auth.signInWithPassword
-    // directly) so the per-account failed-login lockout Dwolla requires can
-    // be enforced -- see app/api/auth/login/route.js.
+    // directly) so the per-account failed-login lockout policy can be
+    // enforced -- see app/api/auth/login/route.js.
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

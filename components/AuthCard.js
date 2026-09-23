@@ -9,8 +9,8 @@ import PriorityPayLogo from "@/components/PriorityPayLogo";
 // "Bloom" purple redesign handoff (spec 13a-login-and-empty-hubs.md). The
 // stacked logo lockup, filled 56px inputs, and pill submit button match the
 // rest of the redesigned marketing/calculator pages. Each page still owns
-// its own auth call (login posts to /api/auth/login to enforce Dwolla's
-// failed-login lockout, signup does its own thing), loading/error state,
+// its own auth call (login posts to /api/auth/login to enforce the
+// failed-login lockout policy, signup does its own thing), loading/error state,
 // and copy -- this file only changes chrome.
 const fieldLabelStyle = {
   display: "block",

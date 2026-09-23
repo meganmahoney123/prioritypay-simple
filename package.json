@@ -20,7 +20,6 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "capacitor-native-biometric": "^4.2.2",
-    "dwolla-v2": "^3.4.0",
     "lucide-react": "^0.383.0",
     "next": "^15.5.23",
     "pdf-lib": "^1.17.1",

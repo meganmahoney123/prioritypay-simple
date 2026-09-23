@@ -29,8 +29,8 @@ import { reconcileInTransitAllocations } from "@/lib/reconcileTransfers";
 // it synchronously) -- this route just no longer trusts that value as
 // authoritative; it overwrites it with Plaid's real answer on every call.
 //
-// Never returns plaid_access_token or dwolla_funding_source_id to the
-// client -- those stay server-side. The client only ever sees the id it
+// Never returns plaid_access_token to the client -- that stays
+// server-side. The client only ever sees the id it
 // needs to reference an account when connecting a category to it.
 export async function GET() {
   const user = await requireUser();

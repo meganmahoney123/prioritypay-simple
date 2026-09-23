@@ -33,9 +33,8 @@ import guideStyles from "./guideStyles";
 // background instead of solid purple. The design file's
 // own <header class="site-head">/<footer class="site-foot"> are dropped in
 // favor of the real PublicHeader/PublicFooter components below -- also why
-// this doesn't reintroduce the design file's own footer copy, which still
-// says "Money movement is performed by Dwolla, Inc." (stale, already
-// corrected sitewide in PublicFooter.js).
+// this doesn't reintroduce the design file's own stale footer copy
+// (already corrected sitewide in PublicFooter.js).
 //
 // The interactive "shorten this guide to my situation" filter (four
 // dropdowns + checkboxes that hide irrelevant rows) is the same vanilla JS

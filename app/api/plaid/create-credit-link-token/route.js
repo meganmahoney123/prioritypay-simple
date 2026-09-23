@@ -3,7 +3,7 @@ import { plaidClient } from "@/lib/plaid";
 import { CountryCode, Products } from "plaid";
 
 // Separate from create-link-token on purpose: credit cards never need the
-// Auth product (no routing/account number, never a Dwolla funding source),
+// Auth product (no routing/account number, never a transfer source),
 // and account_filters restricts Link to credit-card subtypes only so a
 // checking/savings account never accidentally lands in this flow. Linked
 // purely so close-out (app/api/closeout/[period]) can see credit-card

@@ -7,13 +7,13 @@ import { decryptToken } from "@/lib/tokenCrypto";
 // "Update mode for new products" -- lets someone re-consent an *already
 // linked* account to Transactions without going through a full new Link
 // flow. This matters because a full new Link flow would end with us
-// calling exchange-public-token again, which tries to attach a brand-new
-// Dwolla funding source -- and in Sandbox specifically, re-linking with
-// the default test credentials always resolves to the exact same canned
-// account/routing number, so Dwolla correctly rejects it as a duplicate
-// of the funding source that's already there. Passing `access_token`
-// (instead of requesting fresh `products`) tells Plaid this is the same
-// Item asking for broader consent, not a new one; `additional_consented_products`
+// calling exchange-public-token again, which would try to re-link the
+// account from scratch -- and in Sandbox specifically, re-linking with the
+// default test credentials always resolves to the exact same canned
+// account/routing number, so a fresh insert would collide with the
+// account that's already there. Passing `access_token` (instead of
+// requesting fresh `products`) tells Plaid this is the same Item asking
+// for broader consent, not a new one; `additional_consented_products`
 // is what actually grants Transactions on top of whatever it already had.
 export async function POST(request) {
   const user = await requireUser();

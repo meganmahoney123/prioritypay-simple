@@ -20,9 +20,10 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
 // -- manual_approval mode calculates the split and lets the user send each
 // transfer themselves, with zero standing transfer authority required).
-// The old gate below assumed onboarding was blocked on Dwolla production
-// access; that assumption no longer holds. Flip back to false only if
-// onboarding needs to be paused for some other reason.
+// The old gate below assumed onboarding was blocked on a payments-rail
+// approval that never came through; that assumption no longer holds. Flip
+// back to false only if onboarding needs to be paused for some other
+// reason.
 const ONBOARDING_LIVE = true;
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
@@ -116,8 +117,8 @@ function OnboardingPageInner() {
   const [employeePayroll, setEmployeePayroll] = useState("");
   const [incomeHandling, setIncomeHandling] = useState(null);
   const isBusinessOwnerWithEmployees = businessType === HAS_EMPLOYEES_TYPE;
-  // Identity verification (Dwolla KYB/KYC) was required here back when
-  // Dwolla originated real transfers on someone's behalf -- see the
+  // Identity verification (KYB/KYC) was required here back when this app
+  // applied to originate real transfers on someone's behalf -- see the
   // removed Identity step below. Manual-approval mode (lib/runSplit.js)
   // means PriorityPay never touches money itself, so there's nothing left
   // that actually requires verifying identity before connecting accounts.

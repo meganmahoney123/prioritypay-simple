@@ -39,9 +39,9 @@ const unallocatedAccountIdFromValue = (v) => (isUnallocatedValue(v) ? v.slice(UN
 //     lib/categoryRoom.js exists to prevent). Clicking Transfer in that
 //     case doesn't submit anything yet -- it drops into a confirmation
 //     step naming the two real accounts and the real ACH amount, and only
-//     firing the actual transfer (via POST /api/allocations/execute-real-
-//     transfer, the same Dwolla mechanism Close-Out's "top up" button
-//     uses) once that's explicitly confirmed.
+//     recording the transfer for the user to go send themselves (via POST
+//     /api/allocations/execute-real-transfer, the same mechanism
+//     Close-Out's "top up" button uses) once that's explicitly confirmed.
 // Either way, category balances update everywhere else in the product
 // immediately afterward (Dashboard, the per-account pies on Accounts, the
 // Close-Out shortfall cascade, the Withdrawals category picker), since
