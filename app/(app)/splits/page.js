@@ -205,6 +205,26 @@ function SplitRulesPageInner() {
     await saveNow(percent);
   };
 
+  // AppShell's own header (components/AppShell.js) isn't a fixed height --
+  // its title uses a responsive clamp() font-size, so the header runs
+  // anywhere from ~78px to ~96px+ tall depending on viewport width. This
+  // bar used to hardcode `top: 78` as a rough guess, which left it a
+  // visible ~18px too high (clipped under the real header) at wider
+  // widths. Measuring the actual header on mount and on resize keeps this
+  // bar pinned exactly below it regardless of viewport size, instead of
+  // drifting out of alignment again the next time that header's height
+  // changes.
+  const [stickyTop, setStickyTop] = useState(84);
+  useEffect(() => {
+    const measure = () => {
+      const header = document.querySelector("header");
+      if (header) setStickyTop(header.getBoundingClientRect().height);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
@@ -215,16 +235,14 @@ function SplitRulesPageInner() {
           is actually saved until it's clicked. This bar puts the same
           Save action right at the top AND keeps it pinned in view while
           scrolling, with that "not saved yet" caveat spelled out, so it's
-          impossible to lose track of. `top` is an approximation of
-          AppShell's own sticky header height (see components/AppShell.js)
-          -- there's no shared CSS variable for that yet, so this is a
-          plain pixel estimate rather than something measured, and could
-          drift a few px out of alignment if that header's height ever
-          changes. */}
+          impossible to lose track of. `top` is measured live off
+          AppShell's own sticky header (see the stickyTop effect above)
+          rather than a hardcoded guess, since that header's height
+          actually varies by viewport width. */}
       <div
         style={{
           position: "sticky",
-          top: 78,
+          top: stickyTop,
           zIndex: 10,
           display: "flex",
           alignItems: "center",
