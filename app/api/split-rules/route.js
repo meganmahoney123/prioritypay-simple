@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { investmentTypeFromLabel } from "@/lib/allocations";
+import { refreshAccountBalance } from "@/lib/refreshAccountBalance";
 
 // PriorityPay Simple has no fixed-minimums layer at all -- every category is
 // a percentage of each deposit, full stop. `fixed` is kept as an always-empty
@@ -79,6 +80,17 @@ export async function PUT(request) {
   // picture -- no need to merge with what's currently in the DB.
   const accountIds = [...new Set(percent.map((r) => r.accountId).filter(Boolean))];
   if (accountIds.length) {
+    // Ask Plaid for each account's real balance right now, before reading
+    // current_balance below -- someone can leave this page open a while
+    // before typing a starting balance and hitting Save, so trusting
+    // whatever was cached the last time Accounts/Dashboard happened to
+    // load risks approving (or rejecting) a starting balance against a
+    // number that's since drifted. Best-effort, same as everywhere else
+    // this pattern is used (see refreshAccountBalance's own comment) --
+    // a failed live check still leaves this validation running against
+    // the last known balance rather than blocking the save outright.
+    await Promise.all(accountIds.map((id) => refreshAccountBalance(admin, id)));
+
     const { data: accountRows } = await admin
       .from("simple_accounts")
       .select("id, institution_name, account_name, mask, current_balance")

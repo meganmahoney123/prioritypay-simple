@@ -6,7 +6,7 @@ import { Plus, Save } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
@@ -77,6 +77,16 @@ function SplitRulesPageInner() {
 
   const totalPct = useMemo(() => pctTotal(percent), [percent]);
   const remainingPct = roundPct(Math.max(0, 100 - totalPct));
+  // Same over-budget check PercentSplitEditor uses for its own inline
+  // warning card (components/PercentSplitEditor.js /
+  // computeStartingBalanceRoom in lib/allocations.js) -- surfaced here
+  // too so Save itself can be blocked client-side, matching onboarding's
+  // own disabled={startingBalanceOverBudget} precedent, rather than
+  // relying only on the server rejecting the request after the fact.
+  const startingBalanceOverBudget = useMemo(
+    () => computeStartingBalanceRoom(percent, accounts).anyOver,
+    [percent, accounts]
+  );
 
   // Same one-row-at-a-time "over 100%" warning as onboarding's Percentage
   // Splits step (see app/onboarding/page.js) -- surfaced here too since
@@ -304,10 +314,15 @@ function SplitRulesPageInner() {
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
-        <PrimaryButton onClick={handleSave} style={{ borderRadius: "var(--radius-pill)" }}>
+        <PrimaryButton onClick={handleSave} disabled={startingBalanceOverBudget} style={{ borderRadius: "var(--radius-pill)" }}>
           <Save size={16} /> Save split rules
         </PrimaryButton>
         {saved && <span className="text-sm" style={{ color: "#4E22B8", fontFamily: "var(--font-heading)", fontWeight: 700 }}>Saved.</span>}
+        {startingBalanceOverBudget && (
+          <span className="text-sm" style={{ color: "#9C3B22", fontFamily: "var(--font-heading)", fontWeight: 600 }}>
+            Fix the over-allocated starting balance above before saving.
+          </span>
+        )}
       </div>
 
       {saveError && (

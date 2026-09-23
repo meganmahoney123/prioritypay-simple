@@ -7,7 +7,8 @@ import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
 import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
-import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, isEmployerRetirementRow, roundPct } from "@/lib/allocations";
+import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom } from "@/lib/allocations";
+import { bloomWarningCardStyle } from "@/lib/bloomTheme";
 
 // Purple ramp used for each row's colour dot in the Bloom-styled ("ledger"
 // theme prop) editor -- replaces the old per-row hex values from
@@ -140,8 +141,20 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, persona }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, persona, startingBalanceRoomInfo }) {
   const locked = isCoreRow(rule, persona);
+  // A starting balance only ever counts as money already sitting in THIS
+  // row's own connected account (see the PUT /api/split-rules validation
+  // that enforces this) -- two categories named the same thing on two
+  // different accounts are tracked completely separately, each against
+  // its own account's real balance. Naming the account right in the
+  // label is what makes that explicit instead of implicit, so nobody
+  // assumes "Tax Reserves" means one shared pot across every account it
+  // might be connected to.
+  const startingBalanceAccount = rule.accountId ? (accounts || []).find((a) => a.id === rule.accountId) : null;
+  const startingBalanceAccountLabel = startingBalanceAccount
+    ? `${startingBalanceAccount.institution_name} •••• ${startingBalanceAccount.mask}`
+    : null;
   // Cap $ (a monthly dollar cap -- see computeAllocations in
   // lib/allocations.js) only applies to flat categories (Tax Reserve,
   // Emergency Fund, OPEX, Savings, anything a person adds themselves).
@@ -171,6 +184,12 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // EmployerCheckEmailModal so someone who genuinely doesn't know can
   // draft an email to HR/payroll instead of guessing at the checkbox.
   const [showEmployerCheckModal, setShowEmployerCheckModal] = useState(false);
+  // Collapsed by default, same pattern as the Transfer page's own
+  // "Learn more" toggle for its shortfall pie chart (see
+  // app/(app)/transfers/page.js) -- most categories never go over, so the
+  // breakdown stays out of the way until someone actually needs to see
+  // where an over-allocated account's starting balances are coming from.
+  const [showStartingBalanceLearnMore, setShowStartingBalanceLearnMore] = useState(false);
 
   if (theme === "ledger") {
     return (
@@ -381,7 +400,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                 {forceShowStartingBalance
                   ? "Starting balance for this category (enter 0 if none):"
-                  : "Already have money saved for this? Add a Starting Balance:"}
+                  : startingBalanceAccountLabel
+                  ? `Already have money saved in ${startingBalanceAccountLabel} for this? Add a Starting Balance:`
+                  : "Already have money saved for this? Add a Starting Balance (connect an account below first):"}
               </span>
               <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
@@ -424,6 +445,104 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             >
               Already have money saved for this? Add your starting balance
             </button>
+          )}
+          {/* A starting balance is a claim about real money already sitting
+              in this row's connected account -- so the moment the SUM of
+              every category's starting balance on that same account passes
+              what the account actually holds, at least one of those claims
+              has to be wrong. This mirrors the exact check PUT
+              /api/split-rules runs server-side right before saving (see
+              that route's own comment on refreshing the live balance
+              first), just computed locally so it shows up the moment
+              someone types a number instead of only after they hit Save. */}
+          {showStartingBalance && startingBalanceRoomInfo?.isOver && (
+            <div className="text-xs mt-2 p-3 space-y-2" style={bloomWarningCardStyle({ padding: "10px 12px" })}>
+              <p className="font-semibold">
+                That's more than {startingBalanceRoomInfo.accountLabel || "this account"} actually has
+              </p>
+              <p>
+                {startingBalanceRoomInfo.otherLabels && startingBalanceRoomInfo.otherLabels.length ? (
+                  <>
+                    Starting balances across {startingBalanceRoomInfo.accountLabel}
+                    {" "}({[rule.label, ...startingBalanceRoomInfo.otherLabels].filter(Boolean).join(", ")}) add up to{" "}
+                    {currency(startingBalanceRoomInfo.total)}, but the account only holds{" "}
+                    {currency(startingBalanceRoomInfo.accountBalance)}. A starting balance can only ever be money
+                    that's actually sitting in that one connected account -- if another category (like a separate
+                    Tax Reserves elsewhere) is on a different account, it doesn't share this pool.
+                  </>
+                ) : (
+                  <>
+                    This starting balance ({currency(rule.startingBalance)}) is more than{" "}
+                    {startingBalanceRoomInfo.accountLabel || "the connected account"} actually holds (
+                    {currency(startingBalanceRoomInfo.accountBalance)}).
+                  </>
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowStartingBalanceLearnMore((v) => !v)}
+                className="text-xs font-semibold underline"
+                style={{ color: "#9C3B22" }}
+              >
+                {showStartingBalanceLearnMore ? "Hide details" : "Learn more"}
+              </button>
+              {showStartingBalanceLearnMore && (() => {
+                const PIE_COLORS = ["#6D3BE0", "#9A72F0", "#C4A9FA", "#D9C9FF", "#4E22B8", "#8B7CB8"];
+                const rows = startingBalanceRoomInfo.rows || [];
+                const balance = startingBalanceRoomInfo.accountBalance || 0;
+                const total = startingBalanceRoomInfo.total || 0;
+                // Whichever is bigger decides the ring: normally the real
+                // balance (unclaimed money still fits inside it), but once
+                // total claims exceed it, the ring has to grow to fit
+                // everything claimed or the over-claimed slice would have
+                // nowhere to go.
+                const ringTotal = Math.max(balance, total) || 1;
+                let acc = 0;
+                const stops = rows.map((r, i) => {
+                  const from = (acc / ringTotal) * 100;
+                  acc += Math.max(0, r.startingBalance);
+                  const to = (acc / ringTotal) * 100;
+                  return { label: r.label, amount: r.startingBalance, color: PIE_COLORS[i % PIE_COLORS.length], from, to };
+                });
+                const remaining = balance - total;
+                if (remaining >= 0.005) {
+                  const from = (acc / ringTotal) * 100;
+                  stops.push({ label: "Unclaimed", amount: remaining, color: "#F2ECFC", from, to: 100 });
+                } else if (total - balance >= 0.005) {
+                  const from = (balance / ringTotal) * 100;
+                  stops.push({ label: "Over budget", amount: total - balance, color: "#E8534E", from, to: 100 });
+                }
+                const gradient = `conic-gradient(${stops.map((s) => `${s.color} ${s.from}% ${s.to}%`).join(", ")})`;
+                return (
+                  <div className="p-3 space-y-3" style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-surface)" }}>
+                    <p className="text-xs font-semibold">
+                      How {startingBalanceRoomInfo.accountLabel || "this account"} is allocated right now
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <div className="relative shrink-0" style={{ width: 96, height: 96 }}>
+                        <div style={{ width: 96, height: 96, borderRadius: "50%", background: gradient }} />
+                        <div
+                          className="absolute flex flex-col items-center justify-center text-center"
+                          style={{ inset: 14, borderRadius: "50%", background: "var(--color-surface)" }}
+                        >
+                          <span className="font-mono text-[11px] font-semibold">{currency(balance)}</span>
+                          <span className="text-[9px]" style={{ color: "var(--color-neutral-700)" }}>real balance</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5 text-xs flex-grow">
+                        {stops.map((s) => (
+                          <div key={s.label} className="flex items-center gap-2">
+                            <span className="shrink-0" style={{ width: 9, height: 9, borderRadius: 3, background: s.color }} />
+                            <span className="flex-grow truncate">{s.label}</span>
+                            <span className="font-mono" style={{ color: "var(--color-neutral-700)" }}>{currency(s.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           )}
         </div>
         )}
@@ -713,6 +832,17 @@ export default function PercentSplitEditor({
     // row is which.
     const orderedRowIds = percentSections(percent).flatMap((s) => (s.type === "group" ? s.rows.map((r) => r.id) : [s.row.id]));
     const dotColorFor = (id) => BLOOM_DOT_COLORS[Math.max(0, orderedRowIds.indexOf(id)) % BLOOM_DOT_COLORS.length];
+
+    // Starting-balance room, computed once across the WHOLE rule set (not
+    // just one row at a time) -- a starting balance can only ever be as
+    // large as what the connected account's real balance can cover once
+    // every OTHER category sharing that same account is counted too (see
+    // PUT /api/split-rules, which enforces this exact limit server-side
+    // -- this mirrors that math client-side so someone sees the problem
+    // the moment they type it, not after a rejected Save). Keyed by rule
+    // id so each row can show its own room/warning without needing to
+    // know about its siblings directly.
+    const { byRuleId: startingBalanceRoomById } = computeStartingBalanceRoom(percent, accounts);
     return (
       <div style={{ display: "grid", gap: 18 }}>
         {!hideCapDetails && (
@@ -815,6 +945,7 @@ export default function PercentSplitEditor({
                       theme="ledger"
                       dotColor={dotColorFor(rule.id)}
                       persona={persona}
+                      startingBalanceRoomInfo={startingBalanceRoomById[rule.id]}
                     />
                   ))}
                 </div>
@@ -859,6 +990,7 @@ export default function PercentSplitEditor({
               theme="ledger"
               dotColor={dotColorFor(section.row.id)}
               persona={persona}
+              startingBalanceRoomInfo={startingBalanceRoomById[section.row.id]}
             />
           )
         )}
