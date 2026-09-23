@@ -64,5 +64,7 @@
 	<false/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>PriorityPay uses Face ID to protect access to your linked accounts and split rules.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
