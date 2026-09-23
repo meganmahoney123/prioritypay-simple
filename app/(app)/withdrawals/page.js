@@ -96,7 +96,7 @@ export default function WithdrawalsPage() {
       const acc = accountsById[t.accountId];
       const accKey = acc ? `${acc.institution_name} •••• ${acc.mask}` : "Unknown card";
       const mKey = monthKey(t.txnDate);
-      const key = `${accKey} — ${mKey}`;
+      const key = `${accKey}, ${mKey}`;
       (groups[key] ||= []).push(t);
     });
     return groups;
@@ -199,7 +199,7 @@ export default function WithdrawalsPage() {
       <Card className="p-6">
         <h2 className="text-sm font-semibold mb-1">Record a withdrawal</h2>
         <p className="text-xs mb-4" style={{ color: "var(--color-neutral-700)" }}>
-          One place for every expense — pick where the money came from, and whether it's a specific credit-card
+          One place for every expense, pick where the money came from, and whether it's a specific credit-card
           charge or a cash expense. If it's a card charge, Monthly Close-Out will already show it as categorized.
         </p>
 
@@ -252,7 +252,7 @@ export default function WithdrawalsPage() {
             ) : matchedTxnId ? (
               <div className="text-xs p-3 flex items-center justify-between gap-2" style={bloomNoticeCardStyle()}>
                 <span>
-                  Matched: <span style={{ fontWeight: 600 }}>{description}</span> — {currency(Number(amount) || 0)} on{" "}
+                  Matched: <span style={{ fontWeight: 600 }}>{description}</span>, {currency(Number(amount) || 0)} on{" "}
                   {formatDate(occurredAt)}
                 </span>
                 <button
@@ -418,7 +418,7 @@ export default function WithdrawalsPage() {
           <div className="mb-3">
             <label className="flex items-center gap-1.5 cursor-pointer text-xs" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
               <Paperclip size={13} />
-              {uploading ? "Uploading…" : receiptUrl ? "Receipt attached — replace" : "Attach a receipt (optional)"}
+              {uploading ? "Uploading…" : receiptUrl ? "Receipt attached, replace" : "Attach a receipt (optional)"}
               <input
                 type="file"
                 accept="image/*,application/pdf"

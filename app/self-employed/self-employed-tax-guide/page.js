@@ -24,7 +24,7 @@ import SelfEmployedTaxGuideClient from "./SelfEmployedTaxGuideClient";
 export const metadata = {
   title: "Taxes for Self Employed: The Complete 2026 Guide (Forms, Deadlines, Deductions) | PriorityPay",
   description:
-    "Every form, deadline, deduction and credit that applies to self-employment taxes in 2026, in plain English -- plus a 4-question filter that shortens the guide to just what applies to your situation.",
+    "Every form, deadline, deduction and credit that applies to self-employment taxes in 2026, in plain English, plus a 4-question filter that shortens the guide to just what applies to your situation.",
   alternates: {
     canonical: "https://www.prioritypay.co/self-employed/self-employed-tax-guide",
   },
@@ -38,7 +38,7 @@ export const metadata = {
     type: "article",
     title: "The Complete Guide to Taxes for Self Employed (2026)",
     description:
-      "Forms, deadlines, deductions and credits for self-employment taxes, explained in plain English -- with a filter that shortens the guide to your situation.",
+      "Forms, deadlines, deductions and credits for self-employment taxes, explained in plain English, with a filter that shortens the guide to your situation.",
     url: "https://www.prioritypay.co/self-employed/self-employed-tax-guide",
   },
   twitter: {
@@ -51,7 +51,7 @@ const articleJsonLd = {
   "@type": "Article",
   headline: "The Ultimate Guide to Taxes For Self Employed",
   description:
-    "A complete, plain-English reference covering how self-employment taxes work, every form you may need to file, all deadlines and payment methods, what counts as income, how the tax bill is calculated, business deductions, tax credits, how much to set aside, and what to do after filing -- for the 2026 tax year.",
+    "A complete, plain-English reference covering how self-employment taxes work, every form you may need to file, all deadlines and payment methods, what counts as income, how the tax bill is calculated, business deductions, tax credits, how much to set aside, and what to do after filing, for the 2026 tax year.",
   datePublished: "2026-08-27",
   dateModified: "2026-08-27",
   author: { "@type": "Organization", name: "PriorityPay" },

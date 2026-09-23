@@ -312,8 +312,8 @@ export default function TransfersPage() {
     setRecent((prev) => [
       {
         id: `${Date.now()}`,
-        fromDisplay: fromIsUnallocated ? `Unallocated — ${accountLabel(fromAccountId)}` : fromLabel,
-        toDisplay: toIsUnallocated ? `Unallocated — ${accountLabel(toAccountId)}` : toLabel,
+        fromDisplay: fromIsUnallocated ? `Unallocated, ${accountLabel(fromAccountId)}` : fromLabel,
+        toDisplay: toIsUnallocated ? `Unallocated, ${accountLabel(toAccountId)}` : toLabel,
         amount: amt,
       },
       ...prev,
@@ -399,7 +399,7 @@ export default function TransfersPage() {
       return;
     }
     afterSuccess(
-      `Sent ${currency(amt)} from ${accountLabel(resolvedFromAccountId)} to ${accountLabel(resolvedToAccountId)} — ${
+      `Sent ${currency(amt)} from ${accountLabel(resolvedFromAccountId)} to ${accountLabel(resolvedToAccountId)}, ${
         fromIsUnallocated ? "unallocated cash" : fromLabel
       } → ${toIsUnallocated ? "unallocated cash" : toLabel}.`
     );
@@ -476,7 +476,7 @@ export default function TransfersPage() {
         <h1 className="text-lg font-semibold mb-1">One-Time Transfer</h1>
         <p className="text-sm text-[var(--color-neutral-700)]">
           Great for boosting a category with some extra unallocated cash you&apos;re sitting on, or moving money
-          straight between two categories — like $3,000 from Wedding to Maintenance. Works category to category, or
+          straight between two categories, like $3,000 from Wedding to Maintenance. Works category to category, or
           from unallocated into a category (and back).
         </p>
       </div>
@@ -494,14 +494,14 @@ export default function TransfersPage() {
               {accounts.map((a) => (
                 <option key={`from-unalloc-${a.id}`} value={`${UNALLOCATED_PREFIX}${a.id}`}>
                   {a.institution_name} {a.account_name} •••• {a.mask}
-                  {unallocatedByAccountId[a.id] != null ? ` — ${currency(unallocatedByAccountId[a.id])} available` : ""}
+                  {unallocatedByAccountId[a.id] != null ? `, ${currency(unallocatedByAccountId[a.id])} available` : ""}
                 </option>
               ))}
             </optgroup>
             <optgroup label="Categories">
               {fromOptions.map((r) => (
                 <option key={r.id} value={r.label}>
-                  {r.label} — {currency(categoryBalances[r.label] || 0)} available
+                  {r.label}, {currency(categoryBalances[r.label] || 0)} available
                   {r.accountId ? ` (${accountShortLabel(r.accountId)})` : ""}
                 </option>
               ))}
@@ -530,14 +530,14 @@ export default function TransfersPage() {
               {accounts.map((a) => (
                 <option key={`to-unalloc-${a.id}`} value={`${UNALLOCATED_PREFIX}${a.id}`}>
                   {a.institution_name} {a.account_name} •••• {a.mask}
-                  {unallocatedByAccountId[a.id] != null ? ` — ${currency(unallocatedByAccountId[a.id])} available` : ""}
+                  {unallocatedByAccountId[a.id] != null ? `, ${currency(unallocatedByAccountId[a.id])} available` : ""}
                 </option>
               ))}
             </optgroup>
             <optgroup label="Categories">
               {toOptions.map((r) => (
                 <option key={r.id} value={r.label}>
-                  {r.label} — {currency(categoryBalances[r.label] || 0)} available
+                  {r.label}, {currency(categoryBalances[r.label] || 0)} available
                   {r.accountId ? ` (${accountShortLabel(r.accountId)})` : ""}
                 </option>
               ))}
@@ -552,7 +552,7 @@ export default function TransfersPage() {
           {fromLabel && toLabel && !bothUnallocated && resolvedFromAccountId && resolvedToAccountId && (
             <p className="text-xs mt-1.5" style={{ color: "var(--color-neutral-700)" }}>
               {sameRealAccount
-                ? `Both live in ${accountLabel(resolvedFromAccountId)} — nothing needs to physically move, this is just bookkeeping.`
+                ? `Both live in ${accountLabel(resolvedFromAccountId)}, nothing needs to physically move, this is just bookkeeping.`
                 : `Real money moves for this one: ${accountLabel(resolvedFromAccountId)} → ${accountLabel(
                     resolvedToAccountId
                   )}. You’ll confirm the amount before anything is sent.`}
@@ -562,7 +562,7 @@ export default function TransfersPage() {
 
         {bothUnallocated && (
           <p className="text-xs" style={{ color: "#9C3B22" }}>
-            Pick at least one category — moving cash between accounts isn&apos;t tracked here.
+            Pick at least one category, moving cash between accounts isn&apos;t tracked here.
           </p>
         )}
 
@@ -586,7 +586,7 @@ export default function TransfersPage() {
                 <>
                   Only {currency(fromBalance)} is actually unallocated in {accountLabel(fromAccountId)} right now
                   {(categoryLabelsByAccountId[fromAccountId] || []).length
-                    ? ` — the rest is already set aside for ${categoryLabelsByAccountId[fromAccountId].join(", ")}`
+                    ? `, the rest is already set aside for ${categoryLabelsByAccountId[fromAccountId].join(", ")}`
                     : ""}
                   . Transfer from one of those categories instead of Unallocated cash.
                 </>
@@ -697,7 +697,7 @@ export default function TransfersPage() {
                 <p className="text-xs p-3" style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", lineHeight: 1.6 }}>
                   {exceedsAccountTotal ? (
                     <>
-                      {accountLabel(fromAccountId)} only has {currency(accountTotalBalance)} in it, total — that&apos;s the
+                      {accountLabel(fromAccountId)} only has {currency(accountTotalBalance)} in it, total, that&apos;s the
                       most this account could ever send, no matter how its categories are split up. Lower the amount to{" "}
                       {currency(accountTotalBalance)} or less, or add funds to this account first.
                     </>
@@ -777,7 +777,7 @@ export default function TransfersPage() {
             <div>
               <p className="text-sm font-semibold mb-1">This account can&apos;t cover that</p>
               <p className="text-xs p-3" style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", lineHeight: 1.6 }}>
-                {accountLabel(fromAccountId)} only has {currency(accountTotalBalance)} in it, total — that&apos;s the most
+                {accountLabel(fromAccountId)} only has {currency(accountTotalBalance)} in it, total, that&apos;s the most
                 this account could ever send, no matter how its categories are split up. Lower the amount to{" "}
                 {currency(accountTotalBalance)} or less, or add funds to this account first.
               </p>
@@ -800,7 +800,7 @@ export default function TransfersPage() {
             <div>
               <p className="text-sm font-semibold mb-1">Free up {currency(shortfall)}</p>
               <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
-                Move money out of another category in {accountLabel(fromAccountId)} first — that frees it up as
+                Move money out of another category in {accountLabel(fromAccountId)} first, that frees it up as
                 Unallocated cash, so your {currency(amt)} transfer to {toIsUnallocated ? "unallocated cash" : toLabel} can
                 go through. This is bookkeeping only, nothing real moves banks.
               </p>

@@ -75,7 +75,7 @@ export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLin
                 You must switch your autopay to draw from this new savings account before you can save it here.
               </p>
               <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: 0 }}>
-                We can&apos;t check this ourselves — once it&apos;s switched, come back and click Yes.
+                We can&apos;t check this ourselves, once it&apos;s switched, come back and click Yes.
               </p>
             </div>
           )}
@@ -121,7 +121,7 @@ export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLin
               You must switch your autopay to draw from this new savings account before you can save it here.
             </p>
             <p className="text-xs text-neutral-500">
-              We can&apos;t check this ourselves — once it&apos;s switched, come back and click Yes.
+              We can&apos;t check this ourselves, once it&apos;s switched, come back and click Yes.
             </p>
           </div>
         )}
@@ -164,7 +164,7 @@ export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLin
           </li>
         </ol>
         <PlaidLinkButton
-          label="I opened it — link it now"
+          label="I opened it, link it now"
           savingsOnly={savingsOnly}
           onLinked={(account) => {
             onAccountLinked(account);
@@ -208,7 +208,7 @@ export default function CreateSubAccountFlow({ costLabel, accounts, onAccountLin
         </li>
       </ol>
       <PlaidLinkButton
-        label="I opened it — link it now"
+        label="I opened it, link it now"
         savingsOnly={savingsOnly}
         onLinked={(account) => {
           onAccountLinked(account);

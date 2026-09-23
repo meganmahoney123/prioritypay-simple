@@ -75,7 +75,7 @@ export default function WithdrawalAllocator({ totalAmount, primaryLabel, balance
     // "Other" — untracked spending, no balance impact, nothing to cascade.
     return (
       <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
-        Categorized as untracked spending — no category balance is affected.
+        Categorized as untracked spending, no category balance is affected.
       </p>
     );
   }
@@ -91,7 +91,7 @@ export default function WithdrawalAllocator({ totalAmount, primaryLabel, balance
   return (
     <div className="space-y-2">
       <p className="text-xs" style={{ color: "#9C3B22" }}>
-        {primaryLabel} only has {currency(primaryBalance)} available — {currency(initialShortfall)} more needs a
+        {primaryLabel} only has {currency(primaryBalance)} available, {currency(initialShortfall)} more needs a
         source below.
       </p>
       {extraRows.map((row, idx) => (

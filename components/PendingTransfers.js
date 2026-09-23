@@ -13,7 +13,7 @@ function accountLabel(acc, fallbackLabel) {
   // when this allocation was written, so this can still say exactly where
   // the money needs to go instead of a dead end -- see PHASE U,
   // supabase/schema.sql.
-  if (fallbackLabel) return `${fallbackLabel} (disconnected -- reconnect it, or send manually)`;
+  if (fallbackLabel) return `${fallbackLabel} (disconnected, reconnect it, or send manually)`;
   return "an account that's since been disconnected or renamed, with no record of which one";
 }
 
@@ -154,18 +154,18 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                         className="inline-flex items-center gap-1.5"
                         style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", textDecoration: "none" }}
                       >
-                        {g.label} — {currency(g.amount)}
+                        {g.label}, {currency(g.amount)}
                         <ExternalLink size={13} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
                       </a>
                     ) : (
                       <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700 }}>
-                        {g.label} — {currency(g.amount)}
+                        {g.label}, {currency(g.amount)}
                       </div>
                     )}
                     <div className="text-xs truncate" style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>
                       {bankUrl ? "Click the amount to open " : "Send to "}
                       {destLabel}
-                      {g.ids.length > 1 ? ` — combined from ${g.ids.length} deposits` : ""}
+                      {g.ids.length > 1 ? `, combined from ${g.ids.length} deposits` : ""}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -230,10 +230,10 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                     <Clock size={15} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
                     <div className="min-w-0">
                       <div style={{ fontSize: 15, fontWeight: 600 }}>
-                        {g.label} — {currency(g.amount)}
+                        {g.label}, {currency(g.amount)}
                       </div>
                       <div className="text-xs truncate" style={{ color: "var(--color-neutral-700)" }}>
-                        On its way to {accountLabel(destAccount, g.dest_account_label)} — we&apos;ll mark this settled automatically once it
+                        On its way to {accountLabel(destAccount, g.dest_account_label)}, we&apos;ll mark this settled automatically once it
                         shows up there.
                       </div>
                     </div>

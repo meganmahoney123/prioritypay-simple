@@ -18,7 +18,7 @@ export const metadata = {
   title:
     "Tax Optimization for Self Employed: The Complete 2026 Guide (Retirement, S-Corp, Family Payroll) | PriorityPay",
   description:
-    "Retirement accounts, entity structure, timing, and family payroll -- the levers that save self-employed people money on taxes as profit grows, in plain English, plus a 5-question filter that shortens the guide to your situation.",
+    "Retirement accounts, entity structure, timing, and family payroll, the levers that save self-employed people money on taxes as profit grows, in plain English, plus a 5-question filter that shortens the guide to your situation.",
   alternates: {
     canonical: "https://www.prioritypay.co/self-employed/tax-optimization",
   },
@@ -32,7 +32,7 @@ export const metadata = {
     type: "article",
     title: "Tax Optimization for Self Employed: The Complete Guide (2026)",
     description:
-      "The levers above the basics -- retirement, entity structure, timing, and family payroll -- explained in plain English, with a filter that shortens the guide to your situation.",
+      "The levers above the basics, retirement, entity structure, timing, and family payroll, explained in plain English, with a filter that shortens the guide to your situation.",
     url: "https://www.prioritypay.co/self-employed/tax-optimization",
   },
   twitter: {
@@ -45,7 +45,7 @@ const articleJsonLd = {
   "@type": "Article",
   headline: "Tax Optimization For The Self Employed: Complete Guide",
   description:
-    "A complete, plain-English reference covering how self-employed people can reduce their tax bill as profit grows -- retirement account choice and sequencing, health insurance, entity structure and the S-corp decision, income timing, family payroll strategies, and investment tax basics -- for the 2026 tax year.",
+    "A complete, plain-English reference covering how self-employed people can reduce their tax bill as profit grows, retirement account choice and sequencing, health insurance, entity structure and the S-corp decision, income timing, family payroll strategies, and investment tax basics, for the 2026 tax year.",
   datePublished: "2026-09-22",
   dateModified: "2026-09-22",
   author: { "@type": "Organization", name: "PriorityPay" },

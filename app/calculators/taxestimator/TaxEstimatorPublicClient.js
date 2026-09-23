@@ -186,7 +186,7 @@ export default function TaxEstimatorPublicClient() {
                   color: "var(--color-neutral-800)",
                 }}
               >
-                The rest ({currency(result.draw || 0)}) is treated as an owner's draw / distribution -- not subject
+                The rest ({currency(result.draw || 0)}) is treated as an owner's draw / distribution, not subject
                 to payroll tax the way wages are.
               </p>
             </div>
@@ -243,7 +243,7 @@ export default function TaxEstimatorPublicClient() {
           {result.overQbiThreshold && (
             <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 16px", fontSize: 15, lineHeight: 1.6 }}>
               Heads up: at this income the 20% qualified business income deduction used here starts phasing out for
-              some business types -- worth a real accountant's review at this level.
+              some business types, worth a real accountant's review at this level.
             </div>
           )}
         </div>
@@ -259,7 +259,7 @@ export default function TaxEstimatorPublicClient() {
         </div>
 
         <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)" }}>
-          Estimate only, based on 2026 federal brackets and standard deductions -- not tax advice. Doesn't account
+          Estimate only, based on 2026 federal brackets and standard deductions, not tax advice. Doesn't account
           for state tax, credits, itemized deductions, or other income. Talk to a real accountant for your specific
           situation.
         </p>

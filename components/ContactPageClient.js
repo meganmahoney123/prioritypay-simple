@@ -59,7 +59,7 @@ export default function ContactPageClient() {
           Contact us
         </h1>
         <p style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "0 0 36px" }}>
-          Questions, feedback, or something not working right? Send us a message and we&apos;ll get back to you —
+          Questions, feedback, or something not working right? Send us a message and we&apos;ll get back to you,
           or email us directly at{" "}
           <a href="mailto:hello@prioritypay.co" style={{ color: "var(--color-accent)", textDecoration: "underline" }}>
             hello@prioritypay.co
@@ -79,7 +79,7 @@ export default function ContactPageClient() {
               color: "var(--color-accent-700)",
             }}
           >
-            Thanks — your message is on its way. We&apos;ll get back to you soon.
+            Thanks, your message is on its way. We&apos;ll get back to you soon.
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>

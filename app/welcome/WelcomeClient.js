@@ -49,7 +49,7 @@ export default function WelcomeClient() {
           maxWidth: "26em",
         }}
       >
-        Try the free simulator with a sample paycheck -- no account, no bank connection. Connect your real accounts
+        Try the free simulator with a sample paycheck, no account, no bank connection. Connect your real accounts
         whenever you're ready.
       </p>
 

@@ -8,7 +8,7 @@ import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 // names, not article titles. This page is where the article list lives.
 export const metadata = {
   title: "Self Employed | PriorityPay Blog",
-  description: "Guides and calculators for freelancers and independent contractors -- taxes, entity structure, and managing income that isn't a steady paycheck.",
+  description: "Guides and calculators for freelancers and independent contractors, taxes, entity structure, and managing income that isn't a steady paycheck.",
   alternates: { canonical: "https://www.prioritypay.co/self-employed" },
 };
 

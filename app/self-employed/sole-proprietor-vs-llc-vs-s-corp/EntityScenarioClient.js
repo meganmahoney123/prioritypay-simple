@@ -311,7 +311,7 @@ export default function EntityScenarioClient() {
   function copyForAccountant() {
     if (!result) return;
     const L = [
-      "Sole proprietor vs LLC vs S-corp — modelled for the 2026 federal tax year",
+      "Sole proprietor vs LLC vs S-corp, modelled for the 2026 federal tax year",
       "",
       "Profit: " + M(profit),
       "Filing status: " + (status === "mfj" ? "married filing jointly" : "single"),

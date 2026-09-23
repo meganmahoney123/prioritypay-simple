@@ -118,8 +118,8 @@ const TIMEFRAME_PRESETS = [6, 12, 18, 24];
 // of giving one generic "3-6 months" answer to everyone.
 const RECOMMENDED_MONTHS = {
   self_employed: { min: 6, default: 9, max: 12, note: "Income can swing month to month, so the usual 3-6 months most advice gives isn't enough runway." },
-  business_owner: { min: 6, default: 9, max: 12, note: "Same logic as self-employed for your personal cushion -- plus a separate reserve below for the business itself." },
-  w2: { min: 3, default: 6, max: 6, note: "A steady paycheck means less runway is needed -- this is the range most general advice is built around." },
+  business_owner: { min: 6, default: 9, max: 12, note: "Same logic as self-employed for your personal cushion, plus a separate reserve below for the business itself." },
+  w2: { min: 3, default: 6, max: 6, note: "A steady paycheck means less runway is needed, this is the range most general advice is built around." },
 };
 const BUSINESS_RESERVE_MONTHS = { min: 3, default: 3, max: 6 };
 
@@ -167,7 +167,7 @@ export default function EmergencyFundPublicClient() {
         </h1>
         <p style={{ fontSize: 19, lineHeight: 1.6, maxWidth: "42em", color: "var(--color-neutral-800)", margin: "0 0 32px" }}>
           Build your monthly expenses from what you actually spend, pick how much runway you want, and see the
-          target -- and the monthly savings plan to get there. Free, no account needed.
+          target, and the monthly savings plan to get there. Free, no account needed.
         </p>
 
         {/* Inputs card */}
@@ -380,7 +380,7 @@ export default function EmergencyFundPublicClient() {
             </div>
             <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: 0 }}>
               {BUSINESS_RESERVE_MONTHS.default} months of operating expenses, kept separate from your personal
-              cushion above -- covers a slow month without you having to dip into your own savings or draw less pay.
+              cushion above, covers a slow month without you having to dip into your own savings or draw less pay.
             </p>
           </div>
         )}
@@ -396,7 +396,7 @@ export default function EmergencyFundPublicClient() {
         </div>
 
         <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)" }}>
-          A general guideline, not personalized advice -- your actual right number depends on your own situation,
+          A general guideline, not personalized advice, your actual right number depends on your own situation,
           dependents, and risk tolerance.
         </p>
       </div>

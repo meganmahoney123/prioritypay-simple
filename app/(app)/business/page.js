@@ -69,7 +69,7 @@ function BusinessPageInner() {
         setAccounts(acct.accounts || []);
       }
     } catch {
-      setError("Couldn't load your business data — please refresh.");
+      setError("Couldn't load your business data, please refresh.");
     } finally {
       setLoading(false);
     }
@@ -548,7 +548,7 @@ function TrueUpCard({ entities, connections, setError }) {
             <div style={{ marginTop: 16, borderTop: "1px solid var(--color-divider)", paddingTop: 14 }}>
               {result.reconciliation.unmatchedQbo.length === 0 && result.reconciliation.unmatchedTracked.length === 0 ? (
                 <p style={{ fontSize: 13, color: "var(--color-accent-800)", margin: 0 }}>
-                  Every QuickBooks transaction matched a tracked deposit by amount — nothing to reconcile.
+                  Every QuickBooks transaction matched a tracked deposit by amount, nothing to reconcile.
                 </p>
               ) : (
                 <>
@@ -567,7 +567,7 @@ function TrueUpCard({ entities, connections, setError }) {
                   />
                   {result.reconciliation.truncated && (
                     <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 8 }}>
-                      Showing the first {MAX_UNMATCHED_SHOWN} of each — reconcile these first, then re-run.
+                      Showing the first {MAX_UNMATCHED_SHOWN} of each, reconcile these first, then re-run.
                     </p>
                   )}
                 </>

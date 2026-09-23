@@ -114,7 +114,7 @@ export default function DashboardPage() {
           <span>
             <span style={{ fontWeight: 600 }}>Your free trial has ended.</span> You can still see your split rules
             and history, but connecting new accounts and moving money are paused until you subscribe.{" "}
-            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe — $12/month</Link>
+            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe, $12/month</Link>
           </span>
         </Card>
       )}
@@ -180,7 +180,7 @@ export default function DashboardPage() {
           </span>{" "}
           {unconnected.map((r) => r.label).join(", ")}. Head to{" "}
           <Link href="/splits" style={{ fontWeight: 600, textDecoration: "underline" }}>Income Split Rules</Link> to connect or create
-          one for each — until then, that percentage just stays wherever a deposit lands.
+          one for each, until then, that percentage just stays wherever a deposit lands.
         </Card>
       )}
 
@@ -190,9 +190,9 @@ export default function DashboardPage() {
           <span>
             <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t contributing to retirement.
             {isW2NoSideHustle(persona)
-              ? " Consider setting up a 401k, IRA, or HSA to start contributing to retirement -- check with your employer first, since many already route money there through payroll."
+              ? " Consider setting up a 401k, IRA, or HSA to start contributing to retirement, check with your employer first, since many already route money there through payroll."
               : isW2WithSideHustle(persona)
-              ? " Consider setting up a 401k, IRA, or HSA for your job (check with your employer first -- many already contribute through payroll) and/or a Solo 401k for your side income."
+              ? " Consider setting up a 401k, IRA, or HSA for your job (check with your employer first, many already contribute through payroll) and/or a Solo 401k for your side income."
               : " Consider setting up a Solo 401k to start contributing to retirement."}{" "}
             <a
               href={isW2NoSideHustle(persona) || isW2WithSideHustle(persona) ? RETIREMENT_SETUP_LINKS.traditional_401k : RETIREMENT_SETUP_LINKS.solo_401k}

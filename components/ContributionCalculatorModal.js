@@ -125,7 +125,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
             title="Do you have any employees, other than yourself and a spouse?"
             subtitle={
               isSolo
-                ? "A Solo 401k can only cover a business owner and their spouse — any other common-law employee makes the business ineligible for this specific plan."
+                ? "A Solo 401k can only cover a business owner and their spouse, any other common-law employee makes the business ineligible for this specific plan."
                 : "SEP IRA doesn't block on this, but if you contribute for yourself, you're required to contribute the same percentage of compensation for every eligible employee too."
             }
           >
@@ -145,7 +145,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
               <p className="text-sm font-semibold text-[#9C3B22] mb-1">Not eligible for a Solo 401k</p>
               <p className="text-xs text-[#9C3B22]">
                 Solo 401k plans are only available to owner-only (plus spouse) businesses. With other employees on
-                payroll, a SEP IRA or a standard employer 401k would be the options to look into instead — worth a
+                payroll, a SEP IRA or a standard employer 401k would be the options to look into instead, worth a
                 conversation with a tax professional about which fits.
               </p>
             </div>
@@ -213,7 +213,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
         {current === "spouse" && (
           <Step
             title="Does your spouse also earn self-employment income from this same business?"
-            subtitle="Informational only — doesn't change your own number below."
+            subtitle="Informational only, doesn't change your own number below."
           >
             <OptionButton selected={spouseInBusiness === false} onClick={() => setSpouseInBusiness(false)}>
               No
@@ -228,7 +228,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
           <div>
             <h3 className="text-base font-bold mb-1">Try different net income amounts</h3>
             <p className="text-xs text-[var(--color-neutral-700)] mb-4">
-              Enter what you expect your net self-employment income to be for the year — adjust it as much as you
+              Enter what you expect your net self-employment income to be for the year, adjust it as much as you
               want to see how the room changes.
             </p>
             <label className="block text-xs text-[var(--color-neutral-700)] mb-1">
@@ -245,7 +245,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
               placeholder="$0"
             />
             <p className="text-[11px] text-[#9C3B22] bg-[#FBEEEA] border border-[#F0C9C0] rounded-[14px] px-3 py-2 mb-4 leading-snug">
-              Have a W2 job too? Don&apos;t include that income here — enter only the net profit from this
+              Have a W2 job too? Don&apos;t include that income here, enter only the net profit from this
               self-employment business (after business expenses), since that&apos;s the only income this plan is
               allowed to be based on.
             </p>
@@ -261,7 +261,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                       </div>
                       <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
                         What you personally choose to set aside, like an employee electing to divert part of their
-                        paycheck into a 401k — capped at a flat dollar amount for the year, not a percentage.
+                        paycheck into a 401k, capped at a flat dollar amount for the year, not a percentage.
                       </p>
                     </div>
                     <div>
@@ -271,7 +271,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                       </div>
                       <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
                         A separate contribution your business makes on your behalf, calculated as a percentage of
-                        your income — on top of the employee deferral above, not instead of it.
+                        your income, on top of the employee deferral above, not instead of it.
                       </p>
                     </div>
                     <div className="pt-3 border-t border-[var(--color-divider)]">
@@ -280,7 +280,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                         <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.total)}</span>
                       </div>
                       <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
-                        This is the ceiling given what you entered above, not a recommendation — the most you
+                        This is the ceiling given what you entered above, not a recommendation, the most you
                         could put in, not what you should.
                       </p>
                     </div>
@@ -292,7 +292,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                       <span className="font-mono font-bold" style={{ color: "var(--color-accent-700)" }}>{currency(result.contribution)}</span>
                     </div>
                     <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
-                      This is the ceiling given what you entered above, not a recommendation — the most you could
+                      This is the ceiling given what you entered above, not a recommendation, the most you could
                       put in, not what you should.
                     </p>
                     {hasEmployees === true && (
@@ -316,25 +316,25 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                 )}
                 {result.cappedByAnnualLimit && (
                   <p className="text-xs text-[#9C3B22] bg-[#FBEEEA] border border-[#F0C9C0] rounded-[14px] px-3 py-2">
-                    Capped by this year&apos;s ${result.cap.toLocaleString()} IRS annual limit — the uncapped
+                    Capped by this year&apos;s ${result.cap.toLocaleString()} IRS annual limit, the uncapped
                     formula would&apos;ve allowed more.
                   </p>
                 )}
                 {spouseInBusiness && (
                   <p className="text-xs text-[var(--color-neutral-700)]">
                     Your spouse may be able to open their own {planLabel} based on their own compensation from this
-                    business — this number is just yours.
+                    business, this number is just yours.
                   </p>
                 )}
               </div>
             )}
 
             <div className="mt-4 bg-[var(--color-neutral-100)] border border-[var(--color-divider)] rounded-[20px] p-3 text-xs text-[var(--color-neutral-700)] leading-relaxed">
-              This is a simulator, not a tracker — it has no idea what you&apos;ve actually contributed this year,
+              This is a simulator, not a tracker, it has no idea what you&apos;ve actually contributed this year,
               here or anywhere else, and it doesn&apos;t know your real numbers unless you type them in above.
               Contributing more than your real limit (over-contributing) can trigger an IRS excise tax on the
               excess, so treat this as a starting point for a conversation with a tax professional, not a final
-              answer — and double-check against your actual year-to-date contributions before sending money.
+              answer, and double-check against your actual year-to-date contributions before sending money.
             </div>
           </div>
         )}

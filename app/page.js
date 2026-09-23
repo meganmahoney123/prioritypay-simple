@@ -12,16 +12,16 @@ import NativeHomeRedirect from "@/components/NativeHomeRedirect";
 // components/Homepage.js rather than being written fresh, so search
 // snippets and social previews say the same thing the page does.
 export const metadata = {
-  title: "PriorityPay -- Automatically Route Income to Savings, Taxes, and Investments",
+  title: "PriorityPay | Split Every Deposit Between Savings, Taxes, and Investments",
   description:
-    "PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement, savings, and taxes automatically.",
+    "PriorityPay calculates your split the moment a deposit lands, showing exactly how much to send to retirement, savings, and taxes based on the percentages you set.",
   alternates: {
     canonical: "https://www.prioritypay.co/",
   },
   openGraph: {
     type: "website",
-    title: "PriorityPay -- Automatically Route Income to Savings, Taxes, and Investments",
-    description: "PriorityPay splits every deposit the moment it lands, setting aside a percentage for retirement, savings, and taxes automatically.",
+    title: "PriorityPay | Split Every Deposit Between Savings, Taxes, and Investments",
+    description: "PriorityPay calculates your split the moment a deposit lands, showing exactly how much to send to retirement, savings, and taxes based on the percentages you set.",
     url: "https://www.prioritypay.co/",
   },
 };
@@ -31,7 +31,7 @@ const organizationJsonLd = {
   "@type": "Organization",
   name: "PriorityPay",
   url: "https://www.prioritypay.co/",
-  description: "PriorityPay automatically splits self-employed and business income into savings, taxes, and investments the moment it's deposited.",
+  description: "PriorityPay calculates how self-employed and business income should split into savings, taxes, and investments the moment it's deposited, based on the percentages you set.",
 };
 
 export default async function RootPage() {

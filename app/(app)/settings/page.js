@@ -140,19 +140,19 @@ function SettingsPageInner() {
 
         {billingRedirect === "success" && (
           <p style={{ fontSize: 14, color: "var(--color-accent-700)", marginBottom: 16 }}>
-            Subscription started — thanks for subscribing to PriorityPay.
+            Subscription started, thanks for subscribing to PriorityPay.
           </p>
         )}
         {billingRedirect === "cancelled" && (
           <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 16 }}>
-            Checkout cancelled — no charge was made.
+            Checkout cancelled, no charge was made.
           </p>
         )}
 
         {isActive ? (
           <>
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
-              You&apos;re subscribed to PriorityPay — <strong>$12/month</strong>.
+              You&apos;re subscribed to PriorityPay, <strong>$12/month</strong>.
             </p>
             <PrimaryButton onClick={manageBilling} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Manage billing"}
@@ -173,7 +173,7 @@ function SettingsPageInner() {
               paused until you subscribe.
             </div>
             <PrimaryButton onClick={subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : "Subscribe — $12/month"}
+              {billingBusy ? "Loading…" : "Subscribe, $12/month"}
             </PrimaryButton>
           </>
         ) : (
@@ -219,7 +219,7 @@ function SettingsPageInner() {
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit splitting</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-          Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all — $100 is the
+          Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all, $100 is the
           lowest you can set it.
         </p>
         <div style={{ maxWidth: 220 }}>
@@ -260,7 +260,7 @@ function SettingsPageInner() {
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
           PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
-          checklist. Off by default — check the box and add your number below to turn it on. Msg &amp; data
+          checklist. Off by default, check the box and add your number below to turn it on. Msg &amp; data
           rates may apply. Reply STOP to opt out, HELP for help.
         </p>
         <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
@@ -324,7 +324,7 @@ function SettingsPageInner() {
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
           PriorityPay emails you the moment a qualifying deposit lands, with a link straight to your split
-          checklist — sent to your account email, on by default, and you can turn it off anytime.
+          checklist, sent to your account email, on by default, and you can turn it off anytime.
         </p>
         <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
           <input
@@ -397,7 +397,7 @@ function SettingsPageInner() {
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
           Instantly switches your own account to a different onboarding persona and resets your split rules to
-          that persona&apos;s defaults — no need to sign up a second account to see how Dashboard, Close Out, and
+          that persona&apos;s defaults, no need to sign up a second account to see how Dashboard, Close Out, and
           Split Rules look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.
         </p>
         <div className="flex flex-wrap gap-2">

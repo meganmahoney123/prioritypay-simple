@@ -5,7 +5,7 @@ import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 
 export const metadata = {
   title: "W2 | PriorityPay Blog",
-  description: "Guides and calculators for W2 employees -- withholding, benefits elections, and building savings on top of a steady paycheck.",
+  description: "Guides and calculators for W2 employees, withholding, benefits elections, and building savings on top of a steady paycheck.",
   alternates: { canonical: "https://www.prioritypay.co/w2" },
 };
 

@@ -131,7 +131,7 @@ export default function SpendDistributionChart({ rules = [] }) {
       <p className="text-xs text-neutral-500 mb-4">
         {mode === "month"
           ? "Real spending confirmed through Close Out this month, by category. Updates as more expenses are categorized."
-          : `Real spending confirmed over the ${rangeLabel}, by category — not a projection.`}
+          : `Real spending confirmed over the ${rangeLabel}, by category, not a projection.`}
       </p>
 
       {loading ? (

@@ -129,7 +129,7 @@ export default function CancelSubscriptionCard({ currentPeriodEnd, cancelAtPerio
     return (
       <div style={{ marginTop: 16, maxWidth: 420 }}>
         <div className="text-sm" style={{ padding: 16, borderRadius: "var(--radius-sm)", border: "1px solid var(--color-accent-300)", background: "var(--color-accent-100)", marginBottom: 12 }}>
-          Before you go — would 50% off your next 3 months change your mind?
+          Before you go, would 50% off your next 3 months change your mind?
         </div>
         {error && <p style={{ fontSize: 13, color: "#C0392B", margin: "0 0 10px" }}>{error}</p>}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -157,7 +157,7 @@ export default function CancelSubscriptionCard({ currentPeriodEnd, cancelAtPerio
     <div style={{ marginTop: 16, maxWidth: 420 }}>
       <div className="text-sm" style={{ padding: 16, borderRadius: "var(--radius-sm)", border: "1px solid color-mix(in srgb, #C0392B 30%, var(--color-divider))", background: "color-mix(in srgb, #C0392B 6%, transparent)", marginBottom: 12 }}>
         You&apos;ll keep full access{currentPeriodEnd ? ` through ${formatDate(currentPeriodEnd)}` : " until the end of your current billing period"},
-        then your subscription won&apos;t renew. Your account and data stay exactly as they are — this only stops billing.
+        then your subscription won&apos;t renew. Your account and data stay exactly as they are, this only stops billing.
       </div>
       {error && <p style={{ fontSize: 13, color: "#C0392B", margin: "0 0 10px" }}>{error}</p>}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

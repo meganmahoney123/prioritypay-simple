@@ -157,7 +157,7 @@ export default function TaxSummarySection() {
               <p className="text-xs mb-1" style={{ color: "var(--color-neutral-700)" }}>Flagged as business (excluded above)</p>
               <p className="text-lg font-semibold font-mono" style={{ fontFamily: "var(--font-mono)" }}>{currency(data.totals.business)}</p>
               <p className="text-xs mt-1" style={{ color: "var(--color-neutral-700)" }}>
-                Transactions marked &quot;Business&quot; in Close-Out — landed on a personal account but flagged
+                Transactions marked &quot;Business&quot; in Close-Out, landed on a personal account but flagged
                 as belonging to the business side. Not counted in income/expenses/net above; included in the CSV
                 below for your accountant.
               </p>
@@ -173,7 +173,7 @@ export default function TaxSummarySection() {
             </div>
             {!allReviewed && (
               <p className="text-xs mb-3" style={{ color: "var(--color-neutral-700)" }}>
-                Months not yet confirmed in Close-Out use PriorityPay&apos;s best-guess categorization — review
+                Months not yet confirmed in Close-Out use PriorityPay&apos;s best-guess categorization, review
                 them above before treating these numbers as final.
               </p>
             )}
@@ -199,8 +199,8 @@ export default function TaxSummarySection() {
           <Card className="p-5">
             <h3 className="text-sm font-semibold mb-1">Download for your accountant</h3>
             <p className="text-xs mb-3" style={{ color: "var(--color-neutral-700)" }}>
-              Every transaction PriorityPay saw for {year} — date, description, account, category, and whether
-              you confirmed it — as a CSV. Not tax advice; a starting point to hand off or import into tax
+              Every transaction PriorityPay saw for {year}, date, description, account, category, and whether
+              you confirmed it, as a CSV. Not tax advice; a starting point to hand off or import into tax
               software.
             </p>
             <PrimaryButton onClick={() => window.open(`/api/tax-summary/${year}/export`, "_blank")}>

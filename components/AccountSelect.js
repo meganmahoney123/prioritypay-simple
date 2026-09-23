@@ -86,7 +86,7 @@ export default function AccountSelect({
           }}
         >
           {recommendCreate && createOption}
-          <option value="">{visibleAccounts.length ? "Not connected — choose an account" : "No eligible account connected yet"}</option>
+          <option value="">{visibleAccounts.length ? "Not connected, choose an account" : "No eligible account connected yet"}</option>
           {visibleAccounts.map((acc) => (
             <option key={acc.id} value={acc.id}>
               {acc.institution_name} {acc.account_name} •••• {acc.mask}
@@ -110,7 +110,7 @@ export default function AccountSelect({
         }`}
       >
         {recommendCreate && createOption}
-        <option value="">Not connected — choose an account</option>
+        <option value="">Not connected, choose an account</option>
         {visibleAccounts.map((acc) => (
           <option key={acc.id} value={acc.id}>
             {acc.institution_name} {acc.account_name} •••• {acc.mask}

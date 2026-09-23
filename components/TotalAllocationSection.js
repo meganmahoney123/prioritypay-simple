@@ -56,7 +56,7 @@ export default function TotalAllocationSection() {
         How all your money is allocated right now
       </h2>
       <p className="text-xs text-neutral-500 mb-4">
-        Every dollar tracked across every connected account, live — including money already invested in a real
+        Every dollar tracked across every connected account, live, including money already invested in a real
         401k/IRA alongside savings still waiting to get there.
       </p>
 
@@ -122,7 +122,7 @@ export default function TotalAllocationSection() {
           <div className="flex items-center gap-1.5 mb-2">
             <AlertTriangle size={13} style={{ color: "#9C3B22" }} />
             <span className="text-xs font-semibold" style={{ color: "#9C3B22" }}>
-              Overdrawn — spent past what&apos;s tracked
+              Overdrawn, spent past what&apos;s tracked
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

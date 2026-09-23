@@ -226,16 +226,16 @@ export default function AdvisoryFeeCalculatorPublicClient() {
         ask: "Ask what the plan itself charges in administrative costs, separately from any advisory fee, and what a transfer would cost." },
       { k: "solo", n: "Solo 401(k)", d: "A 401(k) for someone self-employed with no employees besides a spouse.",
         ask: "Ask who administers the plan and what they charge, since a Solo 401(k) usually carries plan costs distinct from any advisory fee." },
-      { k: "401k", n: "401(k) or 403(b)", d: "Held through an employer. Usually sits with the plan's own provider rather than your adviser -- though some advisers charge to manage it anyway.", unmanaged: true,
+      { k: "401k", n: "401(k) or 403(b)", d: "Held through an employer. Usually sits with the plan's own provider rather than your adviser, though some advisers charge to manage it anyway.", unmanaged: true,
         ask: "Ask whether this account is inside your advisory agreement at all, and separately what the plan itself charges in record-keeping and administrative fees." },
       { k: "457", n: "457(b) deferred comp", d: "A deferred compensation plan offered by state, local government, and some nonprofit employers.", unmanaged: true,
         ask: "Ask whether anyone is charging you to manage this, and what the plan charges. 457(b) terms vary by employer, including what happens when you leave." },
       { k: "tsp", n: "Thrift Savings Plan", d: "The federal government's retirement plan for its employees and the military.", unmanaged: true,
         ask: "Ask whether anyone is charging you to manage this. The TSP publishes its own internal costs, which are separate from any adviser's fee." },
       { k: "pension", n: "Pension or cash balance plan", d: "A traditional employer pension, or a cash balance plan. Pays a defined benefit rather than holding a balance you direct.", unmanaged: true,
-        ask: "Ask whether this is a defined benefit -- a promise of income -- or a balance you actually direct. A fee comparison may not apply to it at all. Ask whether any fee is charged against it." },
+        ask: "Ask whether this is a defined benefit, a promise of income, or a balance you actually direct. A fee comparison may not apply to it at all. Ask whether any fee is charged against it." },
       { k: "stock", n: "Employer stock, RSUs, ESPP", d: "Shares or share-based compensation from an employer, held in a brokerage or equity plan account.",
-        ask: "Ask what restrictions apply -- holding periods, trading windows, blackout dates -- and ask for your cost basis on each lot." },
+        ask: "Ask what restrictions apply, holding periods, trading windows, blackout dates, and ask for your cost basis on each lot." },
       { k: "trust", n: "Trust account", d: "Held in the name of a trust rather than a person. Common in estate planning.",
         ask: "Ask who has authority to move this account and what the trust document permits. The trust's terms, not your preference alone, govern what can change." },
       { k: "custodial", n: "Custodial account (UGMA/UTMA)", d: "An account held for a minor, which becomes theirs outright at a set age.",
@@ -245,7 +245,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
       { k: "hsa", n: "HSA", d: "A health savings account. Some can be invested rather than left in cash.",
         ask: "Ask whether a transfer would go directly between custodians, and what closing fees apply." },
       { k: "annuity", n: "Annuity", d: "An insurance product, not a plain investment account. Carries its own charges that a normal advisory fee doesn't show.",
-        ask: "Ask for the surrender schedule in writing -- the charge and the date it ends -- plus every internal insurance charge. These sit on top of any advisory fee and are often far larger." },
+        ask: "Ask for the surrender schedule in writing, the charge and the date it ends, plus every internal insurance charge. These sit on top of any advisory fee and are often far larger." },
       { k: "life", n: "Cash-value life insurance", d: "Whole, universal, or variable life with a cash value component you may be paying to manage.",
         ask: "Ask for the surrender charge schedule and all internal policy charges, and what happens to the policy itself if management stops." },
       { k: "daf", n: "Donor-advised fund", d: "A charitable giving account. The money is irrevocably committed to charity.",
@@ -369,11 +369,11 @@ export default function AdvisoryFeeCalculatorPublicClient() {
                     <div><input class="in ${bad ? "bad" : ""}" type="number" step="1000" data-k="hi" value="${a.hi}" aria-label="High end"></div>
                   </div>
                   ${bad
-                    ? `<div class="err">Narrow this to $30,000 or less — a wider range makes the answer meaningless.
+                    ? `<div class="err">Narrow this to $30,000 or less, a wider range makes the answer meaningless.
                         Until you do, the maths uses ${money(bal(a, "lo"))} – ${money(bal(a, "hi"))}.</div>`
-                    : `<div class="hint">What's in the account today — not what you've contributed over the years.</div>`}`
+                    : `<div class="hint">What's in the account today, not what you've contributed over the years.</div>`}`
                 : `<input class="in" type="number" step="1000" data-k="exact" value="${a.exact}" style="max-width:320px">
-                  <div class="hint">What's in the account today — not what you've contributed over the years.</div>`}</div>
+                  <div class="hint">What's in the account today, not what you've contributed over the years.</div>`}</div>
             <div><label class="f">Advisory fee %/yr</label>
               <input class="in" type="number" step="0.01" data-k="fee" value="${a.fee}" ${(!a.managed || a.tiered) ? 'disabled style="opacity:.4"' : ""}></div>
             <div><label class="f">Fund expense ratio %</label><input class="in" type="number" step="0.01" data-k="er" value="${a.er}"></div>
@@ -383,7 +383,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
           </div>
           <div class="flagnote">${t.ask}</div>
           <details class="tier" ${a.tiered ? "open" : ""}>
-            <summary>Tiered pricing — the rate changes as the balance grows</summary>
+            <summary>Tiered pricing, the rate changes as the balance grows</summary>
             <div style="margin-top:10px">
               <label class="chk"><input type="checkbox" data-k="tiered" ${a.tiered ? "checked" : ""}> Use a tiered schedule</label>
               ${a.tiered
@@ -393,14 +393,14 @@ export default function AdvisoryFeeCalculatorPublicClient() {
                   <div>${a.tiers.map((x, i) => `<div class="trow">
                     <div><label class="f">${x.upTo == null ? "Everything above" : "Up to"}</label>
                       ${x.upTo == null
-                        ? `<div class="in" style="border-bottom-color:transparent;color:color-mix(in srgb, var(--color-text) 55%, transparent)">— top tier —</div>`
+                        ? `<div class="in" style="border-bottom-color:transparent;color:color-mix(in srgb, var(--color-text) 55%, transparent)">, top tier,</div>`
                         : `<input class="in" type="number" step="50000" data-tier="${i}" data-tk="upTo" value="${x.upTo}">`}</div>
                     <div><label class="f">Rate %/yr</label>
                       <input class="in" type="number" step="0.01" data-tier="${i}" data-tk="rate" value="${x.rate}"></div>
                     <div>${a.tiers.length > 2 && x.upTo != null ? `<button class="rm" data-trm="${i}">✕</button>` : ""}</div></div>`).join("")}
                     <button class="btn sm ghost" data-tadd="1" style="margin-top:4px">+ Add tier</button>
                     <div class="tnote"><b>Graduated</b> charges each slice at its own rate. <b>Whole balance</b> charges
-                      everything at the rate of the tier you land in. Providers use both — worth asking which applies.</div>
+                      everything at the rate of the tier you land in. Providers use both, worth asking which applies.</div>
                   </div>`
                 : ""}
             </div></details></div>`;
@@ -461,7 +461,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
       if (privtext) {
         privtext.innerHTML = S.path === "ask"
           ? `Your balances stay in this browser. The email you send goes straight from your own inbox to your
-             provider — <b>PriorityPay never sees this message or any reply</b>. Nothing on this page is
+             provider, <b>PriorityPay never sees this message or any reply</b>. Nothing on this page is
              transmitted anywhere.`
           : `Everything on this page stays in this browser. Nothing has been transmitted, there's no account, and
              there's nothing for us to lose.`;
@@ -477,7 +477,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
               Pick your accounts in step 1 to replace them with your own.</span>` : "";
       }
       const eyebrowEl = document.getElementById("eyebrow");
-      if (eyebrowEl) eyebrowEl.textContent = sample ? "An example — not your numbers" : "If these numbers are accurate";
+      if (eyebrowEl) eyebrowEl.textContent = sample ? "An example, not your numbers" : "If these numbers are accurate";
       const togEl = document.getElementById("tog");
       if (togEl) togEl.style.display = "block";
 
@@ -486,8 +486,8 @@ export default function AdvisoryFeeCalculatorPublicClient() {
         adv = S_({ pct: S.diyEr, flat: S.diyFlat, fee: S.advFee, every: S.advEvery });
       const rows = [
         { lab: "As it stands", r: cur, c: "var(--color-accent-400)" },
-        { lab: `Paid advice — ${money(S.advFee)} every ${Math.max(1, Math.round(S.advEvery))} yr`, r: adv, c: "var(--color-accent-600)" },
-        { lab: `Self-managed — ${S.diyEr}% funds only`, r: diy, c: "var(--color-accent-800)" },
+        { lab: `Paid advice, ${money(S.advFee)} every ${Math.max(1, Math.round(S.advEvery))} yr`, r: adv, c: "var(--color-accent-600)" },
+        { lab: `Self-managed, ${S.diyEr}% funds only`, r: diy, c: "var(--color-accent-800)" },
       ];
       const max = Math.max(...rows.map((x) => x.r.hi.end), 1);
       const startLo = ACTIVE.reduce((s, a) => s + bal(a, "lo"), 0), startHi = ACTIVE.reduce((s, a) => s + bal(a, "hi"), 0);
@@ -500,7 +500,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
       if (heroEl) heroEl.textContent = span(cur.lo.fees, cur.hi.fees);
       const herosubEl = document.getElementById("herosub");
       if (herosubEl) herosubEl.innerHTML = `leaves these accounts as fees over
-        ${Math.round(S.yrs)} years as things stand — every advisory fee, fund expense and charge added together,
+        ${Math.round(S.yrs)} years as things stand, every advisory fee, fund expense and charge added together,
         year after year.`;
       const hero2El = document.getElementById("hero2");
       if (hero2El) hero2El.textContent = span(fgLo, fgHi);
@@ -510,7 +510,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
           Every dollar taken out also stops earning. So this is the <b>${span(cur.lo.fees, cur.hi.fees)}</b> paid,
           plus the <b>${span(grLo, grHi)}</b> those same dollars would have earned had they stayed invested and
           compounding for the rest of the ${Math.round(S.yrs)} years.<br><br>
-          It's measured against paying nothing at all, on the same assumed return — and nobody pays nothing, so read
+          It's measured against paying nothing at all, on the same assumed return, and nobody pays nothing, so read
           it as the outer bound of what fees cost rather than as money anyone could actually keep.`;
       }
       const tyEl = document.getElementById("ty");
@@ -543,7 +543,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
           viz.querySelectorAll(".bar").forEach((bar) => {
             bar.onmousemove = (e) => {
               const row = bar.closest(".bar-row");
-              tip.innerHTML = row.querySelector("span").textContent + " — " + row.querySelector("b").textContent +
+              tip.innerHTML = row.querySelector("span").textContent + ", " + row.querySelector("b").textContent +
                 " &nbsp;·&nbsp; " + row.dataset.f + " in fees";
               const box = viz.getBoundingClientRect();
               tip.style.left = Math.min(e.clientX - box.left + 12, Math.max(0, box.width - 280)) + "px";
@@ -574,7 +574,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
 
       const discEl = document.getElementById("disc");
       if (discEl) {
-        discEl.innerHTML = `These are illustrations of the figures entered — not a description
+        discEl.innerHTML = `These are illustrations of the figures entered, not a description
           of your accounts, not a projection, and not a recommendation to do any of them. Every scenario assumes the
           same return, which is the single biggest assumption on this page. Cost is one input among many: tax
           planning, withdrawal sequencing, estate work, and having someone talk you out of selling in a bad year
@@ -607,9 +607,9 @@ export default function AdvisoryFeeCalculatorPublicClient() {
         </div>
         <div class="kpinote">This is what an <b>all-in cost of ${rate}% on ${span(startLo, startHi)}</b> over
           ${Math.round(S.yrs)} years looks like.${sample
-            ? ` Made-up figures, shown so the scale is concrete — pick your accounts below to replace them with your own.`
+            ? ` Made-up figures, shown so the scale is concrete, pick your accounts below to replace them with your own.`
             : ` Based on what you've entered below.`}</div>
-        <div class="kpidisc">An illustration of the figures shown — not a projection, and not a recommendation to
+        <div class="kpidisc">An illustration of the figures shown, not a projection, and not a recommendation to
           do anything. It assumes a constant ${S.ret}% return every year, which no real portfolio delivers, and
           cost is only one part of the picture.</div>
       </div>`;
@@ -624,7 +624,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
 
 I'm putting together a complete picture of my finances. Could you send me the following in writing?
 
-1. A list of every account you hold for me, with the type of each one -- for example traditional IRA, Roth IRA, rollover IRA, inherited IRA, taxable brokerage, trust, custodial account, 529, HSA, annuity, or cash-value life insurance.
+1. A list of every account you hold for me, with the type of each one, for example traditional IRA, Roth IRA, rollover IRA, inherited IRA, taxable brokerage, trust, custodial account, 529, HSA, annuity, or cash-value life insurance.
 2. The current balance of each account, listed separately.
 3. The advisory fee rate currently applied to each account, and whether it differs from your published schedule for any reason.
 4. Total fees charged to each account last calendar year, in dollars.
@@ -633,7 +633,7 @@ I'm putting together a complete picture of my finances. Could you send me the fo
 7. Your published fee schedule, including every breakpoint, and whether the tiers are graduated (each slice at its own rate) or whether the whole balance is charged at one tier's rate.
 8. Your standard schedule of other charges, including platform/custodial/administrative fees, wrap program fees, trading/transaction/commission costs, annual account or maintenance fees, financial planning or retainer fees billed separately, 12b-1 fees or revenue sharing, and termination or transfer-out (ACAT) fees.
 
-No need to attach statements. Email is easiest for me -- I'd like this written down so I can put it alongside everything else. Happy to talk it through afterward.
+No need to attach statements. Email is easiest for me, I'd like this written down so I can put it alongside everything else. Happy to talk it through afterward.
 
 Thanks,
 ${name}`;
@@ -650,7 +650,7 @@ ${name}`;
           <div style="margin-top:22px"><button class="btn" id="q-send">Send now</button></div>
           <div class="flag" style="margin-top:20px"><b>Everything goes to one place.</b><br>
             This opens a draft in your own mail app, addressed to your provider. <b>PriorityPay never sees this
-            message or any reply</b> -- their answer comes back to your inbox, and you type the numbers into
+            message or any reply</b>, their answer comes back to your inbox, and you type the numbers into
             step 2 on the left yourself.</div>
           <div class="tnote" style="margin-top:14px">Nothing here is sent by PriorityPay. The draft opens in your
             own mail app so you can review it, edit it, and send it yourself.</div>
@@ -658,13 +658,13 @@ ${name}`;
           <div class="eyebrow" style="margin-top:30px">The message</div>
           <div class="email">
             <div class="hdr"><b>From:</b> you &nbsp;·&nbsp; <b>To:</b> ${S.providerEmail || "your provider"}<br>
-              <b>Subject:</b> Request — account list, balances and fee details in writing</div>
+              <b>Subject:</b> Request, account list, balances and fee details in writing</div>
             <p style="margin:0 0 9px">Hi there,</p>
             <p style="margin:0 0 9px">I'm putting together a complete picture of my finances. Could you send me the
               following in writing?</p>
             <h5>Please send these to me in writing</h5>
             <ol>
-              <li><b>A list of every account you hold for me</b>, with the type of each one — for example
+              <li><b>A list of every account you hold for me</b>, with the type of each one, for example
                 traditional IRA, Roth IRA, rollover IRA, inherited IRA, taxable brokerage, trust, custodial account,
                 529, HSA, annuity, or cash-value life insurance.</li>
               <li><b>The current balance of each account</b>, listed separately.</li>
@@ -684,7 +684,7 @@ ${name}`;
                   <li>12b-1 fees or revenue sharing</li>
                   <li>Termination or transfer-out (ACAT) fees</li></ul></li>
             </ol>
-            <p style="margin:0 0 9px">No need to attach statements. Email is easiest for me — I'd like this written
+            <p style="margin:0 0 9px">No need to attach statements. Email is easiest for me, I'd like this written
               down so I can put it alongside everything else. Happy to talk it through afterward.</p>
             <p style="margin:0">Thanks,<br>${name}</p>
           </div>
@@ -708,7 +708,7 @@ ${name}`;
       });
       const s = document.getElementById("q-send");
       if (s) s.onclick = () => {
-        const subject = "Request — account list, balances and fee details in writing";
+        const subject = "Request, account list, balances and fee details in writing";
         const body = plainTextEmail();
         const to = (S.providerEmail || "").trim();
         const url = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -778,10 +778,10 @@ ${name}`;
           <div className="paths">
             <button className="path on" id="p-know">
               <span className="h">I have my numbers</span>
-              <span className="s">Enter what you know. Ranges are fine — you can sharpen them later.</span>
+              <span className="s">Enter what you know. Ranges are fine, you can sharpen them later.</span>
             </button>
             <button className="path" id="p-ask">
-              <span className="h">Help — I don't know my numbers or accounts</span>
+              <span className="h">Help, I don't know my numbers or accounts</span>
               <span className="s">We'll write the email. You send it from your own inbox.</span>
             </button>
           </div>
@@ -794,13 +794,13 @@ ${name}`;
                   <em>Step 1</em>Which accounts do you have?
                 </h3>
                 <p className="sub">
-                  A firm doesn't hold one pot of money — it usually holds several separate accounts, each
+                  A firm doesn't hold one pot of money, it usually holds several separate accounts, each
                   with its own statement and often its own rate. Pick everything that applies. If you're not sure,
                   that's the normal answer, and there's a button for it.
                 </p>
                 <div className="picker" id="picker" />
                 <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                  <button className="btn ghost sm" id="dunno">I don't know — help me find out</button>
+                  <button className="btn ghost sm" id="dunno">I don't know, help me find out</button>
                   <span className="tnote" style={{ margin: 0 }}>Opens the email that asks them to list everything.</span>
                 </div>
               </div>
@@ -810,12 +810,12 @@ ${name}`;
                   <em>Step 2</em>What does each one hold, and cost?
                 </h3>
                 <p className="sub">
-                  Give a range if you don't know the exact figure — but keep it tight, within $30,000,
+                  Give a range if you don't know the exact figure, but keep it tight, within $30,000,
                   so the answer stays meaningful. Every result is then shown as a range too.
                 </p>
                 <div id="accts" />
                 <div id="empty" className="tnote" style={{ display: "none", marginBottom: 14 }}>
-                  Nothing selected yet — pick an account type above, or add one below.
+                  Nothing selected yet, pick an account type above, or add one below.
                 </div>
                 <button className="btn sm ghost" id="add">+ Add another account</button>
                 <div className="tnote">For anything not in the list above.</div>
@@ -823,7 +823,7 @@ ${name}`;
 
               <div className="card">
                 <h3>Assumptions</h3>
-                <p className="sub">Identical across every scenario — only the fees change between them.</p>
+                <p className="sub">Identical across every scenario, only the fees change between them.</p>
                 <div className="fields" style={{ maxWidth: 460 }}>
                   <div><label className="f">Assumed yearly return</label><input className="in" id="a-ret" type="number" onFocus={(e) => e.target.select()} step="0.1" defaultValue="7" /></div>
                   <div><label className="f">Years</label><input className="in" id="a-yrs" type="number" onFocus={(e) => e.target.select()} step="1" defaultValue="30" /></div>
@@ -835,14 +835,14 @@ ${name}`;
                 <h3>Paying for advice on its own</h3>
                 <p className="sub">
                   A middle path: you hold the funds yourself, and pay a professional a set fee for a
-                  plan or a review when you want one — rather than a percentage of everything, every year, forever.
+                  plan or a review when you want one, rather than a percentage of everything, every year, forever.
                 </p>
                 <div className="fields" style={{ maxWidth: 420 }}>
                   <div><label className="f">Cost per engagement $</label><input className="in" id="v-fee" type="number" onFocus={(e) => e.target.select()} step="100" defaultValue="2500" /></div>
                   <div><label className="f">How often, in years</label><input className="in" id="v-every" type="number" onFocus={(e) => e.target.select()} step="1" defaultValue="3" /></div>
                 </div>
                 <div className="tnote" style={{ marginTop: 14 }}>
-                  These are placeholder figures, not a quote and not a market rate — advice-only and flat-fee
+                  These are placeholder figures, not a quote and not a market rate, advice-only and flat-fee
                   planners price very differently from one another, and the only number worth modelling is one you
                   have actually been quoted. The scenario charges this amount every <b>N</b> years and otherwise
                   holds the same funds as the self-managed case.
@@ -856,7 +856,7 @@ ${name}`;
               <div className="card">
                 <h3>The self-managed scenario</h3>
                 <p className="sub">
-                  What the same money looks like with no advisory layer on top — holding funds directly and
+                  What the same money looks like with no advisory layer on top, holding funds directly and
                   paying only what the funds themselves charge. These figures are yours to set.
                 </p>
                 <div className="fields" style={{ maxWidth: 420 }}>
@@ -870,7 +870,7 @@ ${name}`;
                 </div>
                 <div className="tnote" style={{ marginTop: 10 }}>
                   <b>What this scenario does not model:</b> it compares costs only. It assumes identical returns
-                  to every other scenario — the same holdings, the same discipline in a downturn, the same
+                  to every other scenario, the same holdings, the same discipline in a downturn, the same
                   rebalancing, the same tax handling. It carries no view on whether that's realistic for any
                   particular person, and it is not a suggestion to do it.
                 </div>
@@ -890,11 +890,11 @@ ${name}`;
                 </div>
                 <div className="totalblock">
                   <div className="eyebrow">What you pay in fees</div>
-                  <div className="hero" id="hero">—</div>
+                  <div className="hero" id="hero">,</div>
                   <div className="herosub" id="herosub" />
                   <div className="totalblock second">
                     <div className="eyebrow">Estimated total forgone due to fees</div>
-                    <div className="hero lg" id="hero2">—</div>
+                    <div className="hero lg" id="hero2">,</div>
                     <div className="herosub" id="herosub2" />
                   </div>
                 </div>

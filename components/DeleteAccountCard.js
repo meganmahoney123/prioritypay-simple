@@ -50,7 +50,7 @@ export default function DeleteAccountCard() {
       </h2>
       <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
       <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-        Permanently deletes your PriorityPay account and all associated data — split rules, transfer history,
+        Permanently deletes your PriorityPay account and all associated data, split rules, transfer history,
         close-outs, linked account references, and your profile. This cannot be undone. If you have an active
         subscription, it&apos;s canceled automatically as part of this.
       </p>

@@ -39,7 +39,7 @@ export default function RetirementConnectRow({ retirementType, accountId, accoun
   return (
     <div className="mt-1">
       <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>
-        Connected{account ? ` — ${account.institution_name} ${account.account_name} •••• ${account.mask}` : ""}
+        Connected{account ? `, ${account.institution_name} ${account.account_name} •••• ${account.mask}` : ""}
       </p>
       {account && (
         <div className="flex items-center gap-3 mt-1 flex-wrap">
@@ -62,7 +62,7 @@ export default function RetirementConnectRow({ retirementType, accountId, accoun
         </div>
       )}
       <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-1">
-        Balance comes straight from Plaid and reflects everything in the account — growth, past contributions,
+        Balance comes straight from Plaid and reflects everything in the account, growth, past contributions,
         anything sent outside PriorityPay too, not just what PriorityPay has sent it.
       </p>
     </div>

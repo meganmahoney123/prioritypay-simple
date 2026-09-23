@@ -5,7 +5,7 @@ import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 
 export const metadata = {
   title: "Business Owner | PriorityPay Blog",
-  description: "Guides and calculators for business owners with a team -- payroll, entity structure, and separating business money from personal.",
+  description: "Guides and calculators for business owners with a team, payroll, entity structure, and separating business money from personal.",
   alternates: { canonical: "https://www.prioritypay.co/business-owner" },
 };
 

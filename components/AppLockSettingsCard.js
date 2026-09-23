@@ -41,7 +41,7 @@ export default function AppLockSettingsCard() {
       <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
       <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
         Require Face ID or Touch ID to open PriorityPay, in addition to your regular login. This only protects
-        this device — it never changes how you sign in on the web.
+        this device, it never changes how you sign in on the web.
       </p>
       <label className="flex items-center gap-2.5" style={{ cursor: busy ? "wait" : "pointer" }}>
         <input

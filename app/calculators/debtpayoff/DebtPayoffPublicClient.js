@@ -548,7 +548,7 @@ export default function DebtPayoffPublicClient() {
                 margin: "18px 0 0",
               }}
             >
-              The "Per month" amount is the one lever most worth playing with -- see exactly how much sooner a
+              The "Per month" amount is the one lever most worth playing with, see exactly how much sooner a
               bigger number gets you out of debt in "See the impact of paying more" below.
             </p>
           </div>
@@ -586,7 +586,7 @@ export default function DebtPayoffPublicClient() {
           <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "18px 0 0", maxWidth: "60em" }}>
             {fixedTotal
               ? 'Yes: once a debt is paid off, the payment that was going to it gets redirected to your remaining debts, so the total you\'re putting toward debt each month stays the same until everything\'s paid off. This is the faster, more standard way to run either strategy.'
-              : "No: once a debt is paid off, that payment just goes away instead of being redirected -- so the total you're putting toward debt each month shrinks as debts close, and payoff takes longer."}
+              : "No: once a debt is paid off, that payment just goes away instead of being redirected, so the total you're putting toward debt each month shrinks as debts close, and payoff takes longer."}
           </p>
         </div>
 
@@ -650,7 +650,7 @@ export default function DebtPayoffPublicClient() {
                 margin: "20px 0 0",
               }}
             >
-              At these minimums and extra amounts, this doesn't pay off within 50 years -- increase your extra
+              At these minimums and extra amounts, this doesn't pay off within 50 years, increase your extra
               payments.
             </p>
           )}
@@ -662,7 +662,7 @@ export default function DebtPayoffPublicClient() {
             See the impact of paying more
           </h2>
           <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "0 0 22px" }}>
-            Same debts, same strategy -- only the extra monthly amount changes. This is the one number worth
+            Same debts, same strategy, only the extra monthly amount changes. This is the one number worth
             experimenting with above.
           </p>
 

@@ -73,7 +73,7 @@ export default function PublicFooter() {
         <p style={{ fontSize: 13, lineHeight: 1.7, margin: 0, maxWidth: "60em", color: "#6B5E7A" }}>
           PriorityPay calculates how to split deposits between accounts you connect and control, and shows you
           exactly what to send. It is not a bank, broker-dealer, or investment adviser, and does not hold, invest, or
-          move your funds — every transfer is one you complete yourself. Account connections are made through Plaid
+          move your funds, every transfer is one you complete yourself. Account connections are made through Plaid
           Inc.
         </p>
       </div>

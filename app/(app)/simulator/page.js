@@ -102,7 +102,7 @@ export default function MoneySimulatorDashboardPage() {
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 16px" }} />
         <p className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-          Started from your real split rules and last month's income. Try changes here first — nothing updates
+          Started from your real split rules and last month's income. Try changes here first, nothing updates
           your actual accounts until you confirm it below.
         </p>
       </div>

@@ -446,7 +446,7 @@ export default function CompoundInterestPublicClient() {
         </div>
 
         <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "22px 0 0" }}>
-          Estimate only. Assumes a steady annual return and contributions made at the start of each year -- real
+          Estimate only. Assumes a steady annual return and contributions made at the start of each year, real
           markets don't move in a straight line, and this isn't investment advice. Not adjusted for taxes or fees.
         </p>
       </div>

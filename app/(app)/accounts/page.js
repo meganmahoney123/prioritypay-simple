@@ -112,7 +112,7 @@ export default function AccountsPage() {
           }}
         />
         <p className="text-xs mt-2" style={{ color: "var(--color-neutral-700)" }}>
-          Credit cards are for close-out expense tracking only — they're never used for splits or transfers.
+          Credit cards are for close-out expense tracking only, they're never used for splits or transfers.
         </p>
         {disconnectError && (
           <div className="text-xs mt-2 p-3" style={bloomWarningCardStyle()}>
@@ -148,13 +148,13 @@ export default function AccountsPage() {
             {acc.account_type === "credit" ? (
               <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
             ) : acc.account_type === "business" ? (
-              <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only — never used for splits or transfers.</p>
+              <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
             ) : acc.autoDetectEnabled ? (
-              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically — you'll get a checklist to confirm and send each transfer</p>
+              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically, you'll get a checklist to confirm and send each transfer</p>
             ) : (
               <div>
                 <p className="text-xs mb-2" style={{ color: "#9C3B22" }}>
-                  Linked before auto-detect existed — deposits here still need the manual Split button.
+                  Linked before auto-detect existed, deposits here still need the manual Split button.
                 </p>
                 <PlaidLinkButton
                   mode="update"

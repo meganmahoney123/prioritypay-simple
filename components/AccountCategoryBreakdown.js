@@ -310,7 +310,7 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span>
               Categories here add up to {currency(overCategorizedBy)} more than this account&apos;s real balance
-              ({currency(accountBalance)}) -- percentages above are shown against the categorized total instead so
+              ({currency(accountBalance)}), percentages above are shown against the categorized total instead so
               nothing reads over 100%, but a category balance is out of sync with the bank.
             </span>
             <button
@@ -364,7 +364,7 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
       {uncategorizedCount > 0 && (
         <Link href="/closeout" className="block text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
           <span style={{ fontWeight: 600 }}>Warning:</span> {uncategorizedCount} transaction{uncategorizedCount === 1 ? "" : "s"} from
-          this account haven&apos;t been categorized yet in Close Out — this chart may be out of date.
+          this account haven&apos;t been categorized yet in Close Out, this chart may be out of date.
         </Link>
       )}
     </div>

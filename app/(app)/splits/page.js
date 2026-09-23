@@ -120,7 +120,7 @@ function SplitRulesPageInner() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) {
-      setSaveError(data.error || "Couldn't save — please try again.");
+      setSaveError(data.error || "Couldn't save, please try again.");
       setSaved(false);
       return;
     }
@@ -317,7 +317,7 @@ function SplitRulesPageInner() {
             className="mb-2"
             style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
           >
-            Suggestions — click to add, starts at 0%:
+            Suggestions, click to add, starts at 0%:
           </p>
           <div className="flex flex-wrap gap-2">
             {availableSuggestions.map((s) => (

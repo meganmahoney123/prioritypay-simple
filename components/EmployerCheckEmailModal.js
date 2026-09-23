@@ -51,7 +51,7 @@ Thanks for your help!`;
         </h3>
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "0 0 20px" }}>
           Your HR or payroll team can tell you exactly what&apos;s already set up and whether money is already coming
-          out of your paycheck for it. Fill this in and we&apos;ll draft the email for you -- you&apos;ll still need
+          out of your paycheck for it. Fill this in and we&apos;ll draft the email for you, you&apos;ll still need
           to find your HR contact&apos;s email address and hit send yourself.
         </p>
 

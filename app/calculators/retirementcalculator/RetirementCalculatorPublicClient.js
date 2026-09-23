@@ -75,7 +75,7 @@ export default function RetirementCalculatorPublicClient() {
         { label: "Annual dollar cap", value: currency(sep.cap) },
       ],
       capped: sep.cappedByAnnualLimit,
-      cappedNote: `Capped by the annual dollar limit -- the uncapped 20-25% formula would allow ${currency(sep.uncappedContribution)}.`,
+      cappedNote: `Capped by the annual dollar limit, the uncapped 20-25% formula would allow ${currency(sep.uncappedContribution)}.`,
       contributedLabel: "Already contributed to this SEP IRA",
       contributed: sepContributed,
       onContributed: (e) => setSepContributed(Math.max(0, Number(e.target.value) || 0)),
@@ -117,7 +117,7 @@ export default function RetirementCalculatorPublicClient() {
           Solo 401k + SEP IRA Calculator
         </h1>
         <p style={{ fontSize: 19, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "0 0 36px", maxWidth: "42em" }}>
-          See how much room you actually have in each for 2026, side by side. Free, no account needed -- for
+          See how much room you actually have in each for 2026, side by side. Free, no account needed, for
           self-employed people and business owners only, since W2 employees don't have access to either plan.
         </p>
 
@@ -206,7 +206,7 @@ export default function RetirementCalculatorPublicClient() {
               margin: "20px 0 0",
             }}
           >
-            Just your self-employment or business net income -- if you also have a W2 job, don't include those wages
+            Just your self-employment or business net income, if you also have a W2 job, don't include those wages
             here.
           </p>
         </div>
@@ -340,7 +340,7 @@ export default function RetirementCalculatorPublicClient() {
                       margin: 0,
                     }}
                   >
-                    {currency(-p.progress.remaining)} over this estimate -- talk to your plan administrator before
+                    {currency(-p.progress.remaining)} over this estimate, talk to your plan administrator before
                     contributing more.
                   </p>
                 ) : (
@@ -382,7 +382,7 @@ export default function RetirementCalculatorPublicClient() {
         >
           {soloBigger
             ? `A Solo 401k gives you ${currency(solo401k.total - sep.contribution)} more room here, mainly because of the separate employee deferral on top of the employer share.`
-            : `These come out close to even at this income -- a SEP IRA is simpler to administer if you'd rather skip the extra paperwork a Solo 401k needs.`}
+            : `These come out close to even at this income, a SEP IRA is simpler to administer if you'd rather skip the extra paperwork a Solo 401k needs.`}
         </p>
 
         {/* CTA banner */}

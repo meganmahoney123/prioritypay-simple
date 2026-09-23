@@ -353,7 +353,7 @@ export default function InvestmentGrowthProjection({ title, blocks, taxNote = fa
 
       {taxNote && (
         <p className="text-xs mt-4" style={{ color: "var(--color-accent-700)" }}>
-          This reflects pre-tax contributions — you&apos;ll still owe income tax on withdrawals in retirement.
+          This reflects pre-tax contributions, you&apos;ll still owe income tax on withdrawals in retirement.
         </p>
       )}
 

@@ -257,7 +257,7 @@ export default function CloseoutPage() {
     });
     if (!res.ok) {
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: previous ?? null } : t)));
-      alert("Couldn't save that category — please try again.");
+      alert("Couldn't save that category, please try again.");
       return;
     }
     if (isConfirmed) handleConfirm();
@@ -368,7 +368,7 @@ export default function CloseoutPage() {
   const [incomeSourceDrafts, setIncomeSourceDrafts] = useState({});
   const saveIncomeSource = async (txnId, payer, purpose) => {
     const previous = transactions.find((t) => t.id === txnId)?.income_source ?? null;
-    const next = [payer.trim(), purpose.trim()].filter(Boolean).join(" — ") || null;
+    const next = [payer.trim(), purpose.trim()].filter(Boolean).join(", ") || null;
     if (next === previous) return;
     setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: next } : t)));
     const res = await fetch(`/api/closeout/transactions/${txnId}`, {
@@ -378,7 +378,7 @@ export default function CloseoutPage() {
     });
     if (!res.ok) {
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: previous } : t)));
-      alert("Couldn't save that — please try again.");
+      alert("Couldn't save that, please try again.");
     }
   };
 
@@ -513,7 +513,7 @@ export default function CloseoutPage() {
     });
     setSavingObligations(false);
     if (!res.ok) {
-      alert("Couldn't save this reserve — please try again.");
+      alert("Couldn't save this reserve, please try again.");
       return;
     }
     setSplitRulesPercent(nextPercent);
@@ -576,7 +576,7 @@ export default function CloseoutPage() {
     const linked = linkedWithdrawalsByTxnId[t.id];
     if (linked) return renderLinkedRow(t, acc, linked);
     const cat = t.confirmed_category || t.suggested_category;
-    const [defaultPayer, defaultPurpose] = (t.income_source || "").split(" — ");
+    const [defaultPayer, defaultPurpose] = (t.income_source || "").split(", ");
     return (
       <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
@@ -900,7 +900,7 @@ export default function CloseoutPage() {
                 : ""}
               . Categories are locked by default to avoid accidental changes
               {editingConfirmed
-                ? " — you're editing now. Retirement room, tax reserve, and Tax Summary all recalculate the moment you change a category. Money already sent isn't undone, only what's left to send adjusts."
+                ? ", you're editing now. Retirement room, tax reserve, and Tax Summary all recalculate the moment you change a category. Money already sent isn't undone, only what's left to send adjusts."
                 : ". Made a mistake? You can still fix it."}
             </span>
             <GhostButton onClick={() => setEditingConfirmed((v) => !v)} className="text-[11px] px-2.5 py-1 shrink-0">
@@ -958,7 +958,7 @@ export default function CloseoutPage() {
         )}
         {displayBusiness > 0 && (
           <div className="flex items-center justify-between text-xs text-[var(--color-neutral-700)] mt-1">
-            <span>Flagged as business this month (excluded — belongs to the business side, see Tax Summary)</span>
+            <span>Flagged as business this month (excluded, belongs to the business side, see Tax Summary)</span>
             <span className="font-mono">{currency(displayBusiness)}</span>
           </div>
         )}
@@ -1050,10 +1050,10 @@ export default function CloseoutPage() {
                         <div>
                           <div className="text-sm font-semibold text-[#9C3B22] mb-1">Solo 401k isn&apos;t available to you</div>
                           <p className="text-xs text-[#9C3B22]">
-                            Solo 401k plans only cover a business owner and their spouse — with other employees on
+                            Solo 401k plans only cover a business owner and their spouse, with other employees on
                             payroll, the business isn&apos;t eligible for this specific plan, no exceptions. A SEP
                             IRA (below, if set up) or a standard employer 401(k) are the options to look into
-                            instead — worth a conversation with a tax professional about which fits.
+                            instead, worth a conversation with a tax professional about which fits.
                           </p>
                         </div>
                       </div>
@@ -1071,7 +1071,7 @@ export default function CloseoutPage() {
                       ) : (
                         <p className="text-xs text-[var(--color-neutral-700)] mb-2">
                           {currency(r.room)} of room left this year ({currency(r.ytdContributed)} sent through
-                          PriorityPay so far this year — doesn&apos;t include anything contributed outside
+                          PriorityPay so far this year, doesn&apos;t include anything contributed outside
                           PriorityPay). Holding in {r.holdingAccountLabel || "no account set"}
                           {r.holdingAccountBalance !== null ? ` (${currency(r.holdingAccountBalance)} available)` : ""}.
                         </p>
@@ -1190,7 +1190,7 @@ export default function CloseoutPage() {
             <div className="border border-[var(--color-divider)] rounded-[20px] p-4 mb-4">
               <div className="text-sm font-semibold mb-2">Annual calculator</div>
               <p className="text-[11px] text-[var(--color-neutral-700)] mb-2">
-                Some people haven&apos;t set aside anything for taxes yet this year — use this to see roughly what
+                Some people haven&apos;t set aside anything for taxes yet this year, use this to see roughly what
                 the whole year&apos;s target should be, not just this month&apos;s.
               </p>
               <div className="flex items-center gap-2 mb-2">
@@ -1228,7 +1228,7 @@ export default function CloseoutPage() {
               accurate, and it&apos;s not tax advice. Talk to a tax professional about your real effective rate.
             </p>
             <p className="text-xs text-[var(--color-neutral-700)] mb-3">
-              All of this stays in whichever account you already chose for Tax Reserve on Income Split Rules — this is
+              All of this stays in whichever account you already chose for Tax Reserve on Income Split Rules, this is
               just a number to compare against what&apos;s already there. Want to add more?
             </p>
             {!topUp.open ? (
@@ -1280,7 +1280,7 @@ export default function CloseoutPage() {
                 For employer payroll tax, unemployment insurance, workers&apos; comp, or a standard 401(k) match --
                 anything your accountant or plan administrator calculates a number for. This routes money toward it
                 automatically, same as everything else above, but it&apos;s money staged and ready, not the actual
-                contribution or filing itself — that still goes through your payroll provider or TPA when it&apos;s
+                contribution or filing itself, that still goes through your payroll provider or TPA when it&apos;s
                 due.
               </p>
 
@@ -1375,7 +1375,7 @@ export default function CloseoutPage() {
               <h2 className="text-sm font-semibold mb-1">Business Account</h2>
               <p className="text-xs text-[var(--color-neutral-700)] mb-4">
                 Link your business checking or savings account to see its balance right here, next to what&apos;s
-                staged in Team & Plan Obligations above — a quick gut check that there&apos;s actually enough
+                staged in Team & Plan Obligations above, a quick gut check that there&apos;s actually enough
                 sitting there before you send anything. Read-only: never used for splits or transfers, and never
                 pulled into close-out&apos;s income/expense review.
               </p>
@@ -1469,7 +1469,7 @@ export default function CloseoutPage() {
                 </p>
                 {incomeTransactions.length === 0 ? (
                   <p className="text-sm text-[var(--color-neutral-700)] mb-4">
-                    No income transactions found for {periodLabel(period)} yet — nothing to flag right now.
+                    No income transactions found for {periodLabel(period)} yet, nothing to flag right now.
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-80 overflow-y-auto mb-4">
