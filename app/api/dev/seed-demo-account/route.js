@@ -28,12 +28,12 @@ import { computeAllocations, investmentTypeFromLabel, PERSONA_SELF_EMPLOYED } fr
 const ALLOWED_EMAIL = "megan@ignitemysite.com";
 
 const DEMO_ACCOUNTS = [
-  { key: "tax_reserve", institution_name: "Ally Bank", account_name: "Tax Reserve Savings", mask: "7756", subtype: "savings", current_balance: 4820.0 },
-  { key: "investments", institution_name: "Vanguard", account_name: "Cash Reserve", mask: "5510", subtype: "savings", current_balance: 6218.4 },
-  { key: "solo_401k", institution_name: "Fidelity", account_name: "Solo 401k Contributions", mask: "3391", subtype: "savings", current_balance: 9102.55 },
+  { key: "tax_reserve", institution_name: "Ally Bank", account_name: "Tax Reserve Savings", mask: "7756", subtype: "savings", current_balance: 8540.0 },
+  { key: "investments", institution_name: "Vanguard", account_name: "Cash Reserve", mask: "5510", subtype: "savings", current_balance: 9480.0 },
+  { key: "solo_401k", institution_name: "Fidelity", account_name: "Solo 401k Contributions", mask: "3391", subtype: "savings", current_balance: 13640.0 },
   { key: "emergency_fund", institution_name: "Marcus by Goldman Sachs", account_name: "Emergency Fund", mask: "2290", subtype: "savings", current_balance: 12340.0 },
-  { key: "opex", institution_name: "Chase", account_name: "Business Checking", mask: "4821", subtype: "checking", current_balance: 3120.55 },
-  { key: "savings", institution_name: "Capital One", account_name: "Online Savings", mask: "6094", subtype: "savings", current_balance: 2450.0 },
+  { key: "opex", institution_name: "Chase", account_name: "Business Checking", mask: "4821", subtype: "checking", current_balance: 4380.0 },
+  { key: "savings", institution_name: "Capital One", account_name: "Online Savings", mask: "6094", subtype: "savings", current_balance: 4560.0 },
 ];
 
 // Same six categories/percentages as DEFAULT_SPLIT_RULES (lib/allocations.js)
