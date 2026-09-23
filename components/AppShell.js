@@ -23,13 +23,13 @@ import { groupByCategory } from "@/components/PendingTransfers";
 // longer linked from anywhere in the nav.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/projections", label: "Investment Projections" },
   { href: "/accounts", label: "Accounts" },
   { href: "/splits", label: "Income Split Rules" },
   { href: "/simulator", label: "Income Split Simulator" },
   { href: "/transfers", label: "One-Time Transfer" },
   { href: "/withdrawals", label: "Withdrawals" },
   { href: "/closeout", label: "Close Out" },
+  { href: "/projections", label: "Investment Projections" },
   { href: "/advisor", label: "Tax Savings Quiz" },
   { href: "/settings", label: "Settings" },
 ];
