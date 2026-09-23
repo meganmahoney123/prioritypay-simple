@@ -1,7 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { fireCloseoutTransfer } from "@/lib/closeoutTransfer";
-import { checkAccountRoomForLabel, checkAccountUnallocatedRoom } from "@/lib/categoryRoom";
+import { checkAccountUnallocatedRoom } from "@/lib/categoryRoom";
 import { refreshAccountBalance } from "@/lib/refreshAccountBalance";
 
 // The One-Time Transfer tab (app/(app)/transfers/page.js) mostly does pure
@@ -55,34 +55,32 @@ export async function POST(request) {
 
   const admin = supabaseAdmin();
 
-  // Ask Plaid for each account's REAL balance right now, before either
-  // room check below runs -- this is a real ACH transfer about to move
-  // real money, so the limit it's checked against has to be the bank's
-  // actual current balance, not whatever simple_accounts.current_balance
-  // happened to cache the last time someone loaded Accounts or Dashboard.
-  // Best-effort (see refreshAccountBalance) -- a failed live check still
-  // leaves the room checks running against the last known balance rather
-  // than blocking the transfer outright.
-  await Promise.all([refreshAccountBalance(admin, fromAccountId), refreshAccountBalance(admin, toAccountId)]);
-
-  // Even though the credit won't count toward balances until confirmed
-  // (see the file comment above), still check room against what's
-  // ALREADY confirmed/settled for that account -- otherwise someone could
-  // queue up several needs_approval transfers that, once they all settle,
-  // push the account over its real balance anyway. This just moves the
-  // same protection lib/categoryRoom.js provides everywhere else to the
-  // moment before the ACH is even requested, not after.
-  if (toLabel) {
-    const room = await checkAccountRoomForLabel(admin, user.id, toLabel, amount);
-    if (!room.ok) {
-      return Response.json(
-        {
-          error: `That would put ${toLabel}'s account $${(amount - room.room).toFixed(2)} over its real balance ($${room.accountBalance.toFixed(2)}). Only $${room.room.toFixed(2)} is available to move in right now.`,
-        },
-        { status: 400 }
-      );
-    }
-  }
+  // Ask Plaid for the SOURCE account's real balance right now, before the
+  // room check below runs -- this is a real ACH transfer about to pull
+  // real money out of it, so the limit it's checked against has to be the
+  // bank's actual current balance, not whatever simple_accounts.
+  // current_balance happened to cache the last time someone loaded
+  // Accounts or Dashboard. Best-effort (see refreshAccountBalance) -- a
+  // failed live check still leaves the room check running against the
+  // last known balance rather than blocking the transfer outright.
+  //
+  // Deliberately NOT done for toAccountId, and NOT paired with a
+  // checkAccountRoomForLabel destination check the way category-transfer
+  // has one -- a REAL cross-account ACH transfer can never over-allocate
+  // its destination, because the credit and the cash arrive together, in
+  // the same amount, from the same event. An account already fully
+  // "spoken for" (categorized total == real balance, zero free room) is
+  // not a problem for money about to be DEPOSITED into it -- there's
+  // nothing to "fit into," the deposit makes its own room. A destination
+  // check here was checking whether that room already existed BEFORE this
+  // transfer's own cash arrives, which can never be true for a transfer
+  // that hasn't landed yet, so it was blocking transfers into any
+  // fully-allocated account regardless of amount -- exactly the "$499.50
+  // over its real balance" block a user hit for a routine $500 top-up.
+  // category-transfer's destination check stays as-is: there, no new cash
+  // is arriving, so the money genuinely has to already be sitting
+  // uncommitted in the account.
+  await refreshAccountBalance(admin, fromAccountId);
 
   // The other half of the same protection: when the source is Unallocated
   // cash (fromLabel null) rather than a category, nothing above stops the
