@@ -148,6 +148,86 @@ const PERSONAS = {
       { isoDate: "2026-09-19T15:00:00Z", amount: 17100 },
     ],
   },
+
+  business_single: {
+    email: "megan+bizsingle@ignitemysite.com",
+    personaLabel: PERSONA_BUSINESS_OWNER,
+    businessName: "Ridgeline Roofing LLC",
+    plan: "business",
+    // One entity holding every account -- the simplest Business-tab demo:
+    // a single-business owner who upgraded mainly for the QuickBooks
+    // true-up, not because they need to separate multiple businesses.
+    entities: [{ key: "main", name: "Ridgeline Roofing LLC", entity_type: "LLC" }],
+    accounts: [
+      { key: "tax_reserve", institution_name: "Mercury", account_name: "Tax Reserve", mask: "5511", subtype: "savings", current_balance: 28000.0, entityKey: "main" },
+      { key: "investments", institution_name: "Vanguard", account_name: "Cash Reserve", mask: "5512", subtype: "savings", current_balance: 24000.0, entityKey: "main" },
+      { key: "solo_401k", institution_name: "Fidelity", account_name: "Solo 401k Contributions", mask: "5513", subtype: "savings", current_balance: 35000.0, entityKey: "main" },
+      { key: "emergency_fund", institution_name: "Marcus by Goldman Sachs", account_name: "Emergency Fund", mask: "5514", subtype: "savings", current_balance: 22000.0, entityKey: "main" },
+      { key: "opex", institution_name: "Mercury", account_name: "Business Checking", mask: "5515", subtype: "checking", current_balance: 14000.0, entityKey: "main" },
+      { key: "savings", institution_name: "Capital One", account_name: "Online Savings", mask: "5516", subtype: "savings", current_balance: 14000.0, entityKey: "main" },
+    ],
+    // Same split-rule shape and starting balances as the plain Business
+    // Owner demo -- already verified against these exact deposit totals
+    // (see business_owner below), reused here rather than re-deriving new
+    // numbers. Split rules aren't entity-scoped in the schema (only
+    // simple_accounts/simple_qbo_* carry entity_id), so this part of the
+    // account is identical regardless of how many entities exist.
+    splitRules: [
+      { label: "Tax Reserve", group: null, pct: 20, color: "#a3a3a3", accountKey: "tax_reserve", startingBalance: null },
+      { label: "Investments", group: "Investments", pct: 10, color: "#14b8a6", accountKey: "investments", startingBalance: 9000 },
+      { label: "Solo 401k", group: "Retirement", pct: 15, color: "#8b5cf6", accountKey: "solo_401k", retirementType: "solo_401k", startingBalance: 14000 },
+      { label: "Emergency Fund", group: "Savings", pct: 10, color: "#f59e0b", accountKey: "emergency_fund", startingBalance: null },
+      { label: "Business Expenses (OPEX)", group: null, pct: 10, color: "#7c3aed", accountKey: "opex", startingBalance: null },
+      { label: "Savings", group: "Savings", pct: 10, color: "#ef4444", accountKey: "savings", startingBalance: null },
+    ],
+    deposits: [
+      { isoDate: "2026-07-03T15:00:00Z", amount: 18200 },
+      { isoDate: "2026-07-16T15:00:00Z", amount: 15800 },
+      { isoDate: "2026-07-29T15:00:00Z", amount: 14200 },
+      { isoDate: "2026-08-04T15:00:00Z", amount: 19600 },
+      { isoDate: "2026-08-18T15:00:00Z", amount: 16400 },
+      { isoDate: "2026-09-05T15:00:00Z", amount: 20800 },
+      { isoDate: "2026-09-19T15:00:00Z", amount: 17100 },
+    ],
+  },
+  business_multi: {
+    email: "megan+bizmulti@ignitemysite.com",
+    personaLabel: PERSONA_BUSINESS_OWNER,
+    businessName: "Ridgeline Roofing LLC",
+    plan: "business",
+    // Two entities, each holding half the accounts -- demonstrates the
+    // actual multi-entity grouping feature (Businesses card + "Accounts
+    // by business" assignment), not just a second business_name string.
+    entities: [
+      { key: "roofing", name: "Ridgeline Roofing LLC", entity_type: "LLC" },
+      { key: "media", name: "Blue Bison Media LLC", entity_type: "LLC" },
+    ],
+    accounts: [
+      { key: "tax_reserve", institution_name: "Mercury", account_name: "Tax Reserve", mask: "6621", subtype: "savings", current_balance: 28000.0, entityKey: "roofing" },
+      { key: "opex", institution_name: "Mercury", account_name: "Business Checking", mask: "6622", subtype: "checking", current_balance: 14000.0, entityKey: "roofing" },
+      { key: "solo_401k", institution_name: "Fidelity", account_name: "Solo 401k Contributions", mask: "6623", subtype: "savings", current_balance: 35000.0, entityKey: "roofing" },
+      { key: "investments", institution_name: "Vanguard", account_name: "Cash Reserve", mask: "6624", subtype: "savings", current_balance: 24000.0, entityKey: "media" },
+      { key: "emergency_fund", institution_name: "Marcus by Goldman Sachs", account_name: "Emergency Fund", mask: "6625", subtype: "savings", current_balance: 22000.0, entityKey: "media" },
+      { key: "savings", institution_name: "Capital One", account_name: "Online Savings", mask: "6626", subtype: "savings", current_balance: 14000.0, entityKey: "media" },
+    ],
+    splitRules: [
+      { label: "Tax Reserve", group: null, pct: 20, color: "#a3a3a3", accountKey: "tax_reserve", startingBalance: null },
+      { label: "Investments", group: "Investments", pct: 10, color: "#14b8a6", accountKey: "investments", startingBalance: 9000 },
+      { label: "Solo 401k", group: "Retirement", pct: 15, color: "#8b5cf6", accountKey: "solo_401k", retirementType: "solo_401k", startingBalance: 14000 },
+      { label: "Emergency Fund", group: "Savings", pct: 10, color: "#f59e0b", accountKey: "emergency_fund", startingBalance: null },
+      { label: "Business Expenses (OPEX)", group: null, pct: 10, color: "#7c3aed", accountKey: "opex", startingBalance: null },
+      { label: "Savings", group: "Savings", pct: 10, color: "#ef4444", accountKey: "savings", startingBalance: null },
+    ],
+    deposits: [
+      { isoDate: "2026-07-03T15:00:00Z", amount: 18200 },
+      { isoDate: "2026-07-16T15:00:00Z", amount: 15800 },
+      { isoDate: "2026-07-29T15:00:00Z", amount: 14200 },
+      { isoDate: "2026-08-04T15:00:00Z", amount: 19600 },
+      { isoDate: "2026-08-18T15:00:00Z", amount: 16400 },
+      { isoDate: "2026-09-05T15:00:00Z", amount: 20800 },
+      { isoDate: "2026-09-19T15:00:00Z", amount: 17100 },
+    ],
+  },
 };
 
 export async function POST(request) {
@@ -213,6 +293,36 @@ export async function POST(request) {
     const row = insertedAccounts.find((r) => r.account_name === a.account_name);
     if (row) accountIdByKey[a.key] = row.id;
   });
+
+  // 2b) Business-tab entities (PHASE T), only for personas that declare
+  // them. Wholesale replace, same pattern as everything else here --
+  // deleting first means re-running this endpoint for the same persona
+  // never accumulates duplicate businesses. Entities aren't referenced by
+  // split rules (only simple_accounts.entity_id), so this is purely about
+  // grouping the accounts just inserted above.
+  if (persona.entities && persona.entities.length) {
+    await admin.from("simple_entities").delete().eq("user_id", targetUserId);
+    const { data: insertedEntities, error: entitiesError } = await admin
+      .from("simple_entities")
+      .insert(persona.entities.map((e) => ({ user_id: targetUserId, name: e.name, entity_type: e.entity_type || null })))
+      .select("id, name");
+    if (entitiesError) return Response.json({ error: entitiesError.message }, { status: 500 });
+
+    const entityIdByKey = {};
+    persona.entities.forEach((e) => {
+      const row = insertedEntities.find((r) => r.name === e.name);
+      if (row) entityIdByKey[e.key] = row.id;
+    });
+
+    for (const a of persona.accounts) {
+      if (!a.entityKey) continue;
+      const entityId = entityIdByKey[a.entityKey];
+      const accountId = accountIdByKey[a.key];
+      if (!entityId || !accountId) continue;
+      const { error: assignError } = await admin.from("simple_accounts").update({ entity_id: entityId }).eq("id", accountId);
+      if (assignError) return Response.json({ error: assignError.message }, { status: 500 });
+    }
+  }
 
   // 3) Split rules -- wholesale replace.
   await admin.from("simple_split_rules_percent").delete().eq("user_id", targetUserId);
@@ -300,6 +410,15 @@ export async function POST(request) {
       onboarded: true,
       created_at: earliestDate,
       ...(persona.businessName ? { business_name: persona.businessName } : {}),
+      // Bumping straight to plan:"business" + subscription_status:"active"
+      // is the same real-Stripe bypass used everywhere else in this file
+      // (isBusinessPlan() in lib/subscription.js checks exactly these two
+      // fields) -- no live QuickBooks OAuth connection is faked alongside
+      // this, since that would need a real access/refresh token to call
+      // Intuit's API; the Business tab's Businesses + "Accounts by
+      // business" cards work fully, QuickBooks/true-up correctly show
+      // "Not connected".
+      ...(persona.plan === "business" ? { plan: "business", subscription_status: "active" } : {}),
     })
     .eq("id", targetUserId);
 
