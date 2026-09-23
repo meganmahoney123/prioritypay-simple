@@ -200,6 +200,14 @@ export default function TransfersPage() {
     return a ? `${a.institution_name} ${a.account_name} •••• ${a.mask}` : "that account";
   };
 
+  // Shorter form for inline use in a dropdown option -- just enough to
+  // recognize the bank without repeating the account's full display name,
+  // since the category name is already doing that job in the option text.
+  const accountShortLabel = (id) => {
+    const a = accountsById[id];
+    return a ? `${a.institution_name} ••••${a.mask}` : "";
+  };
+
   const afterSuccess = (message) => {
     setSuccess(message);
     setRecent((prev) => [
@@ -337,6 +345,7 @@ export default function TransfersPage() {
               {fromOptions.map((r) => (
                 <option key={r.id} value={r.label}>
                   {r.label} — {currency(categoryBalances[r.label] || 0)} available
+                  {r.accountId ? ` (${accountShortLabel(r.accountId)})` : ""}
                 </option>
               ))}
             </optgroup>
@@ -372,10 +381,26 @@ export default function TransfersPage() {
               {toOptions.map((r) => (
                 <option key={r.id} value={r.label}>
                   {r.label} — {currency(categoryBalances[r.label] || 0)} available
+                  {r.accountId ? ` (${accountShortLabel(r.accountId)})` : ""}
                 </option>
               ))}
             </optgroup>
           </select>
+          {/* Surfaces, the moment both sides are picked, whether real money
+              has to travel between two different banks or nothing needs to
+              move at all -- previously this only showed up AFTER clicking
+              Transfer, and only for the different-banks case (see the
+              "Confirm real transfer" step below); a same-bank pick gave no
+              such reassurance and just quietly saved. */}
+          {fromLabel && toLabel && !bothUnallocated && resolvedFromAccountId && resolvedToAccountId && (
+            <p className="text-xs mt-1.5" style={{ color: "var(--color-neutral-700)" }}>
+              {sameRealAccount
+                ? `Both live in ${accountLabel(resolvedFromAccountId)} — nothing needs to physically move, this is just bookkeeping.`
+                : `Real money moves for this one: ${accountLabel(resolvedFromAccountId)} → ${accountLabel(
+                    resolvedToAccountId
+                  )}. You’ll confirm the amount before anything is sent.`}
+            </p>
+          )}
         </div>
 
         {bothUnallocated && (
