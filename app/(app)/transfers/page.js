@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
@@ -46,6 +47,7 @@ const unallocatedAccountIdFromValue = (v) => (isUnallocatedValue(v) ? v.slice(UN
 // Close-Out shortfall cascade, the Withdrawals category picker), since
 // they all read the same underlying ledger.
 export default function TransfersPage() {
+  const router = useRouter();
   const [accounts, setAccounts] = useState([]);
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
   const [categoryBalances, setCategoryBalances] = useState({});
@@ -76,6 +78,22 @@ export default function TransfersPage() {
   // the amount after dismissing surfaces the check again with the new
   // number, and it never blocks a transfer outright (see toCapExceeded).
   const [capWarningShown, setCapWarningShown] = useState(false);
+  // Per-account breakdown (real balance, unallocated, and every category
+  // sitting in it) from /api/allocations/account-balances -- richer than
+  // unallocatedByAccountId/categoryLabelsByAccountId above, which only
+  // keep a number and a list of names. Used for the "Learn more" pie
+  // chart and the "move money from another category" popup below, both
+  // shown only when a transfer is blocked for being short on real
+  // Unallocated room in the SOURCE account (see checkAccountUnallocatedRoom,
+  // lib/categoryRoom.js) -- the one over-allocation block left after
+  // fixing execute-real-transfer's destination-side check, which used to
+  // (wrongly) block real deposits into a fully-allocated account.
+  const [accountBreakdownByAccountId, setAccountBreakdownByAccountId] = useState({});
+  const [learnMoreOpen, setLearnMoreOpen] = useState(false);
+  const [coverPopupOpen, setCoverPopupOpen] = useState(false);
+  const [coverAmounts, setCoverAmounts] = useState({});
+  const [coverSaving, setCoverSaving] = useState(false);
+  const [coverError, setCoverError] = useState(null);
 
   const load = async () => {
     const [accountsRes, rulesRes, balancesRes, accountBalancesRes] = await Promise.all([
@@ -98,6 +116,7 @@ export default function TransfersPage() {
         ])
       )
     );
+    setAccountBreakdownByAccountId(Object.fromEntries((accountBalancesRes.accounts || []).map((a) => [a.accountId, a])));
     setLoading(false);
   };
 
@@ -137,6 +156,49 @@ export default function TransfersPage() {
   const amt = Number(amount) || 0;
   const insufficientCategoryFunds = fromBalance !== null && amt > 0 && amt > fromBalance;
   const bothUnallocated = fromIsUnallocated && toIsUnallocated;
+
+  // The "Learn more" pie chart + "move money from another category"
+  // popup only ever apply to ONE kind of block: trying to pull more
+  // Unallocated cash out of an account than is actually free there (the
+  // checkAccountUnallocatedRoom error from execute-real-transfer). A
+  // destination-side block can no longer happen for a real transfer (see
+  // that route's file comment), and category-transfer's own destination
+  // check surfaces a differently-shaped message this flow doesn't cover.
+  const blockedBreakdown = fromIsUnallocated && fromAccountId ? accountBreakdownByAccountId[fromAccountId] : null;
+  const showCoverFlow = fromIsUnallocated && !!error && !!blockedBreakdown;
+  const shortfall = Math.max(0, Math.round((amt - (fromBalance || 0)) * 100) / 100);
+  const coverableCategories = blockedBreakdown ? (blockedBreakdown.categories || []).filter((c) => c.balance > 0.005) : [];
+  const coveredTotal = coverableCategories.reduce((s, c) => s + (Number(coverAmounts[c.label]) || 0), 0);
+  const remainingToCover = Math.max(0, Math.round((shortfall - coveredTotal) * 100) / 100);
+  const readyToRetry = shortfall > 0 && remainingToCover <= 0.005;
+
+  // The absolute ceiling for anything sourced from this account: its own
+  // real balance. Every dollar sitting in every category here came out of
+  // that same balance, so no amount of reshuffling between them can ever
+  // free up more than the account holds in total -- if the amount being
+  // transferred exceeds that, moving money between categories can't be
+  // the fix, only adding real funds (or lowering the amount) can.
+  const accountTotalBalance = blockedBreakdown ? Number(blockedBreakdown.accountBalance) || 0 : null;
+  const exceedsAccountTotal = accountTotalBalance !== null && amt > accountTotalBalance + 0.005;
+
+  // A simple conic-gradient pie, same palette as the rest of the Bloom
+  // theme -- category slices in order, then Unallocated (what's actually
+  // being fought over here) as a distinct final slice.
+  const PIE_COLORS = ["#6D3BE0", "#9A72F0", "#C4A9FA", "#D9C9FF", "#4E22B8", "#8B7CB8"];
+  const pieGradient = (() => {
+    if (!blockedBreakdown) return null;
+    const total = Math.max(blockedBreakdown.accountBalance || 0, blockedBreakdown.totalBalance || 0) || 1;
+    let acc = 0;
+    const stops = coverableCategories.map((c, i) => {
+      const from = (acc / total) * 100;
+      acc += c.balance;
+      const to = (acc / total) * 100;
+      return `${PIE_COLORS[i % PIE_COLORS.length]} ${from}% ${to}%`;
+    });
+    const unallocPct = (acc / total) * 100;
+    stops.push(`#F2ECFC ${unallocPct}% 100%`);
+    return `conic-gradient(${stops.join(", ")})`;
+  })();
 
   // A category's own self-set "Account Total Cap" (rule.balanceCap, set in
   // Split Rules) is a preference, not a real-money constraint -- unlike
@@ -184,6 +246,10 @@ export default function TransfersPage() {
     setError(null);
     setConfirming(false);
     setCapWarningShown(false);
+    setLearnMoreOpen(false);
+    setCoverPopupOpen(false);
+    setCoverAmounts({});
+    setCoverError(null);
   };
 
   const canSubmit =
@@ -208,6 +274,39 @@ export default function TransfersPage() {
     return a ? `${a.institution_name} ••••${a.mask}` : "";
   };
 
+  // Both sides' category balances (and, since a cover-flow move touches
+  // an account's Unallocated room too, the per-account breakdown) just
+  // changed -- refresh everything the form reads so the next transfer's
+  // "available" notes are accurate immediately, same as everywhere else
+  // in the product that reads these endpoints.
+  const refreshAllBalances = async () => {
+    const [balancesRes, accountBalancesRes] = await Promise.all([
+      fetch("/api/allocations/balances").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/allocations/account-balances").then((r) => r.json()).catch(() => ({})),
+    ]);
+    setCategoryBalances(balancesRes.balances || {});
+    setUnallocatedByAccountId(
+      Object.fromEntries((accountBalancesRes.accounts || []).map((a) => [a.accountId, a.unallocated]))
+    );
+    setCategoryLabelsByAccountId(
+      Object.fromEntries(
+        (accountBalancesRes.accounts || []).map((a) => [
+          a.accountId,
+          (a.categories || []).filter((c) => c.balance > 0.005).map((c) => c.label),
+        ])
+      )
+    );
+    setAccountBreakdownByAccountId(Object.fromEntries((accountBalancesRes.accounts || []).map((a) => [a.accountId, a])));
+  };
+
+  // The confirm/send screen used to leave someone sitting on this same
+  // page after a successful transfer with just a small success banner --
+  // easy to miss, and the exact "did it actually work?" confusion this
+  // was meant to fix in the first place (see the "Transfer blocked" card
+  // above, added for the same underlying complaint). Showing the success
+  // message briefly, THEN moving to the Dashboard, gives an unambiguous
+  // "yes, this happened" -- the Dashboard is where every other balance
+  // change already surfaces, so landing there confirms it stuck.
   const afterSuccess = (message) => {
     setSuccess(message);
     setRecent((prev) => [
@@ -220,13 +319,8 @@ export default function TransfersPage() {
       ...prev,
     ]);
     resetForm();
-    // Both sides' category balances just changed -- refresh so the next
-    // transfer's "available" note reflects it immediately, same as
-    // everywhere else in the product that reads this endpoint.
-    fetch("/api/allocations/balances")
-      .then((r) => r.json())
-      .then((d) => setCategoryBalances(d.balances || {}))
-      .catch(() => {});
+    refreshAllBalances();
+    setTimeout(() => router.push("/dashboard"), 1400);
   };
 
   // Clicking "Transfer" either submits directly (same account, or nothing
@@ -309,6 +403,69 @@ export default function TransfersPage() {
         fromIsUnallocated ? "unallocated cash" : fromLabel
       } → ${toIsUnallocated ? "unallocated cash" : toLabel}.`
     );
+  };
+
+  // Opens the "move money from another category" popup for the account
+  // that came up short. Reset amounts every open -- a stale amount from a
+  // previous attempt (a different account, or before the shortfall
+  // changed) would be confusing to see pre-filled.
+  const openCoverPopup = () => {
+    setCoverAmounts({});
+    setCoverError(null);
+    setCoverPopupOpen(true);
+  };
+  const closeCoverPopup = () => {
+    setCoverPopupOpen(false);
+    setCoverError(null);
+  };
+  const setCoverAmount = (label, value) => setCoverAmounts((prev) => ({ ...prev, [label]: value }));
+  const setCoverMax = (label, balance) =>
+    setCoverAmounts((prev) => ({ ...prev, [label]: Math.min(Number(balance) || 0, shortfall) }));
+
+  // Frees up the shortfall by debiting each category the person put an
+  // amount against -- each one is a plain move-to-Unallocated within the
+  // SAME account (POST category-transfer with toLabel: null), so nothing
+  // here is a real ACH transfer, just bookkeeping. Once every debit lands,
+  // the original transfer is retried directly via confirmRealTransfer (see
+  // the comment further down for why not handleTransferClick).
+  const confirmCover = async () => {
+    setCoverSaving(true);
+    setCoverError(null);
+    const toMove = coverableCategories
+      .map((c) => ({ label: c.label, amount: Math.min(Number(coverAmounts[c.label]) || 0, c.balance) }))
+      .filter((c) => c.amount > 0.005);
+
+    for (const { label, amount: moveAmount } of toMove) {
+      const res = await fetch("/api/allocations/category-transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromLabel: label,
+          toLabel: null,
+          amount: moveAmount,
+          note: `Freed up for a transfer to ${toIsUnallocated ? "unallocated cash" : toLabel}`,
+        }),
+      }).then((r) => r.json());
+      if (res.error) {
+        setCoverSaving(false);
+        setCoverError(res.error);
+        return;
+      }
+    }
+
+    await refreshAllBalances();
+    setCoverSaving(false);
+    setCoverPopupOpen(false);
+    setLearnMoreOpen(false);
+    setError(null);
+    // Retry the ACH transfer directly (not handleTransferClick -- this
+    // flow is only ever reachable while already inside the real-transfer
+    // confirm step, so confirming is already true and the cap check has
+    // already passed; going back through handleTransferClick would just
+    // see needsRealTransfer, re-set confirming to true, and stop there
+    // without actually resubmitting) now that fromBalance has the
+    // freed-up room.
+    confirmRealTransfer();
   };
 
   if (loading) return <p className="text-sm text-[var(--color-neutral-700)]">Loading…</p>;
@@ -484,11 +641,82 @@ export default function TransfersPage() {
                 the transfer did NOT go through and why, so a real-balance
                 block never reads as a silent failure. */}
             {error && (
-              <div className="text-xs p-3 space-y-0.5" style={bloomWarningCardStyle({ padding: "10px 12px" })}>
+              <div className="text-xs p-3 space-y-2" style={bloomWarningCardStyle({ padding: "10px 12px" })}>
                 <p className="font-semibold">Transfer blocked</p>
                 <p>{error}</p>
+                {showCoverFlow && (
+                  <button
+                    onClick={() => setLearnMoreOpen((v) => !v)}
+                    className="text-xs font-semibold underline"
+                    style={{ color: "#9C3B22" }}
+                  >
+                    {learnMoreOpen ? "Hide details" : "Learn more"}
+                  </button>
+                )}
               </div>
             )}
+
+            {/* Only ever shown for the one block that's actually still
+                possible after the execute-real-transfer fix -- pulling more
+                Unallocated cash out of an account than is truly free there.
+                Shows exactly where that account's money currently sits, and
+                offers the fix in one click: free some of it back to
+                Unallocated first, then this same transfer goes through. */}
+            {showCoverFlow && learnMoreOpen && blockedBreakdown && (
+              <div
+                className="p-4 space-y-4"
+                style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-surface)" }}
+              >
+                <p className="text-xs font-semibold">How {accountLabel(fromAccountId)} is allocated right now</p>
+                <div className="flex items-center gap-4">
+                  <div className="relative shrink-0" style={{ width: 96, height: 96 }}>
+                    <div style={{ width: 96, height: 96, borderRadius: "50%", background: pieGradient }} />
+                    <div
+                      className="absolute flex flex-col items-center justify-center text-center"
+                      style={{ inset: 14, borderRadius: "50%", background: "var(--color-surface)" }}
+                    >
+                      <span className="font-mono text-[11px] font-semibold">{currency(blockedBreakdown.accountBalance)}</span>
+                      <span className="text-[9px]" style={{ color: "var(--color-neutral-700)" }}>real balance</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-xs flex-grow">
+                    {coverableCategories.map((c, i) => (
+                      <div key={c.label} className="flex items-center gap-2">
+                        <span className="shrink-0" style={{ width: 9, height: 9, borderRadius: 3, background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                        <span className="flex-grow truncate">{c.label}</span>
+                        <span className="font-mono" style={{ color: "var(--color-neutral-700)" }}>{currency(c.balance)}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 pt-1" style={{ borderTop: "1px solid var(--color-divider)" }}>
+                      <span className="shrink-0" style={{ width: 9, height: 9, borderRadius: 3, background: "#F2ECFC" }} />
+                      <span className="flex-grow" style={{ color: "var(--color-neutral-700)" }}>Unallocated</span>
+                      <span className="font-mono" style={{ color: "var(--color-neutral-700)" }}>{currency(blockedBreakdown.unallocated)}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs p-3" style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", lineHeight: 1.6 }}>
+                  {exceedsAccountTotal ? (
+                    <>
+                      {accountLabel(fromAccountId)} only has {currency(accountTotalBalance)} in it, total — that&apos;s the
+                      most this account could ever send, no matter how its categories are split up. Lower the amount to{" "}
+                      {currency(accountTotalBalance)} or less, or add funds to this account first.
+                    </>
+                  ) : (
+                    <>
+                      If you&apos;d still like to send the full {currency(amt)} to {toIsUnallocated ? "unallocated cash" : toLabel}, you
+                      can either add more funds to {accountLabel(fromAccountId)}, and/or move money from one of the categories already
+                      sitting in it{coverableCategories.length ? ` (${coverableCategories.map((c) => c.label).join(", ")})` : ""}.
+                    </>
+                  )}
+                </p>
+                {!exceedsAccountTotal && (
+                  <PrimaryButton onClick={openCoverPopup} className="text-xs px-3 py-1.5">
+                    Move money from another category instead
+                  </PrimaryButton>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <PrimaryButton onClick={confirmRealTransfer} disabled={saving} className="text-xs px-3 py-1.5">
                 {saving ? "Sending…" : "Confirm & send"}
@@ -533,6 +761,115 @@ export default function TransfersPage() {
           </div>
         )}
       </Card>
+
+      {/* "Move money from another category" popup -- frees up the
+          shortfall in fromAccountId by debiting each category the person
+          puts an amount against (plain same-account bookkeeping, see
+          confirmCover), then automatically retries the original transfer.
+          Fixed overlay so it reads as a modal even though this page has no
+          existing modal primitive to reuse. */}
+      {coverPopupOpen && blockedBreakdown && exceedsAccountTotal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ background: "rgba(36,22,52,0.45)", zIndex: 50 }}
+        >
+          <Card className="p-6 space-y-4" style={{ width: "min(420px, 100%)" }}>
+            <div>
+              <p className="text-sm font-semibold mb-1">This account can&apos;t cover that</p>
+              <p className="text-xs p-3" style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", lineHeight: 1.6 }}>
+                {accountLabel(fromAccountId)} only has {currency(accountTotalBalance)} in it, total — that&apos;s the most
+                this account could ever send, no matter how its categories are split up. Lower the amount to{" "}
+                {currency(accountTotalBalance)} or less, or add funds to this account first.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <GhostButton onClick={closeCoverPopup} className="text-sm px-4 py-2">
+                Close
+              </GhostButton>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {coverPopupOpen && blockedBreakdown && !exceedsAccountTotal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ background: "rgba(36,22,52,0.45)", zIndex: 50 }}
+        >
+          <Card className="p-6 space-y-4" style={{ width: "min(420px, 100%)" }}>
+            <div>
+              <p className="text-sm font-semibold mb-1">Free up {currency(shortfall)}</p>
+              <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+                Move money out of another category in {accountLabel(fromAccountId)} first — that frees it up as
+                Unallocated cash, so your {currency(amt)} transfer to {toIsUnallocated ? "unallocated cash" : toLabel} can
+                go through. This is bookkeeping only, nothing real moves banks.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {coverableCategories.map((c) => (
+                <div
+                  key={c.label}
+                  className="flex items-center gap-2 px-3 py-2"
+                  style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-sm)" }}
+                >
+                  <div className="flex-grow min-w-0">
+                    <div className="text-sm font-semibold truncate">{c.label}</div>
+                    <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{currency(c.balance)} available</div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="font-mono text-sm" style={{ color: "var(--color-neutral-700)" }}>$</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={c.balance}
+                      step={1}
+                      value={coverAmounts[c.label] || ""}
+                      onChange={(e) => setCoverAmount(c.label, e.target.value)}
+                      placeholder="0"
+                      className="font-mono text-sm text-right"
+                      style={{ width: 72, border: "1px solid var(--color-divider)", borderRadius: "var(--radius-sm)", padding: "6px 8px" }}
+                    />
+                  </div>
+                  <GhostButton onClick={() => setCoverMax(c.label, c.balance)} className="text-xs px-2 py-1.5 shrink-0">
+                    Max
+                  </GhostButton>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span>Freed up</span>
+                <span className="font-mono font-semibold">
+                  {currency(coveredTotal)} of {currency(shortfall)}
+                </span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--color-neutral-200)" }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{ background: "var(--color-accent)", width: `${Math.min(100, (coveredTotal / (shortfall || 1)) * 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {coverError && (
+              <div className="text-xs p-3" style={bloomWarningCardStyle({ padding: "10px 12px" })}>
+                {coverError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <PrimaryButton onClick={confirmCover} disabled={!readyToRetry || coverSaving} className="text-sm px-4 py-2">
+                {coverSaving ? "Freeing up…" : readyToRetry ? "Confirm and continue transfer" : `Free up ${currency(remainingToCover)} more to continue`}
+              </PrimaryButton>
+              <GhostButton onClick={closeCoverPopup} disabled={coverSaving} className="text-sm px-4 py-2">
+                Cancel
+              </GhostButton>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {recent.length > 0 && (
         <Card className="p-6">
