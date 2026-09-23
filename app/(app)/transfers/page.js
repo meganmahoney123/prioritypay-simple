@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { bloomNoticeCardStyle } from "@/lib/bloomTheme";
+import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 
 const UNALLOCATED_PREFIX = "unallocated:";
 const isUnallocatedValue = (v) => typeof v === "string" && v.startsWith(UNALLOCATED_PREFIX);
@@ -70,6 +70,12 @@ export default function TransfersPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  // Whether the "you set a ceiling for this category" note (below) has
+  // already been shown and clicked through once for the CURRENT
+  // toLabel/amount combo -- resets whenever either changes, so editing
+  // the amount after dismissing surfaces the check again with the new
+  // number, and it never blocks a transfer outright (see toCapExceeded).
+  const [capWarningShown, setCapWarningShown] = useState(false);
 
   const load = async () => {
     const [accountsRes, rulesRes, balancesRes, accountBalancesRes] = await Promise.all([
@@ -99,6 +105,10 @@ export default function TransfersPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    setCapWarningShown(false);
+  }, [toLabel, amount]);
+
   const accountsById = useMemo(() => Object.fromEntries(accounts.map((a) => [a.id, a])), [accounts]);
   const rulesByLabel = useMemo(() => Object.fromEntries(splitRulesPercent.map((r) => [r.label, r])), [splitRulesPercent]);
   const fromIsUnallocated = isUnallocatedValue(fromLabel);
@@ -127,6 +137,16 @@ export default function TransfersPage() {
   const amt = Number(amount) || 0;
   const insufficientCategoryFunds = fromBalance !== null && amt > 0 && amt > fromBalance;
   const bothUnallocated = fromIsUnallocated && toIsUnallocated;
+
+  // A category's own self-set "Account Total Cap" (rule.balanceCap, set in
+  // Split Rules) is a preference, not a real-money constraint -- unlike
+  // insufficientCategoryFunds/checkAccountRoomForLabel above, going over it
+  // is always allowed, just double-checked first. Null/unset means no cap
+  // was ever set for this category, so there's nothing to warn about.
+  const toRule = toLabel && !toIsUnallocated ? rulesByLabel[toLabel] : null;
+  const toCategoryBalance = toRule ? Number(categoryBalances[toLabel]) || 0 : null;
+  const toCapExceeded =
+    !!toRule && toRule.balanceCap != null && amt > 0 && toCategoryBalance + amt > toRule.balanceCap + 0.005;
 
   // The real bank account each side lives in -- read straight off the
   // selected value if that side is Unallocated cash, or looked up from
@@ -163,6 +183,7 @@ export default function TransfersPage() {
     setNote("");
     setError(null);
     setConfirming(false);
+    setCapWarningShown(false);
   };
 
   const canSubmit =
@@ -205,6 +226,13 @@ export default function TransfersPage() {
   // a real ACH transfer on the first click.
   const handleTransferClick = () => {
     if (!canSubmit) return;
+    // Soft check, not a blocker: give them one chance to see the ceiling
+    // they set for this category before going over it, then get out of
+    // the way -- clicking Transfer again proceeds normally.
+    if (toCapExceeded && !capWarningShown) {
+      setCapWarningShown(true);
+      return;
+    }
     if (needsRealTransfer) {
       setConfirming(true);
       return;
@@ -400,7 +428,6 @@ export default function TransfersPage() {
           />
         </div>
 
-        {error && <p className="text-xs" style={{ color: "#9C3B22" }}>{error}</p>}
         {success && (
           <div className="text-xs p-2.5" style={bloomNoticeCardStyle({ padding: "8px 12px" })}>
             {success}
@@ -424,6 +451,19 @@ export default function TransfersPage() {
               <span className="truncate">{accountLabel(resolvedToAccountId)}</span>
               <span className="font-mono font-semibold ml-3 shrink-0">{currency(amt)}</span>
             </div>
+            {/* A blocked real transfer used to just reset this button back to
+                "Confirm & send" with a small, easy-to-miss line of red text
+                further up the page -- from the user's seat, nothing visibly
+                happened. This card sits right where their eyes already are
+                (next to the button they just clicked) and says plainly that
+                the transfer did NOT go through and why, so a real-balance
+                block never reads as a silent failure. */}
+            {error && (
+              <div className="text-xs p-3 space-y-0.5" style={bloomWarningCardStyle({ padding: "10px 12px" })}>
+                <p className="font-semibold">Transfer blocked</p>
+                <p>{error}</p>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <PrimaryButton onClick={confirmRealTransfer} disabled={saving} className="text-xs px-3 py-1.5">
                 {saving ? "Sending…" : "Confirm & send"}
@@ -434,13 +474,37 @@ export default function TransfersPage() {
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <PrimaryButton onClick={handleTransferClick} disabled={!canSubmit || saving} className="text-sm px-4 py-2">
-              {saving ? "Transferring…" : "Transfer"}
-            </PrimaryButton>
-            <GhostButton onClick={resetForm} className="text-sm px-4 py-2">
-              Clear
-            </GhostButton>
+          <div className="space-y-3">
+            {error && (
+              <div className="text-xs p-3 space-y-0.5" style={bloomWarningCardStyle({ padding: "10px 12px" })}>
+                <p className="font-semibold">Transfer blocked</p>
+                <p>{error}</p>
+              </div>
+            )}
+            {toCapExceeded && capWarningShown && (
+              <div className="text-xs p-3 space-y-2" style={bloomNoticeCardStyle({ padding: "10px 12px" })}>
+                <p>
+                  You set a ceiling of {currency(toRule.balanceCap)} for {toLabel}. This would bring it to{" "}
+                  {currency(toCategoryBalance + amt)}. Are you sure you&apos;d like to contribute {currency(amt)}?
+                </p>
+                <div className="flex items-center gap-2">
+                  <PrimaryButton onClick={handleTransferClick} disabled={saving} className="text-xs px-3 py-1.5">
+                    Yes, contribute anyway
+                  </PrimaryButton>
+                  <GhostButton onClick={() => setCapWarningShown(false)} disabled={saving} className="text-xs px-3 py-1.5">
+                    Change amount
+                  </GhostButton>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <PrimaryButton onClick={handleTransferClick} disabled={!canSubmit || saving} className="text-sm px-4 py-2">
+                {saving ? "Transferring…" : "Transfer"}
+              </PrimaryButton>
+              <GhostButton onClick={resetForm} className="text-sm px-4 py-2">
+                Clear
+              </GhostButton>
+            </div>
           </div>
         )}
       </Card>
