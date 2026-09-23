@@ -87,7 +87,13 @@ export async function POST() {
     .from("simple_profiles")
     .update({
       onboarded: false,
-      persona: null,
+      // simple_profiles.persona is NOT NULL with a default of
+      // "Self-Employed (No W2 Employees)" (see supabase/schema.sql) --
+      // that's the same value a genuinely brand-new signup row has before
+      // ever reaching the onboarding "Business" step, so resetting to it
+      // (not null) keeps this account indistinguishable from a real new
+      // signup.
+      persona: "Self-Employed (No W2 Employees)",
       business_name: null,
       entity_type: null,
       plan: "simple",
