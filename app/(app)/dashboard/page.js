@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AccountBalances from "@/components/AccountBalances";
-import InvestmentGrowthProjection from "@/components/InvestmentGrowthProjection";
 import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
@@ -149,6 +148,12 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      {/* The forward-looking Investment & Retirement Projections card that
+          used to render here (as AccountBalances' belowDistribution slot)
+          moved to its own tab -- app/(app)/projections/page.js -- by
+          request, since the Dashboard was getting crowded. Unchanged
+          otherwise: same accounts/splitRules/mtd/ytd data feeding the two
+          backward-looking pie charts below. */}
       <AccountBalances
         accounts={accounts}
         splitRules={splitRules}
@@ -156,82 +161,6 @@ export default function DashboardPage() {
         ytdByLabel={ytdByLabel}
         allTimeTotal={allTimeTotal}
         rules={rules}
-        belowDistribution={
-          <InvestmentGrowthProjection
-            title="Your Investment & Retirement Projections"
-            taxNote
-            blocks={
-              isW2NoSideHustle(persona)
-                ? [
-                    {
-                      group: "Investments",
-                      startingLabel: "Investment",
-                      subHeading: "Investments",
-                      emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
-                    },
-                    {
-                      group: "Retirement",
-                      retirementType: "traditional_401k",
-                      startingLabel: "401k",
-                      subHeading: "401k",
-                      emptyStateText: "Once you're contributing to your 401k, we'll show you where that could grow.",
-                    },
-                    {
-                      group: "Retirement",
-                      retirementType: "traditional_ira",
-                      startingLabel: "IRA",
-                      subHeading: "IRA",
-                      emptyStateText: "Once you're contributing to your IRA, we'll show you where that could grow.",
-                    },
-                  ]
-                : isW2WithSideHustle(persona)
-                ? [
-                    {
-                      group: "Investments",
-                      startingLabel: "Investment",
-                      subHeading: "Investments",
-                      emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
-                    },
-                    {
-                      group: "Retirement",
-                      retirementType: "traditional_401k",
-                      startingLabel: "401k",
-                      subHeading: "401k (Job)",
-                      emptyStateText: "Once you're contributing to your 401k, we'll show you where that could grow.",
-                    },
-                    {
-                      group: "Retirement",
-                      retirementType: "traditional_ira",
-                      startingLabel: "IRA",
-                      subHeading: "IRA (Job)",
-                      emptyStateText: "Once you're contributing to your IRA, we'll show you where that could grow.",
-                    },
-                    {
-                      group: "Retirement (Side Income)",
-                      retirementType: "solo_401k",
-                      startingLabel: "Solo 401k",
-                      subHeading: "Solo 401k (Side Income)",
-                      emptyStateText: "Once you're contributing to your Solo 401k, we'll show you where that could grow.",
-                    },
-                  ]
-                : [
-                    {
-                      group: "Investments",
-                      startingLabel: "Investment",
-                      subHeading: "Investments",
-                      emptyStateText: "Once you're contributing to Investments, we'll show you where that could grow.",
-                    },
-                    {
-                      group: "Retirement",
-                      retirementType: "solo_401k",
-                      startingLabel: "Solo 401k",
-                      subHeading: "Solo 401k",
-                      emptyStateText: "Once you're contributing to your Solo 401k, we'll show you where that could grow.",
-                    },
-                  ]
-            }
-          />
-        }
       />
 
       <CloseoutNudge />

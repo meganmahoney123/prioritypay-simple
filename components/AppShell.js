@@ -21,6 +21,7 @@ import { isW2NoSideHustle } from "@/lib/allocations";
 // longer linked from anywhere in the nav.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/projections", label: "Investment Projections" },
   { href: "/accounts", label: "Accounts" },
   { href: "/splits", label: "Income Split Rules" },
   { href: "/simulator", label: "Income Split Simulator" },
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
 
 const TITLES = {
   "/dashboard": "Dashboard",
+  "/projections": "Investment & Retirement Projections",
   "/accounts": "Linked Accounts",
   "/splits": "Income Split Rules",
   "/simulator": "Income Split Simulator",
