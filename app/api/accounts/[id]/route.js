@@ -15,6 +15,7 @@ export async function PATCH(request, { params }) {
   const profile = await getBusinessBillingProfile(admin, user.id);
   if (!isBusinessPlan(profile)) return businessPlanRequiredError();
 
+  const { id } = await params;
   const { entity_id } = await request.json();
 
   if (entity_id) {
@@ -30,7 +31,7 @@ export async function PATCH(request, { params }) {
   const { data, error } = await admin
     .from("simple_accounts")
     .update({ entity_id: entity_id || null })
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .select("id, entity_id")
     .single();

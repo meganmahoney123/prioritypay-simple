@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",
@@ -21,11 +20,11 @@
     "@supabase/supabase-js": "^2.45.4",
     "capacitor-native-biometric": "^4.2.2",
     "lucide-react": "^0.383.0",
-    "next": "^15.5.23",
+    "next": "16.3.6",
     "pdf-lib": "^1.17.1",
     "plaid": "^30.0.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-plaid-link": "^3.6.1",
     "recharts": "^2.12.7",
     "stripe": "^22.5.0"

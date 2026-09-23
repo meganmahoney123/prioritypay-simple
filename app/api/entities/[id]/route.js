@@ -15,6 +15,7 @@ export async function PATCH(request, { params }) {
   const profile = await getBusinessBillingProfile(admin, user.id);
   if (!isBusinessPlan(profile)) return businessPlanRequiredError();
 
+  const { id } = await params;
   const { name, entity_type } = await request.json();
   const updates = {};
   if (name !== undefined) {
@@ -26,7 +27,7 @@ export async function PATCH(request, { params }) {
   const { data, error } = await admin
     .from("simple_entities")
     .update(updates)
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .select("id, name, entity_type, created_at")
     .single();
@@ -44,7 +45,8 @@ export async function DELETE(_request, { params }) {
   const profile = await getBusinessBillingProfile(admin, user.id);
   if (!isBusinessPlan(profile)) return businessPlanRequiredError();
 
-  const { error } = await admin.from("simple_entities").delete().eq("id", params.id).eq("user_id", user.id);
+  const { id } = await params;
+  const { error } = await admin.from("simple_entities").delete().eq("id", id).eq("user_id", user.id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   return Response.json({ ok: true });
