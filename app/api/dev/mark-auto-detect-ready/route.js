@@ -24,8 +24,10 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 // automatically" vs the "Linked before auto-detect existed" banner. This
 // route sets a harmless placeholder plaid_cursor directly, with no Plaid
 // API call at all, so it works regardless of which Plaid environment is
-// currently live. Restricted to the known demo-owner/persona inboxes so
-// it can never be pointed at a real user's account.
+// currently live -- and regardless of plaid_access_token, since these
+// demo accounts were never real Plaid connections and have none.
+// Restricted to the known demo-owner/persona inboxes so it can never be
+// pointed at a real user's account.
 const DEMO_EMAILS = new Set([
   "megan@ignitemysite.com",
   "megan+w2only@ignitemysite.com",
@@ -47,7 +49,6 @@ export async function POST() {
     .from("simple_accounts")
     .select("id, plaid_cursor, account_type")
     .eq("user_id", user.id)
-    .not("plaid_access_token", "is", null)
     .or("account_type.eq.depository,account_type.is.null")
     .is("plaid_cursor", null);
   if (fetchError) return Response.json({ error: fetchError.message }, { status: 500 });
