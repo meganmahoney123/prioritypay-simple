@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { BLOOM_TOKENS } from "@/lib/bloomTheme";
+import { BLOOM_TOKENS, MOVE_IN_COLOR, MOVE_OUT_COLOR } from "@/lib/bloomTheme";
+import { currency, PrimaryButton } from "@/components/ui";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import AppLockGate from "@/components/AppLockGate";
 import { isW2NoSideHustle } from "@/lib/allocations";
+import { groupByCategory } from "@/components/PendingTransfers";
 
 // Payments tab removed -- every deposit splits automatically the moment
 // Plaid's webhook detects it (see app/api/plaid/webhook), so there's no
@@ -107,6 +109,17 @@ export default function AppShell({ children, isSandbox = false }) {
   // still relevant to every other persona (including W2 + side hustle,
   // since side income IS self-employment income).
   const [navItems, setNavItems] = useState(NAV_ITEMS);
+  // Powers both the persistent "transfer pending" banner below and the
+  // browser-tab title reminder -- same /api/transfers/pending shape the
+  // Dashboard already fetches (see app/(app)/dashboard/page.js), plus
+  // /api/accounts so account labels/institutions can be resolved the same
+  // way components/PendingTransfers.js does. Deliberately scoped to ONLY
+  // the real cross-account needs_approval/in_transit flow -- same-account
+  // category-to-category bookkeeping transfers (POST
+  // /api/allocations/category-transfer) never create rows in this status
+  // flow at all, so they can never show up here.
+  const [pendingAllocations, setPendingAllocations] = useState([]);
+  const [pendingAccounts, setPendingAccounts] = useState([]);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -132,6 +145,86 @@ export default function AppShell({ children, isSandbox = false }) {
       })
       .catch(() => {});
   }, []);
+
+  const loadPendingTransfers = async () => {
+    try {
+      const [pendingRes, accountsRes] = await Promise.all([
+        fetch("/api/transfers/pending").then((r) => r.json()),
+        fetch("/api/accounts").then((r) => r.json()),
+      ]);
+      setPendingAllocations(pendingRes.allocations || []);
+      setPendingAccounts(accountsRes.accounts || []);
+    } catch {
+      // Best-effort -- a failed fetch here just means the banner/title
+      // reminder stay as they were; it never blocks the rest of the app.
+    }
+  };
+
+  // Re-checked on every navigation within the (app) shell (AppShell stays
+  // mounted across route changes, this effect just re-runs its fetch),
+  // so confirming a transfer on one page clears the banner on the next
+  // page without needing a full reload -- same reason
+  // components/PendingTransfers.js's onConfirmed callback refetches.
+  useEffect(() => {
+    loadPendingTransfers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  const pendingAccountsById = useMemo(() => Object.fromEntries(pendingAccounts.map((a) => [a.id, a])), [pendingAccounts]);
+  const pendingGroups = useMemo(
+    () => groupByCategory((pendingAllocations || []).filter((a) => a.status === "needs_approval")),
+    [pendingAllocations]
+  );
+  const inTransitGroups = useMemo(
+    () => groupByCategory((pendingAllocations || []).filter((a) => a.status === "in_transit")),
+    [pendingAllocations]
+  );
+  const hasPendingTransfers = pendingGroups.length > 0 || inTransitGroups.length > 0;
+
+  // Browser-tab title reminder: while anything is needs_approval/
+  // in_transit, replace the normal per-page title with a reminder of what
+  // still needs sending, restoring titleFor(pathname) the moment nothing
+  // is pending. Picks the single largest pending group when there's
+  // exactly one worth naming; falls back to a generic "Transfers
+  // pending" line once there's more than one, per Megan's call that
+  // correctness here matters more than naming every single one.
+  useEffect(() => {
+    const normalTitle = `${titleFor(pathname)} | PriorityPay`;
+    if (!hasPendingTransfers) {
+      document.title = normalTitle;
+      return;
+    }
+    const allGroups = [...pendingGroups, ...inTransitGroups];
+    if (allGroups.length === 1) {
+      const g = allGroups[0];
+      const destAccount = pendingAccountsById[g.dest_account_id];
+      const destName = destAccount
+        ? `${destAccount.institution_name} •••• ${destAccount.mask}`
+        : g.dest_account_label || "your account";
+      document.title = `→ ${currency(g.amount)} to ${destName} | PriorityPay`;
+    } else {
+      document.title = `Transfers pending (${allGroups.length}) | PriorityPay`;
+    }
+    return () => {
+      document.title = normalTitle;
+    };
+  }, [pathname, hasPendingTransfers, pendingGroups, inTransitGroups, pendingAccountsById]);
+
+  const [bannerBusyKey, setBannerBusyKey] = useState(null);
+  const confirmFromBanner = async (group) => {
+    setBannerBusyKey(group.key);
+    try {
+      // Same endpoint components/PendingTransfers.js's own confirm()
+      // calls -- this banner is just another entry point to it, not a
+      // second implementation.
+      const results = await Promise.all(
+        group.ids.map((id) => fetch(`/api/transfer-allocations/${id}/confirm`, { method: "POST" }))
+      );
+      if (results.some((r) => r.ok)) await loadPendingTransfers();
+    } finally {
+      setBannerBusyKey(null);
+    }
+  };
 
   useEffect(() => {
     const onResize = () => {
@@ -263,7 +356,73 @@ export default function AppShell({ children, isSandbox = false }) {
           )}
         </header>
 
-        <main style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>{children}</main>
+        <main style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>
+          {/* Persistent "transfer pending" banner -- visible on every
+              (app) page, not just Dashboard/Transfers, so a real
+              cross-account transfer someone recorded and then navigated
+              away from is never forgotten. Same From/To/Amount info as
+              components/PendingTransfers.js's "Transfers waiting on you"
+              card and the same confirm endpoint -- this is another
+              surface for it, not a second implementation. Only ever
+              shows rows in the real needs_approval/in_transit flow;
+              same-account category-to-category bookkeeping transfers
+              never enter that flow, so they never appear here. */}
+          {pendingGroups.length > 0 && (
+            <div
+              className="mb-6 space-y-2"
+              style={{
+                border: `1px solid ${MOVE_OUT_COLOR}55`,
+                borderRadius: "var(--radius-md)",
+                background: "var(--color-accent-100)",
+                padding: "16px 20px",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--color-accent-700)",
+                }}
+              >
+                Transfer{pendingGroups.length > 1 ? "s" : ""} waiting on you
+              </div>
+              <div className="space-y-2">
+                {pendingGroups.map((g) => {
+                  const destAccount = pendingAccountsById[g.dest_account_id];
+                  const sourceAccount = pendingAccountsById[g.source_account_id];
+                  const destName = destAccount
+                    ? `${destAccount.institution_name} ${destAccount.account_name} •••• ${destAccount.mask}`
+                    : g.dest_account_label || "an account";
+                  const sourceName = sourceAccount
+                    ? `${sourceAccount.institution_name} ${sourceAccount.account_name} •••• ${sourceAccount.mask}`
+                    : g.source_account_label || "your account";
+                  const busy = bannerBusyKey === g.key;
+                  return (
+                    <div
+                      key={g.key}
+                      className="flex items-center justify-between gap-3 flex-wrap"
+                      style={{ padding: "8px 12px", borderRadius: "var(--radius-sm)", background: "var(--color-surface)" }}
+                    >
+                      <div className="text-sm min-w-0">
+                        <span style={{ color: MOVE_OUT_COLOR, fontWeight: 600 }}>{sourceName}</span>
+                        {" → "}
+                        <span style={{ color: MOVE_IN_COLOR, fontWeight: 600 }}>{destName}</span>
+                        <span className="font-mono font-semibold ml-2">{currency(g.amount)}</span>
+                      </div>
+                      <PrimaryButton onClick={() => confirmFromBanner(g)} disabled={busy} style={{ padding: "6px 14px", fontSize: 13 }}>
+                        {busy ? "Marking…" : "I sent this"}
+                      </PrimaryButton>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
 
       {narrow && menuOpen && (

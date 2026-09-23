@@ -2,6 +2,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { syncNewTransactions } from "@/lib/plaidSync";
 import { runSplit } from "@/lib/runSplit";
 import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
+import { matchInTransitAllocation, markAllocationCompleted } from "@/lib/reconcileTransfers";
 
 // This is what makes PriorityPay actually live up to "splits the moment it
 // hits your account," instead of requiring someone to open Payments and
@@ -114,7 +115,54 @@ export async function POST(request) {
           (t) => t.account_id === account.plaid_account_id && !t.pending && t.amount < 0
         );
 
+        // Before treating any of these "deposits" as fresh income, check
+        // whether it's actually the OTHER side of a real cross-account
+        // transfer the user already told us about (a One-Time Transfer or
+        // Close-Out, tracked via simple_transfer_allocations' needs_approval
+        // -> in_transit -> completed flow -- see lib/closeoutTransfer.js
+        // and app/(app)/transfers/page.js). That money already got split
+        // once when it left the source account; running it through
+        // runSplit again here would double-split it and fire an incorrect
+        // "you got a deposit!" alert. Same matching rules as
+        // lib/reconcileTransfers.js's hourly sweep (amount tolerance +
+        // confirmed_at date floor), shared via matchInTransitAllocation so
+        // there's exactly one place that logic lives. This is purely a
+        // faster path than the hourly reconciler -- if the reconciler gets
+        // there first, this query just finds nothing 'in_transit' left to
+        // match, so there's no double-processing either way.
+        let inTransitRows = [];
+        if (deposits.length) {
+          const { data } = await admin
+            .from("simple_transfer_allocations")
+            .select("id, amount, transfer_id, dest_account_id, dest_account_label, confirmed_at")
+            .eq("dest_account_id", account.id)
+            .eq("status", "in_transit");
+          inTransitRows = data || [];
+        }
+        const usedTransactionIds = new Set();
+
         for (const txn of deposits) {
+          const matchedRow = inTransitRows.find((row) =>
+            matchInTransitAllocation({
+              amount: txn.amount,
+              date: txn.date,
+              transactionId: txn.transaction_id,
+              allocationRow: row,
+              usedTransactionIds,
+            })
+          );
+
+          if (matchedRow) {
+            usedTransactionIds.add(txn.transaction_id);
+            // Remove it from the candidate pool so a second real deposit in
+            // this same delivery can't also match it.
+            inTransitRows = inTransitRows.filter((r) => r.id !== matchedRow.id);
+            const settledAtIso = new Date().toISOString();
+            await markAllocationCompleted(admin, matchedRow, settledAtIso);
+            console.log(`Matched incoming transfer ${txn.transaction_id} to in-transit allocation ${matchedRow.id} -- marked completed, skipped auto-split.`);
+            continue;
+          }
+
           const result = await runSplit({
             admin,
             userId: account.user_id,

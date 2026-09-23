@@ -26,20 +26,31 @@ function accountLabel(acc, fallbackLabel) {
 // this lets them let a few pile up and send one transfer for the combined
 // total. Confirming/deleting the combined line acts on every allocation id
 // underneath it at once.
-function groupByCategory(rows) {
+export function groupByCategory(rows) {
   const map = new Map();
   rows.forEach((a) => {
-    const key = `${a.label}::${a.dest_account_id || ""}`;
+    const key = `${a.label}::${a.dest_account_id || ""}::${a.source_account_id || ""}`;
     if (!map.has(key)) {
-      map.set(key, { key, label: a.label, dest_account_id: a.dest_account_id, dest_account_label: null, amount: 0, ids: [] });
+      map.set(key, {
+        key,
+        label: a.label,
+        dest_account_id: a.dest_account_id,
+        dest_account_label: null,
+        source_account_id: a.source_account_id || null,
+        source_account_label: null,
+        amount: 0,
+        ids: [],
+      });
     }
     const g = map.get(key);
     g.amount += Number(a.amount) || 0;
     g.ids.push(a.id);
     // Any row in the group carrying a snapshotted label is as good as any
-    // other -- they all share the same dest_account_id key, so the label
-    // (taken at write time -- see lib/runSplit.js) should already agree.
+    // other -- they all share the same dest_account_id/source_account_id
+    // key, so the labels (taken at write time -- see lib/runSplit.js and
+    // lib/closeoutTransfer.js) should already agree.
     if (!g.dest_account_label && a.dest_account_label) g.dest_account_label = a.dest_account_label;
+    if (!g.source_account_label && a.source_account_label) g.source_account_label = a.source_account_label;
   });
   return Array.from(map.values());
 }
@@ -131,8 +142,18 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
           <div className="space-y-2">
             {pending.map((g) => {
               const destAccount = accountsById[g.dest_account_id];
-              const bankUrl = destAccount ? resolveBankLoginUrl(destAccount.institution_name) : null;
+              const sourceAccount = accountsById[g.source_account_id];
+              // The bank to actually log into is the SOURCE account's --
+              // that's where the money is sitting and where the user has
+              // to go initiate the send from, not the destination it's
+              // headed to (see supabase/migrations/20260923_source_account_label.sql
+              // for why source_account_id/label exist at all -- fixed from
+              // a prior version of this component that wrongly opened the
+              // destination bank instead).
+              const bankInstitution = sourceAccount?.institution_name || (g.source_account_label || "").split(" ")[0];
+              const bankUrl = bankInstitution ? resolveBankLoginUrl(bankInstitution) : null;
               const destLabel = accountLabel(destAccount, g.dest_account_label);
+              const sourceLabel = accountLabel(sourceAccount, g.source_account_label);
               const busy = busyKey === g.key;
               return (
                 <div
@@ -163,7 +184,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                       </div>
                     )}
                     <div className="text-xs truncate" style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>
-                      {bankUrl ? "Click the amount to open " : "Send to "}
+                      {bankUrl ? `Click the amount to log into ${sourceLabel}, then send to ` : "Send to "}
                       {destLabel}
                       {g.ids.length > 1 ? `, combined from ${g.ids.length} deposits` : ""}
                     </div>

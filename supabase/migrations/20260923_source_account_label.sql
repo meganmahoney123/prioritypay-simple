@@ -1,0 +1,27 @@
+-- Snapshot the SOURCE account of a real cross-account transfer onto its
+-- allocation row, mirroring dest_account_label's pattern (see
+-- 20260908_dest_account_label.sql). Added for the "Confirm & send" popup
+-- and the persistent pending-transfer banner (app/(app)/transfers/page.js,
+-- components/AppShell.js, components/PendingTransfers.js): both need to
+-- tell the user which bank to log into to actually send the money, and
+-- that has to be the SOURCE account's bank, not the destination's -- but
+-- until now nothing on simple_transfer_allocations recorded which account
+-- a real transfer (One-Time Transfer / Close-Out) came FROM, only
+-- dest_account_id/dest_account_label for where it was headed.
+--
+-- source_account_id follows dest_account_id's own "on delete set null"
+-- convention (PHASE G) -- disconnecting/replacing the source account
+-- later shouldn't cascade-delete real transfer history. source_account_label
+-- is a point-in-time snapshot, written once at insert time in
+-- lib/closeoutTransfer.js's fireCloseoutTransfer (the single place that
+-- creates a real cross-account transfer_allocations row, shared by
+-- One-Time Transfer, Close-Out's "top up," and Close-Out's retirement
+-- contribution button), never updated afterward -- same reasoning as
+-- dest_account_label: it needs to keep saying "Truist Checking •••• 7401"
+-- even after that account row is gone.
+--
+-- Both columns are nullable and existing rows are left null -- there's
+-- nothing to safely backfill them from (the whole point is this wasn't
+-- captured before), same as dest_account_label's own rollout.
+alter table simple_transfer_allocations add column if not exists source_account_id uuid references simple_accounts(id) on delete set null;
+alter table simple_transfer_allocations add column if not exists source_account_label text;

@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
+import { bloomNoticeCardStyle, bloomWarningCardStyle, bloomPrimaryButtonStyle, MOVE_IN_COLOR, MOVE_OUT_COLOR } from "@/lib/bloomTheme";
+import { resolveBankLoginUrl } from "@/lib/bankLinks";
+import { Copy, Check, ExternalLink } from "lucide-react";
 
 const UNALLOCATED_PREFIX = "unallocated:";
 const isUnallocatedValue = (v) => typeof v === "string" && v.startsWith(UNALLOCATED_PREFIX);
@@ -94,6 +96,14 @@ export default function TransfersPage() {
   const [coverAmounts, setCoverAmounts] = useState({});
   const [coverSaving, setCoverSaving] = useState(false);
   const [coverError, setCoverError] = useState(null);
+  // Shown after a real cross-account transfer (execute-real-transfer)
+  // succeeds, in place of the old silent redirect to /dashboard --
+  // deliberately does NOT auto-dismiss and doesn't affect the underlying
+  // simple_transfer_allocations row (still 'needs_approval' either way).
+  // See components/AppShell.js for the same info surfaced persistently
+  // (site-wide banner + tab title) until this is confirmed sent.
+  const [landedPopup, setLandedPopup] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
 
   const load = async () => {
     const [accountsRes, rulesRes, balancesRes, accountBalancesRes] = await Promise.all([
@@ -398,11 +408,46 @@ export default function TransfersPage() {
       setError(res.error);
       return;
     }
-    afterSuccess(
-      `Sent ${currency(amt)} from ${accountLabel(resolvedFromAccountId)} to ${accountLabel(resolvedToAccountId)}, ${
-        fromIsUnallocated ? "unallocated cash" : fromLabel
-      } → ${toIsUnallocated ? "unallocated cash" : toLabel}.`
-    );
+    // Deliberately NOT afterSuccess/router.push here -- a real
+    // cross-account transfer still needs the person to go actually send
+    // it at their bank, so silently landing them on the Dashboard was
+    // easy to read as "done" when nothing has moved yet. Show the popup
+    // below instead; it names the SOURCE account's bank (where the money
+    // actually needs to be sent from) and stays up until dismissed. The
+    // underlying allocation is untouched either way -- still
+    // 'needs_approval' until "I sent this" is clicked, here or from the
+    // persistent banner in components/AppShell.js.
+    const fromAccount = accountsById[resolvedFromAccountId];
+    const toAccount = accountsById[resolvedToAccountId];
+    setRecent((prev) => [
+      {
+        id: `${Date.now()}`,
+        fromDisplay: fromIsUnallocated ? `Unallocated, ${accountLabel(fromAccountId)}` : fromLabel,
+        toDisplay: toIsUnallocated ? `Unallocated, ${accountLabel(toAccountId)}` : toLabel,
+        amount: amt,
+      },
+      ...prev,
+    ]);
+    setLandedPopup({
+      amount: amt,
+      sourceLabel: accountLabel(resolvedFromAccountId),
+      sourceInstitution: fromAccount?.institution_name || null,
+      destLabel: accountLabel(resolvedToAccountId),
+    });
+    resetForm();
+    refreshAllBalances();
+  };
+
+  const copyToClipboard = async (text, field) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField((f) => (f === field ? null : f)), 1500);
+    } catch {
+      // Clipboard access can be denied/unavailable (older iOS webviews,
+      // insecure context) -- nothing else to do here, the value is
+      // already shown plainly in the popup for manual copying.
+    }
   };
 
   // Opens the "move money from another category" popup for the account
@@ -867,6 +912,113 @@ export default function TransfersPage() {
                 Cancel
               </GhostButton>
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Post-"Confirm & send" popup -- replaces the old silent redirect to
+          /dashboard. Names the SOURCE account's bank (an explicit
+          correction: the money has to leave THAT account, not the
+          destination), shows the amount/destination with copy buttons,
+          and never auto-dismisses -- closing it loses nothing, the
+          transfer is still tracked as 'needs_approval' exactly as it was
+          the instant it was recorded. */}
+      {landedPopup && (
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ background: "rgba(36,22,52,0.45)", zIndex: 60 }}
+        >
+          <Card className="p-6 space-y-4" style={{ width: "min(440px, 100%)" }}>
+            <div>
+              <p className="text-sm font-semibold mb-1">Now send it at your bank</p>
+              <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+                This transfer is recorded and waiting on you. PriorityPay never moves your money itself -- log into
+                the account below and send it yourself, then come back and confirm.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div
+                className="flex items-center justify-between gap-3 px-3 py-2.5"
+                style={{ borderRadius: "var(--radius-sm)", background: "var(--color-neutral-100)", border: `1px solid ${MOVE_OUT_COLOR}33` }}
+              >
+                <div className="min-w-0">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: MOVE_OUT_COLOR }}>
+                    Leaving
+                  </div>
+                  <div className="text-sm font-semibold truncate">{landedPopup.sourceLabel}</div>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(landedPopup.sourceLabel, "source")}
+                  className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-2 py-1"
+                  style={{ color: MOVE_OUT_COLOR }}
+                  title="Copy destination account name"
+                >
+                  {copiedField === "source" ? <Check size={13} /> : <Copy size={13} />}
+                  {copiedField === "source" ? "Copied" : "Copy"}
+                </button>
+              </div>
+
+              <div
+                className="flex items-center justify-between gap-3 px-3 py-2.5"
+                style={{ borderRadius: "var(--radius-sm)", background: "var(--color-neutral-100)", border: `1px solid ${MOVE_IN_COLOR}33` }}
+              >
+                <div className="min-w-0">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: MOVE_IN_COLOR }}>
+                    Landing in
+                  </div>
+                  <div className="text-sm font-semibold truncate">{landedPopup.destLabel}</div>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(landedPopup.destLabel, "dest")}
+                  className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-2 py-1"
+                  style={{ color: MOVE_IN_COLOR }}
+                  title="Copy destination account name"
+                >
+                  {copiedField === "dest" ? <Check size={13} /> : <Copy size={13} />}
+                  {copiedField === "dest" ? "Copied" : "Copy"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 px-3 py-2.5" style={{ borderRadius: "var(--radius-sm)", border: "1px solid var(--color-divider)" }}>
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-neutral-700)" }}>
+                    Amount
+                  </div>
+                  <div className="font-mono text-lg font-semibold">{currency(landedPopup.amount)}</div>
+                </div>
+                <button
+                  onClick={() => copyToClipboard(String(landedPopup.amount), "amount")}
+                  className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-2 py-1"
+                  style={{ color: "var(--color-accent-700)" }}
+                  title="Copy amount"
+                >
+                  {copiedField === "amount" ? <Check size={13} /> : <Copy size={13} />}
+                  {copiedField === "amount" ? "Copied" : "Copy amount"}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {landedPopup.sourceInstitution && (
+                <a
+                  href={resolveBankLoginUrl(landedPopup.sourceInstitution)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5"
+                  style={bloomPrimaryButtonStyle({ textDecoration: "none" })}
+                >
+                  Open {landedPopup.sourceInstitution} <ExternalLink size={13} />
+                </a>
+              )}
+              <GhostButton onClick={() => setLandedPopup(null)} className="text-sm px-4 py-2">
+                Close
+              </GhostButton>
+            </div>
+            <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+              You can also confirm this later from the pending-transfer banner or the Dashboard&apos;s &quot;Transfers
+              waiting on you&quot; card once you&apos;ve sent it.
+            </p>
           </Card>
         </div>
       )}
