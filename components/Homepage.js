@@ -68,9 +68,9 @@ const SPLIT_ROWS = [
 ];
 
 const BENEFITS = [
-  { n: "i", text: "See total saved across every bucket at a glance" },
-  { n: "ii", text: "Know your taxes are already set aside before you owe them" },
-  { n: "iii", text: "Spend what’s left without doing mental math first" },
+  { text: "See total saved across every bucket at a glance" },
+  { text: "Know your taxes are already set aside before you owe them" },
+  { text: "Spend what’s left without doing mental math first" },
 ];
 
 const BUCKETS = [
@@ -128,7 +128,7 @@ const FAQS = [
   },
   {
     q: "What accounts can I connect?",
-    a: "Any US bank, credit union, or investment/retirement account through Plaid — including all the major banks and roughly 12,000 smaller banks and credit unions.",
+    a: "Any US bank, credit union, or investment/retirement account through Plaid, including all the major banks and roughly 12,000 smaller banks and credit unions.",
   },
   {
     q: "Does PriorityPay manage or invest my money?",
@@ -273,10 +273,6 @@ export default function Homepage() {
               Log in
             </Btn>
           </div>
-          <p style={{ fontSize: 13.5, lineHeight: 1.55, color: "#7C6E8C", margin: "24px 0 0", maxWidth: "34em" }}>
-            PriorityPay moves money between the accounts you connect. It doesn&apos;t manage or invest your money
-            for you. You stay in control of every account.
-          </p>
         </Reveal>
 
         <Reveal>
@@ -393,8 +389,8 @@ export default function Homepage() {
             <div>
               <h3 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 10px" }}>A deposit lands</h3>
               <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "#574A68", margin: 0 }}>
-                A client payment, a check you deposited, or cash from a payment app — any money hitting a connected
-                account triggers PriorityPay.
+                PriorityPay sends you a text or push notification each time a new deposit hits your account. The
+                deposit could be a client payment, a check you deposited, or cash from a payment app.
               </p>
             </div>
           </Reveal>
@@ -430,8 +426,9 @@ export default function Homepage() {
                 Deposit is split by percentages you set
               </h3>
               <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "#574A68", margin: 0 }}>
-                PriorityPay automatically routes a percentage of every deposit to retirement, savings, taxes, and
-                any other accounts you wish. You choose the percentage for each account.
+                PriorityPay calculates how much of every deposit should go to retirement, savings, taxes, and any
+                other accounts you choose, based on the percentages you set once. You see the breakdown for each
+                deposit and send the transfers yourself.
               </p>
             </div>
           </Reveal>
@@ -442,7 +439,7 @@ export default function Homepage() {
             </span>
             <div style={{ background: "var(--color-accent-900)", color: "#FFFFFF", borderRadius: "var(--radius-md)", padding: "24px 20px" }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", opacity: 0.6, fontFamily: "var(--font-mono)" }}>
-                CHECKING · · · · 4412 — SPLIT
+                CHECKING · · · · 4412 · SPLIT
               </div>
               <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", opacity: 0.75, marginTop: 22 }}>
                 Available to spend
@@ -494,22 +491,25 @@ export default function Homepage() {
               automatically while you were busy running your business.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {BENEFITS.map((b) => (
-                <div key={b.n} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              {BENEFITS.map((b, i) => (
+                <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                   <span
+                    aria-hidden="true"
                     style={{
-                      fontSize: 12,
-                      fontWeight: 600,
+                      fontSize: 18,
+                      lineHeight: "20px",
                       color: "var(--color-accent-700)",
                       background: "#FFFFFF",
                       borderRadius: 10,
-                      padding: "6px 9px",
-                      minWidth: 34,
-                      textAlign: "center",
-                      fontFamily: "var(--font-mono)",
+                      width: 34,
+                      height: 34,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
-                    {b.n}
+                    •
                   </span>
                   <span style={{ fontSize: 16.5, lineHeight: 1.5, color: "var(--color-text)", fontWeight: 500 }}>{b.text}</span>
                 </div>
@@ -602,7 +602,7 @@ export default function Homepage() {
               </span>
               <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.025em", margin: "18px 0 12px" }}>Set your percentages</h3>
               <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-                We start you off with seven buckets built for self-employed income — Solo 401k, SEP IRA,
+                We start you off with seven buckets built for self-employed income: Solo 401k, SEP IRA,
                 Investments, Tax Reserve, Emergency Fund, business expenses (OPEX), and Savings. Don&apos;t need
                 one? Remove it. Want more? Add your own.
               </p>
@@ -703,7 +703,7 @@ export default function Homepage() {
           </div>
           <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 26 }}>
             <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B5E7A" }}>
-              Monthly Close Out — July 2026
+              Monthly Close Out · July 2026
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 18 }}>
               {CLOSEOUT_ROWS.map((c) => (
@@ -746,7 +746,7 @@ export default function Homepage() {
             </h2>
             <p style={{ fontSize: 16.5, lineHeight: 1.6, margin: "0 0 28px", opacity: 0.85 }}>
               Take our free 2-minute quiz. Answer a few questions about your income, family, and business setup,
-              and get a personalized list of tax strategies worth researching — no account needed.
+              and get a personalized list of tax strategies worth researching. No account needed.
             </p>
             <Btn href="/tax-savings-quiz" variant="primary" style={{ ...PILL_PRIMARY, background: "#FFFFFF", color: "var(--color-accent-900)", border: "1px solid #FFFFFF" }}>
               Take the free quiz
