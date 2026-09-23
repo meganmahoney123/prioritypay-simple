@@ -76,3 +76,20 @@ body {
 .pp-btn-ghost:hover {
   background: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
+
+/* Number inputs, everywhere -- the browser's built-in up/down spinner
+   arrows are removed (a small visual cleanup on their own), and see
+   components/NumberInputWheelGuard.js for the more important half of
+   this fix: without it, scrolling the page while a number input happens
+   to be focused silently changes its value (Chrome's default scroll-to-
+   step behavior on a focused <input type="number">), which is exactly
+   how a $500 transfer amount became $497 with no one touching it. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { checkAccountRoomForLabel } from "@/lib/categoryRoom";
+import { refreshAccountBalance } from "@/lib/refreshAccountBalance";
 
 // Moves money between any two of: a tracked category, or "Unallocated"
 // cash in a specific account. Both `fromLabel` and `toLabel` are nullable
@@ -68,6 +69,12 @@ export async function POST(request) {
   // ledger, so it never needs this check either.)
   const sameAccount = fromLabel && toLabel && ruleByLabel[fromLabel]?.account_id && ruleByLabel[fromLabel].account_id === ruleByLabel[toLabel]?.account_id;
   if (toLabel && !sameAccount) {
+    // Same reasoning as execute-real-transfer: ask Plaid for this
+    // account's real balance right now rather than trusting whatever
+    // simple_accounts.current_balance last cached, since that's the
+    // number this credit is about to be checked against.
+    const toAccountId = ruleByLabel[toLabel]?.account_id;
+    if (toAccountId) await refreshAccountBalance(admin, toAccountId);
     const room = await checkAccountRoomForLabel(admin, user.id, toLabel, amount);
     if (!room.ok) {
       return Response.json(

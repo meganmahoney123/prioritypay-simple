@@ -1,7 +1,8 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { fireCloseoutTransfer } from "@/lib/closeoutTransfer";
-import { checkAccountRoomForLabel } from "@/lib/categoryRoom";
+import { checkAccountRoomForLabel, checkAccountUnallocatedRoom } from "@/lib/categoryRoom";
+import { refreshAccountBalance } from "@/lib/refreshAccountBalance";
 
 // The One-Time Transfer tab (app/(app)/transfers/page.js) mostly does pure
 // bookkeeping through /api/allocations/category-transfer -- fine when the
@@ -54,6 +55,16 @@ export async function POST(request) {
 
   const admin = supabaseAdmin();
 
+  // Ask Plaid for each account's REAL balance right now, before either
+  // room check below runs -- this is a real ACH transfer about to move
+  // real money, so the limit it's checked against has to be the bank's
+  // actual current balance, not whatever simple_accounts.current_balance
+  // happened to cache the last time someone loaded Accounts or Dashboard.
+  // Best-effort (see refreshAccountBalance) -- a failed live check still
+  // leaves the room checks running against the last known balance rather
+  // than blocking the transfer outright.
+  await Promise.all([refreshAccountBalance(admin, fromAccountId), refreshAccountBalance(admin, toAccountId)]);
+
   // Even though the credit won't count toward balances until confirmed
   // (see the file comment above), still check room against what's
   // ALREADY confirmed/settled for that account -- otherwise someone could
@@ -67,6 +78,28 @@ export async function POST(request) {
       return Response.json(
         {
           error: `That would put ${toLabel}'s account $${(amount - room.room).toFixed(2)} over its real balance ($${room.accountBalance.toFixed(2)}). Only $${room.room.toFixed(2)} is available to move in right now.`,
+        },
+        { status: 400 }
+      );
+    }
+  }
+
+  // The other half of the same protection: when the source is Unallocated
+  // cash (fromLabel null) rather than a category, nothing above stops the
+  // amount from exceeding what's ACTUALLY sitting uncommitted in
+  // fromAccountId -- an account can show a $5,000 real balance with every
+  // dollar of it already earmarked ($3,000 Retirement, $2,000 Tax Reserve),
+  // leaving $0 truly unallocated, even though this is a real ACH transfer
+  // that's about to move real money out of the account. Skipped when the
+  // source IS a category (fromLabel set) -- debiting a category can only
+  // ever shrink its own balance, never manufacture room that wasn't there.
+  if (!fromLabel) {
+    const source = await checkAccountUnallocatedRoom(admin, user.id, fromAccountId, amount);
+    if (!source.ok) {
+      const named = source.otherLabels.length ? ` (${source.otherLabels.join(", ")})` : "";
+      return Response.json(
+        {
+          error: `Only $${source.room.toFixed(2)} is actually unallocated in that account right now -- the rest is already set aside for other categories${named}. Transfer from one of those categories instead of Unallocated cash.`,
         },
         { status: 400 }
       );

@@ -50,6 +50,12 @@ export default function TransfersPage() {
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
   const [categoryBalances, setCategoryBalances] = useState({});
   const [unallocatedByAccountId, setUnallocatedByAccountId] = useState({});
+  // accountId -> labels of categories currently holding money in that
+  // account (balance > $0) -- used only to name them in the "transfer from
+  // one of those instead" message when someone tries to move more
+  // Unallocated cash out of an account than is actually sitting there
+  // uncommitted (see checkAccountUnallocatedRoom, lib/categoryRoom.js).
+  const [categoryLabelsByAccountId, setCategoryLabelsByAccountId] = useState({});
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,6 +84,14 @@ export default function TransfersPage() {
     setUnallocatedByAccountId(
       Object.fromEntries((accountBalancesRes.accounts || []).map((a) => [a.accountId, a.unallocated]))
     );
+    setCategoryLabelsByAccountId(
+      Object.fromEntries(
+        (accountBalancesRes.accounts || []).map((a) => [
+          a.accountId,
+          (a.categories || []).filter((c) => c.balance > 0.005).map((c) => c.label),
+        ])
+      )
+    );
     setLoading(false);
   };
 
@@ -99,7 +113,17 @@ export default function TransfersPage() {
   const fromOptions = splitRulesPercent.filter((r) => r.label !== toLabel);
   const toOptions = splitRulesPercent.filter((r) => r.label !== fromLabel);
 
-  const fromBalance = !fromIsUnallocated && fromLabel ? Number(categoryBalances[fromLabel]) || 0 : null;
+  // Available balance for whatever's picked on the "from" side -- a
+  // category's own tracked balance, or (new) an account's real unallocated
+  // room when the source is Unallocated cash, so someone can't queue up a
+  // transfer for more than is actually sitting uncommitted in that account
+  // (see checkAccountUnallocatedRoom, lib/categoryRoom.js, for the
+  // server-side version of this same check).
+  const fromBalance = fromIsUnallocated
+    ? (fromAccountId != null ? Number(unallocatedByAccountId[fromAccountId]) || 0 : null)
+    : fromLabel
+    ? Number(categoryBalances[fromLabel]) || 0
+    : null;
   const amt = Number(amount) || 0;
   const insufficientCategoryFunds = fromBalance !== null && amt > 0 && amt > fromBalance;
   const bothUnallocated = fromIsUnallocated && toIsUnallocated;
@@ -291,7 +315,7 @@ export default function TransfersPage() {
           </select>
           {fromBalance !== null && (
             <p className="text-xs mt-1.5" style={{ color: "var(--color-neutral-700)" }}>
-              {currency(fromBalance)} currently available in {fromLabel}.
+              {currency(fromBalance)} currently available in {fromIsUnallocated ? `unallocated cash (${accountLabel(fromAccountId)})` : fromLabel}.
             </p>
           )}
         </div>
@@ -348,7 +372,19 @@ export default function TransfersPage() {
           </div>
           {insufficientCategoryFunds && (
             <p className="text-xs mt-1.5" style={{ color: "#9C3B22" }}>
-              {fromLabel} only has {currency(fromBalance)} available.
+              {fromIsUnallocated ? (
+                <>
+                  Only {currency(fromBalance)} is actually unallocated in {accountLabel(fromAccountId)} right now
+                  {(categoryLabelsByAccountId[fromAccountId] || []).length
+                    ? ` — the rest is already set aside for ${categoryLabelsByAccountId[fromAccountId].join(", ")}`
+                    : ""}
+                  . Transfer from one of those categories instead of Unallocated cash.
+                </>
+              ) : (
+                <>
+                  {fromLabel} only has {currency(fromBalance)} available.
+                </>
+              )}
             </p>
           )}
         </div>

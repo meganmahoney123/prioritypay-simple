@@ -1,4 +1,5 @@
 import "./globals.css";
+import NumberInputWheelGuard from "@/components/NumberInputWheelGuard";
 
 // metadataBase makes every child page's canonical/OG URL resolve
 // correctly even where a page only supplies a relative one; the
@@ -60,7 +61,10 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
         />
       </head>
-      <body className="text-neutral-900">{children}</body>
+      <body className="text-neutral-900">
+        <NumberInputWheelGuard />
+        {children}
+      </body>
     </html>
   );
 }
