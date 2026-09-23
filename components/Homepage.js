@@ -80,6 +80,30 @@ const BUCKETS = [
   { name: "Investments", amt: "$7,963", pct: 71 },
 ];
 
+// Real domains behind each bank name, used to pull an actual brand logo
+// from Clearbit's free public logo API (logo.clearbit.com/<domain>) instead
+// of a plain-text pill or a blank placeholder circle -- for illustrative
+// "connect with your bank" UI only, not an endorsement/partnership claim.
+const BANK_DOMAINS = {
+  Chase: "chase.com",
+  "Bank of America": "bankofamerica.com",
+  "Wells Fargo": "wellsfargo.com",
+  "Capital One": "capitalone.com",
+  Citibank: "citibank.com",
+  "U.S. Bank": "usbank.com",
+  "PNC Bank": "pnc.com",
+  Truist: "truist.com",
+  "Ally Bank": "ally.com",
+  Discover: "discover.com",
+  "American Express": "americanexpress.com",
+  Chime: "chime.com",
+  SoFi: "sofi.com",
+};
+function clearbitLogoUrl(name) {
+  const domain = BANK_DOMAINS[name];
+  return domain ? `https://logo.clearbit.com/${domain}?size=128` : null;
+}
+
 const INSTITUTIONS = [
   { name: "Capital One", kind: "Business checking" },
   { name: "Ally Bank", kind: "Savings" },
@@ -104,7 +128,7 @@ const BANK_NAMES = [
   "Capital One", "Citibank", "U.S. Bank", "PNC Bank", "Truist", "Ally Bank",
   "Discover", "American Express", "Chime", "SoFi",
 ];
-const MARQUEE_ITEMS = [...BANK_NAMES, "+ 12,000 more banks & credit unions"];
+const MARQUEE_ITEMS = [...BANK_NAMES, "+ 10,000 more banks & credit unions"];
 
 const CLOSEOUT_ROWS = [
   { label: "Income", value: "$14,220" },
@@ -128,7 +152,7 @@ const FAQS = [
   },
   {
     q: "What accounts can I connect?",
-    a: "Any US bank, credit union, or investment/retirement account through Plaid, including all the major banks and roughly 12,000 smaller banks and credit unions.",
+    a: "Any US bank, credit union, or investment/retirement account through Plaid, including all the major banks and roughly 10,000 smaller banks and credit unions across the US and Canada.",
   },
   {
     q: "Does PriorityPay manage or invest my money?",
@@ -564,7 +588,7 @@ export default function Homepage() {
               </h3>
               <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
                 Connect all of your income-receiving bank accounts so that every deposit is accounted for. We
-                connect with over 12,000 banks and credit unions across the US.
+                connect with over 10,000 banks and credit unions across the US and Canada.
               </p>
             </div>
             <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 22 }}>
@@ -577,7 +601,21 @@ export default function Homepage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
                 {INSTITUTIONS.map((i) => (
                   <div key={i.name} style={{ display: "flex", alignItems: "center", gap: 12, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
-                    <span style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent-200)", display: "block", flexShrink: 0 }} />
+                    {clearbitLogoUrl(i.name) ? (
+                      <img
+                        src={clearbitLogoUrl(i.name)}
+                        alt={`${i.name} logo`}
+                        width={30}
+                        height={30}
+                        style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent-200)", display: "block", flexShrink: 0, objectFit: "contain" }}
+                        onError={(e) => {
+                          e.currentTarget.style.background = "var(--color-accent-200)";
+                          e.currentTarget.style.visibility = "hidden";
+                        }}
+                      />
+                    ) : (
+                      <span style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent-200)", display: "block", flexShrink: 0 }} />
+                    )}
                     <span style={{ flex: 1 }}>
                       <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{i.name}</span>
                       <span style={{ display: "block", fontSize: 13, color: "#6B5E7A" }}>{i.kind}</span>
@@ -589,7 +627,7 @@ export default function Homepage() {
                 ))}
               </div>
               <div style={{ fontSize: 13, color: "#6B5E7A", marginTop: 14, textAlign: "center" }}>
-                + 12,000 more banks &amp; credit unions available
+                + 10,000 more banks &amp; credit unions available
               </div>
             </div>
           </Reveal>
@@ -648,27 +686,47 @@ export default function Homepage() {
       {/* BANK MARQUEE */}
       <section style={{ padding: "20px 0 clamp(60px, 9vw, 88px)", overflow: "hidden" }}>
         <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6B5E7A", marginBottom: 26 }}>
-          12,000+ banks &amp; credit unions
+          10,000+ banks &amp; credit unions
         </div>
         <div className="pp-marquee-track" style={{ display: "flex", width: "max-content", gap: 12 }}>
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((m, idx) => (
-            <span
-              key={idx}
-              style={{
-                display: "block",
-                fontSize: 15,
-                fontWeight: 600,
-                color: "#574A68",
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-divider)",
-                borderRadius: "var(--radius-pill)",
-                padding: "13px 22px",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {m}
-            </span>
-          ))}
+          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((m, idx) => {
+            const logoUrl = clearbitLogoUrl(m);
+            return (
+              <span
+                key={idx}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: logoUrl ? 10 : 0,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: "#574A68",
+                  background: "var(--color-surface)",
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: "var(--radius-pill)",
+                  padding: "13px 22px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {logoUrl && (
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    width={20}
+                    height={20}
+                    style={{ width: 20, height: 20, objectFit: "contain", flexShrink: 0 }}
+                    // Clearbit occasionally has no logo for a given domain; fall
+                    // back to the plain text pill rather than showing a broken
+                    // image icon.
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                )}
+                {m}
+              </span>
+            );
+          })}
         </div>
       </section>
 
@@ -722,6 +780,62 @@ export default function Homepage() {
             </p>
           </div>
         </Reveal>
+      </section>
+
+      {/* MORE FEATURES: One-Time Transfer, Withdrawals, Month Close-Out */}
+      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "0 clamp(18px, 4vw, 40px) clamp(60px, 9vw, 88px)" }}>
+        <Reveal>
+          <Eyebrow>More than the split</Eyebrow>
+          <h2 style={{ fontSize: "clamp(28px, 3.4vw, 42px)", lineHeight: 1.08, letterSpacing: "-0.03em", fontWeight: 800, margin: "14px 0 40px", maxWidth: "20em" }}>
+            Everything else that keeps the buckets honest
+          </h2>
+        </Reveal>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 22 }}>
+          <Reveal
+            style={{
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-divider)",
+              borderRadius: "var(--radius-lg)",
+              padding: "clamp(26px, 3vw, 32px)",
+            }}
+          >
+            <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>One-Time Transfer</h3>
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
+              Move money straight between two categories, like $3,000 from Wedding to Maintenance, or boost a
+              category with unallocated cash you&apos;re sitting on. Works category to category, or into and out of
+              unallocated.
+            </p>
+          </Reveal>
+          <Reveal
+            style={{
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-divider)",
+              borderRadius: "var(--radius-lg)",
+              padding: "clamp(26px, 3vw, 32px)",
+            }}
+          >
+            <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>Withdrawals</h3>
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
+              Log every expense in one place, whether it&apos;s a specific credit-card charge or a cash purchase, and
+              PriorityPay matches it against the category it came from so your buckets always reflect what&apos;s
+              actually still there.
+            </p>
+          </Reveal>
+          <Reveal
+            style={{
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-divider)",
+              borderRadius: "var(--radius-lg)",
+              padding: "clamp(26px, 3vw, 32px)",
+            }}
+          >
+            <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>Month Close-Out</h3>
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
+              Confirm each month&apos;s transactions once, and PriorityPay recommends exactly how much to send to
+              your Tax Reserve and retirement accounts based on what actually came in.
+            </p>
+          </Reveal>
+        </div>
       </section>
 
       {/* TAX SAVINGS QUIZ TEASER */}
@@ -835,7 +949,6 @@ export default function Homepage() {
             textAlign: "center",
           }}
         >
-          <span style={{ display: "block", fontSize: 26, color: "var(--color-accent)", fontWeight: 700, marginBottom: 14 }}>§</span>
           <h2 style={{ fontSize: "clamp(30px, 4.2vw, 48px)", lineHeight: 1.06, letterSpacing: "-0.03em", fontWeight: 800, margin: "0 auto 18px", maxWidth: "22em" }}>
             Stop reacting to your finances. Take an effortless, proactive approach.
           </h2>
