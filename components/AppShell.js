@@ -367,7 +367,12 @@ export default function AppShell({ children, isSandbox = false }) {
               shows rows in the real needs_approval/in_transit flow;
               same-account category-to-category bookkeeping transfers
               never enter that flow, so they never appear here. */}
-          {pendingGroups.length > 0 && (
+          {/* Suppressed on /dashboard itself -- components/PendingTransfers.js
+              already renders this same "Transfers waiting on you" list
+              there (with Delete + combined-deposit detail this compact
+              banner doesn't have), so showing both at once was pure
+              duplication. Every other (app) page still gets the banner. */}
+          {pendingGroups.length > 0 && pathname !== "/dashboard" && (
             <div
               className="mb-6 space-y-2"
               style={{
