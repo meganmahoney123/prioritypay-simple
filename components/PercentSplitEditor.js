@@ -196,9 +196,20 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       <div style={{ border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
           {locked ? (
-            <span style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 700 }}>
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flex: 1,
+                minWidth: 0,
+                fontFamily: "var(--font-heading)",
+                fontSize: 19,
+                fontWeight: 700,
+              }}
+            >
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor || "var(--color-accent)", flexShrink: 0 }} />
-              {rule.label}
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rule.label}</span>
             </span>
           ) : (
             <span style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
@@ -912,10 +923,32 @@ export default function PercentSplitEditor({
                   background: "#EDE6FF",
                 }}
               >
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: "#4E22B8" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "#4E22B8",
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {section.group}
                 </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "#4E22B8", fontVariantNumeric: "lining-nums tabular-nums" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 14,
+                    color: "#4E22B8",
+                    fontVariantNumeric: "lining-nums tabular-nums",
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {groupPctTotal(section.rows)}% total
                 </span>
               </div>

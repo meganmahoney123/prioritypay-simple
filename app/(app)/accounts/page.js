@@ -154,9 +154,6 @@ export default function AccountsPage() {
               <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically, you'll get a checklist to confirm and send each transfer</p>
             ) : (
               <div>
-                <p className="text-xs mb-2" style={{ color: "#9C3B22" }}>
-                  Linked before auto-detect existed, deposits here still need the manual Split button.
-                </p>
                 <PlaidLinkButton
                   mode="update"
                   accountId={acc.id}
