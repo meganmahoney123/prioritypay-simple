@@ -349,11 +349,11 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             checklist.
           </p>
         )}
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 6 }}>
             I want to route my money to this account:
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <AccountSelect
               value={rule.accountId}
               onChange={(v) => onUpdate(rule.id, { accountId: v })}
