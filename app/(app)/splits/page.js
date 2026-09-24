@@ -222,6 +222,15 @@ function SplitRulesPageInner() {
     };
     measure();
     window.addEventListener("resize", measure);
+    // The heading font can still be swapping in when `measure` first runs
+    // (a web font finishing its download after this component mounts),
+    // which grows the header's height with no `resize` event to catch it
+    // -- this bar would then stay pinned at the old, too-small offset and
+    // visibly sit under/over the real header. Re-measuring once fonts are
+    // done loading closes that gap without waiting on a real resize.
+    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure);
+    }
     return () => window.removeEventListener("resize", measure);
   }, []);
 

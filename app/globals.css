@@ -10,6 +10,22 @@
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 22px rgba(0, 0, 0, 0.04);
 }
 
+/* iOS Safari/WKWebView (the Capacitor app's webview) silently boosts
+   font sizes on narrow-viewport pages ("text autosizing"), independent of
+   any font-size set in CSS -- unlike desktop Chrome, which never does
+   this. That inflation is what was pushing the Splits page's percent
+   badges and group-total labels off the right edge of the screen on a
+   real phone even though the exact same layout measured perfectly on a
+   desktop browser at the same width: the badges/labels aren't wrong,
+   WebKit was just rendering their text bigger than the CSS says. Turning
+   the behavior off (the standard fix for this class of mobile-only
+   overflow) keeps every device rendering text at the size it's actually
+   given. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #fafafa;
