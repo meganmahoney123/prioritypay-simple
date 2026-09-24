@@ -855,7 +855,7 @@ export default function PercentSplitEditor({
     // know about its siblings directly.
     const { byRuleId: startingBalanceRoomById } = computeStartingBalanceRoom(percent, accounts);
     return (
-      <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 18 }}>
         {!hideCapDetails && (
         <details
           className="pp-cap-details"
@@ -959,7 +959,7 @@ export default function PercentSplitEditor({
                     {retirementGroupSubtext(persona, section.group)}
                   </p>
                 )}
-                <div style={{ display: "grid", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 14 }}>
                   {section.rows.map((rule) => (
                     <PercentRow
                       key={rule.id}
