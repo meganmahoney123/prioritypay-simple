@@ -9,6 +9,7 @@ import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 import DeleteAccountCard from "@/components/DeleteAccountCard";
 import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { isNativeApp } from "@/lib/native";
 
 // The persona-switch testing panel below (see /api/dev/set-persona, which
 // enforces the same allowlist server-side -- this client-side check is
@@ -45,6 +46,16 @@ function SettingsPageInner() {
   // meantime since it only ever touches the signed-in user's own data.
   const [personaSwitchBusy, setPersonaSwitchBusy] = useState(null);
   const [canSwitchPersona, setCanSwitchPersona] = useState(false);
+
+  // Apple Guideline 3.1.1: starting a NEW paid subscription from inside the
+  // native app has to go through Apple's In-App Purchase, not a Stripe
+  // checkout redirect -- so the Subscribe/Upgrade buttons below only render
+  // on the web. Managing or canceling an EXISTING subscription (below) is
+  // fine natively and stays untouched.
+  const [isNative, setIsNative] = useState(false);
+  useEffect(() => {
+    isNativeApp().then(setIsNative);
+  }, []);
 
   useEffect(() => {
     supabaseBrowser()
@@ -172,9 +183,15 @@ function SettingsPageInner() {
               You can still see your split rules and history, but connecting new accounts and moving money are
               paused until you subscribe.
             </div>
-            <PrimaryButton onClick={subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : "Subscribe, $12/month"}
-            </PrimaryButton>
+            {isNative ? (
+              <p style={{ fontSize: 14, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                To subscribe, visit prioritypay.co from a web browser.
+              </p>
+            ) : (
+              <PrimaryButton onClick={subscribe} disabled={billingBusy}>
+                {billingBusy ? "Loading…" : "Subscribe, $12/month"}
+              </PrimaryButton>
+            )}
           </>
         ) : (
           <>
@@ -184,9 +201,15 @@ function SettingsPageInner() {
                 : `${remaining} day${remaining === 1 ? "" : "s"} left in your free trial`}
               {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}. $12/month after that.
             </div>
-            <PrimaryButton onClick={subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : "Subscribe now"}
-            </PrimaryButton>
+            {isNative ? (
+              <p style={{ fontSize: 14, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                To subscribe, visit prioritypay.co from a web browser.
+              </p>
+            ) : (
+              <PrimaryButton onClick={subscribe} disabled={billingBusy}>
+                {billingBusy ? "Loading…" : "Subscribe now"}
+              </PrimaryButton>
+            )}
           </>
         )}
 
@@ -205,9 +228,15 @@ function SettingsPageInner() {
                 Running multiple businesses? <strong>PriorityPay Business</strong> adds separate entities, QuickBooks
                 sync, and a monthly profit true-up.
               </p>
-              <GhostButton onClick={upgradeToBusiness} disabled={billingBusy}>
-                {billingBusy ? "Loading…" : "Upgrade to Business"}
-              </GhostButton>
+              {isNative ? (
+                <p style={{ fontSize: 14, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                  To upgrade, visit prioritypay.co from a web browser.
+                </p>
+              ) : (
+                <GhostButton onClick={upgradeToBusiness} disabled={billingBusy}>
+                  {billingBusy ? "Loading…" : "Upgrade to Business"}
+                </GhostButton>
+              )}
             </>
           )}
         </div>
