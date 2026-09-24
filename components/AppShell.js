@@ -304,8 +304,15 @@ export default function AppShell({ children, isSandbox = false }) {
             gap: "10px 20px",
             padding: "22px clamp(20px, 3.5vw, 44px)",
             borderBottom: "1px solid var(--color-divider)",
-            background: "rgba(250,247,253,0.92)",
-            backdropFilter: "blur(10px)",
+            // Solid, not translucent-with-blur -- two stacked `position:
+            // sticky` elements (this header and the Splits page's own
+            // "Nothing below is saved" bar) that both rely on
+            // backdrop-filter blur are a known WKWebView ghosting bug:
+            // the blur buffer for one can bleed a stale frame of
+            // previously-scrolled content through the other, which is
+            // what showed up as stray overlapping text on the Splits
+            // page. An opaque background can't ghost anything through.
+            background: "#FAF7FD",
           }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>

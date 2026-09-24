@@ -260,8 +260,10 @@ function SplitRulesPageInner() {
           gap: "8px 16px",
           margin: "0 -4px",
           padding: "12px 16px",
-          background: "rgba(250,247,253,0.95)",
-          backdropFilter: "blur(10px)",
+          // Solid rather than translucent+blur -- see the matching note
+          // on AppShell's header style for why (WKWebView ghosting
+          // between two stacked blurred sticky elements).
+          background: "#FAF7FD",
           border: "1px solid var(--color-divider)",
           borderRadius: "var(--radius-md)",
         }}

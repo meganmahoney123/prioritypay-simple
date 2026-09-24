@@ -194,7 +194,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   if (theme === "ledger") {
     return (
       <div style={{ border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px 20px" }}>
           {locked ? (
             <span
               style={{
@@ -915,9 +915,10 @@ export default function PercentSplitEditor({
               <div
                 style={{
                   display: "flex",
+                  flexWrap: "wrap",
                   alignItems: "baseline",
                   justifyContent: "space-between",
-                  gap: 20,
+                  gap: "4px 20px",
                   padding: "16px 22px",
                   borderBottom: "1px solid #D9C9FF",
                   background: "#EDE6FF",
