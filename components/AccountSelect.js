@@ -100,12 +100,18 @@ export default function AccountSelect({
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    // min-w-0 on both the row and the select itself -- a native <select>
+    // sizes to its longest <option> text by default, and as a flex item
+    // its default min-width is that content size, not 0. Without min-w-0
+    // here, an unconnected row with a long placeholder/option list (e.g.
+    // "Solo 401k") could force this whole row past the edge of the
+    // screen on narrow phones no matter what width the CSS asked for.
+    <div className="flex items-center gap-1.5 min-w-0">
       <Link2 size={12} className="text-neutral-400 shrink-0" />
       <select
         value={value || ""}
         onChange={handleChange}
-        className={`text-xs border rounded-lg px-2 py-1 w-full ${
+        className={`text-xs border rounded-lg px-2 py-1 w-full min-w-0 ${
           connected ? "border-emerald-200 bg-emerald-50 text-emerald-800 font-medium" : "border-amber-200 bg-amber-50 text-amber-800"
         }`}
       >
