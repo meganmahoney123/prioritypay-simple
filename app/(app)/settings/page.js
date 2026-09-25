@@ -355,6 +355,19 @@ function SettingsPageInner() {
           PriorityPay emails you the moment a qualifying deposit lands, with a link straight to your split
           checklist, sent to your account email, on by default, and you can turn it off anytime.
         </p>
+        {/* New sending domains often get their first few emails filtered to
+            spam by Gmail/Outlook regardless of correct SPF/DKIM setup --
+            this is a known, common cold-start pattern, not a sign
+            something's broken. Marking one "Not spam" is the fastest way
+            for an individual recipient to fix it going forward, so we
+            surface that here rather than leaving people to stumble onto
+            their spam folder on their own (see the deposit-alert-email
+            spam report in user feedback, Sep 2026). */}
+        <div className="text-sm" style={{ ...bloomNoticeCardStyle(), padding: 14, margin: "0 0 20px" }}>
+          Tip: the first alert email sometimes lands in spam while your provider learns PriorityPay is a real
+          sender. If you don&apos;t see it in your inbox, check spam and mark it &quot;Not spam&quot; — that
+          teaches your inbox to deliver future ones normally.
+        </div>
         <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
           <input
             type="checkbox"
