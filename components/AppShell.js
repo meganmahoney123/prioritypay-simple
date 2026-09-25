@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { Menu, X, Bell, ArrowRight } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { BLOOM_TOKENS, MOVE_IN_COLOR, MOVE_OUT_COLOR } from "@/lib/bloomTheme";
-import { currency, PrimaryButton } from "@/components/ui";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
+import { currency } from "@/components/ui";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import AppLockGate from "@/components/AppLockGate";
 import { isW2NoSideHustle } from "@/lib/allocations";
@@ -180,6 +181,7 @@ export default function AppShell({ children, isSandbox = false }) {
     [pendingAllocations]
   );
   const hasPendingTransfers = pendingGroups.length > 0 || inTransitGroups.length > 0;
+  const pendingTotal = useMemo(() => pendingGroups.reduce((s, g) => s + (Number(g.amount) || 0), 0), [pendingGroups]);
 
   // Browser-tab title reminder: while anything is needs_approval/
   // in_transit, replace the normal per-page title with a reminder of what
@@ -209,22 +211,6 @@ export default function AppShell({ children, isSandbox = false }) {
       document.title = normalTitle;
     };
   }, [pathname, hasPendingTransfers, pendingGroups, inTransitGroups, pendingAccountsById]);
-
-  const [bannerBusyKey, setBannerBusyKey] = useState(null);
-  const confirmFromBanner = async (group) => {
-    setBannerBusyKey(group.key);
-    try {
-      // Same endpoint components/PendingTransfers.js's own confirm()
-      // calls -- this banner is just another entry point to it, not a
-      // second implementation.
-      const results = await Promise.all(
-        group.ids.map((id) => fetch(`/api/transfer-allocations/${id}/confirm`, { method: "POST" }))
-      );
-      if (results.some((r) => r.ok)) await loadPendingTransfers();
-    } finally {
-      setBannerBusyKey(null);
-    }
-  };
 
   useEffect(() => {
     const onResize = () => {
@@ -363,76 +349,49 @@ export default function AppShell({ children, isSandbox = false }) {
           )}
         </header>
 
+        {/* Persistent "transfer pending" reminder -- visible on every
+            (app) page except Dashboard, so a real cross-account transfer
+            someone recorded and then navigated away from is never
+            forgotten (see also the browser-tab title reminder above,
+            same purpose). Deliberately a plain, edge-to-edge notification
+            bar -- not a card sitting in the page's own content, which
+            read as if it belonged to whatever page it happened to land
+            on (Settings, Split Rules, etc). It only ever names a total
+            and links to the Dashboard, which is the one place with the
+            actual per-category breakdown, bank links, and "I sent this"
+            -- this bar doesn't duplicate that UI, just points at it, so
+            there's exactly one real implementation of the checklist
+            (components/PendingTransfers.js) and one thin pointer to it.
+            Suppressed on /dashboard itself since that page already shows
+            the real thing directly. */}
+        {pendingGroups.length > 0 && pathname !== "/dashboard" && (
+          <Link
+            href="/dashboard"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "11px clamp(20px, 3.5vw, 44px)",
+              background: "var(--color-accent-800)",
+              color: "#fff",
+              textDecoration: "none",
+            }}
+          >
+            <Bell size={14} style={{ flexShrink: 0, opacity: 0.85 }} />
+            <span style={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
+              {pendingGroups.length} split{pendingGroups.length > 1 ? "s" : ""} waiting to be sent &middot;{" "}
+              {currency(pendingTotal)} total
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 700, textDecoration: "underline", flexShrink: 0 }}>
+              Go send it <ArrowRight size={13} />
+            </span>
+          </Link>
+        )}
+
         <main style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>
-          {/* Persistent "transfer pending" banner -- visible on every
-              (app) page, not just Dashboard/Transfers, so a real
-              cross-account transfer someone recorded and then navigated
-              away from is never forgotten. Same From/To/Amount info as
-              components/PendingTransfers.js's "Transfers waiting on you"
-              card and the same confirm endpoint -- this is another
-              surface for it, not a second implementation. Only ever
-              shows rows in the real needs_approval/in_transit flow;
-              same-account category-to-category bookkeeping transfers
-              never enter that flow, so they never appear here. */}
-          {/* Suppressed on /dashboard itself -- components/PendingTransfers.js
-              already renders this same "Transfers waiting on you" list
-              there (with Delete + combined-deposit detail this compact
-              banner doesn't have), so showing both at once was pure
-              duplication. Every other (app) page still gets the banner. */}
-          {pendingGroups.length > 0 && pathname !== "/dashboard" && (
-            <div
-              className="mb-6 space-y-2"
-              style={{
-                border: `1px solid ${MOVE_OUT_COLOR}55`,
-                borderRadius: "var(--radius-md)",
-                background: "var(--color-accent-100)",
-                padding: "16px 20px",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "var(--color-accent-700)",
-                }}
-              >
-                Transfer{pendingGroups.length > 1 ? "s" : ""} waiting on you
-              </div>
-              <div className="space-y-2">
-                {pendingGroups.map((g) => {
-                  const destAccount = pendingAccountsById[g.dest_account_id];
-                  const sourceAccount = pendingAccountsById[g.source_account_id];
-                  const destName = destAccount
-                    ? `${destAccount.institution_name} ${destAccount.account_name} •••• ${destAccount.mask}`
-                    : g.dest_account_label || "an account";
-                  const sourceName = sourceAccount
-                    ? `${sourceAccount.institution_name} ${sourceAccount.account_name} •••• ${sourceAccount.mask}`
-                    : g.source_account_label || "your account";
-                  const busy = bannerBusyKey === g.key;
-                  return (
-                    <div
-                      key={g.key}
-                      className="flex items-center justify-between gap-3 flex-wrap"
-                      style={{ padding: "8px 12px", borderRadius: "var(--radius-sm)", background: "var(--color-surface)" }}
-                    >
-                      <div className="text-sm min-w-0">
-                        <span style={{ color: MOVE_OUT_COLOR, fontWeight: 600 }}>{sourceName}</span>
-                        {" → "}
-                        <span style={{ color: MOVE_IN_COLOR, fontWeight: 600 }}>{destName}</span>
-                        <span className="font-mono font-semibold ml-2">{currency(g.amount)}</span>
-                      </div>
-                      <PrimaryButton onClick={() => confirmFromBanner(g)} disabled={busy} style={{ padding: "6px 14px", fontSize: 13 }}>
-                        {busy ? "Marking…" : "I sent this"}
-                      </PrimaryButton>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
           {children}
         </main>
       </div>
