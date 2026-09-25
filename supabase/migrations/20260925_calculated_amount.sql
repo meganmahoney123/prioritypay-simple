@@ -1,0 +1,22 @@
+-- Lets a user override a single pending allocation's dollar amount (e.g.
+-- send $250 to Wedding Fund instead of the $200 the split rule
+-- calculated for this one deposit) while keeping the original calculated
+-- value for audit/history integrity -- see
+-- app/api/transfer-allocations/[id]/amount/route.js, which is the only
+-- place `amount` gets updated after insert, and only while status is
+-- still 'needs_approval'.
+--
+-- `amount` keeps its existing meaning everywhere else in the app (the
+-- real/actual dollar figure -- what the user is asked to send, what
+-- lib/reconcileTransfers.js matches against real bank activity, and what
+-- every balance/history/reporting query already sums) -- overriding it is
+-- exactly what should move those numbers, since the override IS what
+-- actually gets sent.
+--
+-- calculated_amount is the untouched split-rule math from
+-- lib/runSplit.js at insert time, set once and never updated afterward.
+-- Nullable, and existing rows are left null -- there's nothing to safely
+-- backfill it from (the whole point is this wasn't captured before), same
+-- pattern as dest_account_label / source_account_label
+-- (20260908_dest_account_label.sql, 20260923_source_account_label.sql).
+alter table simple_transfer_allocations add column if not exists calculated_amount numeric;

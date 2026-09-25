@@ -117,7 +117,17 @@ create table if not exists simple_transfer_allocations (
   dwolla_transfer_id text,
   status text not null default 'reserved',
   retirement_type text,
-  investment_type text
+  investment_type text,
+  -- The split-rule-computed amount at the moment this row was created,
+  -- kept permanently even if `amount` is later overridden by the user
+  -- (see app/api/transfer-allocations/[id]/amount/route.js) -- `amount`
+  -- is "what actually happened/will happen" (what the user is asked to
+  -- send, and what reconciliation/history/balances treat as real), while
+  -- calculated_amount is the untouched original math, for audit/history
+  -- integrity. Nullable: existing rows predate this column and have
+  -- nothing to safely backfill it from (see
+  -- supabase/migrations/20260925_calculated_amount.sql).
+  calculated_amount numeric
 );
 
 -- The user's REAL Solo 401k / SEP IRA account -- deliberately separate from

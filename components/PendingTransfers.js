@@ -39,11 +39,20 @@ export function groupByCategory(rows) {
         source_account_id: a.source_account_id || null,
         source_account_label: null,
         amount: 0,
+        // Sum of the ORIGINAL split-rule-calculated amounts underlying
+        // this group, kept alongside `amount` (which may include user
+        // overrides -- see app/api/transfer-allocations/[id]/amount/
+        // route.js) purely so the UI can show "calculated $X" next to an
+        // overridden figure. Falls back to the actual amount for legacy
+        // rows written before calculated_amount existed (see
+        // supabase/migrations/20260925_calculated_amount.sql).
+        calculatedAmount: 0,
         ids: [],
       });
     }
     const g = map.get(key);
     g.amount += Number(a.amount) || 0;
+    g.calculatedAmount += Number(a.calculated_amount ?? a.amount) || 0;
     g.ids.push(a.id);
     // Any row in the group carrying a snapshotted label is as good as any
     // other -- they all share the same dest_account_id/source_account_id
@@ -109,14 +118,30 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
   const [separateKeys, setSeparateKeys] = useState(() => new Set());
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
+  // Amount-override editing state, keyed by an allocation id (overrides)
+  // or a category-group key (everything else) -- see renderAmount below.
+  // amountOverrides lets the sums on screen (group totals, pair totals,
+  // "Mark as Sent" amounts) update the instant a PATCH succeeds, without
+  // waiting on the parent's onConfirmed() refetch to land.
+  const [amountOverrides, setAmountOverrides] = useState({});
+  const [editingAmountKey, setEditingAmountKey] = useState(null);
+  const [amountDrafts, setAmountDrafts] = useState({});
+  const [amountErrors, setAmountErrors] = useState({});
+  const [savingAmountKey, setSavingAmountKey] = useState(null);
+
+  const effectiveAllocations = useMemo(
+    () => (allocations || []).map((a) => (amountOverrides[a.id] != null ? { ...a, amount: amountOverrides[a.id] } : a)),
+    [allocations, amountOverrides]
+  );
+
   const pendingByCategory = useMemo(
-    () => groupByCategory((allocations || []).filter((a) => a.status === "needs_approval")),
-    [allocations]
+    () => groupByCategory(effectiveAllocations.filter((a) => a.status === "needs_approval")),
+    [effectiveAllocations]
   );
   const pendingByAccountPair = useMemo(() => groupByAccountPair(pendingByCategory), [pendingByCategory]);
   const inTransit = useMemo(
-    () => groupByCategory((allocations || []).filter((a) => a.status === "in_transit")),
-    [allocations]
+    () => groupByCategory(effectiveAllocations.filter((a) => a.status === "in_transit")),
+    [effectiveAllocations]
   );
 
   if (!pendingByAccountPair.length && !inTransit.length) return null;
@@ -166,6 +191,150 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
       else next.add(key);
       return next;
     });
+  };
+
+  // Editing a category group's amount only makes sense when it's backed
+  // by exactly ONE allocation row -- a group combining several still-open
+  // deposits (see groupByCategory's comment, "(N deposits)") is a running
+  // total across separate real allocation rows, each of which was
+  // calculated against its own deposit; there's no single row for a PATCH
+  // to target, and no sensible way to distribute an edited combined total
+  // back across them. The UI already has an escape hatch for exactly this
+  // case (the "Send these separately instead" / per-category view), but
+  // that still groups by label+account, not down to individual allocation
+  // ids, so a combined multi-deposit line simply stays read-only for now.
+  const isAmountEditable = (g) => g.ids.length === 1;
+
+  const startEditingAmount = (g) => {
+    if (!isAmountEditable(g)) return;
+    setEditingAmountKey(g.key);
+    setAmountDrafts((d) => ({ ...d, [g.key]: g.amount.toFixed(2) }));
+    setAmountErrors((e) => ({ ...e, [g.key]: null }));
+  };
+
+  const cancelEditingAmount = (key) => {
+    setEditingAmountKey((k) => (k === key ? null : k));
+  };
+
+  const saveAmount = async (g) => {
+    const raw = amountDrafts[g.key];
+    const parsed = Number(raw);
+    if (raw === undefined || raw === "" || !Number.isFinite(parsed) || parsed <= 0) {
+      setAmountErrors((e) => ({ ...e, [g.key]: "Enter an amount greater than $0." }));
+      return;
+    }
+    const allocationId = g.ids[0];
+    setSavingAmountKey(g.key);
+    try {
+      const res = await fetch(`/api/transfer-allocations/${allocationId}/amount`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: parsed }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setAmountErrors((e) => ({ ...e, [g.key]: body.error || "Couldn't save that amount." }));
+        return;
+      }
+      setAmountOverrides((prev) => ({ ...prev, [allocationId]: parsed }));
+      setAmountErrors((e) => ({ ...e, [g.key]: null }));
+      setEditingAmountKey((k) => (k === g.key ? null : k));
+      // Refetches from the parent -- once that lands, `allocations` itself
+      // will carry the new amount, making the optimistic override above
+      // redundant (but harmless to leave in place).
+      onConfirmed();
+    } finally {
+      setSavingAmountKey(null);
+    }
+  };
+
+  // Renders a category group's amount as plain read-only text once it's
+  // no longer editable (not 'needs_approval', or a combined multi-deposit
+  // group -- see isAmountEditable), or as a click-to-edit control
+  // pre-filled with the current amount while it still is. Shows the
+  // original calculated amount underneath whenever the current amount no
+  // longer matches it, so an override is never silently indistinguishable
+  // from the split rule's own math.
+  const renderAmount = (g, { fontSize = 16, fontWeight = 700 } = {}) => {
+    if (!isAmountEditable(g)) {
+      return <span style={{ fontFamily: "var(--font-mono)", fontSize, fontWeight }}>{currency(g.amount)}</span>;
+    }
+    const isEditing = editingAmountKey === g.key;
+    const error = amountErrors[g.key];
+    const overridden = g.calculatedAmount != null && Math.abs(g.calculatedAmount - g.amount) > 0.005;
+
+    if (!isEditing) {
+      return (
+        <button
+          type="button"
+          onClick={() => startEditingAmount(g)}
+          title="Edit this amount before sending"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize,
+            fontWeight,
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            color: "inherit",
+            textDecoration: "underline dotted",
+            textUnderlineOffset: 3,
+          }}
+        >
+          {currency(g.amount)}
+          {overridden && (
+            <span
+              style={{
+                display: "block",
+                fontSize: 11,
+                fontWeight: 500,
+                textTransform: "none",
+                letterSpacing: 0,
+                color: "var(--color-neutral-700)",
+              }}
+            >
+              calculated {currency(g.calculatedAmount)}
+            </span>
+          )}
+        </button>
+      );
+    }
+
+    return (
+      <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize, opacity: 0.7 }}>$</span>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            autoFocus
+            value={amountDrafts[g.key] ?? ""}
+            onChange={(e) => setAmountDrafts((d) => ({ ...d, [g.key]: e.target.value }))}
+            onBlur={() => saveAmount(g)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              if (e.key === "Escape") cancelEditingAmount(g.key);
+            }}
+            disabled={savingAmountKey === g.key}
+            style={{
+              width: 90,
+              fontFamily: "var(--font-mono)",
+              fontSize,
+              fontWeight,
+              border: "1px solid var(--color-divider)",
+              borderRadius: 8,
+              padding: "2px 6px",
+              textAlign: "right",
+              background: "var(--color-neutral-100)",
+              color: "var(--color-text)",
+            }}
+          />
+        </span>
+        {error && <span style={{ fontSize: 11, fontWeight: 500, color: "#b42318" }}>{error}</span>}
+      </span>
+    );
   };
 
   return (
@@ -240,9 +409,12 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                           className="flex items-center justify-between gap-3 flex-wrap"
                           style={{ padding: "8px 0", borderBottom: "1px solid var(--color-divider)" }}
                         >
-                          <div style={{ fontSize: 16, fontWeight: 700 }}>
-                            {g.label}
-                            {g.ids.length > 1 ? ` (${g.ids.length} deposits)` : ""}, {currency(g.amount)}
+                          <div className="flex items-center gap-2 flex-wrap" style={{ fontSize: 16, fontWeight: 700 }}>
+                            <span>
+                              {g.label}
+                              {g.ids.length > 1 ? ` (${g.ids.length} deposits)` : ""}
+                            </span>
+                            {renderAmount(g, { fontSize: 16, fontWeight: 700 })}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <button
@@ -267,7 +439,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                               disabled={busyKey === g.key}
                               style={{ padding: "8px 16px", fontSize: 14, fontWeight: 700, borderRadius: 999 }}
                             >
-                              {busyKey === g.key && busyAction === "confirm" ? "Marking…" : "I sent this"}
+                              {busyKey === g.key && busyAction === "confirm" ? "Marking…" : "Mark as Sent"}
                             </PrimaryButton>
                           </div>
                         </div>
@@ -287,7 +459,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                             {g.label}
                             {g.ids.length > 1 ? ` (${g.ids.length} deposits)` : ""}
                           </span>
-                          <span style={{ fontFamily: "var(--font-mono)" }}>{currency(g.amount)}</span>
+                          {renderAmount(g, { fontSize: 16, fontWeight: 700 })}
                         </div>
                       ))}
                       <div
@@ -357,7 +529,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                           disabled={busy}
                           style={{ padding: "11px 22px", fontSize: 14, fontWeight: 700, borderRadius: 999 }}
                         >
-                          {busy && busyAction === "confirm" ? "Marking…" : `I sent ${currency(pair.total)}`}
+                          {busy && busyAction === "confirm" ? "Marking…" : "Mark as Sent"}
                         </PrimaryButton>
                       </div>
                       <p style={{ fontSize: 12, color: "var(--color-neutral-700)", lineHeight: 1.5, margin: "10px 0 0" }}>
