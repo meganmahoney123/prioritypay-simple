@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import Link from "next/link";
 import { currency } from "@/components/ui";
-import { bloomWarningCardStyle, bloomGhostButtonStyle } from "@/lib/bloomTheme";
+import { bloomWarningCardStyle, bloomGhostButtonStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import { colorForIndex } from "@/lib/allocations";
 
 const UNALLOCATED_COLOR = "#D9D3C7";
@@ -209,7 +209,19 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
 
   if (!data) return null;
 
-  const { categories: rawCategories, totalBalance, lastCloseoutAt, uncategorizedCount, unallocated, unallocatedPct, accountBalance, overCategorizedBy, isMarketBased } = data;
+  const {
+    categories: rawCategories,
+    totalBalance,
+    lastCloseoutAt,
+    uncategorizedCount,
+    unallocated,
+    unallocatedPct,
+    accountBalance,
+    overCategorizedBy,
+    overCategorizedByInTransit = 0,
+    overCategorizedByUnexplained = overCategorizedBy,
+    isMarketBased,
+  } = data;
   const categories = rawCategories || [];
 
   // Prefer the category's own real assigned color (see lib/allocations.js
@@ -305,13 +317,29 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
         </div>
       )}
 
-      {overCategorizedBy > 0 && !isMarketBased && (
+      {/* Split into two cases so a routine ACH lag doesn't read like a
+          bookkeeping problem: if the whole gap is explained by a transfer
+          that's already confirmed but hasn't posted to the real account
+          yet, that's expected and temporary -- a calm note, no "find the
+          discrepancy" prompt (there's nothing to find, it's just in
+          transit). Only the leftover, unexplained amount gets the
+          original alarming treatment. */}
+      {overCategorizedByUnexplained <= 0 && overCategorizedByInTransit > 0 && !isMarketBased && (
+        <div className="text-xs mt-2 p-2" style={bloomNoticeCardStyle()}>
+          Still catching up: {currency(overCategorizedByInTransit)} of what&apos;s categorized here is a transfer
+          you&apos;ve already sent that hasn&apos;t posted to the bank yet. Nothing to do, this clears itself up
+          once it lands (usually 1-3 business days).
+        </div>
+      )}
+
+      {overCategorizedByUnexplained > 0 && !isMarketBased && (
         <div className="text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span>
-              Categories here add up to {currency(overCategorizedBy)} more than this account&apos;s real balance
-              ({currency(accountBalance)}), percentages above are shown against the categorized total instead so
-              nothing reads over 100%, but a category balance is out of sync with the bank.
+              Categories here add up to {currency(overCategorizedByUnexplained)} more than this account&apos;s real
+              balance can explain{overCategorizedByInTransit > 0 ? ` (after setting aside ${currency(overCategorizedByInTransit)} still in transit)` : ""},
+              percentages above are shown against the categorized total instead so nothing reads over 100%, but a
+              category balance is out of sync with the bank.
             </span>
             <button
               type="button"

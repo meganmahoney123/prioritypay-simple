@@ -82,7 +82,7 @@ export async function GET() {
         .not("account_id", "is", null),
       admin
         .from("simple_transfer_allocations")
-        .select("label, amount, simple_transfers!inner(user_id, status)")
+        .select("label, amount, status, simple_transfers!inner(user_id, status)")
         .eq("simple_transfers.user_id", user.id)
         .neq("status", "failed")
         .neq("status", "needs_approval")
@@ -139,10 +139,24 @@ export async function GET() {
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.starting_balance) || 0);
     ensureComponents(r.label).startingBalance += Number(r.starting_balance) || 0;
   });
+  // Separately tracked (by destination account, not category label) so
+  // the "categorized more than the real balance" warning below can tell
+  // an actual bookkeeping drift apart from money that's simply still on
+  // its way -- see inTransitByAccount usage further down. A row counts
+  // here the moment the user hits "I sent this" (status flips to
+  // in_transit -- see POST /api/transfer-allocations/[id]/confirm), which
+  // is also the moment it starts counting toward the category's balance
+  // above, so the two numbers drift apart for exactly as long as the ACH
+  // transfer takes to actually post to the real bank account.
+  const inTransitByAccount = {};
   (allocRows || []).forEach((r) => {
     if (!(r.label in accountByLabel)) return;
     balanceByLabel[r.label] = (balanceByLabel[r.label] || 0) + (Number(r.amount) || 0);
     ensureComponents(r.label).transferAllocations += Number(r.amount) || 0;
+    if (r.status === "in_transit") {
+      const acctId = accountByLabel[r.label];
+      inTransitByAccount[acctId] = (inTransitByAccount[acctId] || 0) + (Number(r.amount) || 0);
+    }
   });
   (manualRows || []).forEach((r) => {
     if (!(r.label in accountByLabel)) return;
@@ -229,12 +243,21 @@ export async function GET() {
     // rather than going negative), and `overCategorizedBy` flags the drift
     // so the UI can surface it instead of silently normalizing it away.
     const overCategorizedBy = accountBalance !== null ? Math.max(0, categorized - accountBalance) : 0;
+    // How much of overCategorizedBy is just an in-transit transfer that
+    // hasn't landed yet, vs. a real drift (wrong starting balance,
+    // misattributed withdrawal, etc). The UI uses this to skip the
+    // alarming "find the discrepancy" treatment when the gap is fully
+    // explained by money still moving.
+    const inTransitTotal = inTransitByAccount[accountId] || 0;
+    const overCategorizedByUnexplained = Math.max(0, overCategorizedBy - inTransitTotal);
     const pctBase = Math.max(accountBalance || 0, categorized) || 1;
     return {
       accountId,
       accountBalance,
       isMarketBased: MARKET_BASED_SUBTYPES.has((accountSubtypeById[accountId] || "").toLowerCase()),
       overCategorizedBy,
+      overCategorizedByInTransit: Math.min(overCategorizedBy, inTransitTotal),
+      overCategorizedByUnexplained,
       lastCloseoutAt: lastCloseout?.confirmed_at || null,
       uncategorizedCount: uncategorizedByAccount[accountId] || 0,
       categories: categories.map((c) => ({ ...c, pct: Math.round((c.balance / pctBase) * 100) })),

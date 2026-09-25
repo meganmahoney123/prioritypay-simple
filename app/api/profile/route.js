@@ -11,6 +11,12 @@ export async function GET() {
 
   return Response.json({
     profile: {
+      // The account's real login email -- not stored on simple_profiles at
+      // all, comes straight from Supabase auth. Exposed so Settings can
+      // show it as the visible default for the deposit-alert email field
+      // instead of leaving that input blank while secretly defaulting to
+      // this on the backend (see notifications.alertEmail below).
+      email: user.email || null,
       persona: data.persona,
       businessName: data.business_name,
       entityType: data.entity_type,

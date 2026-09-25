@@ -389,7 +389,14 @@ function SettingsPageInner() {
             </label>
             <input
               type="email"
-              value={profile.notifications?.alertEmail ?? ""}
+              // Shows the account's real login email as a visible default
+              // the moment alertEmail is unset, instead of leaving the box
+              // blank while the backend secretly falls back to the same
+              // address (see GET /api/profile) -- someone should be able to
+              // SEE where alerts are going without already knowing that
+              // fact from the caption below. Still fully editable; typing
+              // a different address here is what actually sets alertEmail.
+              value={profile.notifications?.alertEmail ?? profile.email ?? ""}
               onChange={(e) => {
                 setSaved(false);
                 setProfile((p) => ({ ...p, notifications: { ...p.notifications, alertEmail: e.target.value } }));
@@ -398,8 +405,8 @@ function SettingsPageInner() {
               style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
             />
             <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
-              Defaults to your account email. You can change it if you&apos;d rather alerts go somewhere else, like a
-              bookkeeper or assistant&apos;s inbox.
+              Defaults to your account email, shown above. Change it if you&apos;d rather alerts go somewhere else,
+              like a bookkeeper or assistant&apos;s inbox.
             </p>
           </div>
         )}
