@@ -123,7 +123,7 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
 // `mtdByLabel`/`ytdByLabel`/`allTimeTotal` are fetched by the Dashboard
 // page (see app/(app)/dashboard/page.js) from the allocations history API
 // and passed down -- this component stays purely presentational.
-export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0, rules = [], belowDistribution = null }) {
+export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0, rules = [], belowDistribution = null, hasPendingTransfers = false }) {
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   const sections = useMemo(() => percentSections(splitRules?.percent || []), [splitRules]);
@@ -166,34 +166,61 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
           color: "#fff",
         })}
       >
-        <div
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: 12,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            color: "var(--color-accent-400)",
-            marginBottom: 14,
-          }}
-        >
-          Total saved since joining PriorityPay
-        </div>
-        <div
-          className="font-mono"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "clamp(40px, 6vw, 68px)",
-            lineHeight: 1,
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            color: "#fff",
-          }}
-        >
-          {currency(allTimeTotal)}
-        </div>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontStyle: "italic", color: "#fff", opacity: 0.85, marginTop: 16 }}>
-          Every dollar PriorityPay has calculated and confirmed out of a deposit, ever.
-        </div>
+        {(() => {
+          // Nothing confirmed yet (allTimeTotal === 0) reads very
+          // differently depending on WHY: a brand-new user who hasn't had
+          // a deposit land yet vs. someone whose deposit already arrived
+          // and has a split sitting in "Transfers Waiting on You" just
+          // below, not yet confirmed. Showing a flat "$0" in the second
+          // case reads as broken ("is this thing even working?") -- see
+          // the Sep 2026 user-feedback video where that's exactly what
+          // happened. hasPendingTransfers (passed from the Dashboard's
+          // own /api/transfers/pending fetch) tells these apart.
+          const hasSaved = allTimeTotal > 0;
+          const label = hasSaved
+            ? "Total saved since joining PriorityPay"
+            : hasPendingTransfers
+            ? "Your first split is ready"
+            : "Waiting for your first deposit";
+          const big = hasSaved ? currency(allTimeTotal) : hasPendingTransfers ? "$0" : "—";
+          const subtitle = hasSaved
+            ? "Every dollar PriorityPay has calculated and confirmed out of a deposit, ever."
+            : hasPendingTransfers
+            ? "Confirm your pending transfer below to start tracking your savings."
+            : "Once a deposit lands, PriorityPay will calculate your splits here.";
+          return (
+            <>
+              <div
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 12,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: "var(--color-accent-400)",
+                  marginBottom: 14,
+                }}
+              >
+                {label}
+              </div>
+              <div
+                className="font-mono"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "clamp(40px, 6vw, 68px)",
+                  lineHeight: 1,
+                  fontWeight: 800,
+                  letterSpacing: "-0.02em",
+                  color: "#fff",
+                }}
+              >
+                {big}
+              </div>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontStyle: "italic", color: "#fff", opacity: 0.85, marginTop: 16 }}>
+                {subtitle}
+              </div>
+            </>
+          );
+        })()}
       </Card>
 
       <CategoryDistributionSection />

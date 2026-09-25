@@ -161,6 +161,7 @@ export default function DashboardPage() {
         ytdByLabel={ytdByLabel}
         allTimeTotal={allTimeTotal}
         rules={rules}
+        hasPendingTransfers={pendingTransfers.length > 0}
       />
 
       <CloseoutNudge />
