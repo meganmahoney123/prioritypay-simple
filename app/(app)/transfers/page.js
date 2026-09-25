@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { bloomNoticeCardStyle, bloomWarningCardStyle, bloomPrimaryButtonStyle, MOVE_IN_COLOR, MOVE_OUT_COLOR } from "@/lib/bloomTheme";
+import { bloomNoticeCardStyle, bloomWarningCardStyle, bloomPrimaryButtonStyle, MOVE_IN_COLOR } from "@/lib/bloomTheme";
 import { resolveBankLoginUrl } from "@/lib/bankLinks";
 import { Copy, Check, ExternalLink } from "lucide-react";
 
 const UNALLOCATED_PREFIX = "unallocated:";
+// Used for the "Leaving" side of the send-it popup below -- purple instead
+// of red/rust so it reads as informational, not an error or warning.
+const MOVE_OUT_COLOR = "#4E22B8"; // matches --color-accent-700
 const isUnallocatedValue = (v) => typeof v === "string" && v.startsWith(UNALLOCATED_PREFIX);
 const unallocatedAccountIdFromValue = (v) => (isUnallocatedValue(v) ? v.slice(UNALLOCATED_PREFIX.length) : null);
 
@@ -430,9 +433,12 @@ export default function TransfersPage() {
     ]);
     setLandedPopup({
       amount: amt,
+      sourceCategory: fromIsUnallocated ? "Unallocated cash" : fromLabel,
       sourceLabel: accountLabel(resolvedFromAccountId),
       sourceInstitution: fromAccount?.institution_name || null,
+      destCategory: toIsUnallocated ? "Unallocated cash" : toLabel,
       destLabel: accountLabel(resolvedToAccountId),
+      destInstitution: toAccount?.institution_name || null,
     });
     resetForm();
     refreshAllBalances();
@@ -932,8 +938,8 @@ export default function TransfersPage() {
             <div>
               <p className="text-sm font-semibold mb-1">Now send it at your bank</p>
               <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
-                This transfer is recorded and waiting on you. PriorityPay never moves your money itself -- log into
-                the account below and send it yourself, then come back and confirm.
+                PriorityPay never moves your money itself. Log into the account below and send it yourself, then
+                come back and confirm.
               </p>
             </div>
 
@@ -944,7 +950,7 @@ export default function TransfersPage() {
               >
                 <div className="min-w-0">
                   <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: MOVE_OUT_COLOR }}>
-                    Leaving
+                    Leaving &middot; {landedPopup.sourceCategory}
                   </div>
                   <div className="text-sm font-semibold truncate">{landedPopup.sourceLabel}</div>
                 </div>
@@ -952,7 +958,7 @@ export default function TransfersPage() {
                   onClick={() => copyToClipboard(landedPopup.sourceLabel, "source")}
                   className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold px-2 py-1"
                   style={{ color: MOVE_OUT_COLOR }}
-                  title="Copy destination account name"
+                  title="Copy source account name"
                 >
                   {copiedField === "source" ? <Check size={13} /> : <Copy size={13} />}
                   {copiedField === "source" ? "Copied" : "Copy"}
@@ -965,7 +971,7 @@ export default function TransfersPage() {
               >
                 <div className="min-w-0">
                   <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: MOVE_IN_COLOR }}>
-                    Landing in
+                    Landing in &middot; {landedPopup.destCategory}
                   </div>
                   <div className="text-sm font-semibold truncate">{landedPopup.destLabel}</div>
                 </div>
@@ -999,6 +1005,14 @@ export default function TransfersPage() {
               </div>
             </div>
 
+            {/* Both banks are offered here, not just the source -- some
+                people find it easier to push money out from the sending
+                bank's app, others find it easier to pull it in from the
+                receiving bank's app, and they know their own banks' apps
+                better than we do (see components/PendingTransfers.js for
+                the same reasoning on the Dashboard's recurring-split
+                checklist, which is left as source-only since those are
+                always pushes out of a paycheck account). */}
             <div className="flex items-center gap-2 flex-wrap">
               {landedPopup.sourceInstitution && (
                 <a
@@ -1011,14 +1025,26 @@ export default function TransfersPage() {
                   Open {landedPopup.sourceInstitution} <ExternalLink size={13} />
                 </a>
               )}
+              {landedPopup.destInstitution && landedPopup.destInstitution !== landedPopup.sourceInstitution && (
+                <a
+                  href={resolveBankLoginUrl(landedPopup.destInstitution)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5"
+                  style={{
+                    ...bloomPrimaryButtonStyle({ textDecoration: "none" }),
+                    background: "transparent",
+                    color: "var(--color-accent-700)",
+                    border: "1px solid var(--color-accent-700)",
+                  }}
+                >
+                  Open {landedPopup.destInstitution} <ExternalLink size={13} />
+                </a>
+              )}
               <GhostButton onClick={() => setLandedPopup(null)} className="text-sm px-4 py-2">
                 Close
               </GhostButton>
             </div>
-            <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
-              You can also confirm this later from the pending-transfer banner or the Dashboard&apos;s &quot;Transfers
-              waiting on you&quot; card once you&apos;ve sent it.
-            </p>
           </Card>
         </div>
       )}
