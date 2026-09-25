@@ -20,8 +20,8 @@ export async function POST() {
       country_codes: [CountryCode.Us],
       language: "en",
       account_filters: { credit: { account_subtypes: ["credit card"] } },
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/accounts`,
-      webhook: `${process.env.NEXT_PUBLIC_APP_URL}/api/plaid/webhook`,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/accounts`,
+      webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/api/plaid/webhook`,
     });
     return Response.json({ link_token: response.data.link_token });
   } catch (err) {

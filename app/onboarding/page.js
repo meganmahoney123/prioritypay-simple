@@ -178,6 +178,7 @@ function OnboardingPageInner() {
   // else, so nobody can skip ahead of onboarding's real required steps.
   const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com", "megan+appreview@ignitemysite.com", "megan+appreview2@ignitemysite.com"]);
   const [isDevTester, setIsDevTester] = useState(false);
+  const [devPanelOpen, setDevPanelOpen] = useState(false);
   useEffect(() => {
     supabaseBrowser()
       .auth.getUser()
@@ -598,44 +599,69 @@ function OnboardingPageInner() {
         // only megan@ignitemysite.com ever sees this (see DEV_TESTING_EMAILS
         // above). setStep() has no validation gate of its own, so this lets
         // every screen be previewed without filling in real answers first.
-        <div
-          style={{
-            position: "fixed",
-            bottom: 16,
-            right: 16,
-            zIndex: 50,
-            background: "#111",
-            color: "#fff",
-            borderRadius: 10,
-            padding: "10px 12px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 6,
-            maxWidth: 280,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-          }}
-        >
-          <span style={{ width: "100%", fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Testing: jump to step</span>
-          {STEPS.map((label, i) => (
-            <button
-              key={label}
-              onClick={() => {
-                setStep(i);
-                window.scrollTo(0, 0);
-              }}
+        // Collapsed to a small toggle button by default so it doesn't sit
+        // on top of the Back/Continue buttons; tapping it reveals the full
+        // step-jump panel above the toggle.
+        <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 50 }}>
+          {devPanelOpen && (
+            <div
               style={{
-                fontSize: 12,
-                padding: "4px 8px",
-                borderRadius: 6,
-                border: "1px solid rgba(255,255,255,0.25)",
-                background: step === i ? "#fff" : "transparent",
-                color: step === i ? "#111" : "#fff",
-                cursor: "pointer",
+                background: "#111",
+                color: "#fff",
+                borderRadius: 10,
+                padding: "10px 12px",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 6,
+                maxWidth: 280,
+                marginBottom: 8,
+                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
               }}
             >
-              {i}. {label}
-            </button>
-          ))}
+              <span style={{ width: "100%", fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Testing: jump to step</span>
+              {STEPS.map((label, i) => (
+                <button
+                  key={label}
+                  onClick={() => {
+                    setStep(i);
+                    window.scrollTo(0, 0);
+                  }}
+                  style={{
+                    fontSize: 12,
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid rgba(255,255,255,0.25)",
+                    background: step === i ? "#fff" : "transparent",
+                    color: step === i ? "#111" : "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  {i}. {label}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={() => setDevPanelOpen((open) => !open)}
+            aria-label={devPanelOpen ? "Hide dev step panel" : "Show dev step panel"}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.25)",
+              background: "#111",
+              color: "#fff",
+              fontSize: 16,
+              cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginLeft: "auto",
+            }}
+          >
+            🧪
+          </button>
         </div>
       )}
       <header

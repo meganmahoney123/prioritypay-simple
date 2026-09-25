@@ -95,8 +95,12 @@ export default function PlaidLinkButton({
       headers: mode === "update" || retirementType || investmentType || savingsOnly ? { "Content-Type": "application/json" } : undefined,
       body,
     })
-      .then((r) => r.json())
-      .then((d) => {
+      .then(async (r) => {
+        const d = await r.json();
+        if (!r.ok) {
+          setError(d.error || "Could not get a link token.");
+          return;
+        }
         setLinkToken(d.link_token);
         window.localStorage.setItem(storageKey, d.link_token);
       })
