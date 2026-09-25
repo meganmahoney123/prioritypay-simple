@@ -80,7 +80,7 @@ export default function WelcomeClient() {
           textUnderlineOffset: "3px",
         }}
       >
-        Already tried it? Get started
+        Create an Account
       </a>
     </div>
   );
