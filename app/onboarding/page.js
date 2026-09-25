@@ -15,6 +15,7 @@ import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // lib/phone.js itself is untouched.
 import { normalizeUSPhone } from "@/lib/phone";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { isNativeApp } from "@/lib/native";
 
 // Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
@@ -181,6 +182,16 @@ function OnboardingPageInner() {
     supabaseBrowser()
       .auth.getUser()
       .then(({ data }) => setIsDevTester(DEV_TESTING_EMAILS.has((data?.user?.email || "").toLowerCase())));
+  }, []);
+
+  // Apple Guideline 3.1.1: starting a NEW paid subscription from inside the
+  // native app has to go through Apple's In-App Purchase, not a Stripe
+  // checkout redirect -- so onboarding's final "pay now" step is replaced
+  // with an instruction to finish on the web, on native only. Existing paid
+  // users logging in on native are never gated (see app/(app)/layout.js).
+  const [isNative, setIsNative] = useState(false);
+  useEffect(() => {
+    isNativeApp().then(setIsNative);
   }, []);
   // Carried over from the Money Simulator's "Start saving for this" /
   // "Set up my real accounts" buttons (see app/(app)/simulator/page.js),
@@ -1219,9 +1230,15 @@ function OnboardingPageInner() {
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                {submitting ? "Redirecting to checkout…" : "Continue to payment, $12/month"} &nbsp;→
-              </PrimaryBtn>
+              {isNative ? (
+                <p style={{ fontSize: 14, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                  Almost done! To finish setting up your account, open prioritypay.co in a web browser (not this app) and complete payment there. Then come back here and log in.
+                </p>
+              ) : (
+                <PrimaryBtn onClick={finish} disabled={submitting} flex>
+                  {submitting ? "Redirecting to checkout…" : "Continue to payment, $12/month"} &nbsp;→
+                </PrimaryBtn>
+              )}
             </div>
             {isDevTester && (
               <button
