@@ -55,6 +55,45 @@ export function groupByCategory(rows) {
   return Array.from(map.values());
 }
 
+// One more level up from groupByCategory: someone can easily have several
+// categories all funded from the same real source account into the same
+// real destination account (e.g. Barn Roof, Property Taxes, and Emergency
+// Fund all routing Truist Checking -> Capital One Savings). Categorically
+// those need to stay separate for bookkeeping, but at the bank, it's one
+// real transfer -- so this groups category-groups by
+// source_account_id::dest_account_id and sums them into a single amount
+// to actually send, while keeping the individual category rows for
+// display. Per Megan's call (Sep 2026 feedback review): categories should
+// stay the visually prominent thing, with the combined total just one
+// more line, not a hero number -- and the whole group gets exactly one
+// "I sent $X" action instead of one per category, so confirming a lump-sum
+// transfer is a single click covering every allocation id underneath it.
+export function groupByAccountPair(categoryGroups) {
+  const map = new Map();
+  categoryGroups.forEach((g) => {
+    const key = `${g.source_account_id || ""}::${g.dest_account_id || ""}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        dest_account_id: g.dest_account_id,
+        dest_account_label: g.dest_account_label,
+        source_account_id: g.source_account_id,
+        source_account_label: g.source_account_label,
+        categories: [],
+        total: 0,
+        ids: [],
+      });
+    }
+    const p = map.get(key);
+    p.categories.push(g);
+    p.total += g.amount;
+    p.ids.push(...g.ids);
+    if (!p.dest_account_label && g.dest_account_label) p.dest_account_label = g.dest_account_label;
+    if (!p.source_account_label && g.source_account_label) p.source_account_label = g.source_account_label;
+  });
+  return Array.from(map.values());
+}
+
 // `allocations` comes from GET /api/transfers/pending (flat allocation
 // rows, not transfers -- see that route's comment for why); `accounts` is
 // the same list the Dashboard already fetches from /api/accounts, passed
@@ -64,29 +103,34 @@ export function groupByCategory(rows) {
 export default function PendingTransfers({ allocations, accounts, onConfirmed }) {
   const [busyKey, setBusyKey] = useState(null);
   const [busyAction, setBusyAction] = useState(null);
+  // Account-pair keys currently expanded into their old one-row-per-
+  // category view, for the person who can only send part of a combined
+  // total right now and needs to confirm/skip categories individually.
+  const [separateKeys, setSeparateKeys] = useState(() => new Set());
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
-  const pending = useMemo(
+  const pendingByCategory = useMemo(
     () => groupByCategory((allocations || []).filter((a) => a.status === "needs_approval")),
     [allocations]
   );
+  const pendingByAccountPair = useMemo(() => groupByAccountPair(pendingByCategory), [pendingByCategory]);
   const inTransit = useMemo(
     () => groupByCategory((allocations || []).filter((a) => a.status === "in_transit")),
     [allocations]
   );
 
-  if (!pending.length && !inTransit.length) return null;
+  if (!pendingByAccountPair.length && !inTransit.length) return null;
 
   const callAll = async (ids, path) => {
     const results = await Promise.all(ids.map((id) => fetch(`/api/transfer-allocations/${id}/${path}`, { method: "POST" })));
     if (results.some((r) => r.ok)) onConfirmed();
   };
 
-  const confirm = async (group) => {
-    setBusyKey(group.key);
+  const confirmIds = async (key, ids) => {
+    setBusyKey(key);
     setBusyAction("confirm");
     try {
-      await callAll(group.ids, "confirm");
+      await callAll(ids, "confirm");
     } finally {
       setBusyKey(null);
       setBusyAction(null);
@@ -115,6 +159,15 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
     }
   };
 
+  const toggleSeparate = (key) => {
+    setSeparateKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-4">
       <Card style={bloomAccentCardStyle({ padding: "20px 24px", borderRadius: 24, background: "var(--color-accent-200)", border: "none" })}>
@@ -132,89 +185,187 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
           Transfers waiting on you
         </div>
         <p className="text-sm" style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "var(--color-accent-800)" }}>
-          Your splits are ready! Click an amount below to open that account&apos;s bank and transfer the money
-          yourself. Then, check it off to ensure your category balances are accurate.
+          Your splits are ready! Go send the total below, then mark it sent so your category balances stay accurate.
         </p>
       </Card>
 
-      {pending.length > 0 && (
+      {pendingByAccountPair.length > 0 && (
         <Card className="p-5" style={{ borderRadius: 24 }}>
-          <div className="space-y-2">
-            {pending.map((g) => {
-              const destAccount = accountsById[g.dest_account_id];
-              const sourceAccount = accountsById[g.source_account_id];
-              // The bank to actually log into is the SOURCE account's --
-              // that's where the money is sitting and where the user has
-              // to go initiate the send from, not the destination it's
-              // headed to (see supabase/migrations/20260923_source_account_label.sql
-              // for why source_account_id/label exist at all -- fixed from
-              // a prior version of this component that wrongly opened the
-              // destination bank instead).
-              const bankInstitution = sourceAccount?.institution_name || (g.source_account_label || "").split(" ")[0];
-              const bankUrl = bankInstitution ? resolveBankLoginUrl(bankInstitution) : null;
-              const destLabel = accountLabel(destAccount, g.dest_account_label);
-              const sourceLabel = accountLabel(sourceAccount, g.source_account_label);
-              const busy = busyKey === g.key;
+          <div className="space-y-3">
+            {pendingByAccountPair.map((pair) => {
+              const destAccount = accountsById[pair.dest_account_id];
+              const sourceAccount = accountsById[pair.source_account_id];
+              const sourceInstitution = sourceAccount?.institution_name || (pair.source_account_label || "").split(" ")[0];
+              const destInstitution = destAccount?.institution_name || (pair.dest_account_label || "").split(" ")[0];
+              const sourceBankUrl = sourceInstitution ? resolveBankLoginUrl(sourceInstitution) : null;
+              const destBankUrl = destInstitution ? resolveBankLoginUrl(destInstitution) : null;
+              const destLabel = accountLabel(destAccount, pair.dest_account_label);
+              const sourceLabel = accountLabel(sourceAccount, pair.source_account_label);
+              const busy = busyKey === pair.key;
+              const separate = separateKeys.has(pair.key);
+
               return (
                 <div
-                  key={g.key}
-                  className="flex items-center justify-between gap-3 flex-wrap"
+                  key={pair.key}
                   style={{
-                    padding: "12px 16px",
+                    padding: "16px 18px",
                     border: "1px solid var(--color-divider)",
                     borderRadius: 18,
                     background: "var(--color-neutral-100)",
                   }}
                 >
-                  <div className="min-w-0">
-                    {bankUrl ? (
-                      <a
-                        href={bankUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5"
-                        style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", textDecoration: "none" }}
+                  <div
+                    className="truncate"
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      color: "var(--color-neutral-700)",
+                      marginBottom: 10,
+                    }}
+                  >
+                    {sourceLabel} &rarr; {destLabel}
+                  </div>
+
+                  {separate ? (
+                    // Fallback for someone who can only send part of the
+                    // total right now -- same one-row-per-category
+                    // confirm/delete this component used to always show,
+                    // scoped to just this account pair.
+                    <div className="space-y-2">
+                      {pair.categories.map((g) => (
+                        <div
+                          key={g.key}
+                          className="flex items-center justify-between gap-3 flex-wrap"
+                          style={{ padding: "8px 0", borderBottom: "1px solid var(--color-divider)" }}
+                        >
+                          <div style={{ fontSize: 16, fontWeight: 700 }}>
+                            {g.label}
+                            {g.ids.length > 1 ? ` (${g.ids.length} deposits)` : ""}, {currency(g.amount)}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => skip(g)}
+                              disabled={busyKey === g.key}
+                              title="Remove this split from your checklist (doesn't delete the category)"
+                              style={{
+                                padding: "8px 14px",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                borderRadius: 999,
+                                background: "transparent",
+                                border: "1px solid var(--color-divider)",
+                                color: "var(--color-neutral-700)",
+                                cursor: busyKey === g.key ? "default" : "pointer",
+                              }}
+                            >
+                              {busyKey === g.key && busyAction === "skip" ? "Removing…" : "Delete"}
+                            </button>
+                            <PrimaryButton
+                              onClick={() => confirmIds(g.key, g.ids)}
+                              disabled={busyKey === g.key}
+                              style={{ padding: "8px 16px", fontSize: 14, fontWeight: 700, borderRadius: 999 }}
+                            >
+                              {busyKey === g.key && busyAction === "confirm" ? "Marking…" : "I sent this"}
+                            </PrimaryButton>
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => toggleSeparate(pair.key)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-accent-700)", fontSize: 12.5, textDecoration: "underline", padding: "6px 0 0" }}
                       >
-                        {g.label}, {currency(g.amount)}
-                        <ExternalLink size={13} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
-                      </a>
-                    ) : (
-                      <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700 }}>
-                        {g.label}, {currency(g.amount)}
-                      </div>
-                    )}
-                    <div className="text-xs truncate" style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>
-                      {bankUrl ? `Click the amount to log into ${sourceLabel}, then send to ` : "Send to "}
-                      {destLabel}
-                      {g.ids.length > 1 ? `, combined from ${g.ids.length} deposits` : ""}
+                        Combine these back into one transfer
+                      </button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => skip(g)}
-                      disabled={busy}
-                      title="Remove this split from your checklist (doesn't delete the category)"
-                      style={{
-                        padding: "10px 16px",
-                        fontSize: 14,
-                        fontWeight: 600,
-                        borderRadius: 999,
-                        background: "transparent",
-                        border: "1px solid var(--color-divider)",
-                        color: "var(--color-neutral-700)",
-                        cursor: busy ? "default" : "pointer",
-                      }}
-                    >
-                      {busy && busyAction === "skip" ? "Removing…" : "Delete"}
-                    </button>
-                    <PrimaryButton
-                      onClick={() => confirm(g)}
-                      disabled={busy}
-                      style={{ padding: "10px 20px", fontSize: 15, fontWeight: 700, borderRadius: 999 }}
-                    >
-                      {busy && busyAction === "confirm" ? "Marking…" : "I sent this"}
-                    </PrimaryButton>
-                  </div>
+                  ) : (
+                    <>
+                      {pair.categories.map((g) => (
+                        <div key={g.key} className="flex items-center justify-between" style={{ padding: "5px 0", fontSize: 16, fontWeight: 700, color: "var(--color-text)" }}>
+                          <span>
+                            {g.label}
+                            {g.ids.length > 1 ? ` (${g.ids.length} deposits)` : ""}
+                          </span>
+                          <span style={{ fontFamily: "var(--font-mono)" }}>{currency(g.amount)}</span>
+                        </div>
+                      ))}
+                      <div
+                        className="flex items-center justify-between"
+                        style={{ marginTop: 6, paddingTop: 8, borderTop: "1px solid var(--color-divider)" }}
+                      >
+                        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-neutral-700)" }}>Total to send</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--color-accent-800)" }}>
+                          {currency(pair.total)}
+                        </span>
+                      </div>
+
+                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed var(--color-divider)" }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            color: "var(--color-accent-600)",
+                            marginBottom: 6,
+                          }}
+                        >
+                          Step 1 &mdash; go send it
+                        </div>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          {sourceBankUrl && (
+                            <a
+                              href={sourceBankUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1"
+                              style={{ fontSize: 14, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "none" }}
+                            >
+                              {sourceInstitution || "Sending bank"}
+                              <ExternalLink size={12} style={{ opacity: 0.6 }} />
+                            </a>
+                          )}
+                          {destBankUrl && destInstitution !== sourceInstitution && (
+                            <a
+                              href={destBankUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1"
+                              style={{ fontSize: 14, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "none" }}
+                            >
+                              {destInstitution || "Receiving bank"}
+                              <ExternalLink size={12} style={{ opacity: 0.6 }} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 flex-wrap" style={{ marginTop: 14 }}>
+                        {pair.categories.length > 1 ? (
+                          <button
+                            onClick={() => toggleSeparate(pair.key)}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-neutral-600)", fontSize: 12, textDecoration: "underline" }}
+                          >
+                            Send these separately instead
+                          </button>
+                        ) : (
+                          <span />
+                        )}
+                        <PrimaryButton
+                          onClick={() => confirmIds(pair.key, pair.ids)}
+                          disabled={busy}
+                          style={{ padding: "11px 22px", fontSize: 14, fontWeight: 700, borderRadius: 999 }}
+                        >
+                          {busy && busyAction === "confirm" ? "Marking…" : `I sent ${currency(pair.total)}`}
+                        </PrimaryButton>
+                      </div>
+                      <p style={{ fontSize: 12, color: "var(--color-neutral-700)", lineHeight: 1.5, margin: "10px 0 0" }}>
+                        Be sure to mark it as &quot;Sent&quot; after executing the transfer. This ensures the categories in your
+                        dashboard are always accurate.
+                      </p>
+                    </>
+                  )}
                 </div>
               );
             })}
