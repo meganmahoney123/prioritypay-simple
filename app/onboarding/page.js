@@ -176,7 +176,7 @@ function OnboardingPageInner() {
   // validation gate (only the two `disabled` Continue buttons below do, and
   // those are bypassed for this account too). Never rendered for anyone
   // else, so nobody can skip ahead of onboarding's real required steps.
-  const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com", "megan+appreview@ignitemysite.com", "megan+appreview2@ignitemysite.com", "megan+appreview3@ignitemysite.com"]);
+  const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com", "megan+appreview@ignitemysite.com", "megan+appreview2@ignitemysite.com", "megan+appreview3@ignitemysite.com", "megan+appreview4@ignitemysite.com"]);
   const [isDevTester, setIsDevTester] = useState(false);
   const [devPanelOpen, setDevPanelOpen] = useState(false);
   useEffect(() => {
