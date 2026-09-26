@@ -96,11 +96,18 @@ export default function AccountsPage() {
   );
   const guiltFreeAvailable = totalBalanceAllAccounts - totalAllocatedToCategories - totalCardOwed;
 
-  // Credit cards get their own "Connected Credit Cards" section below,
-  // same grouping as the mockup, instead of sitting in the same grid as
-  // depository/business accounts -- the card JSX itself is unchanged,
-  // just which grid it renders in.
+  // Three sections instead of two: Bank Accounts, Investment Accounts
+  // (retirement + brokerage), and Credit Cards. `isMarketBased` already
+  // comes back per account from /api/allocations/account-balances (see
+  // that route's MARKET_BASED_SUBTYPES) -- it's the same signal that
+  // route uses to soften the "categorized more than the real balance"
+  // warning for a 401k/brokerage/etc, so reusing it here means an account
+  // shows up in "Investment Accounts" based on its real Plaid subtype
+  // (401k, brokerage, IRA, HSA...), not a second, separately-maintained
+  // classification that could drift out of sync with it.
   const depositoryAccounts = accounts.filter((a) => a.account_type !== "credit");
+  const bankAccounts = depositoryAccounts.filter((a) => !categoryBalances[a.id]?.isMarketBased);
+  const investmentAccounts = depositoryAccounts.filter((a) => categoryBalances[a.id]?.isMarketBased);
   const creditAccounts = accounts.filter((a) => a.account_type === "credit");
 
   const disconnect = async (acc) => {
@@ -215,6 +222,79 @@ export default function AccountsPage() {
     </Card>
   );
 
+  // Credit cards get their own layout (matches the approved
+  // AccountsADesktop.dc.html mockup) instead of reusing renderAccountCard
+  // above -- no ACTIVE/CREDIT CARD badge or auto-detect prompt (neither
+  // applies to a card), just the live balance -> already-accounted-for ->
+  // net-owed math front and center, since that's the one number this
+  // section exists to explain.
+  const renderCreditCard = (acc) => {
+    const cc = creditCardBalances[acc.id];
+    return (
+      <div
+        key={acc.id}
+        style={{ border: "1px solid var(--color-divider)", borderRadius: 18, background: "var(--color-surface)", padding: "20px 22px" }}
+      >
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-9 h-9 flex items-center justify-center shrink-0" style={{ borderRadius: 9, background: "var(--color-accent-100)" }}>
+            <CreditCard size={16} style={{ color: "var(--color-accent-700)" }} />
+          </div>
+          <div>
+            <div style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
+              {acc.institution_name} {acc.account_name}
+            </div>
+            <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>•••• {acc.mask}</div>
+          </div>
+        </div>
+        {cc ? (
+          <>
+            <div className="text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span style={{ color: "var(--color-neutral-700)", fontWeight: 600 }}>Live balance</span>
+                <span className="font-mono" style={{ color: "var(--color-text)" }}>{currency(cc.liveBalance)}</span>
+              </div>
+              {cc.excludedByWithdrawal > 0 && (
+                <div className="flex items-center justify-between" style={{ color: "var(--color-accent-700)" }}>
+                  <span style={{ fontWeight: 600 }}>− Already accounted for via withdrawals</span>
+                  <span className="font-mono">{currency(cc.excludedByWithdrawal)}</span>
+                </div>
+              )}
+            </div>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "14px 0 10px" }} />
+            <div className="flex items-baseline justify-between">
+              <span style={{ fontSize: 13, fontWeight: 700 }}>Net amount owed</span>
+              <span className="font-mono" style={{ fontSize: 22, fontWeight: 700, color: "#9C3B22" }}>{currency(cc.netOwed)}</span>
+            </div>
+            <p className="text-xs mt-2" style={{ color: "var(--color-neutral-700)", lineHeight: 1.4 }}>
+              Only the net amount owed reduces Guilt-Free Spending above. Charges already covered by a category withdrawal aren&apos;t subtracted twice.
+            </p>
+          </>
+        ) : (
+          <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
+        )}
+        <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
+          <button
+            type="button"
+            onClick={() => disconnect(acc)}
+            disabled={disconnectingId === acc.id}
+            className="text-xs"
+            style={bloomGhostButtonStyle({
+              color: "var(--color-accent-700)",
+              border: "none",
+              background: "transparent",
+              padding: "6px 4px",
+              fontSize: 13,
+              opacity: disconnectingId === acc.id ? 0.45 : 1,
+              cursor: disconnectingId === acc.id ? "not-allowed" : "pointer",
+            })}
+          >
+            {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div id="connect">
@@ -288,13 +368,24 @@ export default function AccountsPage() {
         </div>
       )}
 
-      {depositoryAccounts.length > 0 && (
+      {bankAccounts.length > 0 && (
         <div>
           <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
-            Your Accounts
+            Bank Accounts
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {depositoryAccounts.map(renderAccountCard)}
+            {bankAccounts.map(renderAccountCard)}
+          </div>
+        </div>
+      )}
+
+      {investmentAccounts.length > 0 && (
+        <div>
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
+            Investment Accounts
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {investmentAccounts.map(renderAccountCard)}
           </div>
         </div>
       )}
@@ -302,10 +393,10 @@ export default function AccountsPage() {
       {creditAccounts.length > 0 && (
         <div>
           <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
-            Connected Credit Cards
+            Credit Cards
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {creditAccounts.map(renderAccountCard)}
+            {creditAccounts.map(renderCreditCard)}
           </div>
         </div>
       )}
