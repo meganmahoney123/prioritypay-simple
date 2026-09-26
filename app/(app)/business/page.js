@@ -301,18 +301,22 @@ function AccountsEntityCard({ accounts, entities, onChange, setError }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {accounts.map((a) => (
+            // Stacked on phones, side-by-side from `sm` up -- previously
+            // this was always a flex row with the select's fixed 180px
+            // minWidth eating most of a narrow card's width, so the name
+            // (often a long "Institution · Account Name" string) got
+            // squeezed into a sliver so thin it wrapped one word per line.
+            // Full-width on mobile gives the name room to wrap normally.
             <div
               key={a.id}
+              className="flex flex-col sm:flex-row sm:items-center gap-3"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
                 padding: "12px 14px",
                 border: "1px solid var(--color-divider)",
                 borderRadius: 12,
               }}
             >
-              <div style={{ flex: 1 }}>
+              <div className="min-w-0" style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 600 }}>
                   {a.institution_name} · {a.account_name}
                 </div>
@@ -323,7 +327,8 @@ function AccountsEntityCard({ accounts, entities, onChange, setError }) {
               <select
                 value={a.entityId || DEFAULT_SLOT}
                 onChange={(e) => assign(a.id, e.target.value)}
-                style={bloomInputStyle({ minWidth: 180 })}
+                className="w-full sm:w-auto sm:min-w-[180px]"
+                style={bloomInputStyle({ minWidth: 0 })}
               >
                 <option value={DEFAULT_SLOT}>Default pool</option>
                 {entities.map((e) => (

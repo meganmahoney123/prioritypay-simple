@@ -203,7 +203,7 @@ export default function AccountsPage() {
         <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
       ) : acc.autoDetectEnabled ? (
         <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically, you'll get a checklist to confirm and send each transfer</p>
-      ) : (
+      ) : acc.hasPlaidConnection ? (
         <div>
           <PlaidLinkButton
             mode="update"
@@ -214,7 +214,11 @@ export default function AccountsPage() {
             style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, padding: "8px 16px", fontSize: 13 }}
           />
         </div>
-      )}
+      ) : null}
+      {/* No "Enable auto-detect" prompt above for a manually-added account
+          (no real Plaid connection at all, e.g. demo/seed data) -- there's
+          no webhook that could ever fire for it, so the button would be a
+          permanent dead end rather than a real retry. */}
       <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
         <button
           type="button"

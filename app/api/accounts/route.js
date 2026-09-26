@@ -110,6 +110,16 @@ export async function GET() {
         // false for accounts linked before Transactions/webhook support
         // existed, until they go through the update-mode re-consent flow.
         autoDetectEnabled: !!acc.plaid_cursor,
+        // Manually-added accounts (Megan's own demo/seed data -- see
+        // app/api/dev/seed-demo-account, "no plaid_access_token/
+        // plaid_account_id/plaid_item_id") have no real Plaid connection
+        // behind them at all, so there's no webhook that could ever fire
+        // for them -- "Enable auto-detect" would be a dead end forever,
+        // not a real retry. The UI uses this to hide that prompt for
+        // exactly those accounts, while still showing it (correctly) for
+        // any real, Plaid-linked account that just hasn't finished its
+        // first sync yet.
+        hasPlaidConnection: !!acc.plaid_access_token,
         // PHASE T: which Business-tier entity this account is grouped
         // under, or null for the single-default-pool state every account
         // is in until a Business-plan user assigns one (see PATCH
