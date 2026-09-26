@@ -7,7 +7,10 @@ import { currency } from "@/components/ui";
 import { bloomWarningCardStyle, bloomGhostButtonStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import { colorForLabel } from "@/lib/allocations";
 
-const UNALLOCATED_COLOR = "#D9D3C7";
+// Matches the approved AccountsADesktop.dc.html mockup's Unallocated
+// slice exactly (#E8E8EC) -- this used to be a tan/beige (#D9D3C7) that
+// didn't match the mockup's cool light gray at all.
+const UNALLOCATED_COLOR = "#E8E8EC";
 
 function formatCloseoutDate(iso) {
   if (!iso) return "not yet closed out";
