@@ -313,19 +313,21 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Hero band + connect buttons side by side -- the hero is now a
-          taller, narrower ("square-ish") card with its breakdown rows
-          stacked underneath the big total instead of laid out in a row
-          beside it, and the three connect buttons sit in their own column
-          to its right instead of a row above it. */}
-      <div className="flex items-start gap-5 flex-wrap">
+      {/* Hero band + the single connect button, as two equal-width boxes on
+          tablet/desktop (grid-cols-2 splits the row evenly down the
+          middle), stacked full-width on phones where two side-by-side
+          boxes would each be too narrow to read comfortably. Previously
+          the connect button just floated unboxed next to the hero, which
+          read as visually lopsided since only one side had a card
+          treatment -- giving it a matching bordered box makes the row
+          read as one pair instead of "a real card + a stray button." */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-stretch">
         {/* Aggregate hero band -- matches the approved AccountsADesktop.dc.html
             mockup's "Guilt-Free Spending Available" summary. Only shown once
             there's at least one depository/business account to summarize, so
             it doesn't show a hollow $0 band before anything's connected. */}
         {depositoryAccounts.length > 0 && (
           <div
-            className="w-full sm:w-[340px] sm:shrink-0"
             style={{
               border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)",
               background: "var(--color-accent-200)", color: "var(--color-accent-800)",
@@ -363,7 +365,14 @@ export default function AccountsPage() {
           </div>
         )}
 
-        <div id="connect" className="flex flex-col gap-3">
+        <div
+          id="connect"
+          className="flex flex-col items-center justify-center gap-3"
+          style={{
+            border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)",
+            background: "var(--color-surface)", padding: "26px 30px",
+          }}
+        >
           {/* Single button for every account type -- bank, investment and
               credit card. This works because Plaid Link itself can present
               any institution/account type in one session when the link
@@ -385,10 +394,10 @@ export default function AccountsPage() {
             label="Connect an Account / Credit Card"
             onLinked={load}
             keyHint="unified"
-            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, width: "100%" }}
+            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, width: "100%", maxWidth: 320 }}
           />
           {disconnectError && (
-            <div className="text-xs p-3" style={bloomWarningCardStyle()}>
+            <div className="text-xs p-3 w-full" style={{ ...bloomWarningCardStyle(), maxWidth: 320 }}>
               {disconnectError}
             </div>
           )}
