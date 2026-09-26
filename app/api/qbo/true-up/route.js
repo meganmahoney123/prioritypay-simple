@@ -18,6 +18,92 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const centsKey = (amount) => Math.round(Math.abs(Number(amount) || 0) * 100);
 
+// --- Demo true-up (Megan's own account only) --------------------------
+// A connection seeded by app/api/dev/seed-qbo-demo has no real Intuit
+// OAuth behind it -- marked by realm_id starting with "demo-" -- so
+// instead of calling the real QBO API (which would 502) this fabricates
+// BOTH sides of the comparison deterministically. Seeded by connection id
+// + period so re-running the same business/month gives the same numbers
+// rather than reshuffling on every click, and built standalone (not from
+// real Close-Out data) so it works even though none of the demo months
+// are actually confirmed in Close-Out.
+function mulberry32(seed) {
+  let a = seed;
+  return function rand() {
+    a += 0x6d2b79f5;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hashSeed(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  return h >>> 0;
+}
+const DEMO_CLIENT_NAMES = ["Acme Consulting", "Riverside Media", "Blue Harbor LLC", "Nimbus Studio", "Harborview Partners"];
+const DEMO_EXPENSE_NAMES = ["Software Subscription", "Contractor Payment", "Ad Spend", "Office Supplies", "Payment Processing Fees"];
+
+function buildDemoTrueUp({ seedKey, year, month, periodEnd }) {
+  const rand = mulberry32(hashSeed(seedKey));
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+  const dateInMonth = (d) => `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  const trackedTxns = [];
+  const incomeCount = 2 + Math.floor(rand() * 3);
+  for (let i = 0; i < incomeCount; i++) {
+    trackedTxns.push({
+      txn_date: dateInMonth(1 + Math.floor(rand() * daysInMonth)),
+      name: `${pick(DEMO_CLIENT_NAMES)} — Invoice`,
+      amount: Math.round((400 + rand() * 3600) * 100) / 100,
+      direction: "income",
+      confirmed_category: "income",
+    });
+  }
+  const expenseCount = 2 + Math.floor(rand() * 3);
+  for (let i = 0; i < expenseCount; i++) {
+    trackedTxns.push({
+      txn_date: dateInMonth(1 + Math.floor(rand() * daysInMonth)),
+      name: pick(DEMO_EXPENSE_NAMES),
+      amount: Math.round((30 + rand() * 400) * 100) / 100,
+      direction: "expense",
+      confirmed_category: "expense",
+    });
+  }
+  trackedTxns.sort((a, b) => (a.txn_date < b.txn_date ? -1 : a.txn_date > b.txn_date ? 1 : 0));
+
+  const trackedDeposits = trackedTxns.reduce(
+    (sum, t) => sum + (t.direction === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount)),
+    0
+  );
+
+  // QBO's side: the same activity, minus the smallest expense (as if the
+  // bookkeeper hasn't categorized it in QBO yet) plus one QBO-only bank
+  // fee PriorityPay never saw -- gives the reconciliation something real
+  // to show under "what's driving the variance" instead of a suspiciously
+  // perfect match every time.
+  const expenses = trackedTxns.filter((t) => t.direction === "expense");
+  const dropped = expenses.length ? expenses.reduce((min, t) => (t.amount < min.amount ? t : min)) : null;
+  const qboTxns = trackedTxns
+    .filter((t) => t !== dropped)
+    .map((t) => ({
+      date: t.txn_date,
+      type: t.direction === "expense" ? "Expense" : "Deposit",
+      name: t.name,
+      amount: t.direction === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount),
+    }));
+  const bankFee = Math.round((8 + rand() * 20) * 100) / 100;
+  qboTxns.push({ date: periodEnd, type: "Expense", name: "Bank Service Charge", amount: -bankFee });
+
+  const droppedSigned = dropped ? -Math.abs(dropped.amount) : 0;
+  const qboNetIncome = Math.round((trackedDeposits - droppedSigned - bankFee) * 100) / 100;
+
+  return { trackedDeposits, trackedTxns, qboNetIncome, qboTxns };
+}
+// ------------------------------------------------------------------------
+
 // Money-in vs money-out. PriorityPay stores it explicitly (direction). QBO's
 // TransactionList doesn't, so we infer from the transaction type first (the
 // unambiguous signal) and fall back to the natural amount's sign -- so the
@@ -152,49 +238,61 @@ export async function POST(request) {
   const period = `${year}-${String(month).padStart(2, "0")}-01`;
   const periodEnd = monthEndDate(year, month);
 
+  const isDemoConnection = typeof connection.realm_id === "string" && connection.realm_id.startsWith("demo-");
+
   let trackedDeposits = null;
   let trackedTxns = []; // hoisted so the line-item reconciliation below can use them
-  if (accountIds.length) {
-    const { data: closeout } = await admin
-      .from("simple_monthly_closeouts")
-      .select("id, status")
-      .eq("user_id", user.id)
-      .eq("period", period)
-      .single();
-
-    if (closeout?.status === "confirmed") {
-      const { data: txns } = await admin
-        .from("simple_closeout_transactions")
-        .select("txn_date, name, amount, direction, confirmed_category")
-        .eq("closeout_id", closeout.id)
-        .in("account_id", accountIds)
-        .not("confirmed_category", "is", null)
-        .neq("confirmed_category", "exclude");
-
-      trackedTxns = txns || [];
-      trackedDeposits = trackedTxns.reduce((sum, t) => {
-        const signed = t.direction === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount);
-        return sum + signed;
-      }, 0);
-    }
-  }
-
   let qboNetIncome = null;
   let qboTxns = null; // null = transaction list unavailable (summary can still stand)
-  try {
-    const accessToken = await getValidAccessToken(admin, connection);
-    qboNetIncome = await fetchNetIncomeForMonth({ accessToken, realmId: connection.realm_id, year, month });
-    // The line-item list is a second report call. If ONLY this one fails,
-    // don't sink the whole true-up -- the net summary is still useful, so we
-    // just return without a breakdown (the note below explains).
-    try {
-      qboTxns = await fetchTransactionsForMonth({ accessToken, realmId: connection.realm_id, year, month });
-    } catch (err2) {
-      console.error("QBO true-up: fetching transaction list failed", err2?.message || err2);
+
+  if (isDemoConnection) {
+    ({ trackedDeposits, trackedTxns, qboNetIncome, qboTxns } = buildDemoTrueUp({
+      seedKey: `${connection.id}-${year}-${month}`,
+      year,
+      month,
+      periodEnd,
+    }));
+  } else {
+    if (accountIds.length) {
+      const { data: closeout } = await admin
+        .from("simple_monthly_closeouts")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .eq("period", period)
+        .single();
+
+      if (closeout?.status === "confirmed") {
+        const { data: txns } = await admin
+          .from("simple_closeout_transactions")
+          .select("txn_date, name, amount, direction, confirmed_category")
+          .eq("closeout_id", closeout.id)
+          .in("account_id", accountIds)
+          .not("confirmed_category", "is", null)
+          .neq("confirmed_category", "exclude");
+
+        trackedTxns = txns || [];
+        trackedDeposits = trackedTxns.reduce((sum, t) => {
+          const signed = t.direction === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount);
+          return sum + signed;
+        }, 0);
+      }
     }
-  } catch (err) {
-    console.error("QBO true-up: fetching net income failed", err?.message || err);
-    return Response.json({ error: "Could not fetch QuickBooks data for this period." }, { status: 502 });
+
+    try {
+      const accessToken = await getValidAccessToken(admin, connection);
+      qboNetIncome = await fetchNetIncomeForMonth({ accessToken, realmId: connection.realm_id, year, month });
+      // The line-item list is a second report call. If ONLY this one fails,
+      // don't sink the whole true-up -- the net summary is still useful, so we
+      // just return without a breakdown (the note below explains).
+      try {
+        qboTxns = await fetchTransactionsForMonth({ accessToken, realmId: connection.realm_id, year, month });
+      } catch (err2) {
+        console.error("QBO true-up: fetching transaction list failed", err2?.message || err2);
+      }
+    } catch (err) {
+      console.error("QBO true-up: fetching net income failed", err?.message || err);
+      return Response.json({ error: "Could not fetch QuickBooks data for this period." }, { status: 502 });
+    }
   }
 
   const variance = qboNetIncome !== null && trackedDeposits !== null ? qboNetIncome - trackedDeposits : null;
