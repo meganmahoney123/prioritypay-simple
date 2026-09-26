@@ -161,6 +161,15 @@ export default function PlaidLinkButton({
     }
 
     const account = metadata.accounts[0];
+    // `creditCard` (this button instance was told upfront it's card-only,
+    // e.g. the old dedicated "Add a credit card" flow) still wins when
+    // set, but a plain/unified button doesn't know what the person is
+    // about to pick -- Plaid itself tells us afterward, via the linked
+    // account's own `type` in the success metadata. Checking that too
+    // means one unrestricted button can correctly file a credit card as
+    // account_type "credit" even though nothing on this button instance
+    // said "credit card" ahead of time.
+    const isCreditAccount = creditCard || account.type === "credit";
     const res = await fetch("/api/plaid/exchange-public-token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -170,7 +179,7 @@ export default function PlaidLinkButton({
         institution_name: metadata.institution?.name,
         account_name: account.name,
         mask: account.mask,
-        account_type: creditCard ? "credit" : businessAccount ? "business" : undefined,
+        account_type: isCreditAccount ? "credit" : businessAccount ? "business" : undefined,
       }),
     });
     const data = await res.json();
@@ -191,7 +200,7 @@ export default function PlaidLinkButton({
     // in exchange-public-token), and that's fine: the webhook remains the
     // fallback that sets the cursor later, same as before this change, and
     // "Enable auto-detect" still exists for that case.
-    if (!creditCard && !businessAccount) {
+    if (!isCreditAccount && !businessAccount) {
       try {
         await fetch("/api/plaid/sync-cursor", {
           method: "POST",

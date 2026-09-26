@@ -364,50 +364,28 @@ export default function AccountsPage() {
         )}
 
         <div id="connect" className="flex flex-col gap-3">
-          {/* "...or app" was dropped here on purpose -- Plaid's Transactions
-              product links real bank/credit union accounts, not P2P apps
-              like Venmo or Cash App, so the old copy overpromised what this
-              button can actually connect. */}
+          {/* Single button for every account type -- bank, investment and
+              credit card. This works because Plaid Link itself can present
+              any institution/account type in one session when the link
+              token isn't filtered down to one kind (see the plain,
+              unrestricted /api/plaid/create-link-token, same endpoint the
+              old "bank" and "investment" buttons already both used). The
+              one piece that used to require a separate button+endpoint was
+              credit cards, which needed to be flagged *before* opening
+              Link so the exchange step could set account_type: "credit" --
+              PlaidLinkButton now detects that itself from what Plaid
+              actually returns (metadata.accounts[0].type) instead, so a
+              single click handles all three without asking the person to
+              self-classify what they're about to connect. "...or app" is
+              dropped from the label on purpose -- Plaid's Transactions
+              product links real bank/credit union accounts and cards, not
+              P2P apps like Venmo or Cash App, so promising those would
+              overstate what this button can actually connect. */}
           <PlaidLinkButton
-            label="Connect a bank account"
+            label="Connect an Account / Credit Card"
             onLinked={load}
-            keyHint="bank"
+            keyHint="unified"
             style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, width: "100%" }}
-          />
-          {/* Plain link flow, same as "Connect a bank account" -- there's
-              no separate account_type for investment accounts (see
-              supabase/schema.sql, only 'depository' | 'credit' |
-              'business' exist). Which section it lands in on this page is
-              decided after the fact, from whatever real subtype/category
-              comes back (see isInvestmentAccount above) -- this button is
-              just a clearer label for someone about to pick their
-              brokerage/401k/IRA in Plaid Link, not a functionally
-              different flow. */}
-          <PlaidLinkButton
-            label="Connect an investment account"
-            onLinked={load}
-            keyHint="investment_link"
-            style={{
-              borderRadius: "var(--radius-pill)",
-              fontFamily: "var(--font-heading)",
-              fontWeight: 700,
-              width: "100%",
-              background: "var(--color-accent-700)",
-              border: "1px solid var(--color-accent-700)",
-            }}
-          />
-          <PlaidLinkButton
-            label="Add a credit card"
-            creditCard
-            onLinked={load}
-            style={{
-              borderRadius: "var(--radius-pill)",
-              fontFamily: "var(--font-heading)",
-              fontWeight: 700,
-              width: "100%",
-              background: "var(--color-accent-800)",
-              border: "1px solid var(--color-accent-800)",
-            }}
           />
           {disconnectError && (
             <div className="text-xs p-3" style={bloomWarningCardStyle()}>
