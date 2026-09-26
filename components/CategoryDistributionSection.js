@@ -504,7 +504,14 @@ export default function CategoryDistributionSection({ mode = "month", period, on
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center mt-4">
-            <div className="relative h-44 sm:h-48">
+            {/* Taller than the donut itself (outerRadius 85 = 170px
+                diameter) -- Recharts' default label position sits outside
+                the ring by ~20-25px, and the SVG ResponsiveContainer draws
+                clips anything outside its own box, so a shorter container
+                here was cutting off whichever label landed near the very
+                top or bottom of the circle (e.g. a lone slice near 6
+                o'clock). */}
+            <div className="relative h-56 sm:h-60">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

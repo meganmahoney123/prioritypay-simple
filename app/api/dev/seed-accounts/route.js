@@ -33,6 +33,15 @@ const SEED_ACCOUNTS = [
   // Investments row, since checking accounts are no longer selectable
   // there (see components/AccountSelect.js excludeSubtypes).
   { displayInstitution: "Vanguard", accountName: "Cash Reserve", mask: "5510", subtype: "savings", balance: 6218.4 },
+  // Credit type, not depository -- exercises the Accounts page's
+  // "Connected Credit Cards" section and the Dashboard's credit-card-
+  // charges pie slice, both of which key off simple_accounts.account_type
+  // = 'credit' (see lib/cardCharges.js's computeCardBalances). balance
+  // here becomes current_balance directly -- computeCardBalances doesn't
+  // require any real synced transactions behind it, just a nonzero
+  // balance on a 'credit' row, so this alone is enough to preview that
+  // whole section without waiting on Plaid Sandbox to generate activity.
+  { displayInstitution: "Chase", accountName: "Sapphire Preferred", mask: "5555", type: "credit", subtype: "credit card", balance: 842.5 },
 ];
 
 // Always the same non-OAuth sandbox institution (Plaid's own docs flag
@@ -75,7 +84,7 @@ export async function POST(request) {
           override_password: JSON.stringify({
             override_accounts: [
               {
-                type: "depository",
+                type: seed.type || "depository",
                 subtype: seed.subtype,
                 starting_balance: seed.balance,
               },
@@ -91,7 +100,7 @@ export async function POST(request) {
 
       const accountsRes = await plaidClient.accountsGet({ access_token: accessToken });
       const plaidAccount =
-        accountsRes.data.accounts.find((a) => a.subtype === "checking") || accountsRes.data.accounts[0];
+        accountsRes.data.accounts.find((a) => a.subtype === seed.subtype) || accountsRes.data.accounts[0];
 
       const { data: inserted, error: dbError } = await admin
         .from("simple_accounts")
@@ -105,6 +114,10 @@ export async function POST(request) {
           plaid_account_id: plaidAccount?.account_id,
           dwolla_funding_source_id: `demo-seed-${itemId}`,
           current_balance: seed.balance,
+          // Defaults to 'depository' via the column's own DB default when
+          // omitted (see supabase/schema.sql) -- only the credit-card seed
+          // above sets this explicitly.
+          ...(seed.type === "credit" ? { account_type: "credit" } : {}),
         })
         .select("id, institution_name, account_name, mask, current_balance")
         .single();
