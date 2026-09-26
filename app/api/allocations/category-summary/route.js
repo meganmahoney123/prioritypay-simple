@@ -25,7 +25,19 @@ import { computeCardChargesForPeriod } from "@/lib/cardCharges";
 // account_id.
 const HISTORY_MONTHS = 6;
 
+// `period` is either a month ("2026-09") or, for the This Month/This Year
+// toggle, a bare year ("2026") -- isYearPeriod tells the two apart
+// everywhere below.
+function isYearPeriod(period) {
+  return /^\d{4}$/.test(period);
+}
 function periodBounds(period) {
+  if (isYearPeriod(period)) {
+    const y = Number(period);
+    const start = new Date(Date.UTC(y, 0, 1));
+    const end = new Date(Date.UTC(y + 1, 0, 1));
+    return { startIso: start.toISOString(), endIso: end.toISOString() };
+  }
   const [y, m] = period.split("-").map(Number);
   const start = new Date(Date.UTC(y, m - 1, 1));
   const end = new Date(Date.UTC(y, m, 1));
@@ -48,6 +60,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get("period") || monthKey(new Date());
   const { startIso, endIso } = periodBounds(period);
+  const yearMode = isYearPeriod(period);
 
   const [
     { data: rules },
@@ -118,7 +131,31 @@ export async function GET(request) {
   // by a category withdrawal (see lib/cardCharges.js) -- these count
   // against Guilt-Free Spending the same as an allocated category dollar
   // does, since the money is already spoken for.
-  const { netCardCharges, grossCardCharges, excludedByWithdrawal } = await computeCardChargesForPeriod(admin, user.id, period);
+  // In year mode there's no single "period" computeCardChargesForPeriod
+  // understands (it only knows "YYYY-MM"), so sum each month of the
+  // selected year individually -- Jan through December for a past year,
+  // or Jan through the current real month for the year we're in (no
+  // point summing months that haven't happened yet).
+  let netCardCharges = 0;
+  let grossCardCharges = 0;
+  let excludedByWithdrawal = 0;
+  if (yearMode) {
+    const y = Number(period);
+    const now = new Date();
+    const lastMonth = y === now.getUTCFullYear() ? now.getUTCMonth() + 1 : 12;
+    for (let m = 1; m <= lastMonth; m++) {
+      const mPeriod = `${y}-${String(m).padStart(2, "0")}`;
+      const monthTotals = await computeCardChargesForPeriod(admin, user.id, mPeriod);
+      netCardCharges += monthTotals.netCardCharges;
+      grossCardCharges += monthTotals.grossCardCharges;
+      excludedByWithdrawal += monthTotals.excludedByWithdrawal;
+    }
+  } else {
+    const monthTotals = await computeCardChargesForPeriod(admin, user.id, period);
+    netCardCharges = monthTotals.netCardCharges;
+    grossCardCharges = monthTotals.grossCardCharges;
+    excludedByWithdrawal = monthTotals.excludedByWithdrawal;
+  }
 
   // Every dated event, normalized to one shape (label, amount signed +/-,
   // occurred at an ISO date) so balance-as-of-any-date and monthly
@@ -181,8 +218,13 @@ export async function GET(request) {
   // each month's boundary on top of that label's starting_balance, same
   // running-total idea as balanceByLabel above just snapshotted at more
   // points in time.
+  // shiftMonthKey assumes "YYYY-MM" -- in year mode, anchor the trailing
+  // history to the real current month instead of the bare year string, so
+  // the mini balance-history chart still shows the most recent
+  // HISTORY_MONTHS months regardless of which year's pie is being viewed.
+  const historyAnchor = yearMode ? monthKey(new Date()) : period;
   const historyPeriods = [];
-  for (let i = HISTORY_MONTHS - 1; i >= 0; i--) historyPeriods.push(shiftMonthKey(period, -i));
+  for (let i = HISTORY_MONTHS - 1; i >= 0; i--) historyPeriods.push(shiftMonthKey(historyAnchor, -i));
 
   const historyByLabel = {};
   Object.keys(startingByLabel).forEach((label) => {

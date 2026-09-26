@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Paperclip, ReceiptText, CreditCard } from "lucide-react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
@@ -38,7 +39,12 @@ function monthKey(iso) {
   return `${d.toLocaleDateString("en-US", { month: "long" })} ${d.getFullYear()}`;
 }
 
-export default function WithdrawalsPage() {
+function WithdrawalsPageInner() {
+  // Lets a Dashboard category card's "Withdrawals" link
+  // (?category=<label>, see components/CategoryDistributionSection.js)
+  // land here with that category already selected, instead of making
+  // someone re-pick it from the dropdown.
+  const searchParams = useSearchParams();
   const [splitRulesPercent, setSplitRulesPercent] = useState([]);
   const [categoryBalances, setCategoryBalances] = useState({});
   const [cardAccounts, setCardAccounts] = useState([]);
@@ -85,6 +91,17 @@ export default function WithdrawalsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // Only preselect once the real category list has loaded, and only when
+  // the linked-to label actually exists -- an unrecognized or missing
+  // ?category= just leaves the normal empty dropdown state.
+  useEffect(() => {
+    const requested = searchParams.get("category");
+    if (!requested || categoryLabel) return;
+    if (splitRulesPercent.some((r) => r.label === requested)) {
+      setCategoryLabel(requested);
+    }
+  }, [searchParams, splitRulesPercent, categoryLabel]);
 
   const trackedLabels = useMemo(() => splitRulesPercent.map((r) => r.label), [splitRulesPercent]);
   const accountsById = useMemo(() => Object.fromEntries(cardAccounts.map((a) => [a.id, a])), [cardAccounts]);
@@ -498,5 +515,13 @@ export default function WithdrawalsPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function WithdrawalsPage() {
+  return (
+    <Suspense fallback={null}>
+      <WithdrawalsPageInner />
+    </Suspense>
   );
 }
