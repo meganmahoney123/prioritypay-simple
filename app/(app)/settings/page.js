@@ -10,6 +10,13 @@ import DeleteAccountCard from "@/components/DeleteAccountCard";
 import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { isNativeApp } from "@/lib/native";
+import { PERSONA_SELF_EMPLOYED, PERSONA_BUSINESS_OWNER, PERSONA_W2_WITH_SIDE_HUSTLE } from "@/lib/allocations";
+
+// The Business upsell (below) only makes sense for personas that actually
+// run a business/side income -- a plain W2 employee with no side hustle
+// (PERSONA_W2_NO_SIDE_HUSTLE, deliberately left out of this set) has
+// nothing for separate-entity tracking or QuickBooks sync to apply to.
+const BUSINESS_UPGRADE_PERSONAS = new Set([PERSONA_SELF_EMPLOYED, PERSONA_BUSINESS_OWNER, PERSONA_W2_WITH_SIDE_HUSTLE]);
 
 // The persona-switch testing panel below (see /api/dev/set-persona, which
 // enforces the same allowlist server-side -- this client-side check is
@@ -36,6 +43,7 @@ function SettingsPageInner() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [billingBusy, setBillingBusy] = useState(false);
+  const [billingError, setBillingError] = useState("");
   const billingRedirect = searchParams.get("billing");
   // Testing-only: lets you switch your OWN account between the four
   // onboarding personas (see BUSINESS_TYPES, app/onboarding/page.js)
@@ -98,10 +106,19 @@ function SettingsPageInner() {
 
   const manageBilling = async () => {
     setBillingBusy(true);
-    const res = await fetch("/api/billing/portal", { method: "POST" });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else setBillingBusy(false);
+    setBillingError("");
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      setBillingError(data.error || "Could not open the billing portal.");
+    } catch {
+      setBillingError("Could not open the billing portal.");
+    }
+    setBillingBusy(false);
   };
 
   // PHASE T: start the Business-plan Stripe checkout. Separate Price/route
@@ -196,9 +213,19 @@ function SettingsPageInner() {
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
               You&apos;re subscribed to PriorityPay, <strong>$12/month</strong>.
             </p>
-            <PrimaryButton onClick={manageBilling} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : "Manage billing"}
-            </PrimaryButton>
+            {/* Wrapped in its own block (rather than letting the button
+                sit inline right before CancelSubscriptionCard's "Cancel
+                subscription" link) so the two never crowd onto the same
+                line -- previously they were adjacent inline-level elements
+                with only a few px between them. */}
+            <div style={{ marginBottom: 4 }}>
+              <PrimaryButton onClick={manageBilling} disabled={billingBusy}>
+                {billingBusy ? "Loading…" : "Manage billing"}
+              </PrimaryButton>
+            </div>
+            {billingError && (
+              <p style={{ fontSize: 13, color: "#C0392B", margin: "8px 0 0" }}>{billingError}</p>
+            )}
             <CancelSubscriptionCard
               cancelAtPeriodEnd={billing.cancelAtPeriodEnd}
               currentPeriodEnd={billing.currentPeriodEnd}
@@ -246,31 +273,38 @@ function SettingsPageInner() {
 
         {/* PHASE T: Business-tier upsell / status. The /business nav item is
             hidden for Simple-plan users, so this is their entry point to
-            upgrade; Business-plan users get a pointer to the hub instead. */}
-        <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--color-divider)" }}>
-          {billing.isBusiness ? (
-            <p style={{ fontSize: 14, margin: 0 }}>
-              You&apos;re on the <strong>Business</strong> plan. Manage businesses and QuickBooks from the{" "}
-              <a href="/business" style={{ color: "var(--color-accent-700)" }}>Business</a> page.
-            </p>
-          ) : (
-            <>
-              <p style={{ fontSize: 14, margin: "0 0 12px" }}>
-                Running multiple businesses? <strong>PriorityPay Business</strong> adds separate entities, QuickBooks
-                sync, and a monthly profit true-up.
+            upgrade; Business-plan users get a pointer to the hub instead.
+            The upsell itself (not the "you're already on Business" status,
+            which stays visible no matter what -- someone who already paid
+            for it should always see how to manage it) is gated to personas
+            that actually have a business/side income to apply it to; see
+            BUSINESS_UPGRADE_PERSONAS above. */}
+        {(billing.isBusiness || BUSINESS_UPGRADE_PERSONAS.has(profile.persona)) && (
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--color-divider)" }}>
+            {billing.isBusiness ? (
+              <p style={{ fontSize: 14, margin: 0 }}>
+                You&apos;re on the <strong>Business</strong> plan. Manage businesses and QuickBooks from the{" "}
+                <a href="/business" style={{ color: "var(--color-accent-700)" }}>Business</a> page.
               </p>
-              {isNative ? (
-                <p style={{ fontSize: 14, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  To upgrade, visit prioritypay.co from a web browser.
+            ) : (
+              <>
+                <p style={{ fontSize: 14, margin: "0 0 12px" }}>
+                  Running multiple businesses? <strong>PriorityPay Business</strong> adds separate entities, QuickBooks
+                  sync, and a monthly profit true-up.
                 </p>
-              ) : (
-                <GhostButton onClick={upgradeToBusiness} disabled={billingBusy}>
-                  {billingBusy ? "Loading…" : "Upgrade to Business"}
-                </GhostButton>
-              )}
-            </>
-          )}
-        </div>
+                {isNative ? (
+                  <p style={{ fontSize: 14, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+                    To upgrade, visit prioritypay.co from a web browser.
+                  </p>
+                ) : (
+                  <GhostButton onClick={upgradeToBusiness} disabled={billingBusy}>
+                    {billingBusy ? "Loading…" : "Upgrade to Business"}
+                  </GhostButton>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </Card>
 
       <MfaSettings />
