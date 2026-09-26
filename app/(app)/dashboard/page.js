@@ -209,8 +209,15 @@ export default function DashboardPage() {
           borderRadius: "var(--radius-md)",
         }}
       >
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
-          {timeOfDayGreeting()}{greetingName ? `, ${greetingName}` : ""}
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-neutral-700)" }}>
+            {timeOfDayGreeting()}
+          </div>
+          {greetingName && (
+            <div style={{ fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 700, color: "var(--color-text)", lineHeight: 1.15 }}>
+              {greetingName}
+            </div>
+          )}
         </div>
         <div>
           <div className="flex" style={{ background: "var(--color-accent-200)", borderRadius: 999, padding: 4 }}>

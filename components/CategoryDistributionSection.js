@@ -296,63 +296,91 @@ export default function CategoryDistributionSection({ mode = "month", period, on
       ) : totalDeposited === 0 ? (
         <p className="text-sm text-neutral-400">No deposits found for {rangeLabel}.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-              Saved {periodModeLabel} via PriorityPay
+        <>
+          {/* Total Income strip -- matches the approved MainDesktop.dc.html
+              mockup's neutral full-width bar above the two hero boxes.
+              totalDeposited is exactly "all deposits" here, minimum-
+              threshold ones included -- see the source_amount comment on
+              the periodTransfers query in category-summary/route.js. */}
+          <div
+            style={{
+              border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-surface)",
+              padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: "6px 16px",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-neutral-700)" }}>
+                Total Income {periodModeLabel}
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--color-neutral-500, var(--color-neutral-700))", marginTop: 2 }}>
+                All deposits, including those that didn&apos;t meet the minimum split trigger threshold
+              </div>
             </div>
-            <div className="font-mono" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
-              {currency(totalAllocated)}
-            </div>
-            {savedBreakdown.length > 0 && (
-              <>
-                <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
-                <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1">
-                  {savedBreakdown.map((c) => (
-                    <div key={c.label} className="flex items-center justify-between text-xs">
-                      <span className="flex items-center gap-2 min-w-0">
-                        <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: c.color }} />
-                        <span className="truncate">{c.label}</span>
-                      </span>
-                      <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>{currency(c.amount)}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+            <span className="font-mono" style={{ fontSize: 21, fontWeight: 700, color: "var(--color-text)" }}>{currency(totalDeposited)}</span>
           </div>
 
-          <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-              Guilt-Free Spending Available
-            </div>
-            <div className="font-mono" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
-              {currency(guiltFree)}
-            </div>
-            <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
-            <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 12.5 }}>
-              <div className="flex justify-between" style={{ color: "var(--color-accent-800)" }}>
-                <span className="font-sans font-semibold">Total deposited</span>
-                <span>{currency(totalDeposited)}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Saved {periodModeLabel} via PriorityPay
               </div>
-              {cardCharges > 0 && (
+              <div className="font-mono" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
+                {currency(totalAllocated)}
+              </div>
+              {savedBreakdown.length > 0 && (
+                <>
+                  <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)", marginBottom: 8 }}>
+                    How Your Savings Was Distributed
+                  </div>
+                  <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1">
+                    {savedBreakdown.map((c) => (
+                      <div key={c.label} className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: c.color }} />
+                          <span className="truncate">{c.label}</span>
+                        </span>
+                        <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>{currency(c.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Guilt-Free Spending Available
+              </div>
+              <div className="font-mono" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
+                {currency(guiltFree)}
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--color-accent-700)", marginTop: 2 }}>{rangeLabel}</div>
+              <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
+              <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 12.5 }}>
+                <div className="flex justify-between" style={{ color: "var(--color-accent-800)" }}>
+                  <span className="font-sans font-semibold">Total income</span>
+                  <span>{currency(totalDeposited)}</span>
+                </div>
+                {cardCharges > 0 && (
+                  <div className="flex justify-between" style={{ color: "#9C3B22" }}>
+                    <span className="font-sans font-semibold">− Credit card payments</span>
+                    <span>{currency(cardCharges)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between" style={{ color: "#9C3B22" }}>
-                  <span className="font-sans font-semibold">− Credit card charges</span>
-                  <span>{currency(cardCharges)}</span>
+                  <span className="font-sans font-semibold">− Saved {mode === "year" ? "this year" : "this month"}</span>
+                  <span>{currency(totalAllocated)}</span>
+                </div>
+              </div>
+              {cardChargesExcluded > 0 && (
+                <div style={{ fontSize: 11, color: "var(--color-accent-700)", marginTop: 10, lineHeight: 1.4 }}>
+                  Excludes the {currency(cardChargesExcluded)} already covered by category withdrawals. E.g. a charge allocated to a category reduces that category, so it isn&apos;t included in &quot;Credit card payments&quot; here.
                 </div>
               )}
-              <div className="flex justify-between" style={{ color: "#9C3B22" }}>
-                <span className="font-sans font-semibold">− Saved via PriorityPay</span>
-                <span>{currency(totalAllocated)}</span>
-              </div>
             </div>
-            {cardChargesExcluded > 0 && (
-              <div style={{ fontSize: 11, color: "var(--color-accent-700)", marginTop: 10, lineHeight: 1.4 }}>
-                Excludes {currency(cardChargesExcluded)} already covered by category withdrawals.
-              </div>
-            )}
           </div>
-        </div>
+        </>
       )}
 
       {pctError && (
@@ -387,18 +415,20 @@ export default function CategoryDistributionSection({ mode = "month", period, on
           <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
             How your income was distributed ({mode === "year" ? "this year" : "this month"})
           </h3>
-          <p className="text-xs mt-0.5" style={{ color: "var(--color-neutral-700)" }}>{rangeLabel}</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--color-neutral-700)" }}>
+            Illustrating your total income {rangeLabel} detected from all connected accounts
+          </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center mt-3">
-            <div className="h-48">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center mt-4">
+            <div className="relative h-44 sm:h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={pieData}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={50}
-                    outerRadius={75}
+                    innerRadius={62}
+                    outerRadius={85}
                     paddingAngle={2}
                     isAnimationActive={false}
                     label={({ pct }) => (pct >= 6 ? `${pct}%` : "")}
@@ -413,28 +443,35 @@ export default function CategoryDistributionSection({ mode = "month", period, on
                   <Tooltip formatter={(v) => currency(v)} />
                 </PieChart>
               </ResponsiveContainer>
+              {/* Centered total-income label inside the donut hole, matching
+                  the approved MainDesktop.dc.html mockup. Positioned with
+                  absolute inset-0 + flex rather than a Recharts label so it
+                  stays crisp text (selectable, no SVG font scaling) and
+                  doesn't move if the chart resizes. */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-neutral-700)" }}>
+                  Total Income
+                </span>
+                <span className="font-mono" style={{ fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>
+                  {currency(totalDeposited)}
+                </span>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center justify-between text-sm mb-2 pb-2 border-b border-neutral-100">
-                <span className="font-semibold text-neutral-700">Total deposited</span>
-                <span className="font-bold font-mono">{currency(totalDeposited)}</span>
-              </div>
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                {pieData.map((c) => (
-                  <div key={c.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
-                      <span className="text-neutral-700 truncate">{c.name}</span>
-                    </div>
-                    <span className="font-semibold shrink-0 font-mono">
-                      {currency(c.value)}
-                      <span className="text-neutral-400 font-normal ml-1">
-                        ({totalDeposited > 0 ? Math.round((c.value / totalDeposited) * 100) : 0}%)
-                      </span>
-                    </span>
+            <div
+              className="grid gap-x-6 gap-y-1.5"
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}
+            >
+              {pieData.map((c) => (
+                <div key={c.name} className="flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                    <span style={{ color: "var(--color-neutral-700)" }} className="truncate">{c.name}</span>
                   </div>
-                ))}
-              </div>
+                  <span className="font-semibold shrink-0 font-mono" style={{ color: "var(--color-text)" }}>
+                    {currency(c.value)}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
