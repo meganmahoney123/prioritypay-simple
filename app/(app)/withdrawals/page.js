@@ -63,6 +63,7 @@ function WithdrawalsPageInner() {
   // common starting point; Cash expense is one click away for the rest.
   const [sourceType, setSourceType] = useState("card");
   const [matchedTxnId, setMatchedTxnId] = useState("");
+  const [cardSearchQuery, setCardSearchQuery] = useState("");
   const [mileageMiles, setMileageMiles] = useState("");
   const [mileagePurpose, setMileagePurpose] = useState("");
   const [mealPurpose, setMealPurpose] = useState("");
@@ -108,8 +109,15 @@ function WithdrawalsPageInner() {
   const unmatchedCardTxns = useMemo(() => cardTransactions.filter((t) => !t.linkedWithdrawal), [cardTransactions]);
 
   const groupedCardTxns = useMemo(() => {
+    const q = cardSearchQuery.trim().toLowerCase();
+    // Filters the "Match a credit card charge" list by merchant name so a
+    // long list of unmatched charges can be narrowed down quickly instead
+    // of scrolling the whole (potentially long) grouped list -- doesn't
+    // touch cardTransactions/unmatchedCardTxns themselves, so the
+    // "Credit card activity" list elsewhere on the page is unaffected.
+    const filtered = q ? unmatchedCardTxns.filter((t) => (t.name || "").toLowerCase().includes(q)) : unmatchedCardTxns;
     const groups = {};
-    unmatchedCardTxns.forEach((t) => {
+    filtered.forEach((t) => {
       const acc = accountsById[t.accountId];
       const accKey = acc ? `${acc.institution_name} •••• ${acc.mask}` : "Unknown card";
       const mKey = monthKey(t.txnDate);
@@ -117,7 +125,7 @@ function WithdrawalsPageInner() {
       (groups[key] ||= []).push(t);
     });
     return groups;
-  }, [unmatchedCardTxns, accountsById]);
+  }, [unmatchedCardTxns, accountsById, cardSearchQuery]);
 
   const mileage = isMileageLabel(categoryLabel);
   const meals = isMealsLabel(categoryLabel);
@@ -131,6 +139,7 @@ function WithdrawalsPageInner() {
     setAllocationsComplete(false);
     setSourceType("card");
     setMatchedTxnId("");
+    setCardSearchQuery("");
     setMileageMiles("");
     setMileagePurpose("");
     setMealPurpose("");
@@ -160,6 +169,7 @@ function WithdrawalsPageInner() {
     setAmount(String(t.amount));
     setDescription(t.name || "");
     setOccurredAt(t.txnDate);
+    setCardSearchQuery("");
   };
 
   const save = async () => {
@@ -285,11 +295,24 @@ function WithdrawalsPageInner() {
                   Change
                 </button>
               </div>
-            ) : Object.keys(groupedCardTxns).length === 0 ? (
-              <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
-                No unmatched card activity found. It may already be logged, or hasn&apos;t synced yet.
-              </p>
             ) : (
+              <>
+                {unmatchedCardTxns.length > 0 && (
+                  <input
+                    type="text"
+                    value={cardSearchQuery}
+                    onChange={(e) => setCardSearchQuery(e.target.value)}
+                    placeholder="Search by merchant name…"
+                    className="w-full text-xs border border-neutral-200 rounded-lg px-2.5 py-2 mb-2"
+                  />
+                )}
+                {Object.keys(groupedCardTxns).length === 0 ? (
+                  <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
+                    {cardSearchQuery
+                      ? "No charges match your search."
+                      : "No unmatched card activity found. It may already be logged, or hasn't synced yet."}
+                  </p>
+                ) : (
               <div className="max-h-64 overflow-y-auto space-y-3 border border-[var(--color-divider)] rounded-xl p-3">
                 {Object.entries(groupedCardTxns).map(([group, txns]) => (
                   <div key={group}>
@@ -315,6 +338,8 @@ function WithdrawalsPageInner() {
                   </div>
                 ))}
               </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -478,42 +503,6 @@ function WithdrawalsPageInner() {
         )}
       </Card>
 
-      <Card className="p-6">
-        <h2 className="text-sm font-semibold mb-1">Credit card activity</h2>
-        <p className="text-xs mb-3" style={{ color: "var(--color-neutral-700)" }}>
-          Every synced charge across your connected cards, by account and month. There's no true billing-cycle
-          data available, so this is grouped by calendar month instead of your actual statement dates.
-        </p>
-        {cardAccounts.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>No credit cards connected yet.</p>
-        ) : cardTransactions.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>No card activity synced yet.</p>
-        ) : (
-          <div className="space-y-1 max-h-96 overflow-y-auto">
-            {cardTransactions.map((t) => (
-              <div key={t.id} className="flex items-center justify-between gap-3 text-xs border-b border-[var(--color-divider)] pb-1.5">
-                <div className="min-w-0 flex-1">
-                  <span className="truncate">{t.name}</span>{" "}
-                  <span style={{ color: "var(--color-neutral-700)" }}>
-                    · {accountsById[t.accountId] ? `${accountsById[t.accountId].institution_name} •••• ${accountsById[t.accountId].mask}` : ""} · {formatDate(t.txnDate)}
-                  </span>
-                </div>
-                <span className="font-mono shrink-0">{currency(t.amount)}</span>
-                <span
-                  className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                  style={
-                    t.linkedWithdrawal
-                      ? { background: "color-mix(in srgb, var(--color-accent) 12%, transparent)", color: "var(--color-accent-700)" }
-                      : { background: "var(--color-neutral-100)", color: "var(--color-neutral-700)" }
-                  }
-                >
-                  {t.linkedWithdrawal ? "Logged" : "Unmatched"}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
     </div>
   );
 }
