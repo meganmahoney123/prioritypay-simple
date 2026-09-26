@@ -47,6 +47,16 @@ export default function PlaidLinkButton({
   const [linkToken, setLinkToken] = useState(null);
   const [exchanging, setExchanging] = useState(false);
   const [error, setError] = useState(null);
+  // Set only when the initial "update mode" link-token request itself fails
+  // (e.g. the account's Plaid connection is broken/missing entirely) --
+  // distinct from `error`, which also covers mid-flow failures on a
+  // link-token that DID come back OK. A broken update-mode connection can
+  // never become `ready` (no token was ever issued), so the button would
+  // just sit there permanently disabled with a raw backend error under it
+  // ("Account not found.") that isn't something the person can act on.
+  // Render swaps in a plain-language, actionable message instead (see
+  // below) rather than hiding the problem entirely.
+  const [updateLinkBroken, setUpdateLinkBroken] = useState(false);
   const [isOAuthReturn] = useState(
     () => typeof window !== "undefined" && window.location.search.includes("oauth_state_id")
   );
@@ -98,13 +108,23 @@ export default function PlaidLinkButton({
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) {
-          setError(d.error || "Could not get a link token.");
+          if (mode === "update") {
+            setUpdateLinkBroken(true);
+          } else {
+            setError(d.error || "Could not get a link token.");
+          }
           return;
         }
         setLinkToken(d.link_token);
         window.localStorage.setItem(storageKey, d.link_token);
       })
-      .catch(() => setError("Could not reach Plaid."));
+      .catch(() => {
+        if (mode === "update") {
+          setUpdateLinkBroken(true);
+        } else {
+          setError("Could not reach Plaid.");
+        }
+      });
   }, [isOAuthReturn, mode, accountId, retirementType, investmentType, savingsOnly, creditCard, businessAccount, storageKey]);
 
   const onSuccess = useCallback(async (public_token, metadata) => {
@@ -222,6 +242,20 @@ export default function PlaidLinkButton({
       open();
     }
   }, [isOAuthReturn, ready, open]);
+
+  // Update-mode connection is broken (see updateLinkBroken above) -- no
+  // token was ever issued, so the button could never actually work. Rather
+  // than a permanently-disabled button plus a raw backend error, point at
+  // the fix that actually works: disconnecting and relinking the account
+  // (the Disconnect action already sits right below this on the Accounts
+  // page's account card).
+  if (mode === "update" && updateLinkBroken) {
+    return (
+      <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+        Couldn't reconnect this account automatically. Disconnecting and relinking it below should fix it.
+      </p>
+    );
+  }
 
   return (
     <div>
