@@ -5,7 +5,7 @@ import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronRight, Info } from "lucide-react";
 import { currency } from "@/components/ui";
-import { colorForIndex } from "@/lib/allocations";
+import { colorForIndex, colorForLabel } from "@/lib/allocations";
 import { bloomPrimaryButtonStyle } from "@/lib/bloomTheme";
 
 // Replaces the old MoneyDistributionChart -- same pie-plus-legend idea
@@ -270,15 +270,17 @@ export default function CategoryDistributionSection({ mode = "month", period, on
   // category-summary API returns per row (a leftover per-category value
   // stored from before the purple redesign, still various non-purple hues
   // for older categories) so every category reads as a shade of purple
-  // everywhere it shows up. Indexed against the FULL categories list (not
-  // whatever filtered subset happens to be rendered where) so a category
-  // gets the same color in its card dot, the pie slice, and the "How Your
-  // Savings Was Distributed" legend, instead of shifting depending on which
-  // other categories had activity that period.
+  // everywhere it shows up. Hashed from the label itself (colorForLabel),
+  // not this page's own category order, so a category gets the exact same
+  // color in its card dot, the pie slice, the "How Your Savings Was
+  // Distributed" legend, AND the per-account mini-donuts on the Accounts
+  // page (components/AccountCategoryBreakdown.js) -- that page fetches
+  // from a different endpoint with no guaranteed matching order, so an
+  // index-based color could quietly disagree between the two screens.
   const colorByLabel = useMemo(() => {
     const map = {};
-    categories.forEach((c, i) => {
-      map[c.label] = colorForIndex(i);
+    categories.forEach((c) => {
+      map[c.label] = colorForLabel(c.label);
     });
     return map;
   }, [categories]);

@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import Link from "next/link";
 import { currency } from "@/components/ui";
 import { bloomWarningCardStyle, bloomGhostButtonStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
-import { colorForIndex } from "@/lib/allocations";
+import { colorForLabel } from "@/lib/allocations";
 
 const UNALLOCATED_COLOR = "#D9D3C7";
 
@@ -224,17 +224,18 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
   } = data;
   const categories = rawCategories || [];
 
-  // Prefer the category's own real assigned color (see lib/allocations.js
-  // pickUniqueColor -- every category is unique-colored at creation now)
-  // and only fall back to colorForIndex(i) for older rows that predate
-  // that guarantee. colorForIndex generates an effectively unlimited,
-  // never-repeating sequence rather than cycling a fixed short palette, so
-  // this account's slices stay distinct no matter how many categories it has.
-  const pieData = categories.map((c, i) => ({
+  // Always derive from the label (see lib/allocations.js's colorForLabel),
+  // never c.color -- that DB column can hold a color assigned before the
+  // all-purple ("Bloom") redesign, which would otherwise still win and
+  // show up as a stray gray/teal/orange slice here. Hashing the label
+  // (rather than this account's own local index) also keeps a category's
+  // color identical to how it's shown on the Dashboard's pie, which
+  // fetches from a different endpoint with no guaranteed shared ordering.
+  const pieData = categories.map((c) => ({
     name: c.label,
     value: c.balance,
     pct: c.pct,
-    color: c.color || colorForIndex(i),
+    color: colorForLabel(c.label),
   }));
   if (unallocated > 0) {
     pieData.push({ name: "Unallocated", value: unallocated, pct: unallocatedPct, color: UNALLOCATED_COLOR });
