@@ -25,6 +25,7 @@ import { colorForIndex } from "@/lib/allocations";
 // of the old chart, directly under the "Total saved" hero card and ahead
 // of everything else on the Dashboard -- see app/(app)/dashboard/page.js.
 const UNALLOCATED_COLOR = "#D9C9FF";
+const CARD_CHARGES_COLOR = "#9C3B22";
 
 function currentPeriod() {
   const now = new Date();
@@ -198,6 +199,13 @@ export default function CategoryDistributionSection() {
   const categories = data?.categories || [];
   const unallocated = data?.unallocated || 0;
   const totalDeposited = data?.totalDeposited || 0;
+  // Net credit card charges this period (see lib/cardCharges.js) --
+  // already excluded from `unallocated` above, so without a slice of its
+  // own that money would just silently vanish from the pie instead of
+  // reading as "spoken for." excludedByWithdrawal is shown separately so
+  // it's clear this is the NET figure, not the card's full balance.
+  const cardCharges = data?.netCardCharges || 0;
+  const cardChargesExcluded = data?.excludedByWithdrawal || 0;
 
   const pieData = useMemo(() => {
     const slices = categories
@@ -207,12 +215,15 @@ export default function CategoryDistributionSection() {
         value: c.monthlyContribution,
         color: c.color || colorForIndex(i),
       }));
+    if (cardCharges > 0) {
+      slices.push({ name: "Credit card charges", value: cardCharges, color: CARD_CHARGES_COLOR });
+    }
     if (unallocated > 0) {
       slices.push({ name: "Unallocated", value: unallocated, color: UNALLOCATED_COLOR });
     }
     const total = slices.reduce((s, c) => s + c.value, 0);
     return slices.map((c) => ({ ...c, pct: total > 0 ? Math.round((c.value / total) * 100) : 0 }));
-  }, [categories, unallocated]);
+  }, [categories, unallocated, cardCharges]);
 
   const colorByLabel = useMemo(() => {
     const map = {};
@@ -305,6 +316,11 @@ export default function CategoryDistributionSection() {
               <span className="font-semibold text-neutral-700">Total deposited</span>
               <span className="font-bold font-mono">{currency(totalDeposited)}</span>
             </div>
+            {cardChargesExcluded > 0 && (
+              <p className="text-[11px] text-neutral-400 mb-2">
+                Credit card charges above exclude {currency(cardChargesExcluded)} already covered by category withdrawals.
+              </p>
+            )}
             <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
               {pieData.map((c) => (
                 <div key={c.name} className="flex items-center justify-between text-sm">

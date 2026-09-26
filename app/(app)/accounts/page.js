@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Landmark, CreditCard, Briefcase } from "lucide-react";
-import { Card, Badge } from "@/components/ui";
+import { Card, Badge, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import AccountCategoryBreakdown from "@/components/AccountCategoryBreakdown";
 import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
@@ -18,6 +18,7 @@ import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
   const [categoryBalances, setCategoryBalances] = useState({});
+  const [creditCardBalances, setCreditCardBalances] = useState({});
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState(null);
   const [disconnectError, setDisconnectError] = useState(null);
@@ -33,6 +34,10 @@ export default function AccountsPage() {
     ]);
     setAccounts(accountsRes.accounts || []);
     setCategoryBalances(Object.fromEntries((categoryBalancesRes.accounts || []).map((a) => [a.accountId, a])));
+    // Net-owed breakdown per credit card (see lib/cardCharges.js) --
+    // live balance, how much of it is already covered by a category
+    // withdrawal, and what's actually still owed.
+    setCreditCardBalances(Object.fromEntries((categoryBalancesRes.creditCards || []).map((c) => [c.accountId, c])));
     setLoading(false);
   };
 
@@ -147,7 +152,27 @@ export default function AccountsPage() {
               <Badge>{acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}</Badge>
             </div>
             {acc.account_type === "credit" ? (
-              <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
+              creditCardBalances[acc.id] ? (
+                <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span>Live balance</span>
+                    <span className="font-mono" style={{ color: "var(--color-text)" }}>{currency(creditCardBalances[acc.id].liveBalance)}</span>
+                  </div>
+                  {creditCardBalances[acc.id].excludedByWithdrawal > 0 && (
+                    <div className="flex items-center justify-between mb-1" style={{ color: "var(--color-accent-700)" }}>
+                      <span>− Already accounted for via withdrawals</span>
+                      <span className="font-mono">{currency(creditCardBalances[acc.id].excludedByWithdrawal)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-1 mt-1" style={{ borderTop: "1px solid var(--color-divider)" }}>
+                    <span className="font-semibold" style={{ color: "var(--color-text)" }}>Net amount owed</span>
+                    <span className="font-mono font-bold">{currency(creditCardBalances[acc.id].netOwed)}</span>
+                  </div>
+                  <p className="mt-2" style={{ color: "var(--color-neutral-500, var(--color-neutral-700))" }}>Spending here shows up in close-out. Not used for splits.</p>
+                </div>
+              ) : (
+                <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
+              )
             ) : acc.account_type === "business" ? (
               <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
             ) : acc.autoDetectEnabled ? (

@@ -1,5 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { computeCardChargesForPeriod } from "@/lib/cardCharges";
 
 // Powers the redesigned "How your money has been distributed" section on
 // the Dashboard (components/CategoryDistributionSection.js): one call that
@@ -113,6 +114,12 @@ export async function GET(request) {
 
   const totalDeposited = (periodTransfers || []).reduce((s, t) => s + (Number(t.source_amount) || 0), 0);
 
+  // Credit card charges for this period, net of any charge already covered
+  // by a category withdrawal (see lib/cardCharges.js) -- these count
+  // against Guilt-Free Spending the same as an allocated category dollar
+  // does, since the money is already spoken for.
+  const { netCardCharges, grossCardCharges, excludedByWithdrawal } = await computeCardChargesForPeriod(admin, user.id, period);
+
   // Every dated event, normalized to one shape (label, amount signed +/-,
   // occurred at an ISO date) so balance-as-of-any-date and monthly
   // bucketing below can treat contributions, manual top-ups, and
@@ -209,7 +216,10 @@ export async function GET(request) {
     earliestPeriod,
     totalDeposited,
     totalAllocated,
-    unallocated: Math.max(0, totalDeposited - totalAllocated),
+    grossCardCharges,
+    excludedByWithdrawal,
+    netCardCharges,
+    unallocated: Math.max(0, totalDeposited - totalAllocated - netCardCharges),
     categories,
   });
 }

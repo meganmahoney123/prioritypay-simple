@@ -1,5 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { computeCardBalances } from "@/lib/cardCharges";
 
 // Plaid's investment/retirement account subtypes -- an account with one of
 // these fluctuates with the market (or, for retirement ones, is also
@@ -268,5 +269,7 @@ export async function GET() {
     };
   });
 
-  return Response.json({ accounts });
+  const creditCards = await computeCardBalances(admin, user.id);
+
+  return Response.json({ accounts, creditCards });
 }
