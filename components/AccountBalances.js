@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Card, currency } from "./ui";
 import { percentSections } from "@/lib/allocations";
 import CategoryDistributionSection from "./CategoryDistributionSection";
-import TotalAllocationSection from "./TotalAllocationSection";
 
 // Plain account-balance card, no split-category info -- used for accounts
 // that aren't assigned as the destination of any split-rule category at
@@ -168,7 +167,11 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
           case. */}
       <CategoryDistributionSection mode={mode} period={period} onEarliestPeriod={onEarliestPeriod} />
 
-      <TotalAllocationSection />
+      {/* The "How all your money is allocated right now" card (the old
+          TotalAllocationSection -- a live-balance pie across every
+          connected account) is gone per Megan's request. The component
+          file itself (components/TotalAllocationSection.js) is left in
+          place in case it's wanted again later; it's just unused now. */}
 
       {belowDistribution}
     </div>

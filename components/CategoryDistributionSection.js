@@ -91,7 +91,7 @@ function CategoryCard({ category, color, onSavePct, savingPct }) {
       style={{
         border: "1px solid var(--color-divider)",
         borderRadius: "var(--radius-md)",
-        background: "var(--color-neutral-100)",
+        background: "var(--color-surface)",
         padding: "16px 18px",
       }}
     >
@@ -265,13 +265,31 @@ export default function CategoryDistributionSection({ mode = "month", period, on
   const cardCharges = data?.netCardCharges || 0;
   const cardChargesExcluded = data?.excludedByWithdrawal || 0;
 
+  // One canonical color per category label, always from the purple ramp in
+  // lib/allocations.js -- deliberately ignores whatever `color` value the
+  // category-summary API returns per row (a leftover per-category value
+  // stored from before the purple redesign, still various non-purple hues
+  // for older categories) so every category reads as a shade of purple
+  // everywhere it shows up. Indexed against the FULL categories list (not
+  // whatever filtered subset happens to be rendered where) so a category
+  // gets the same color in its card dot, the pie slice, and the "How Your
+  // Savings Was Distributed" legend, instead of shifting depending on which
+  // other categories had activity that period.
+  const colorByLabel = useMemo(() => {
+    const map = {};
+    categories.forEach((c, i) => {
+      map[c.label] = colorForIndex(i);
+    });
+    return map;
+  }, [categories]);
+
   const pieData = useMemo(() => {
     const slices = categories
       .filter((c) => c.monthlyContribution > 0)
-      .map((c, i) => ({
+      .map((c) => ({
         name: c.label,
         value: c.monthlyContribution,
-        color: c.color || colorForIndex(i),
+        color: colorByLabel[c.label],
       }));
     if (cardCharges > 0) {
       slices.push({ name: "Credit card charges", value: cardCharges, color: CARD_CHARGES_COLOR });
@@ -281,23 +299,15 @@ export default function CategoryDistributionSection({ mode = "month", period, on
     }
     const total = slices.reduce((s, c) => s + c.value, 0);
     return slices.map((c) => ({ ...c, pct: total > 0 ? Math.round((c.value / total) * 100) : 0 }));
-  }, [categories, guiltFree, cardCharges]);
-
-  const colorByLabel = useMemo(() => {
-    const map = {};
-    categories.forEach((c, i) => {
-      map[c.label] = c.color || colorForIndex(i);
-    });
-    return map;
-  }, [categories]);
+  }, [categories, guiltFree, cardCharges, colorByLabel]);
 
   const savedBreakdown = useMemo(
-    () => categories.filter((c) => c.monthlyContribution > 0).map((c, i) => ({
+    () => categories.filter((c) => c.monthlyContribution > 0).map((c) => ({
       label: c.label,
-      color: c.color || colorForIndex(i),
+      color: colorByLabel[c.label],
       amount: c.monthlyContribution,
     })),
-    [categories]
+    [categories, colorByLabel]
   );
 
   const periodModeLabel = mode === "year" ? "This Year" : "This Month";
@@ -396,12 +406,12 @@ export default function CategoryDistributionSection({ mode = "month", period, on
                   <span>{currency(totalDeposited)}</span>
                 </div>
                 {cardCharges > 0 && (
-                  <div className="flex justify-between" style={{ color: "var(--color-accent-900)" }}>
+                  <div className="flex justify-between" style={{ color: "#9C3B22" }}>
                     <span className="font-sans font-semibold">− Credit card payments</span>
                     <span>{currency(cardCharges)}</span>
                   </div>
                 )}
-                <div className="flex justify-between" style={{ color: "var(--color-accent-900)" }}>
+                <div className="flex justify-between" style={{ color: "#9C3B22" }}>
                   <span className="font-sans font-semibold">− Saved {mode === "year" ? "this year" : "this month"}</span>
                   <span>{currency(totalAllocated)}</span>
                 </div>

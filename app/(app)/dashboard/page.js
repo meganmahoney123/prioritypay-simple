@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import AccountBalances from "@/components/AccountBalances";
 import PendingTransfers from "@/components/PendingTransfers";
-import CloseoutNudge from "@/components/CloseoutNudge";
 import { useDashboardHeaderSlots } from "@/components/AppShell";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
@@ -364,7 +363,11 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <CloseoutNudge />
+      {/* CloseoutNudge ("You've started but haven't finished closing out
+          <month> yet...") removed per Megan's request -- not as critical a
+          nudge as it used to be, and keeps the Dashboard cleaner. The
+          component file (components/CloseoutNudge.js) is left in place in
+          case it's wanted again later. */}
 
       {accounts.length === 0 && (
         <Card className="p-4 text-sm" style={{ color: "var(--color-text)" }}>
