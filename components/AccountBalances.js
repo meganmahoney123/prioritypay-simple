@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { Card, currency } from "./ui";
-import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { percentSections } from "@/lib/allocations";
 import CategoryDistributionSection from "./CategoryDistributionSection";
 import TotalAllocationSection from "./TotalAllocationSection";
@@ -157,72 +156,16 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
   // dashboard will look like once accounts are linked and deposits split.
   return (
     <div className="space-y-6">
-      <Card
-        style={bloomAccentCardStyle({
-          padding: "clamp(26px, 3.5vw, 40px)",
-          borderRadius: "var(--radius-lg)",
-          background: "var(--color-accent-800)",
-          border: "none",
-          color: "#fff",
-        })}
-      >
-        {(() => {
-          // Nothing confirmed yet (allTimeTotal === 0) reads very
-          // differently depending on WHY: a brand-new user who hasn't had
-          // a deposit land yet vs. someone whose deposit already arrived
-          // and has a split sitting in "Transfers Waiting on You" just
-          // below, not yet confirmed. Showing a flat "$0" in the second
-          // case reads as broken ("is this thing even working?") -- see
-          // the Sep 2026 user-feedback video where that's exactly what
-          // happened. hasPendingTransfers (passed from the Dashboard's
-          // own /api/transfers/pending fetch) tells these apart.
-          const hasSaved = allTimeTotal > 0;
-          const label = hasSaved
-            ? "Total saved since joining PriorityPay"
-            : hasPendingTransfers
-            ? "Your first split is ready"
-            : "Waiting for your first deposit";
-          const big = hasSaved ? currency(allTimeTotal) : hasPendingTransfers ? "$0" : "—";
-          const subtitle = hasSaved
-            ? "Every dollar PriorityPay has calculated and confirmed out of a deposit, ever."
-            : hasPendingTransfers
-            ? "Confirm your pending transfer below to start tracking your savings."
-            : "Once a deposit lands, PriorityPay will calculate your splits here.";
-          return (
-            <>
-              <div
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  fontSize: 12,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: "var(--color-accent-400)",
-                  marginBottom: 14,
-                }}
-              >
-                {label}
-              </div>
-              <div
-                className="font-mono"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "clamp(40px, 6vw, 68px)",
-                  lineHeight: 1,
-                  fontWeight: 800,
-                  letterSpacing: "-0.02em",
-                  color: "#fff",
-                }}
-              >
-                {big}
-              </div>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontStyle: "italic", color: "#fff", opacity: 0.85, marginTop: 16 }}>
-                {subtitle}
-              </div>
-            </>
-          );
-        })()}
-      </Card>
-
+      {/* The "Total saved since joining PriorityPay" hero card that used to
+          open this section is gone -- per the approved mockup, the Total
+          Income strip + hero boxes inside CategoryDistributionSection below
+          are the Dashboard's opening summary now. Its "waiting for your
+          first deposit" / "your first split is ready" messaging isn't lost:
+          PendingTransfers (rendered above this component, unconditionally,
+          on app/(app)/dashboard/page.js) already surfaces a pending split
+          before it's confirmed, and CategoryDistributionSection's own
+          "No deposits found for <period>" state covers the brand-new-user
+          case. */}
       <CategoryDistributionSection mode={mode} period={period} onEarliestPeriod={onEarliestPeriod} />
 
       <TotalAllocationSection />

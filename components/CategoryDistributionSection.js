@@ -34,7 +34,11 @@ import { colorForIndex } from "@/lib/allocations";
 // under the "Total saved" hero card and ahead of everything else on the
 // Dashboard -- see app/(app)/dashboard/page.js.
 const GUILT_FREE_COLOR = "#D9C9FF";
-const CARD_CHARGES_COLOR = "#9C3B22";
+// Kept in the purple family (accent-900, the darkest step in the design
+// system) rather than a warm red -- this is just another pie slice
+// ("money already spoken for"), not a warning, so it shouldn't read as an
+// alert color the way the Dashboard's real warning callouts do.
+const CARD_CHARGES_COLOR = "#2A1550";
 
 function periodLabel(period) {
   const [y, m] = period.split("-").map(Number);
@@ -375,12 +379,12 @@ export default function CategoryDistributionSection({ mode = "month", period, on
                   <span>{currency(totalDeposited)}</span>
                 </div>
                 {cardCharges > 0 && (
-                  <div className="flex justify-between" style={{ color: "#9C3B22" }}>
+                  <div className="flex justify-between" style={{ color: "var(--color-accent-900)" }}>
                     <span className="font-sans font-semibold">− Credit card payments</span>
                     <span>{currency(cardCharges)}</span>
                   </div>
                 )}
-                <div className="flex justify-between" style={{ color: "#9C3B22" }}>
+                <div className="flex justify-between" style={{ color: "var(--color-accent-900)" }}>
                   <span className="font-sans font-semibold">− Saved {mode === "year" ? "this year" : "this month"}</span>
                   <span>{currency(totalAllocated)}</span>
                 </div>

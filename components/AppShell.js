@@ -355,7 +355,15 @@ export default function AppShell({ children, isSandbox = false }) {
               </h1>
             )}
           </span>
-          {isSandbox ? (
+          {pathname === "/dashboard" ? (
+            // The Dashboard's This Month/This Year toggle always lives here
+            // now, in the same top-right spot the "Sandbox mode" badge used
+            // to occupy -- including while in sandbox mode, per Megan's
+            // request, since the toggle is more useful there than the badge
+            // (the sidebar/account context already makes sandbox mode clear
+            // elsewhere). Every other page still shows the badge.
+            <span ref={setActionsSlotEl} style={{ flex: "none" }} />
+          ) : isSandbox ? (
             <span
               className="pp-shell-badge"
               style={{
@@ -375,11 +383,6 @@ export default function AppShell({ children, isSandbox = false }) {
             >
               Sandbox mode
             </span>
-          ) : pathname === "/dashboard" ? (
-            // Once Sandbox mode is off, this is where the Dashboard's This
-            // Month/This Year toggle lives instead -- same top-right spot
-            // the badge used to occupy.
-            <span ref={setActionsSlotEl} style={{ flex: "none" }} />
           ) : null}
         </header>
 

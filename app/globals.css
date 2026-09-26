@@ -28,7 +28,11 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: #fafafa;
+  /* Matches the Bloom design system's --color-bg (lib/bloomTheme.js) so
+     there's no gray flash/mismatch behind the AppShell's own light-purple
+     page background -- e.g. on iOS Safari's rubber-band overscroll, where
+     body's own background briefly shows through above/below the page. */
+  background-color: #FAF7FD;
 }
 
 .font-mono {
