@@ -12,10 +12,6 @@ import { colorForLabel } from "@/lib/allocations";
 // didn't match the mockup's cool light gray at all.
 const UNALLOCATED_COLOR = "#E8E8EC";
 
-function formatCloseoutDate(iso) {
-  if (!iso) return "not yet closed out";
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
 function formatShortDate(iso) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -215,7 +211,6 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
   const {
     categories: rawCategories,
     totalBalance,
-    lastCloseoutAt,
     uncategorizedCount,
     unallocated,
     unallocatedPct,
@@ -406,9 +401,6 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
           />
         ))}
 
-      <p className="text-xs mt-2" style={{ color: "var(--color-neutral-700)" }}>
-        As of your last close-out ({formatCloseoutDate(lastCloseoutAt)}).
-      </p>
       {uncategorizedCount > 0 && (
         <Link href="/closeout" className="block text-xs mt-2 p-2" style={bloomWarningCardStyle()}>
           <span style={{ fontWeight: 600 }}>Warning:</span> {uncategorizedCount} transaction{uncategorizedCount === 1 ? "" : "s"} from
