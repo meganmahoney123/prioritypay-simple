@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { ChevronRight, Info } from "lucide-react";
 import { Card, currency } from "@/components/ui";
 import { colorForIndex } from "@/lib/allocations";
 
@@ -36,15 +36,6 @@ import { colorForIndex } from "@/lib/allocations";
 const GUILT_FREE_COLOR = "#D9C9FF";
 const CARD_CHARGES_COLOR = "#9C3B22";
 
-function currentPeriod() {
-  const now = new Date();
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-function shiftPeriod(period, delta) {
-  const [y, m] = period.split("-").map(Number);
-  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-}
 function periodLabel(period) {
   const [y, m] = period.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
@@ -175,19 +166,7 @@ function CategoryCard({ category, color, onSavePct, savingPct }) {
   );
 }
 
-export default function CategoryDistributionSection() {
-  const maxPeriod = useMemo(() => currentPeriod(), []);
-  const currentYear = Number(maxPeriod.slice(0, 4));
-
-  // Two independent cursors -- one per mode -- so switching This
-  // Month <-> This Year and back doesn't lose your place in the other
-  // one. `mode` decides which cursor is actually sent to the API.
-  const [mode, setMode] = useState("month"); // "month" | "year"
-  const [monthPeriod, setMonthPeriod] = useState(maxPeriod);
-  const [year, setYear] = useState(currentYear);
-  const period = mode === "year" ? String(year) : monthPeriod;
-
-  const [earliestPeriod, setEarliestPeriod] = useState(null);
+export default function CategoryDistributionSection({ mode = "month", period, onEarliestPeriod }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [savingPct, setSavingPct] = useState(null);
@@ -199,10 +178,10 @@ export default function CategoryDistributionSection() {
       .then((r) => r.json())
       .then((res) => {
         setData(res);
-        if (res.earliestPeriod) setEarliestPeriod(res.earliestPeriod);
+        if (res.earliestPeriod && onEarliestPeriod) onEarliestPeriod(res.earliestPeriod);
       })
       .finally(() => setLoading(false));
-  }, [period]);
+  }, [period, onEarliestPeriod]);
 
   useEffect(() => {
     loadSummary();
@@ -288,19 +267,20 @@ export default function CategoryDistributionSection() {
     [categories]
   );
 
-  const earliestYear = earliestPeriod ? Number(earliestPeriod.slice(0, 4)) : currentYear;
-  const atEarliestMonth = earliestPeriod ? monthPeriod <= earliestPeriod : false;
-  const atLatestMonth = monthPeriod >= maxPeriod;
-  const atEarliestYear = year <= earliestYear;
-  const atLatestYear = year >= currentYear;
-
   const periodModeLabel = mode === "year" ? "This Year" : "This Month";
-  // What shows under "How your income was distributed" -- a real date
-  // range for month mode, the plain year (or "so far" when it's the
-  // current, still-in-progress year) for year mode.
+  // What shows under each "How your income was distributed" heading -- a
+  // real date range for month mode, the plain year (or "so far" when it's
+  // the current, still-in-progress year) for year mode. `period` is
+  // "YYYY-MM" in month mode and a bare "YYYY" in year mode (see
+  // app/(app)/dashboard/page.js, which owns the toggle and passes it
+  // down) -- periodLabel only understands the month format, so year mode
+  // never passes `period` through it.
+  const now = new Date();
   const rangeLabel = mode === "year"
-    ? (year === currentYear ? `Jan–${periodLabel(maxPeriod).split(" ")[0]} ${year} so far` : String(year))
-    : periodLabel(monthPeriod);
+    ? (Number(period) === now.getFullYear()
+        ? `Jan–${now.toLocaleDateString("en-US", { month: "long" })} ${period} so far`
+        : String(period))
+    : periodLabel(period);
 
   // Cards render for every category that has ANY activity to show --
   // a nonzero balance (so a fully-funded goal still shows even in a month
@@ -311,213 +291,68 @@ export default function CategoryDistributionSection() {
 
   return (
     <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>
-          Your money
-        </h2>
-        <div>
-          <div className="flex" style={{ background: "var(--color-accent-200)", borderRadius: 999, padding: 4 }}>
-            <button
-              onClick={() => setMode("month")}
-              style={{
-                padding: "7px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999, border: "none", cursor: "pointer",
-                background: mode === "month" ? "#FFFFFF" : "transparent",
-                color: mode === "month" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
-              }}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setMode("year")}
-              style={{
-                padding: "7px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999, border: "none", cursor: "pointer",
-                background: mode === "year" ? "#FFFFFF" : "transparent",
-                color: mode === "year" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
-              }}
-            >
-              This Year
-            </button>
-          </div>
-          {mode === "month" ? (
-            <div className="flex items-center justify-center gap-1.5 mt-2">
-              <button
-                onClick={() => !atEarliestMonth && setMonthPeriod((p) => shiftPeriod(p, -1))}
-                disabled={atEarliestMonth}
-                style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  width: 26, height: 26, borderRadius: "50%", background: "transparent",
-                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
-                  cursor: atEarliestMonth ? "not-allowed" : "pointer", opacity: atEarliestMonth ? 0.3 : 1,
-                }}
-              >
-                <ChevronLeft size={13} />
-              </button>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 800, color: "var(--color-accent-700)", width: 130, textAlign: "center" }}>{periodLabel(monthPeriod)}</span>
-              <button
-                onClick={() => !atLatestMonth && setMonthPeriod((p) => shiftPeriod(p, 1))}
-                disabled={atLatestMonth}
-                style={{
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  width: 26, height: 26, borderRadius: "50%", background: "transparent",
-                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
-                  cursor: atLatestMonth ? "not-allowed" : "pointer", opacity: atLatestMonth ? 0.3 : 1,
-                }}
-              >
-                <ChevronRight size={13} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2.5 mt-2">
-              <button
-                onClick={() => !atEarliestYear && setYear((y) => Math.max(earliestYear, y - 1))}
-                disabled={atEarliestYear}
-                style={{
-                  width: 26, height: 26, borderRadius: "50%", border: "1px solid var(--color-accent-300)", background: "#FFFFFF",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  cursor: atEarliestYear ? "not-allowed" : "pointer", opacity: atEarliestYear ? 0.3 : 1,
-                }}
-              >
-                <ChevronLeft size={12} color="var(--color-accent-700)" />
-              </button>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 800, color: "var(--color-accent-700)" }}>{year}</span>
-              <button
-                onClick={() => !atLatestYear && setYear((y) => Math.min(currentYear, y + 1))}
-                disabled={atLatestYear}
-                style={{
-                  width: 26, height: 26, borderRadius: "50%", border: "1px solid var(--color-accent-300)", background: "#FFFFFF",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  cursor: atLatestYear ? "not-allowed" : "pointer", opacity: atLatestYear ? 0.3 : 1,
-                }}
-              >
-                <ChevronRight size={12} color="var(--color-accent-700)" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
       {loading ? (
         <p className="text-sm text-neutral-400">Loading…</p>
       ) : totalDeposited === 0 ? (
         <p className="text-sm text-neutral-400">No deposits found for {rangeLabel}.</p>
       ) : (
-        <>
-          {/* Hero row: Saved + Guilt-Free, side by side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
-              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Saved {periodModeLabel} via PriorityPay
-              </div>
-              <div className="font-mono" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
-                {currency(totalAllocated)}
-              </div>
-              {savedBreakdown.length > 0 && (
-                <>
-                  <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
-                  <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1">
-                    {savedBreakdown.map((c) => (
-                      <div key={c.label} className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: c.color }} />
-                          <span className="truncate">{c.label}</span>
-                        </span>
-                        <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>{currency(c.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+              Saved {periodModeLabel} via PriorityPay
             </div>
-
-            <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
-              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Guilt-Free Spending Available
-              </div>
-              <div className="font-mono" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
-                {currency(guiltFree)}
-              </div>
-              <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
-              <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 12.5 }}>
-                <div className="flex justify-between" style={{ color: "var(--color-accent-800)" }}>
-                  <span className="font-sans font-semibold">Total deposited</span>
-                  <span>{currency(totalDeposited)}</span>
-                </div>
-                {cardCharges > 0 && (
-                  <div className="flex justify-between" style={{ color: "#9C3B22" }}>
-                    <span className="font-sans font-semibold">− Credit card charges</span>
-                    <span>{currency(cardCharges)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between" style={{ color: "#9C3B22" }}>
-                  <span className="font-sans font-semibold">− Saved via PriorityPay</span>
-                  <span>{currency(totalAllocated)}</span>
-                </div>
-              </div>
-              {cardChargesExcluded > 0 && (
-                <div style={{ fontSize: 11, color: "var(--color-accent-700)", marginTop: 10, lineHeight: 1.4 }}>
-                  Excludes {currency(cardChargesExcluded)} already covered by category withdrawals.
-                </div>
-              )}
+            <div className="font-mono" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
+              {currency(totalAllocated)}
             </div>
-          </div>
-
-          {/* How your income was distributed: full width, below the two hero boxes */}
-          <div className="mt-4">
-            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
-              How your income was distributed
-            </h3>
-            <p className="text-xs mt-0.5" style={{ color: "var(--color-neutral-700)" }}>{rangeLabel}</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center mt-3">
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={50}
-                      outerRadius={75}
-                      paddingAngle={2}
-                      isAnimationActive={false}
-                      label={({ pct }) => (pct >= 6 ? `${pct}%` : "")}
-                      labelLine={false}
-                      fontSize={10}
-                      fontWeight={700}
-                    >
-                      {pieData.map((entry) => (
-                        <Cell key={entry.name} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v) => currency(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2 pb-2 border-b border-neutral-100">
-                  <span className="font-semibold text-neutral-700">Total deposited</span>
-                  <span className="font-bold font-mono">{currency(totalDeposited)}</span>
-                </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                  {pieData.map((c) => (
-                    <div key={c.name} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
-                        <span className="text-neutral-700 truncate">{c.name}</span>
-                      </div>
-                      <span className="font-semibold shrink-0 font-mono">
-                        {currency(c.value)}
-                        <span className="text-neutral-400 font-normal ml-1">
-                          ({totalDeposited > 0 ? Math.round((c.value / totalDeposited) * 100) : 0}%)
-                        </span>
+            {savedBreakdown.length > 0 && (
+              <>
+                <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
+                <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1">
+                  {savedBreakdown.map((c) => (
+                    <div key={c.label} className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: c.color }} />
+                        <span className="truncate">{c.label}</span>
                       </span>
+                      <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>{currency(c.amount)}</span>
                     </div>
                   ))}
                 </div>
+              </>
+            )}
+          </div>
+
+          <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+              Guilt-Free Spending Available
+            </div>
+            <div className="font-mono" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
+              {currency(guiltFree)}
+            </div>
+            <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
+            <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 12.5 }}>
+              <div className="flex justify-between" style={{ color: "var(--color-accent-800)" }}>
+                <span className="font-sans font-semibold">Total deposited</span>
+                <span>{currency(totalDeposited)}</span>
+              </div>
+              {cardCharges > 0 && (
+                <div className="flex justify-between" style={{ color: "#9C3B22" }}>
+                  <span className="font-sans font-semibold">− Credit card charges</span>
+                  <span>{currency(cardCharges)}</span>
+                </div>
+              )}
+              <div className="flex justify-between" style={{ color: "#9C3B22" }}>
+                <span className="font-sans font-semibold">− Saved via PriorityPay</span>
+                <span>{currency(totalAllocated)}</span>
               </div>
             </div>
+            {cardChargesExcluded > 0 && (
+              <div style={{ fontSize: 11, color: "var(--color-accent-700)", marginTop: 10, lineHeight: 1.4 }}>
+                Excludes {currency(cardChargesExcluded)} already covered by category withdrawals.
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
 
       {pctError && (
@@ -525,16 +360,83 @@ export default function CategoryDistributionSection() {
       )}
 
       {!loading && cardCategories.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
-          {cardCategories.map((c) => (
-            <CategoryCard
-              key={c.label}
-              category={c}
-              color={colorByLabel[c.label] || colorForIndex(0)}
-              onSavePct={savePct}
-              savingPct={savingPct}
-            />
-          ))}
+        <div className="mt-5">
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
+            Your Categories
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {cardCategories.map((c) => (
+              <CategoryCard
+                key={c.label}
+                category={c}
+                color={colorByLabel[c.label] || colorForIndex(0)}
+                onSavePct={savePct}
+                savingPct={savingPct}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* "How your income was distributed" -- moved below Your Categories
+          per Megan's request, with a heading that names which toggle
+          state it's showing since it now sits further from the toggle
+          itself (up in the sticky bar, see app/(app)/dashboard/page.js). */}
+      {!loading && totalDeposited > 0 && (
+        <div className="mt-6">
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
+            How your income was distributed ({mode === "year" ? "this year" : "this month"})
+          </h3>
+          <p className="text-xs mt-0.5" style={{ color: "var(--color-neutral-700)" }}>{rangeLabel}</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center mt-3">
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={50}
+                    outerRadius={75}
+                    paddingAngle={2}
+                    isAnimationActive={false}
+                    label={({ pct }) => (pct >= 6 ? `${pct}%` : "")}
+                    labelLine={false}
+                    fontSize={10}
+                    fontWeight={700}
+                  >
+                    {pieData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v) => currency(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-sm mb-2 pb-2 border-b border-neutral-100">
+                <span className="font-semibold text-neutral-700">Total deposited</span>
+                <span className="font-bold font-mono">{currency(totalDeposited)}</span>
+              </div>
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {pieData.map((c) => (
+                  <div key={c.name} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                      <span className="text-neutral-700 truncate">{c.name}</span>
+                    </div>
+                    <span className="font-semibold shrink-0 font-mono">
+                      {currency(c.value)}
+                      <span className="text-neutral-400 font-normal ml-1">
+                        ({totalDeposited > 0 ? Math.round((c.value / totalDeposited) * 100) : 0}%)
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </Card>

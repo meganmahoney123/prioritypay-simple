@@ -1,18 +1,48 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AccountBalances from "@/components/AccountBalances";
 import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 function currentPeriod() {
   const now = new Date();
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function shiftPeriod(period, delta) {
+  const [y, m] = period.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function periodLabel(period) {
+  const [y, m] = period.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+// "Good morning/afternoon/evening" -- purely a local-clock read, nothing
+// stored -- and a first-name guess since there's no display-name field
+// anywhere in the schema yet (simple_profiles has no name column, and
+// Settings has nowhere to set one). Using the part of the login email
+// before the @ and before any ./_/- separator is a reasonable stand-in
+// until a real name field exists; ask before landing schema work for one.
+function timeOfDayGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+function nameFromEmail(email) {
+  if (!email) return null;
+  const local = email.split("@")[0];
+  const first = local.split(/[._-]/)[0];
+  return first ? first.charAt(0).toUpperCase() + first.slice(1) : null;
 }
 
 function startOfYearIso() {
@@ -41,6 +71,23 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [persona, setPersona] = useState(null);
   const [notifications, setNotifications] = useState(null);
+  const [email, setEmail] = useState(null);
+
+  // Owns the This Month/This Year toggle (and the year stepper) up here
+  // now, instead of inside CategoryDistributionSection, so it can live in
+  // the sticky bar at the top of the page alongside the greeting -- see
+  // the stickyTop effect and the bar itself below. CategoryDistribution-
+  // Section still does the actual fetching/clamping against the real
+  // earliest period; it reports that back up via onEarliestPeriod so the
+  // year stepper here can clamp against it too.
+  const maxPeriod = useMemo(() => currentPeriod(), []);
+  const currentYear = Number(maxPeriod.slice(0, 4));
+  const [mode, setMode] = useState("month");
+  const [monthPeriod, setMonthPeriod] = useState(maxPeriod);
+  const [year, setYear] = useState(currentYear);
+  const [earliestPeriod, setEarliestPeriod] = useState(null);
+  const handleEarliestPeriod = useCallback((p) => setEarliestPeriod(p), []);
+  const period = mode === "year" ? String(year) : monthPeriod;
 
   const loadAll = async () => {
     const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes, profileRes, pendingRes] = await Promise.all([
@@ -60,12 +107,32 @@ export default function DashboardPage() {
     setBilling(profileRes.profile?.billing || null);
     setPersona(profileRes.profile?.persona || null);
     setNotifications(profileRes.profile?.notifications || null);
+    setEmail(profileRes.profile?.email || null);
     setPendingTransfers(pendingRes.allocations || []);
     setLoading(false);
   };
 
   useEffect(() => {
     loadAll();
+  }, []);
+
+  // Same live-measured-sticky-offset pattern as the Splits page's own
+  // sticky Save bar (components/AppShell.js's header height varies with
+  // its responsive clamp() title, so a hardcoded `top` drifts out of
+  // alignment at different viewport widths) -- keeps this bar pinned
+  // exactly below the real header instead of overlapping or gapping it.
+  const [stickyTop, setStickyTop] = useState(84);
+  useEffect(() => {
+    const measure = () => {
+      const header = document.querySelector("header");
+      if (header) setStickyTop(header.getBoundingClientRect().height);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure);
+    }
+    return () => window.removeEventListener("resize", measure);
   }, []);
 
   const rules = useMemo(() => allRules(splitRules), [splitRules]);
@@ -104,8 +171,124 @@ export default function DashboardPage() {
 
   const trialRemaining = billing ? trialDaysLeft(billing.trialEndsAt) : null;
 
+  const earliestYear = earliestPeriod ? Number(earliestPeriod.slice(0, 4)) : currentYear;
+  const atEarliestMonth = earliestPeriod ? monthPeriod <= earliestPeriod : false;
+  const atLatestMonth = monthPeriod >= maxPeriod;
+  const atEarliestYear = year <= earliestYear;
+  const atLatestYear = year >= currentYear;
+  const displayName = nameFromEmail(email);
+
   return (
     <div className="space-y-6">
+      {/* Sticky greeting + This Month/This Year toggle -- pinned at the
+          top of the page (below AppShell's own sticky header, see
+          stickyTop above) since Megan wants both always visible while
+          scrolling the rest of the Dashboard. The toggle/period state
+          lives here rather than in CategoryDistributionSection so it can
+          sit up here instead of buried lower on the page; Account-
+          Balances/CategoryDistributionSection just receive `mode`/
+          `period` as props now. */}
+      <div
+        style={{
+          position: "sticky",
+          top: stickyTop,
+          zIndex: 10,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "10px 20px",
+          margin: "0 -4px",
+          padding: "14px 18px",
+          background: "#FAF7FD",
+          border: "1px solid var(--color-divider)",
+          borderRadius: "var(--radius-md)",
+        }}
+      >
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
+          {timeOfDayGreeting()}{displayName ? `, ${displayName}` : ""}
+        </div>
+        <div>
+          <div className="flex" style={{ background: "var(--color-accent-200)", borderRadius: 999, padding: 4 }}>
+            <button
+              onClick={() => setMode("month")}
+              style={{
+                padding: "7px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999, border: "none", cursor: "pointer",
+                background: mode === "month" ? "#FFFFFF" : "transparent",
+                color: mode === "month" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
+              }}
+            >
+              This Month
+            </button>
+            <button
+              onClick={() => setMode("year")}
+              style={{
+                padding: "7px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999, border: "none", cursor: "pointer",
+                background: mode === "year" ? "#FFFFFF" : "transparent",
+                color: mode === "year" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
+              }}
+            >
+              This Year
+            </button>
+          </div>
+          {mode === "month" ? (
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <button
+                onClick={() => !atEarliestMonth && setMonthPeriod((p) => shiftPeriod(p, -1))}
+                disabled={atEarliestMonth}
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 26, height: 26, borderRadius: "50%", background: "transparent",
+                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
+                  cursor: atEarliestMonth ? "not-allowed" : "pointer", opacity: atEarliestMonth ? 0.3 : 1,
+                }}
+              >
+                <ChevronLeft size={13} />
+              </button>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 800, color: "var(--color-accent-700)", width: 130, textAlign: "center" }}>{periodLabel(monthPeriod)}</span>
+              <button
+                onClick={() => !atLatestMonth && setMonthPeriod((p) => shiftPeriod(p, 1))}
+                disabled={atLatestMonth}
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 26, height: 26, borderRadius: "50%", background: "transparent",
+                  border: "1px solid var(--color-divider)", color: "var(--color-text)",
+                  cursor: atLatestMonth ? "not-allowed" : "pointer", opacity: atLatestMonth ? 0.3 : 1,
+                }}
+              >
+                <ChevronRight size={13} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2.5 mt-2">
+              <button
+                onClick={() => !atEarliestYear && setYear((y) => Math.max(earliestYear, y - 1))}
+                disabled={atEarliestYear}
+                style={{
+                  width: 26, height: 26, borderRadius: "50%", border: "1px solid var(--color-accent-300)", background: "#FFFFFF",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  cursor: atEarliestYear ? "not-allowed" : "pointer", opacity: atEarliestYear ? 0.3 : 1,
+                }}
+              >
+                <ChevronLeft size={12} color="var(--color-accent-700)" />
+              </button>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 800, color: "var(--color-accent-700)" }}>{year}</span>
+              <button
+                onClick={() => !atLatestYear && setYear((y) => Math.min(currentYear, y + 1))}
+                disabled={atLatestYear}
+                style={{
+                  width: 26, height: 26, borderRadius: "50%", border: "1px solid var(--color-accent-300)", background: "#FFFFFF",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  cursor: atLatestYear ? "not-allowed" : "pointer", opacity: atLatestYear ? 0.3 : 1,
+                }}
+              >
+                <ChevronRight size={12} color="var(--color-accent-700)" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <PendingTransfers allocations={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
 
       {billing?.readOnly && (
@@ -162,6 +345,9 @@ export default function DashboardPage() {
         allTimeTotal={allTimeTotal}
         rules={rules}
         hasPendingTransfers={pendingTransfers.length > 0}
+        mode={mode}
+        period={period}
+        onEarliestPeriod={handleEarliestPeriod}
       />
 
       <CloseoutNudge />
