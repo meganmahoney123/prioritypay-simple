@@ -327,8 +327,8 @@ function AccountsEntityCard({ accounts, entities, onChange, setError }) {
               <select
                 value={a.entityId || DEFAULT_SLOT}
                 onChange={(e) => assign(a.id, e.target.value)}
-                className="w-full sm:w-auto sm:min-w-[180px]"
-                style={bloomInputStyle({ minWidth: 0 })}
+                className="w-full sm:w-auto sm:min-w-[180px] sm:flex-none"
+                style={bloomInputStyle({ minWidth: 0, width: undefined })}
               >
                 <option value={DEFAULT_SLOT}>Default pool</option>
                 {entities.map((e) => (
