@@ -533,14 +533,22 @@ export default function CategoryDistributionSection({ mode = "month", period, on
                       <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
-                  {/* Recharts' default tooltip background is semi-
-                      transparent, which let the centered "TOTAL INCOME"
-                      label (absolutely positioned in the donut hole, see
-                      below) show through and overlap the tooltip's own
-                      text. An explicit opaque background + border fixes
-                      that without touching the centered-label markup. */}
+                  {/* The tooltip's own background is already opaque
+                      (contentStyle below) -- the actual bleed-through
+                      Megan flagged is a paint-order issue, not a
+                      transparency one: the centered "TOTAL INCOME" label
+                      below is a plain sibling div positioned *after* this
+                      ResponsiveContainer in the DOM, so it paints on top of
+                      everything inside the chart (tooltip included) by
+                      default, regardless of how opaque the tooltip itself
+                      is. `wrapperStyle` (Recharts' hook for styling the
+                      tooltip's own absolutely-positioned wrapper, as
+                      opposed to `contentStyle` which only styles the inner
+                      box) lifts the tooltip's stacking context above that
+                      sibling so it always renders on top when open. */}
                   <Tooltip
                     formatter={(v) => currency(v)}
+                    wrapperStyle={{ zIndex: 10 }}
                     contentStyle={{
                       background: "var(--color-surface)",
                       border: "1px solid var(--color-divider)",

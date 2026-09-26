@@ -313,17 +313,65 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      <div id="connect">
-        {/* "...or app" was dropped here on purpose -- Plaid's Transactions
-            product links real bank/credit union accounts, not P2P apps
-            like Venmo or Cash App, so the old copy overpromised what this
-            button can actually connect. */}
-        <div className="flex flex-wrap gap-3">
+      {/* Hero band + connect buttons side by side -- the hero is now a
+          taller, narrower ("square-ish") card with its breakdown rows
+          stacked underneath the big total instead of laid out in a row
+          beside it, and the three connect buttons sit in their own column
+          to its right instead of a row above it. */}
+      <div className="flex items-start gap-5 flex-wrap">
+        {/* Aggregate hero band -- matches the approved AccountsADesktop.dc.html
+            mockup's "Guilt-Free Spending Available" summary. Only shown once
+            there's at least one depository/business account to summarize, so
+            it doesn't show a hollow $0 band before anything's connected. */}
+        {depositoryAccounts.length > 0 && (
+          <div
+            style={{
+              border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)",
+              background: "var(--color-accent-200)", color: "var(--color-accent-800)",
+              padding: "26px 30px", width: 340, flexShrink: 0,
+            }}
+          >
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+              Guilt-Free Spending Available
+            </div>
+            <div className="font-mono" style={{ fontSize: 40, fontWeight: 700, marginTop: 4, color: "var(--color-accent-900)" }}>
+              {currency(guiltFreeAvailable)}
+            </div>
+            <div style={{ height: 1, background: "var(--color-accent-300)", margin: "18px 0 14px" }} />
+            <div className="space-y-2.5">
+              <div className="flex items-baseline justify-between">
+                <span style={{ fontSize: 12, color: "var(--color-accent-700)", fontWeight: 600 }}>Total balance, all accounts</span>
+                <span className="font-mono" style={{ fontSize: 16, fontWeight: 700 }}>{currency(totalBalanceAllAccounts)}</span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span style={{ fontSize: 12, color: "#9C3B22", fontWeight: 600 }}>− Allocated to categories</span>
+                <span className="font-mono" style={{ fontSize: 16, fontWeight: 700, color: "#9C3B22" }}>{currency(totalAllocatedToCategories)}</span>
+              </div>
+              {totalCardOwed > 0 && (
+                <div className="flex items-baseline justify-between">
+                  <span style={{ fontSize: 12, color: "#9C3B22", fontWeight: 600 }}>− Credit card balance owed (net)</span>
+                  <span className="font-mono" style={{ fontSize: 16, fontWeight: 700, color: "#9C3B22" }}>{currency(totalCardOwed)}</span>
+                </div>
+              )}
+            </div>
+            {totalCardExcluded > 0 && (
+              <div style={{ fontSize: 11.5, color: "var(--color-accent-700)", marginTop: 14, lineHeight: 1.4 }}>
+                The credit card balance above excludes {currency(totalCardExcluded)} already covered by category withdrawals. See the card breakdown below.
+              </div>
+            )}
+          </div>
+        )}
+
+        <div id="connect" className="flex flex-col gap-3">
+          {/* "...or app" was dropped here on purpose -- Plaid's Transactions
+              product links real bank/credit union accounts, not P2P apps
+              like Venmo or Cash App, so the old copy overpromised what this
+              button can actually connect. */}
           <PlaidLinkButton
             label="Connect a bank account"
             onLinked={load}
             keyHint="bank"
-            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700 }}
+            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, width: "100%" }}
           />
           {/* Plain link flow, same as "Connect a bank account" -- there's
               no separate account_type for investment accounts (see
@@ -342,6 +390,7 @@ export default function AccountsPage() {
               borderRadius: "var(--radius-pill)",
               fontFamily: "var(--font-heading)",
               fontWeight: 700,
+              width: "100%",
               background: "var(--color-accent-700)",
               border: "1px solid var(--color-accent-700)",
             }}
@@ -354,57 +403,18 @@ export default function AccountsPage() {
               borderRadius: "var(--radius-pill)",
               fontFamily: "var(--font-heading)",
               fontWeight: 700,
+              width: "100%",
               background: "var(--color-accent-800)",
               border: "1px solid var(--color-accent-800)",
             }}
           />
-        </div>
-        {disconnectError && (
-          <div className="text-xs mt-2 p-3" style={bloomWarningCardStyle()}>
-            {disconnectError}
-          </div>
-        )}
-      </div>
-
-      {/* Aggregate hero band -- matches the approved AccountsADesktop.dc.html
-          mockup's "Guilt-Free Spending Available" summary. Only shown once
-          there's at least one depository/business account to summarize, so
-          it doesn't show a hollow $0 band before anything's connected. */}
-      {depositoryAccounts.length > 0 && (
-        <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "26px 30px" }}>
-          <div className="flex items-center justify-between gap-10 flex-wrap">
-            <div>
-              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Guilt-Free Spending Available
-              </div>
-              <div className="font-mono" style={{ fontSize: 40, fontWeight: 700, marginTop: 4, color: "var(--color-accent-900)" }}>
-                {currency(guiltFreeAvailable)}
-              </div>
-            </div>
-            <div className="flex gap-8 flex-wrap">
-              <div>
-                <div style={{ fontSize: 11, color: "var(--color-accent-700)", fontWeight: 600 }}>Total balance, all accounts</div>
-                <div className="font-mono" style={{ fontSize: 18, fontWeight: 700, marginTop: 2 }}>{currency(totalBalanceAllAccounts)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#9C3B22", fontWeight: 600 }}>− Allocated to categories</div>
-                <div className="font-mono" style={{ fontSize: 18, fontWeight: 700, marginTop: 2, color: "#9C3B22" }}>{currency(totalAllocatedToCategories)}</div>
-              </div>
-              {totalCardOwed > 0 && (
-                <div>
-                  <div style={{ fontSize: 11, color: "#9C3B22", fontWeight: 600 }}>− Credit card balance owed (net)</div>
-                  <div className="font-mono" style={{ fontSize: 18, fontWeight: 700, marginTop: 2, color: "#9C3B22" }}>{currency(totalCardOwed)}</div>
-                </div>
-              )}
-            </div>
-          </div>
-          {totalCardExcluded > 0 && (
-            <div style={{ fontSize: 11.5, color: "var(--color-accent-700)", marginTop: 14, lineHeight: 1.4 }}>
-              The credit card balance above excludes {currency(totalCardExcluded)} already covered by category withdrawals. See the card breakdown below.
+          {disconnectError && (
+            <div className="text-xs p-3" style={bloomWarningCardStyle()}>
+              {disconnectError}
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {bankAccounts.length > 0 && (
         <div>
