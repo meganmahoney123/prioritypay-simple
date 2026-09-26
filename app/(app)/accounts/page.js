@@ -66,6 +66,43 @@ export default function AccountsPage() {
     [categoryBalances, accountsById]
   );
 
+  // Aggregate hero band (matches the approved AccountsADesktop.dc.html
+  // mockup's "Guilt-Free Spending Available" summary at the top of the
+  // page) -- purely derived from numbers already fetched above and
+  // already shown per-account/per-card below, no new backend logic:
+  //   Total balance, all accounts = sum of each depository/business
+  //     account's real accountBalance (excludes credit cards, which carry
+  //     what they're OWED on, not a balance you have).
+  //   Allocated to categories = sum of each account's own categorized
+  //     total (categoryBalances[id].totalBalance).
+  //   Credit card balance owed (net) = sum of every card's netOwed (see
+  //     lib/cardCharges.js -- already excludes charges a category
+  //     withdrawal has covered).
+  const totalBalanceAllAccounts = useMemo(
+    () => Object.values(categoryBalances).reduce((s, a) => s + (a.accountBalance || 0), 0),
+    [categoryBalances]
+  );
+  const totalAllocatedToCategories = useMemo(
+    () => Object.values(categoryBalances).reduce((s, a) => s + (a.totalBalance || 0), 0),
+    [categoryBalances]
+  );
+  const totalCardOwed = useMemo(
+    () => Object.values(creditCardBalances).reduce((s, c) => s + (c.netOwed || 0), 0),
+    [creditCardBalances]
+  );
+  const totalCardExcluded = useMemo(
+    () => Object.values(creditCardBalances).reduce((s, c) => s + (c.excludedByWithdrawal || 0), 0),
+    [creditCardBalances]
+  );
+  const guiltFreeAvailable = totalBalanceAllAccounts - totalAllocatedToCategories - totalCardOwed;
+
+  // Credit cards get their own "Connected Credit Cards" section below,
+  // same grouping as the mockup, instead of sitting in the same grid as
+  // depository/business accounts -- the card JSX itself is unchanged,
+  // just which grid it renders in.
+  const depositoryAccounts = accounts.filter((a) => a.account_type !== "credit");
+  const creditAccounts = accounts.filter((a) => a.account_type === "credit");
+
   const disconnect = async (acc) => {
     const confirmed = window.confirm(
       `Disconnect ${acc.institution_name} ${acc.account_name} •••• ${acc.mask}? ` +
@@ -90,6 +127,93 @@ export default function AccountsPage() {
   };
 
   if (loading) return <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>Loading…</p>;
+
+  // Shared per-account Card markup, unchanged from before -- just pulled
+  // into a function so it can render inside either the "Your Accounts" or
+  // "Connected Credit Cards" grid below without duplicating the JSX.
+  const renderAccountCard = (acc) => (
+    <Card key={acc.id} style={{ padding: "18px 20px", borderRadius: "var(--radius-md)", background: "var(--color-surface)" }}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 flex items-center justify-center"
+            style={{ borderRadius: "var(--radius-sm)", background: "var(--color-accent-100)" }}
+          >
+            {acc.account_type === "credit" ? (
+              <CreditCard size={18} style={{ color: "var(--color-accent-700)" }} />
+            ) : acc.account_type === "business" ? (
+              <Briefcase size={18} style={{ color: "var(--color-accent-700)" }} />
+            ) : (
+              <Landmark size={18} style={{ color: "var(--color-accent-700)" }} />
+            )}
+          </div>
+          <div>
+            <div style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name}</div>
+            <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{acc.account_name} •••• {acc.mask}</div>
+          </div>
+        </div>
+        <Badge>{acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}</Badge>
+      </div>
+      {acc.account_type === "credit" ? (
+        creditCardBalances[acc.id] ? (
+          <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+            <div className="flex items-center justify-between mb-1">
+              <span>Live balance</span>
+              <span className="font-mono" style={{ color: "var(--color-text)" }}>{currency(creditCardBalances[acc.id].liveBalance)}</span>
+            </div>
+            {creditCardBalances[acc.id].excludedByWithdrawal > 0 && (
+              <div className="flex items-center justify-between mb-1" style={{ color: "var(--color-accent-700)" }}>
+                <span>− Already accounted for via withdrawals</span>
+                <span className="font-mono">{currency(creditCardBalances[acc.id].excludedByWithdrawal)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-1 mt-1" style={{ borderTop: "1px solid var(--color-divider)" }}>
+              <span className="font-semibold" style={{ color: "var(--color-text)" }}>Net amount owed</span>
+              <span className="font-mono font-bold">{currency(creditCardBalances[acc.id].netOwed)}</span>
+            </div>
+            <p className="mt-2" style={{ color: "var(--color-neutral-500, var(--color-neutral-700))" }}>Spending here shows up in close-out. Not used for splits.</p>
+          </div>
+        ) : (
+          <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
+        )
+      ) : acc.account_type === "business" ? (
+        <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
+      ) : acc.autoDetectEnabled ? (
+        <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically, you'll get a checklist to confirm and send each transfer</p>
+      ) : (
+        <div>
+          <PlaidLinkButton
+            mode="update"
+            accountId={acc.id}
+            label="Enable auto-detect"
+            onUpdated={load}
+            className="text-xs"
+            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, padding: "8px 16px", fontSize: 13 }}
+          />
+        </div>
+      )}
+      <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
+        <button
+          type="button"
+          onClick={() => disconnect(acc)}
+          disabled={disconnectingId === acc.id}
+          className="text-xs"
+          style={bloomGhostButtonStyle({
+            color: "var(--color-accent-700)",
+            border: "none",
+            background: "transparent",
+            padding: "6px 4px",
+            fontSize: 13,
+            opacity: disconnectingId === acc.id ? 0.45 : 1,
+            cursor: disconnectingId === acc.id ? "not-allowed" : "pointer",
+          })}
+        >
+          {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
+        </button>
+      </div>
+      <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} allCategories={allCategories} onChanged={load} />
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -127,91 +251,67 @@ export default function AccountsPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {accounts.map((acc) => (
-          <Card key={acc.id} style={{ padding: "18px 20px", borderRadius: "var(--radius-md)", background: "var(--color-surface)" }}>
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 flex items-center justify-center"
-                  style={{ borderRadius: "var(--radius-sm)", background: "var(--color-accent-100)" }}
-                >
-                  {acc.account_type === "credit" ? (
-                    <CreditCard size={18} style={{ color: "var(--color-accent-700)" }} />
-                  ) : acc.account_type === "business" ? (
-                    <Briefcase size={18} style={{ color: "var(--color-accent-700)" }} />
-                  ) : (
-                    <Landmark size={18} style={{ color: "var(--color-accent-700)" }} />
-                  )}
-                </div>
-                <div>
-                  <div style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name}</div>
-                  <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{acc.account_name} •••• {acc.mask}</div>
-                </div>
+      {/* Aggregate hero band -- matches the approved AccountsADesktop.dc.html
+          mockup's "Guilt-Free Spending Available" summary. Only shown once
+          there's at least one depository/business account to summarize, so
+          it doesn't show a hollow $0 band before anything's connected. */}
+      {depositoryAccounts.length > 0 && (
+        <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "26px 30px" }}>
+          <div className="flex items-center justify-between gap-10 flex-wrap">
+            <div>
+              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Guilt-Free Spending Available
               </div>
-              <Badge>{acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}</Badge>
+              <div className="font-mono" style={{ fontSize: 40, fontWeight: 700, marginTop: 4, color: "var(--color-accent-900)" }}>
+                {currency(guiltFreeAvailable)}
+              </div>
             </div>
-            {acc.account_type === "credit" ? (
-              creditCardBalances[acc.id] ? (
-                <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span>Live balance</span>
-                    <span className="font-mono" style={{ color: "var(--color-text)" }}>{currency(creditCardBalances[acc.id].liveBalance)}</span>
-                  </div>
-                  {creditCardBalances[acc.id].excludedByWithdrawal > 0 && (
-                    <div className="flex items-center justify-between mb-1" style={{ color: "var(--color-accent-700)" }}>
-                      <span>− Already accounted for via withdrawals</span>
-                      <span className="font-mono">{currency(creditCardBalances[acc.id].excludedByWithdrawal)}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-1 mt-1" style={{ borderTop: "1px solid var(--color-divider)" }}>
-                    <span className="font-semibold" style={{ color: "var(--color-text)" }}>Net amount owed</span>
-                    <span className="font-mono font-bold">{currency(creditCardBalances[acc.id].netOwed)}</span>
-                  </div>
-                  <p className="mt-2" style={{ color: "var(--color-neutral-500, var(--color-neutral-700))" }}>Spending here shows up in close-out. Not used for splits.</p>
-                </div>
-              ) : (
-                <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
-              )
-            ) : acc.account_type === "business" ? (
-              <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
-            ) : acc.autoDetectEnabled ? (
-              <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically, you'll get a checklist to confirm and send each transfer</p>
-            ) : (
+            <div className="flex gap-8 flex-wrap">
               <div>
-                <PlaidLinkButton
-                  mode="update"
-                  accountId={acc.id}
-                  label="Enable auto-detect"
-                  onUpdated={load}
-                  className="text-xs"
-                  style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, padding: "8px 16px", fontSize: 13 }}
-                />
+                <div style={{ fontSize: 11, color: "var(--color-accent-700)", fontWeight: 600 }}>Total balance, all accounts</div>
+                <div className="font-mono" style={{ fontSize: 18, fontWeight: 700, marginTop: 2 }}>{currency(totalBalanceAllAccounts)}</div>
               </div>
-            )}
-            <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
-              <button
-                type="button"
-                onClick={() => disconnect(acc)}
-                disabled={disconnectingId === acc.id}
-                className="text-xs"
-                style={bloomGhostButtonStyle({
-                  color: "var(--color-accent-700)",
-                  border: "none",
-                  background: "transparent",
-                  padding: "6px 4px",
-                  fontSize: 13,
-                  opacity: disconnectingId === acc.id ? 0.45 : 1,
-                  cursor: disconnectingId === acc.id ? "not-allowed" : "pointer",
-                })}
-              >
-                {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
-              </button>
+              <div>
+                <div style={{ fontSize: 11, color: "#9C3B22", fontWeight: 600 }}>− Allocated to categories</div>
+                <div className="font-mono" style={{ fontSize: 18, fontWeight: 700, marginTop: 2, color: "#9C3B22" }}>{currency(totalAllocatedToCategories)}</div>
+              </div>
+              {totalCardOwed > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, color: "#9C3B22", fontWeight: 600 }}>− Credit card balance owed (net)</div>
+                  <div className="font-mono" style={{ fontSize: 18, fontWeight: 700, marginTop: 2, color: "#9C3B22" }}>{currency(totalCardOwed)}</div>
+                </div>
+              )}
             </div>
-            <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} allCategories={allCategories} onChanged={load} />
-          </Card>
-        ))}
-      </div>
+          </div>
+          {totalCardExcluded > 0 && (
+            <div style={{ fontSize: 11.5, color: "var(--color-accent-700)", marginTop: 14, lineHeight: 1.4 }}>
+              The credit card balance above excludes {currency(totalCardExcluded)} already covered by category withdrawals. See the card breakdown below.
+            </div>
+          )}
+        </div>
+      )}
+
+      {depositoryAccounts.length > 0 && (
+        <div>
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
+            Your Accounts
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {depositoryAccounts.map(renderAccountCard)}
+          </div>
+        </div>
+      )}
+
+      {creditAccounts.length > 0 && (
+        <div>
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
+            Connected Credit Cards
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {creditAccounts.map(renderAccountCard)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

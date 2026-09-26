@@ -250,7 +250,7 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
   return (
     <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-        <div className="h-32">
+        <div className="h-36">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               {/* Animation off to match MoneyDistributionChart/
@@ -261,8 +261,8 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
                 data={pieData}
                 dataKey="value"
                 nameKey="name"
-                innerRadius={28}
-                outerRadius={44}
+                innerRadius={32}
+                outerRadius={52}
                 paddingAngle={2}
                 isAnimationActive={false}
                 // Percentage right on the slice (not just the legend) --

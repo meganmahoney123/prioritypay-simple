@@ -331,6 +331,39 @@ export default function DashboardPage() {
         onEarliestPeriod={handleEarliestPeriod}
       />
 
+      {/* "Your Accounts" quick-links -- matches the approved
+          MainDesktop.dc.html mockup's preview strip at the bottom of the
+          money section. Credit cards excluded, same as the mockup (which
+          only lists depository/business accounts here); the full picture,
+          including cards, lives on the Accounts page this links to. */}
+      {accounts.filter((a) => a.account_type !== "credit").length > 0 && (
+        <div>
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 13, fontWeight: 800, color: "var(--color-neutral-700)", marginBottom: 10 }}>
+            Your Accounts
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {accounts
+              .filter((a) => a.account_type !== "credit")
+              .map((a) => (
+                <Link
+                  key={a.id}
+                  href="/accounts"
+                  className="flex items-center justify-between"
+                  style={{
+                    padding: "16px 20px", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)",
+                    background: "var(--color-surface)", textDecoration: "none", color: "var(--color-text)",
+                  }}
+                >
+                  <span style={{ fontSize: 14.5, fontWeight: 700 }}>{a.institution_name}</span>
+                  <span className="flex items-center gap-1.5" style={{ color: "var(--color-accent-700)", fontSize: 13, fontWeight: 700 }}>
+                    View Balance <ChevronRight size={14} />
+                  </span>
+                </Link>
+              ))}
+          </div>
+        </div>
+      )}
+
       <CloseoutNudge />
 
       {accounts.length === 0 && (
