@@ -27,11 +27,11 @@ function periodLabel(period) {
 }
 
 // "Good morning/afternoon/evening" -- purely a local-clock read, nothing
-// stored -- and a first-name guess since there's no display-name field
-// anywhere in the schema yet (simple_profiles has no name column, and
-// Settings has nowhere to set one). Using the part of the login email
-// before the @ and before any ./_/- separator is a reasonable stand-in
-// until a real name field exists; ask before landing schema work for one.
+// stored. Paired with the real display_name field people can set in
+// Settings (see supabase/migrations/20260926_profile_display_name.sql);
+// nameFromEmail below is only the fallback for whoever hasn't set one --
+// the part of the login email before the @ and before any ./_/-
+// separator is a reasonable guess in the meantime.
 function timeOfDayGreeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
@@ -72,6 +72,7 @@ export default function DashboardPage() {
   const [persona, setPersona] = useState(null);
   const [notifications, setNotifications] = useState(null);
   const [email, setEmail] = useState(null);
+  const [displayName, setDisplayName] = useState(null);
 
   // Owns the This Month/This Year toggle (and the year stepper) up here
   // now, instead of inside CategoryDistributionSection, so it can live in
@@ -108,6 +109,7 @@ export default function DashboardPage() {
     setPersona(profileRes.profile?.persona || null);
     setNotifications(profileRes.profile?.notifications || null);
     setEmail(profileRes.profile?.email || null);
+    setDisplayName(profileRes.profile?.displayName || null);
     setPendingTransfers(pendingRes.allocations || []);
     setLoading(false);
   };
@@ -176,7 +178,9 @@ export default function DashboardPage() {
   const atLatestMonth = monthPeriod >= maxPeriod;
   const atEarliestYear = year <= earliestYear;
   const atLatestYear = year >= currentYear;
-  const displayName = nameFromEmail(email);
+  // Real "Your name" from Settings wins when set; otherwise fall back to
+  // guessing a first name from the login email (see nameFromEmail above).
+  const greetingName = displayName || nameFromEmail(email);
 
   return (
     <div className="space-y-6">
@@ -206,7 +210,7 @@ export default function DashboardPage() {
         }}
       >
         <div style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
-          {timeOfDayGreeting()}{displayName ? `, ${displayName}` : ""}
+          {timeOfDayGreeting()}{greetingName ? `, ${greetingName}` : ""}
         </div>
         <div>
           <div className="flex" style={{ background: "var(--color-accent-200)", borderRadius: 999, padding: 4 }}>

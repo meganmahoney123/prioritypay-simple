@@ -707,3 +707,11 @@ alter table simple_transfer_allocations add column if not exists candidate_amoun
 alter table simple_transfer_allocations add column if not exists candidate_date date;
 alter table simple_transfer_allocations add column if not exists candidate_dismissed boolean not null default false;
 alter table simple_transfer_allocations add column if not exists candidate_last_dismissed_transaction_id text;
+
+-- A real first-name field for the Dashboard's "Good morning/afternoon/
+-- evening, <name>" greeting -- see supabase/migrations/
+-- 20260926_profile_display_name.sql and app/(app)/settings/page.js's
+-- "Your name" field for the full write-up. Nullable/additive; existing
+-- rows keep falling back to a name guessed from the login email until
+-- filled in.
+alter table simple_profiles add column if not exists display_name text;

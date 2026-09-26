@@ -1,0 +1,15 @@
+-- A real first-name field for the Dashboard's "Good morning/afternoon/
+-- evening, <name>" greeting (see the sticky bar in app/(app)/dashboard/
+-- page.js) -- until now there was no name column anywhere on
+-- simple_profiles, so that greeting fell back to guessing a name from the
+-- account's login email (e.g. megan@... -> "Megan"), which reads oddly
+-- for a less name-like address. Settings (app/(app)/settings/page.js) now
+-- has a "Your name" field that writes here via PUT /api/profile; GET
+-- /api/profile exposes it as `displayName`, and the Dashboard prefers it
+-- over the email-derived guess when it's set.
+--
+-- Nullable and additive, same pattern as every other column added this
+-- way (candidate_transaction_id, calculated_amount, etc.) -- every
+-- existing row just keeps falling back to the email guess until that
+-- user fills it in.
+alter table simple_profiles add column if not exists display_name text;

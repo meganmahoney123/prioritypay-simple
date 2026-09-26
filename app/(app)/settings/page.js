@@ -145,6 +145,37 @@ function SettingsPageInner() {
 
   return (
     <div className="max-w-2xl space-y-6">
+      {/* Feeds the Dashboard's "Good morning/afternoon/evening, <name>"
+          greeting (see app/(app)/dashboard/page.js) -- optional, and left
+          blank the Dashboard just guesses a first name from the account's
+          login email instead (see supabase/migrations/
+          20260926_profile_display_name.sql). */}
+      <Card className="p-6" style={{ maxWidth: "40em" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Your name</h2>
+        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
+          Used for the greeting on your Dashboard. Optional -- leave it blank and we'll guess a first name from
+          your account email instead.
+        </p>
+        <div style={{ maxWidth: 280 }}>
+          <label
+            style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
+          >
+            Name
+          </label>
+          <input
+            type="text"
+            value={profile.displayName || ""}
+            onChange={(e) => {
+              setSaved(false);
+              setProfile((p) => ({ ...p, displayName: e.target.value }));
+            }}
+            placeholder="e.g. Megan"
+            style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
+          />
+        </div>
+      </Card>
+
       <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Billing</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 20 }} />

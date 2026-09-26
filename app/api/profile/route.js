@@ -17,6 +17,11 @@ export async function GET() {
       // instead of leaving that input blank while secretly defaulting to
       // this on the backend (see notifications.alertEmail below).
       email: user.email || null,
+      // Real first-name field for the Dashboard greeting (see
+      // supabase/migrations/20260926_profile_display_name.sql) -- null
+      // until someone fills in "Your name" in Settings, in which case the
+      // Dashboard falls back to guessing one from the email above.
+      displayName: data.display_name || null,
       persona: data.persona,
       businessName: data.business_name,
       entityType: data.entity_type,
@@ -83,6 +88,10 @@ export async function PUT(request) {
   const { error } = await supabaseAdmin()
     .from("simple_profiles")
     .update({
+      // Trimmed, empty-string normalized to null -- same convention as
+      // alert_email below, so a whitespace-only name never sticks around
+      // to produce an odd "Good morning, " greeting.
+      display_name: typeof body.displayName === "string" && body.displayName.trim() ? body.displayName.trim() : null,
       persona: body.persona,
       business_name: body.businessName,
       entity_type: body.entityType,
