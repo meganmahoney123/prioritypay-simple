@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronRight, Info } from "lucide-react";
 import { currency } from "@/components/ui";
 import { colorForIndex } from "@/lib/allocations";
+import { bloomPrimaryButtonStyle } from "@/lib/bloomTheme";
 
 // Replaces the old MoneyDistributionChart -- same pie-plus-legend idea
 // ("how did this month's deposits split by category"), but now:
@@ -47,6 +48,22 @@ function periodLabel(period) {
 function formatShortDate(iso) {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// "YYYY-MM" for the real current month, UTC to match how `period` itself
+// is built everywhere else (see currentPeriod() in
+// app/(app)/dashboard/page.js) -- used only to gate the end-of-month CTA
+// below to the actual current month, never a past one someone's browsing.
+function currentMonthPeriod() {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+// Days remaining in the current UTC month, inclusive of today (e.g. "3
+// days left" on the 28th of a 30-day month).
+function daysLeftInMonth() {
+  const now = new Date();
+  const lastDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+  return lastDay - now.getUTCDate() + 1;
 }
 
 function CategoryCard({ category, color, onSavePct, savingPct }) {
@@ -396,6 +413,42 @@ export default function CategoryDistributionSection({ mode = "month", period, on
               )}
             </div>
           </div>
+
+          {/* End-of-month nudge toward putting unused Guilt-Free money to
+              work, per the approved mockup -- deliberately just a link to
+              the existing One-Time Transfer page (/transfers) rather than a
+              destination picker of its own. The mockup's per-destination
+              chips (Investments/Solo 401k/Savings/"Pay down <card>"/"Choose
+              another...") each implied actually EXECUTING a transfer right
+              from this card, which isn't a feature that exists here --
+              /transfers already is that feature, so this card's only job is
+              to point at it, not duplicate it. Only shown for the real
+              current month (never a past month someone's browsing, and
+              never year mode, where "days left" isn't meaningful), inside
+              the last 5 days of the month, and only when there's actually
+              unused Guilt-Free money to nudge about. */}
+          {mode === "month" && period === currentMonthPeriod() && guiltFree > 0 && daysLeftInMonth() <= 5 && (
+            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-surface)", padding: "20px 22px" }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 13.5, fontWeight: 800, color: "var(--color-text)" }}>
+                Put your Guilt-Free balance to work
+              </div>
+              <div style={{ fontSize: 12, color: "var(--color-neutral-700)", marginTop: 3, lineHeight: 1.4 }}>
+                {currency(guiltFree)} unused with {daysLeftInMonth()} day{daysLeftInMonth() === 1 ? "" : "s"} left this month.
+                Paying down debt first is usually the better move — it&apos;s a guaranteed return equal to your card&apos;s APR.
+              </div>
+              <Link
+                href="/transfers"
+                className="inline-flex items-center gap-1.5"
+                style={{ ...bloomPrimaryButtonStyle(), fontSize: 13.5, padding: "10px 20px", marginTop: 14, textDecoration: "none" }}
+              >
+                Make a one-time transfer
+                <ChevronRight size={14} />
+              </Link>
+              <div style={{ fontSize: 11, color: "var(--color-neutral-700)", marginTop: 10 }}>
+                One-time transfer. This won&apos;t change your ongoing split rule.
+              </div>
+            </div>
+          )}
         </>
       )}
 
