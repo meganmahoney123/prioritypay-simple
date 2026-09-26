@@ -171,7 +171,7 @@ export default function AccountsPage() {
               <span className="font-semibold" style={{ color: "var(--color-text)" }}>Net amount owed</span>
               <span className="font-mono font-bold">{currency(creditCardBalances[acc.id].netOwed)}</span>
             </div>
-            <p className="mt-2" style={{ color: "var(--color-neutral-500, var(--color-neutral-700))" }}>Spending here shows up in close-out. Not used for splits.</p>
+            <p className="mt-2" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
           </div>
         ) : (
           <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { ChevronRight, Info } from "lucide-react";
-import { Card, currency } from "@/components/ui";
+import { currency } from "@/components/ui";
 import { colorForIndex } from "@/lib/allocations";
 
 // Replaces the old MoneyDistributionChart -- same pie-plus-legend idea
@@ -99,7 +99,19 @@ function CategoryCard({ category, color, onSavePct, savingPct }) {
             onBlur={commitPct}
             onKeyDown={(e) => e.key === "Enter" && e.target.blur()}
             className="text-right disabled:opacity-60"
-            style={{ width: 40, background: "transparent", border: "none", outline: "none", color: "var(--color-text)", fontWeight: 700 }}
+            style={{
+              width: 32,
+              padding: 0,
+              background: "transparent",
+              border: "none",
+              borderBottom: editingPct ? "1px solid var(--color-accent-700)" : "1px solid transparent",
+              outline: "none",
+              appearance: "textfield",
+              MozAppearance: "textfield",
+              WebkitAppearance: "none",
+              color: "var(--color-text)",
+              fontWeight: 700,
+            }}
           />
           %
         </span>
@@ -290,7 +302,7 @@ export default function CategoryDistributionSection({ mode = "month", period, on
   const cardCategories = categories.filter((c) => c.balance !== 0 || c.monthlyContribution > 0 || c.lastWithdrawal);
 
   return (
-    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
+    <div className="space-y-6">
       {loading ? (
         <p className="text-sm text-neutral-400">Loading…</p>
       ) : totalDeposited === 0 ? (
@@ -312,7 +324,7 @@ export default function CategoryDistributionSection({ mode = "month", period, on
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-neutral-700)" }}>
                 Total Income {periodModeLabel}
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--color-neutral-500, var(--color-neutral-700))", marginTop: 2 }}>
+              <div style={{ fontSize: 11.5, color: "var(--color-neutral-700)", marginTop: 2 }}>
                 All deposits, including those that didn&apos;t meet the minimum split trigger threshold
               </div>
             </div>
@@ -384,11 +396,11 @@ export default function CategoryDistributionSection({ mode = "month", period, on
       )}
 
       {pctError && (
-        <p className="text-xs mt-3" style={{ color: "#9C3B22" }}>{pctError}</p>
+        <p className="text-xs" style={{ color: "#9C3B22" }}>{pctError}</p>
       )}
 
       {!loading && cardCategories.length > 0 && (
-        <div className="mt-5">
+        <div>
           <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
             Your Categories
           </h3>
@@ -409,9 +421,14 @@ export default function CategoryDistributionSection({ mode = "month", period, on
       {/* "How your income was distributed" -- moved below Your Categories
           per Megan's request, with a heading that names which toggle
           state it's showing since it now sits further from the toggle
-          itself (up in the sticky bar, see app/(app)/dashboard/page.js). */}
+          itself (up in the sticky bar, see app/(app)/dashboard/page.js).
+          Given its own bordered card (matching the Total Income strip and
+          hero boxes above) instead of relying on this section's own outer
+          Card wrapper, so every block reads as an independent section
+          directly on the page background per the approved mockup, rather
+          than nested inside one big outer box. */}
       {!loading && totalDeposited > 0 && (
-        <div className="mt-6">
+        <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-surface)", padding: "20px 20px 22px" }}>
           <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
             How your income was distributed ({mode === "year" ? "this year" : "this month"})
           </h3>
@@ -476,6 +493,6 @@ export default function CategoryDistributionSection({ mode = "month", period, on
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
