@@ -253,7 +253,12 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
 
   return (
     <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+      {/* Pie + legend side by side at every width, not just sm: and up --
+          per the approved mobile mockup's "Chase Checking" card, the
+          legend sits beside the donut on phones too, not stacked below
+          it. The warning/discrepancy banner below this grid is unaffected
+          and still spans full width underneath either way. */}
+      <div className="grid grid-cols-2 gap-3 items-center">
         <div className="h-36">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

@@ -325,10 +325,11 @@ export default function AccountsPage() {
             it doesn't show a hollow $0 band before anything's connected. */}
         {depositoryAccounts.length > 0 && (
           <div
+            className="w-full sm:w-[340px] sm:shrink-0"
             style={{
               border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)",
               background: "var(--color-accent-200)", color: "var(--color-accent-800)",
-              padding: "26px 30px", width: 340, flexShrink: 0,
+              padding: "26px 30px",
             }}
           >
             <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
