@@ -673,3 +673,37 @@ alter table simple_profiles add column if not exists retention_offer_used boolea
 -- already turned on for themselves.
 alter table simple_profiles alter column sms_notifications_enabled set default false;
 update simple_profiles set sms_notifications_enabled = false where sms_notifications_enabled = true;
+
+-- PHASE X: near-miss transfer-amount candidates -- see
+-- supabase/migrations/20260926_candidate_transaction.sql,
+-- lib/reconcileTransfers.js's findNearMissCandidate/
+-- maybeRecordNearMissCandidate, and
+-- app/api/transfer-allocations/[id]/candidate/{confirm,dismiss}/route.js.
+-- When a real Plaid transaction lands in an in_transit allocation's
+-- dest_account but its amount falls outside AMOUNT_TOLERANCE of `amount`
+-- (e.g. confirmed $200, actually sent $180), that used to just leave the
+-- allocation stuck 'in_transit' forever with no signal to anyone. If
+-- there is exactly one plausible in_transit allocation for that account
+-- (v1 is deliberately conservative -- zero or multiple candidates means
+-- doing nothing rather than guessing), these columns record it so the
+-- dashboard can ask the user directly instead.
+--   candidate_transaction_id: the Plaid transaction_id of the pending,
+--     unconfirmed candidate. Null means no live candidate.
+--   candidate_amount / candidate_date: that transaction's amount/date,
+--     snapshotted so the UI and the confirm route don't need a second
+--     Plaid lookup. candidate_amount becomes the allocation's real
+--     `amount` if the user confirms it (calculated_amount is untouched,
+--     same as the manual amount-override flow in .../amount/route.js).
+--   candidate_dismissed: true right after the user says "no, that's not
+--     it" -- kept mainly for visibility/debugging, since the actual
+--     "don't re-propose this" logic is the column below.
+--   candidate_last_dismissed_transaction_id: the one specific
+--     transaction_id the user already dismissed for this row, so
+--     reconciliation doesn't immediately re-propose that same still-
+--     unmatched transaction on the very next pass, while a genuinely
+--     different transaction can still become a new candidate.
+alter table simple_transfer_allocations add column if not exists candidate_transaction_id text;
+alter table simple_transfer_allocations add column if not exists candidate_amount numeric;
+alter table simple_transfer_allocations add column if not exists candidate_date date;
+alter table simple_transfer_allocations add column if not exists candidate_dismissed boolean not null default false;
+alter table simple_transfer_allocations add column if not exists candidate_last_dismissed_transaction_id text;

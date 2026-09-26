@@ -48,12 +48,28 @@ export function groupByCategory(rows) {
         // supabase/migrations/20260925_calculated_amount.sql).
         calculatedAmount: 0,
         ids: [],
+        // Raw per-row near-miss candidates underlying this group (see
+        // lib/reconcileTransfers.js's findNearMissCandidate). A group only
+        // ever surfaces a candidate prompt when it collapses to exactly
+        // one allocation id (see candidateFor below) -- the
+        // confirm/dismiss actions target a single allocation id, and a
+        // combined multi-deposit total has no single row for them to act
+        // on, same reasoning as isAmountEditable in PendingTransfers.js.
+        candidateRows: [],
       });
     }
     const g = map.get(key);
     g.amount += Number(a.amount) || 0;
     g.calculatedAmount += Number(a.calculated_amount ?? a.amount) || 0;
     g.ids.push(a.id);
+    if (a.candidate_transaction_id && a.candidate_amount != null) {
+      g.candidateRows.push({
+        allocationId: a.id,
+        transactionId: a.candidate_transaction_id,
+        amount: Number(a.candidate_amount),
+        date: a.candidate_date,
+      });
+    }
     // Any row in the group carrying a snapshotted label is as good as any
     // other -- they all share the same dest_account_id/source_account_id
     // key, so the labels (taken at write time -- see lib/runSplit.js and
@@ -178,6 +194,33 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
     setBusyAction("settle");
     try {
       await callAll(group.ids, "settle");
+    } finally {
+      setBusyKey(null);
+      setBusyAction(null);
+    }
+  };
+
+  // A group only ever has an actionable near-miss candidate when it
+  // collapses to exactly one underlying allocation row -- see
+  // groupByCategory's candidateRows comment.
+  const candidateFor = (g) => (g.ids.length === 1 && g.candidateRows.length === 1 ? g.candidateRows[0] : null);
+
+  const confirmCandidate = async (group, candidate) => {
+    setBusyKey(group.key);
+    setBusyAction("candidate-confirm");
+    try {
+      await callAll([candidate.allocationId], "candidate/confirm");
+    } finally {
+      setBusyKey(null);
+      setBusyAction(null);
+    }
+  };
+
+  const dismissCandidate = async (group, candidate) => {
+    setBusyKey(group.key);
+    setBusyAction("candidate-dismiss");
+    try {
+      await callAll([candidate.allocationId], "candidate/dismiss");
     } finally {
       setBusyKey(null);
       setBusyAction(null);
@@ -564,42 +607,92 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
             {inTransit.map((g) => {
               const destAccount = accountsById[g.dest_account_id];
               const busy = busyKey === g.key;
+              const candidate = candidateFor(g);
               return (
-                <div
-                  key={g.key}
-                  className="flex items-center justify-between gap-3 flex-wrap"
-                  style={{ padding: "10px 16px", borderRadius: 16, background: "var(--color-neutral-100)" }}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Clock size={15} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
-                    <div className="min-w-0">
-                      <div style={{ fontSize: 15, fontWeight: 600 }}>
-                        {g.label}, {currency(g.amount)}
-                      </div>
-                      <div className="text-xs truncate" style={{ color: "var(--color-neutral-700)" }}>
-                        On its way to {accountLabel(destAccount, g.dest_account_label)}, we&apos;ll mark this settled automatically once it
-                        shows up there.
+                <div key={g.key} className="space-y-2">
+                  <div
+                    className="flex items-center justify-between gap-3 flex-wrap"
+                    style={{ padding: "10px 16px", borderRadius: 16, background: "var(--color-neutral-100)" }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Clock size={15} style={{ color: "var(--color-accent-700)", flexShrink: 0 }} />
+                      <div className="min-w-0">
+                        <div style={{ fontSize: 15, fontWeight: 600 }}>
+                          {g.label}, {currency(g.amount)}
+                        </div>
+                        <div className="text-xs truncate" style={{ color: "var(--color-neutral-700)" }}>
+                          On its way to {accountLabel(destAccount, g.dest_account_label)}, we&apos;ll mark this settled automatically once it
+                          shows up there.
+                        </div>
                       </div>
                     </div>
+                    <button
+                      onClick={() => settle(g)}
+                      disabled={busy}
+                      title="Mark as already landed, without waiting for it to be detected automatically"
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        borderRadius: 999,
+                        background: "transparent",
+                        border: "1px solid var(--color-divider)",
+                        color: "var(--color-accent-700)",
+                        cursor: busy ? "default" : "pointer",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {busy && busyAction === "settle" ? "Marking…" : "It already landed"}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => settle(g)}
-                    disabled={busy}
-                    title="Mark as already landed, without waiting for it to be detected automatically"
-                    style={{
-                      padding: "8px 14px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      borderRadius: 999,
-                      background: "transparent",
-                      border: "1px solid var(--color-divider)",
-                      color: "var(--color-accent-700)",
-                      cursor: busy ? "default" : "pointer",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {busy && busyAction === "settle" ? "Marking…" : "It already landed"}
-                  </button>
+
+                  {candidate && (
+                    // A near-miss: a real transaction landed in this
+                    // allocation's destination account, but not close
+                    // enough to AMOUNT_TOLERANCE to auto-match (see
+                    // lib/reconcileTransfers.js). Only ever rendered when
+                    // there's an unconfirmed, non-dismissed candidate on
+                    // this exact allocation -- see candidateFor above.
+                    <div
+                      style={{
+                        padding: "12px 16px",
+                        borderRadius: 16,
+                        background: "var(--color-accent-200)",
+                        border: "1px dashed var(--color-accent-600)",
+                      }}
+                    >
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", lineHeight: 1.5 }}>
+                        We saw {currency(candidate.amount)} land in {accountLabel(destAccount, g.dest_account_label)} &mdash; is
+                        this your {g.label} transfer? You confirmed {currency(g.amount)}
+                        {candidate.date ? ` on ${candidate.date}` : ""}.
+                      </div>
+                      <div className="flex items-center gap-2" style={{ marginTop: 10 }}>
+                        <PrimaryButton
+                          onClick={() => confirmCandidate(g, candidate)}
+                          disabled={busy}
+                          style={{ padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999 }}
+                        >
+                          {busy && busyAction === "candidate-confirm" ? "Confirming…" : "Yes, that's it"}
+                        </PrimaryButton>
+                        <button
+                          onClick={() => dismissCandidate(g, candidate)}
+                          disabled={busy}
+                          style={{
+                            padding: "8px 14px",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            borderRadius: 999,
+                            background: "transparent",
+                            border: "1px solid var(--color-divider)",
+                            color: "var(--color-neutral-700)",
+                            cursor: busy ? "default" : "pointer",
+                          }}
+                        >
+                          {busy && busyAction === "candidate-dismiss" ? "Dismissing…" : "No, that's not it"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { syncNewTransactions } from "@/lib/plaidSync";
 import { runSplit } from "@/lib/runSplit";
 import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
-import { matchInTransitAllocation, markAllocationCompleted } from "@/lib/reconcileTransfers";
+import { matchInTransitAllocation, markAllocationCompleted, maybeRecordNearMissCandidate } from "@/lib/reconcileTransfers";
 
 // This is what makes PriorityPay actually live up to "splits the moment it
 // hits your account," instead of requiring someone to open Payments and
@@ -134,7 +134,7 @@ export async function POST(request) {
         if (deposits.length) {
           const { data } = await admin
             .from("simple_transfer_allocations")
-            .select("id, amount, transfer_id, dest_account_id, dest_account_label, confirmed_at")
+            .select("id, amount, transfer_id, dest_account_id, dest_account_label, confirmed_at, candidate_transaction_id, candidate_last_dismissed_transaction_id")
             .eq("dest_account_id", account.id)
             .eq("status", "in_transit");
           inTransitRows = data || [];
@@ -160,6 +160,27 @@ export async function POST(request) {
             const settledAtIso = new Date().toISOString();
             await markAllocationCompleted(admin, matchedRow, settledAtIso);
             console.log(`Matched incoming transfer ${txn.transaction_id} to in-transit allocation ${matchedRow.id} -- marked completed, skipped auto-split.`);
+            continue;
+          }
+
+          // No exact match -- but this deposit might still be an
+          // under/over-sent version of a transfer the user already
+          // confirmed (see lib/reconcileTransfers.js's near-miss
+          // candidate logic). Only proposes a candidate when exactly one
+          // in_transit row for this account plausibly explains it; if so,
+          // hold off on auto-splitting it as fresh income (same reasoning
+          // as an exact match -- this money may already have been
+          // accounted for once when it left the source account) until the
+          // user confirms or dismisses the "is this your transfer?"
+          // prompt this creates on the dashboard.
+          const nearMissRow = await maybeRecordNearMissCandidate(admin, {
+            transactionId: txn.transaction_id,
+            amount: txn.amount,
+            date: txn.date,
+            candidateRows: inTransitRows,
+          });
+          if (nearMissRow) {
+            console.log(`Recorded near-miss candidate ${txn.transaction_id} on in-transit allocation ${nearMissRow.id} -- waiting on user confirm/dismiss, skipped auto-split.`);
             continue;
           }
 
