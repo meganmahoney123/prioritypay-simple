@@ -178,21 +178,9 @@ export default function DashboardPage() {
       {/* Greeting portals into AppShell's header in place of the plain
           "Dashboard" title -- see components/AppShell.js's titleSlot. */}
       {titleSlot && createPortal(
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-neutral-700)" }}>
-            {timeOfDayGreeting()}
-          </div>
-          {greetingName && (
-            <div
-              style={{
-                fontFamily: "var(--font-heading)", fontSize: "clamp(20px, 2.6vw, 28px)", fontWeight: 800,
-                color: "var(--color-text)", lineHeight: 1.15, letterSpacing: "-0.03em",
-              }}
-            >
-              {greetingName}
-            </div>
-          )}
-        </div>,
+        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
+          {timeOfDayGreeting()}{greetingName ? `, ${greetingName}` : ""}
+        </h1>,
         titleSlot
       )}
 
