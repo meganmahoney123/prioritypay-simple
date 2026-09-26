@@ -533,7 +533,21 @@ export default function CategoryDistributionSection({ mode = "month", period, on
                       <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => currency(v)} />
+                  {/* Recharts' default tooltip background is semi-
+                      transparent, which let the centered "TOTAL INCOME"
+                      label (absolutely positioned in the donut hole, see
+                      below) show through and overlap the tooltip's own
+                      text. An explicit opaque background + border fixes
+                      that without touching the centered-label markup. */}
+                  <Tooltip
+                    formatter={(v) => currency(v)}
+                    contentStyle={{
+                      background: "var(--color-surface)",
+                      border: "1px solid var(--color-divider)",
+                      borderRadius: "var(--radius-sm)",
+                      opacity: 1,
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
               {/* Centered total-income label inside the donut hole, matching

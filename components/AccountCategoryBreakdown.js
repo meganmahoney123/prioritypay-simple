@@ -278,7 +278,18 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v, n, p) => [`${currency(v)} (${p.payload.pct}%)`, n]} />
+              {/* Opaque background -- Recharts' default tooltip is
+                  semi-transparent, which is hard to read over a busy
+                  donut. Same fix as CategoryDistributionSection's pie. */}
+              <Tooltip
+                formatter={(v, n, p) => [`${currency(v)} (${p.payload.pct}%)`, n]}
+                contentStyle={{
+                  background: "var(--color-surface)",
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: "var(--radius-sm)",
+                  opacity: 1,
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>

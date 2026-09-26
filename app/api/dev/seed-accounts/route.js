@@ -29,10 +29,13 @@ const SEED_ACCOUNTS = [
   { displayInstitution: "Ally Bank", accountName: "Business Checking", mask: "7756", subtype: "checking", balance: 12890.4 },
   { displayInstitution: "PayPal", accountName: "PayPal Balance", mask: "3310", subtype: "checking", balance: 642.1 },
   { displayInstitution: "Cash App", accountName: "Cash App Balance", mask: "9042", subtype: "prepaid", balance: 310.75 },
-  // Savings subtype, not checking -- this is the one assigned to the demo
-  // Investments row, since checking accounts are no longer selectable
-  // there (see components/AccountSelect.js excludeSubtypes).
-  { displayInstitution: "Vanguard", accountName: "Cash Reserve", mask: "5510", subtype: "savings", balance: 6218.4 },
+  // Brokerage subtype, not checking -- still selectable for the demo
+  // Investments row (checking accounts are excluded there, see
+  // components/AccountSelect.js excludeSubtypes), AND lands this account
+  // in the Accounts page's "Investment Accounts" section via
+  // MARKET_BASED_SUBTYPES (see /api/allocations/account-balances), which
+  // "savings" wouldn't have.
+  { displayInstitution: "Vanguard", accountName: "Cash Reserve", mask: "5510", subtype: "brokerage", balance: 6218.4 },
   // Credit type, not depository -- exercises the Accounts page's
   // "Connected Credit Cards" section and the Dashboard's credit-card-
   // charges pie slice, both of which key off simple_accounts.account_type

@@ -19,6 +19,7 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
   const [categoryBalances, setCategoryBalances] = useState({});
   const [creditCardBalances, setCreditCardBalances] = useState({});
+  const [investmentAccountIds, setInvestmentAccountIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState(null);
   const [disconnectError, setDisconnectError] = useState(null);
@@ -28,9 +29,10 @@ export default function AccountsPage() {
     // to avoid N duplicate /api/allocations/account-balances requests for
     // N connected accounts -- the whole payload is small and each account
     // Card just reads its own slice out of the lookup below.
-    const [accountsRes, categoryBalancesRes] = await Promise.all([
+    const [accountsRes, categoryBalancesRes, splitRulesRes] = await Promise.all([
       fetch("/api/accounts").then((r) => r.json()),
       fetch("/api/allocations/account-balances").then((r) => r.json()),
+      fetch("/api/split-rules").then((r) => r.json()),
     ]);
     setAccounts(accountsRes.accounts || []);
     setCategoryBalances(Object.fromEntries((categoryBalancesRes.accounts || []).map((a) => [a.accountId, a])));
@@ -38,6 +40,19 @@ export default function AccountsPage() {
     // live balance, how much of it is already covered by a category
     // withdrawal, and what's actually still owed.
     setCreditCardBalances(Object.fromEntries((categoryBalancesRes.creditCards || []).map((c) => [c.accountId, c])));
+    // Which accounts hold a Retirement/Investments category -- used
+    // alongside isMarketBased (Plaid's own subtype) to decide the
+    // "Investment Accounts" section below. An account someone funds their
+    // Solo 401k or Investments category through reads as an investment
+    // account even when Plaid itself reports it as a plain checking/
+    // savings subtype (e.g. a taxable brokerage's linked cash sweep), and
+    // this catches that case that a subtype check alone would miss.
+    const investmentIds = new Set(
+      (splitRulesRes.splitRules?.percent || [])
+        .filter((r) => r.accountId && ["Retirement", "Retirement (Side Income)", "Investments"].includes(r.group))
+        .map((r) => r.accountId)
+    );
+    setInvestmentAccountIds(investmentIds);
     setLoading(false);
   };
 
@@ -106,8 +121,9 @@ export default function AccountsPage() {
   // (401k, brokerage, IRA, HSA...), not a second, separately-maintained
   // classification that could drift out of sync with it.
   const depositoryAccounts = accounts.filter((a) => a.account_type !== "credit");
-  const bankAccounts = depositoryAccounts.filter((a) => !categoryBalances[a.id]?.isMarketBased);
-  const investmentAccounts = depositoryAccounts.filter((a) => categoryBalances[a.id]?.isMarketBased);
+  const isInvestmentAccount = (a) => categoryBalances[a.id]?.isMarketBased || investmentAccountIds.has(a.id);
+  const bankAccounts = depositoryAccounts.filter((a) => !isInvestmentAccount(a));
+  const investmentAccounts = depositoryAccounts.filter(isInvestmentAccount);
   const creditAccounts = accounts.filter((a) => a.account_type === "credit");
 
   const disconnect = async (acc) => {
@@ -306,7 +322,29 @@ export default function AccountsPage() {
           <PlaidLinkButton
             label="Connect a bank account"
             onLinked={load}
+            keyHint="bank"
             style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700 }}
+          />
+          {/* Plain link flow, same as "Connect a bank account" -- there's
+              no separate account_type for investment accounts (see
+              supabase/schema.sql, only 'depository' | 'credit' |
+              'business' exist). Which section it lands in on this page is
+              decided after the fact, from whatever real subtype/category
+              comes back (see isInvestmentAccount above) -- this button is
+              just a clearer label for someone about to pick their
+              brokerage/401k/IRA in Plaid Link, not a functionally
+              different flow. */}
+          <PlaidLinkButton
+            label="Connect an investment account"
+            onLinked={load}
+            keyHint="investment_link"
+            style={{
+              borderRadius: "var(--radius-pill)",
+              fontFamily: "var(--font-heading)",
+              fontWeight: 700,
+              background: "var(--color-accent-700)",
+              border: "1px solid var(--color-accent-700)",
+            }}
           />
           <PlaidLinkButton
             label="Add a credit card"
@@ -370,10 +408,15 @@ export default function AccountsPage() {
 
       {bankAccounts.length > 0 && (
         <div>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
-            Bank Accounts
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h2
+            style={{
+              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, color: "var(--color-text)",
+              paddingBottom: 10, marginBottom: 16, borderBottom: "2px solid var(--color-divider)",
+            }}
+          >
+            Deposit Accounts
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-1">
             {bankAccounts.map(renderAccountCard)}
           </div>
         </div>
@@ -381,10 +424,15 @@ export default function AccountsPage() {
 
       {investmentAccounts.length > 0 && (
         <div>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
+          <h2
+            style={{
+              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, color: "var(--color-text)",
+              paddingBottom: 10, marginBottom: 16, borderBottom: "2px solid var(--color-divider)",
+            }}
+          >
             Investment Accounts
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-1">
             {investmentAccounts.map(renderAccountCard)}
           </div>
         </div>
@@ -392,10 +440,15 @@ export default function AccountsPage() {
 
       {creditAccounts.length > 0 && (
         <div>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
+          <h2
+            style={{
+              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, color: "var(--color-text)",
+              paddingBottom: 10, marginBottom: 16, borderBottom: "2px solid var(--color-divider)",
+            }}
+          >
             Credit Cards
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-1">
             {creditAccounts.map(renderCreditCard)}
           </div>
         </div>

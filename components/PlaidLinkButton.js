@@ -42,6 +42,7 @@ export default function PlaidLinkButton({
   savingsOnly,
   creditCard,
   businessAccount,
+  keyHint,
   style,
 }) {
   const [linkToken, setLinkToken] = useState(null);
@@ -72,6 +73,17 @@ export default function PlaidLinkButton({
     ? `${STORAGE_KEY}_credit_card`
     : businessAccount
     ? `${STORAGE_KEY}_business_account`
+    // Two plain (non-typed) buttons can now sit on the same page (Accounts
+    // page's "Connect a bank account" and "Connect an investment account"
+    // -- same plain /api/plaid/create-link-token flow either way, just a
+    // different label). Without a distinct key here they'd share one
+    // localStorage slot for the OAuth-redirect resume token, so whichever
+    // button's fetch finished last would silently win and the other could
+    // resume with the wrong token after an OAuth bank's redirect back.
+    // `keyHint` just needs to be unique per button instance on a page, not
+    // meaningful -- it isn't sent to any API.
+    : keyHint
+    ? `${STORAGE_KEY}_${keyHint}`
     : STORAGE_KEY;
 
   useEffect(() => {
