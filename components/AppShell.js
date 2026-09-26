@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Menu, X, Bell, ArrowRight } from "lucide-react";
@@ -58,6 +58,20 @@ function titleFor(pathname) {
   return TITLES[pathname] || "PriorityPay";
 }
 
+// Lets the Dashboard page (only) inject content into AppShell's own
+// sticky header instead of rendering its own separate sticky bar further
+// down the page -- Megan wants the greeting where the page title
+// ("Dashboard") normally sits, and the This Month/This Year toggle where
+// the "Sandbox mode" badge sits (once that badge is gone -- see isSandbox
+// below). AppShell exposes the two slot DOM nodes via context; Dashboard
+// portals into them with react-dom's createPortal. No other page reads
+// this context, so every other route keeps the plain titleFor(pathname)
+// header exactly as before.
+const DashboardHeaderSlotsContext = createContext({ titleSlot: null, actionsSlot: null });
+export function useDashboardHeaderSlots() {
+  return useContext(DashboardHeaderSlotsContext);
+}
+
 function NavLink({ href, label, active, onClick }) {
   return (
     <a
@@ -103,6 +117,13 @@ export default function AppShell({ children, isSandbox = false }) {
   const router = useRouter();
   const [narrow, setNarrow] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // DOM nodes for the two Dashboard-only header slots (see
+  // DashboardHeaderSlotsContext above) -- state, not refs, so setting them
+  // (via the ref callback below) triggers a re-render, which is what lets
+  // Dashboard's createPortal calls find a real node on the same pass the
+  // header itself mounts.
+  const [titleSlotEl, setTitleSlotEl] = useState(null);
+  const [actionsSlotEl, setActionsSlotEl] = useState(null);
   // Tax Savings Quiz doesn't apply to a plain W2 employee with no
   // self-employment/side income -- its strategies are almost entirely
   // self-employment/business-focused (see lib/quizEngine.js). Hidden from
@@ -301,7 +322,7 @@ export default function AppShell({ children, isSandbox = false }) {
             background: "#FAF7FD",
           }}
         >
-          <span style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, flex: "1 1 auto" }}>
             <button
               onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
@@ -322,11 +343,19 @@ export default function AppShell({ children, isSandbox = false }) {
             >
               <Menu size={18} />
             </button>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
-              {titleFor(pathname)}
-            </h1>
+            {pathname === "/dashboard" ? (
+              // Dashboard portals its "Good morning, Megan" greeting in
+              // here (see useDashboardHeaderSlots) instead of the plain
+              // page title -- ref callback both attaches the node and
+              // triggers the re-render createPortal needs to find it.
+              <span ref={setTitleSlotEl} style={{ minWidth: 0, flex: "1 1 auto" }} />
+            ) : (
+              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
+                {titleFor(pathname)}
+              </h1>
+            )}
           </span>
-          {isSandbox && (
+          {isSandbox ? (
             <span
               className="pp-shell-badge"
               style={{
@@ -346,7 +375,12 @@ export default function AppShell({ children, isSandbox = false }) {
             >
               Sandbox mode
             </span>
-          )}
+          ) : pathname === "/dashboard" ? (
+            // Once Sandbox mode is off, this is where the Dashboard's This
+            // Month/This Year toggle lives instead -- same top-right spot
+            // the badge used to occupy.
+            <span ref={setActionsSlotEl} style={{ flex: "none" }} />
+          ) : null}
         </header>
 
         {/* Persistent "transfer pending" reminder -- visible on every
@@ -392,7 +426,9 @@ export default function AppShell({ children, isSandbox = false }) {
         )}
 
         <main style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>
-          {children}
+          <DashboardHeaderSlotsContext.Provider value={{ titleSlot: titleSlotEl, actionsSlot: actionsSlotEl }}>
+            {children}
+          </DashboardHeaderSlotsContext.Provider>
         </main>
       </div>
 

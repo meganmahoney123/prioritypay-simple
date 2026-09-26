@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import AccountBalances from "@/components/AccountBalances";
 import PendingTransfers from "@/components/PendingTransfers";
 import CloseoutNudge from "@/components/CloseoutNudge";
+import { useDashboardHeaderSlots } from "@/components/AppShell";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
@@ -75,12 +77,13 @@ export default function DashboardPage() {
   const [displayName, setDisplayName] = useState(null);
 
   // Owns the This Month/This Year toggle (and the year stepper) up here
-  // now, instead of inside CategoryDistributionSection, so it can live in
-  // the sticky bar at the top of the page alongside the greeting -- see
-  // the stickyTop effect and the bar itself below. CategoryDistribution-
-  // Section still does the actual fetching/clamping against the real
-  // earliest period; it reports that back up via onEarliestPeriod so the
-  // year stepper here can clamp against it too.
+  // now, instead of inside CategoryDistributionSection, so it can be
+  // portaled into AppShell's own sticky header alongside the greeting --
+  // see useDashboardHeaderSlots below and the two createPortal calls in
+  // the return. CategoryDistributionSection still does the actual
+  // fetching/clamping against the real earliest period; it reports that
+  // back up via onEarliestPeriod so the year stepper here can clamp
+  // against it too.
   const maxPeriod = useMemo(() => currentPeriod(), []);
   const currentYear = Number(maxPeriod.slice(0, 4));
   const [mode, setMode] = useState("month");
@@ -118,24 +121,12 @@ export default function DashboardPage() {
     loadAll();
   }, []);
 
-  // Same live-measured-sticky-offset pattern as the Splits page's own
-  // sticky Save bar (components/AppShell.js's header height varies with
-  // its responsive clamp() title, so a hardcoded `top` drifts out of
-  // alignment at different viewport widths) -- keeps this bar pinned
-  // exactly below the real header instead of overlapping or gapping it.
-  const [stickyTop, setStickyTop] = useState(84);
-  useEffect(() => {
-    const measure = () => {
-      const header = document.querySelector("header");
-      if (header) setStickyTop(header.getBoundingClientRect().height);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(measure);
-    }
-    return () => window.removeEventListener("resize", measure);
-  }, []);
+  // DOM nodes AppShell exposes inside its own sticky header, one where the
+  // page title normally sits and one where the "Sandbox mode" badge sits
+  // (empty/null on every other page -- see components/AppShell.js). Portal
+  // the greeting and the toggle into them below instead of rendering a
+  // second sticky bar of our own.
+  const { titleSlot, actionsSlot } = useDashboardHeaderSlots();
 
   const rules = useMemo(() => allRules(splitRules), [splitRules]);
 
@@ -184,41 +175,31 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Sticky greeting + This Month/This Year toggle -- pinned at the
-          top of the page (below AppShell's own sticky header, see
-          stickyTop above) since Megan wants both always visible while
-          scrolling the rest of the Dashboard. The toggle/period state
-          lives here rather than in CategoryDistributionSection so it can
-          sit up here instead of buried lower on the page; Account-
-          Balances/CategoryDistributionSection just receive `mode`/
-          `period` as props now. */}
-      <div
-        style={{
-          position: "sticky",
-          top: stickyTop,
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "10px 20px",
-          margin: "0 -4px",
-          padding: "14px 18px",
-          background: "#FAF7FD",
-          border: "1px solid var(--color-divider)",
-          borderRadius: "var(--radius-md)",
-        }}
-      >
-        <div>
+      {/* Greeting portals into AppShell's header in place of the plain
+          "Dashboard" title -- see components/AppShell.js's titleSlot. */}
+      {titleSlot && createPortal(
+        <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-neutral-700)" }}>
             {timeOfDayGreeting()}
           </div>
           {greetingName && (
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 19, fontWeight: 700, color: "var(--color-text)", lineHeight: 1.15 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-heading)", fontSize: "clamp(20px, 2.6vw, 28px)", fontWeight: 800,
+                color: "var(--color-text)", lineHeight: 1.15, letterSpacing: "-0.03em",
+              }}
+            >
               {greetingName}
             </div>
           )}
-        </div>
+        </div>,
+        titleSlot
+      )}
+
+      {/* This Month/This Year toggle portals into AppShell's header in
+          place of the "Sandbox mode" badge, once that badge is gone -- see
+          components/AppShell.js's actionsSlot (null while isSandbox). */}
+      {actionsSlot && createPortal(
         <div>
           <div className="flex" style={{ background: "var(--color-accent-200)", borderRadius: 999, padding: 4 }}>
             <button
@@ -297,8 +278,9 @@ export default function DashboardPage() {
               </button>
             </div>
           )}
-        </div>
-      </div>
+        </div>,
+        actionsSlot
+      )}
 
       <PendingTransfers allocations={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
 
