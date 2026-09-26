@@ -222,28 +222,25 @@ export default function AccountsPage() {
             product links real bank/credit union accounts, not P2P apps
             like Venmo or Cash App, so the old copy overpromised what this
             button can actually connect. */}
-        <PlaidLinkButton
-          label="Connect a bank account"
-          onLinked={load}
-          style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700 }}
-        />
-        <PlaidLinkButton
-          label="Add a credit card"
-          creditCard
-          onLinked={load}
-          className="text-xs mt-2 ml-2"
-          style={{
-            borderRadius: "var(--radius-pill)",
-            fontFamily: "var(--font-heading)",
-            fontWeight: 700,
-            padding: "10px 20px",
-            background: "var(--color-accent-800)",
-            border: "1px solid var(--color-accent-800)",
-          }}
-        />
-        <p className="text-xs mt-2" style={{ color: "var(--color-neutral-700)" }}>
-          Credit cards are for close-out expense tracking only, they're never used for splits or transfers.
-        </p>
+        <div className="flex flex-wrap gap-3">
+          <PlaidLinkButton
+            label="Connect a bank account"
+            onLinked={load}
+            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700 }}
+          />
+          <PlaidLinkButton
+            label="Add a credit card"
+            creditCard
+            onLinked={load}
+            style={{
+              borderRadius: "var(--radius-pill)",
+              fontFamily: "var(--font-heading)",
+              fontWeight: 700,
+              background: "var(--color-accent-800)",
+              border: "1px solid var(--color-accent-800)",
+            }}
+          />
+        </div>
         {disconnectError && (
           <div className="text-xs mt-2 p-3" style={bloomWarningCardStyle()}>
             {disconnectError}
