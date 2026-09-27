@@ -1,0 +1,21 @@
+-- Persists Plaid's own personal_finance_category on each imported Close-Out
+-- transaction, so downstream logic can tell APART two things that both show
+-- up as "a negative amount on a credit account" (money moving IN to a card,
+-- reducing what's owed): a real merchant REFUND (should net against that
+-- month's gross card charges, see lib/cardCharges.js) vs a CARD PAYMENT from
+-- checking (already excluded from suggested_category everywhere, must never
+-- also reduce gross -- that would double-count the same dollar). It's also
+-- the same signal (TRANSFER_IN/TRANSFER_OUT) app/api/allocations/
+-- category-summary/route.js uses to keep a self-initiated transfer between
+-- someone's own linked accounts (made outside PriorityPay's own transfer
+-- flow, so nothing else in the app already knows to expect it -- see that
+-- route's own comment) from inflating Total Income / Guilt-Free Spending.
+--
+-- Nullable, and existing rows are left null -- there's nothing to safely
+-- backfill from without a fresh Plaid call per historical transaction (see
+-- lib/closeoutSync.js's ensureCloseoutForPeriod, which only re-fetches from
+-- Plaid for a still-draft period), same "can't backfill, don't try" pattern
+-- as calculated_amount (20260925_calculated_amount.sql). Only transactions
+-- imported from here forward will have this populated.
+alter table simple_closeout_transactions add column if not exists pfc_primary text;
+alter table simple_closeout_transactions add column if not exists pfc_detailed text;

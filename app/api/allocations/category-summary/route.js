@@ -81,7 +81,7 @@ export async function GET(request) {
     // against: source_amount minus whatever actually landed in a category.
     admin
       .from("simple_transfers")
-      .select("source_amount, status")
+      .select("source_amount, status, plaid_transaction_id")
       .eq("user_id", user.id)
       .neq("status", "failed")
       .neq("status", "needs_approval")
@@ -125,7 +125,55 @@ export async function GET(request) {
     admin.from("simple_profiles").select("created_at").eq("id", user.id).single(),
   ]);
 
-  const totalDeposited = (periodTransfers || []).reduce((s, t) => s + (Number(t.source_amount) || 0), 0);
+  // A deposit PriorityPay's own webhook already recognized as the landing
+  // side of a transfer IT initiated (a One-Time Transfer or Close-Out
+  // payoff moving between this user's own linked accounts) never becomes a
+  // simple_transfers row at all -- app/api/plaid/webhook/route.js matches
+  // it against the pending 'in_transit' allocation and skips runSplit
+  // entirely, so it's already excluded from totalDeposited by construction.
+  // What's NOT caught there is a self-transfer the person makes some other
+  // way (moving money between their own linked accounts directly through
+  // their bank, Zelle, etc., outside PriorityPay's own transfer flow) --
+  // nothing in the app is expecting that one, so it lands looking exactly
+  // like fresh income and gets auto-split. Filtering that out of what
+  // actually gets split is a real-money change to the live auto-split
+  // webhook and out of scope here; this only keeps it from inflating the
+  // DISPLAY number by cross-referencing the same personal_finance_category
+  // signal Close-Out's own suggestCategory() uses to spot a transfer
+  // (pfc_primary "TRANSFER_IN"/"TRANSFER_OUT" -- see
+  // supabase/migrations/20260927_closeout_pfc.sql), looked up via the
+  // transfer's plaid_transaction_id against Close-Out's own imported
+  // transactions for this same period (already populated by the
+  // computeCardChargesForPeriod call below, which runs ensureCloseoutForPeriod
+  // for this exact period first). A manually-run "Split $X now" transfer has
+  // no plaid_transaction_id and is never touched by this -- there's nothing
+  // to look up, and someone explicitly typing in an amount to split isn't
+  // the auto-detection false-positive this is guarding against. Transactions
+  // imported before that migration have null pfc_primary and are left alone
+  // (no false exclusions, just no help for old data either).
+  const transferPlaidIds = (periodTransfers || []).map((t) => t.plaid_transaction_id).filter(Boolean);
+  let selfTransferPlaidIds = new Set();
+  if (transferPlaidIds.length) {
+    const { data: pfcRows } = await admin
+      .from("simple_closeout_transactions")
+      .select("plaid_transaction_id, pfc_primary")
+      .eq("user_id", user.id)
+      .in("plaid_transaction_id", transferPlaidIds);
+    selfTransferPlaidIds = new Set(
+      (pfcRows || [])
+        .filter((r) => r.pfc_primary === "TRANSFER_IN" || r.pfc_primary === "TRANSFER_OUT")
+        .map((r) => r.plaid_transaction_id)
+    );
+  }
+
+  const totalDeposited = (periodTransfers || []).reduce((s, t) => {
+    if (t.plaid_transaction_id && selfTransferPlaidIds.has(t.plaid_transaction_id)) return s;
+    return s + (Number(t.source_amount) || 0);
+  }, 0);
+  const excludedSelfTransfers = (periodTransfers || []).reduce((s, t) => {
+    if (t.plaid_transaction_id && selfTransferPlaidIds.has(t.plaid_transaction_id)) return s + (Number(t.source_amount) || 0);
+    return s;
+  }, 0);
 
   // Credit card charges for this period, net of any charge already covered
   // by a category withdrawal (see lib/cardCharges.js) -- these count
@@ -138,6 +186,7 @@ export async function GET(request) {
   // point summing months that haven't happened yet).
   let netCardCharges = 0;
   let grossCardCharges = 0;
+  let refundedCardCharges = 0;
   let excludedByWithdrawal = 0;
   if (yearMode) {
     const y = Number(period);
@@ -148,12 +197,14 @@ export async function GET(request) {
       const monthTotals = await computeCardChargesForPeriod(admin, user.id, mPeriod);
       netCardCharges += monthTotals.netCardCharges;
       grossCardCharges += monthTotals.grossCardCharges;
+      refundedCardCharges += monthTotals.refundedCardCharges;
       excludedByWithdrawal += monthTotals.excludedByWithdrawal;
     }
   } else {
     const monthTotals = await computeCardChargesForPeriod(admin, user.id, period);
     netCardCharges = monthTotals.netCardCharges;
     grossCardCharges = monthTotals.grossCardCharges;
+    refundedCardCharges = monthTotals.refundedCardCharges;
     excludedByWithdrawal = monthTotals.excludedByWithdrawal;
   }
 
@@ -257,8 +308,14 @@ export async function GET(request) {
     period,
     earliestPeriod,
     totalDeposited,
+    // Surfaced (not just netted silently into totalDeposited) so the UI can
+    // eventually tell someone why their deposits total looks lower than
+    // their bank activity, the same way excludedByWithdrawal/
+    // refundedCardCharges explain the card-charges side below.
+    excludedSelfTransfers,
     totalAllocated,
     grossCardCharges,
+    refundedCardCharges,
     excludedByWithdrawal,
     netCardCharges,
     unallocated: Math.max(0, totalDeposited - totalAllocated - netCardCharges),
