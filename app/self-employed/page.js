@@ -23,6 +23,11 @@ const ARTICLES = [
     title: "Sole Proprietor vs. LLC vs. S-Corp",
     dek: "See what a year looks like as each structure side by side, using your own numbers. Free 2026 calculator plus a plain-English guide.",
   },
+  {
+    href: "/self-employed/tax-optimization",
+    title: "Tax Optimization for Self Employed: The Complete Guide",
+    dek: "The levers above the basics: retirement, entity structure, timing, and family payroll, explained in plain English, with a filter that shortens the guide to your situation.",
+  },
 ];
 
 export default function SelfEmployedHubPage() {
