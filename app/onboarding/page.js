@@ -15,7 +15,7 @@ import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // lib/phone.js itself is untouched.
 import { normalizeUSPhone } from "@/lib/phone";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { isNativeApp, purchasePlan } from "@/lib/native";
+import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
 
 // Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
@@ -587,6 +587,36 @@ function OnboardingPageInner() {
     if (!res.ok || !data.ok) {
       setNativePurchasing(false);
       setPaymentError(data.error || "Your purchase went through, but we couldn't confirm it yet. Please try again.");
+      return;
+    }
+    router.push("/dashboard");
+    router.refresh();
+  };
+  // Required by Apple Guideline 3.1.1 -- lets someone who already has an
+  // active PriorityPay subscription under this Apple ID (reinstalled the
+  // app, or a prior purchase that didn't confirm server-side) pick it back
+  // up without paying again, instead of being stuck re-purchasing through
+  // finishNative() above. Mirrors finishNative()'s shape but calls
+  // restorePurchases() (lib/native.js) instead of purchasePlan(), then the
+  // same /api/billing/iap/confirm sync.
+  const restoreNativePurchases = async () => {
+    setNativePurchasing(true);
+    setPaymentError(null);
+    const restored = await restorePurchases(userId);
+    if (!restored.ok) {
+      setNativePurchasing(false);
+      setPaymentError(restored.error || "Couldn't restore purchases. Please try again.");
+      return;
+    }
+    const res = await fetch("/api/billing/iap/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ onboarding: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      setNativePurchasing(false);
+      setPaymentError(data.error || "We found a purchase but couldn't confirm it yet. Please try again.");
       return;
     }
     router.push("/dashboard");
@@ -1289,9 +1319,22 @@ function OnboardingPageInner() {
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
                 {isNative
-                  ? "PriorityPay is $12/month, billed today to get started through your Apple ID. Cancel anytime from iOS Settings > Apple ID > Subscriptions."
+                  ? "PriorityPay Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period — cancel anytime from iOS Settings > Apple ID > Subscriptions."
                   : "PriorityPay is $12/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
               </p>
+              {isNative && (
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "10px 0 0" }}>
+                  By continuing you agree to our{" "}
+                  <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                    Terms of Use
+                  </a>{" "}
+                  and{" "}
+                  <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                    Privacy Policy
+                  </a>
+                  .
+                </p>
+              )}
             </div>
             {paymentError && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "20px 0 0" }}>{paymentError}</p>
@@ -1300,7 +1343,7 @@ function OnboardingPageInner() {
               <BackBtn onClick={back} />
               {isNative ? (
                 <PrimaryBtn onClick={finishNative} disabled={nativePurchasing} flex>
-                  {nativePurchasing ? "Processing…" : "Continue to payment — $12/month"} &nbsp;→
+                  {nativePurchasing ? "Processing…" : "Continue to payment — $12.99/month"} &nbsp;→
                 </PrimaryBtn>
               ) : (
                 <PrimaryBtn onClick={finish} disabled={submitting} flex>
@@ -1308,6 +1351,25 @@ function OnboardingPageInner() {
                 </PrimaryBtn>
               )}
             </div>
+            {isNative && (
+              <button
+                type="button"
+                onClick={restoreNativePurchases}
+                disabled={nativePurchasing}
+                style={{
+                  display: "block",
+                  margin: "16px auto 0",
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-accent-700)",
+                  textDecoration: "underline",
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                Restore Purchases
+              </button>
+            )}
             {isDevTester && (
               <button
                 onClick={devFinishSkipPayment}

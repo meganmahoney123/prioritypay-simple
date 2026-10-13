@@ -9,7 +9,7 @@ import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 import DeleteAccountCard from "@/components/DeleteAccountCard";
 import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { isNativeApp, purchasePlan } from "@/lib/native";
+import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
 
 // The persona-switch testing panel below (see /api/dev/set-persona, which
 // enforces the same allowlist server-side -- this client-side check is
@@ -194,6 +194,36 @@ function SettingsPageInner() {
     setBillingBusy(false);
   };
 
+  // Required by Apple Guideline 3.1.1 -- someone who reinstalled the app or
+  // signed back in should be able to pick their existing subscription back
+  // up here without paying again. Mirrors subscribeNative()'s shape but
+  // calls restorePurchases() (lib/native.js) instead of purchasePlan().
+  const restoreNative = async () => {
+    setBillingBusy(true);
+    setBillingError("");
+    const restored = await restorePurchases(userId);
+    if (!restored.ok) {
+      setBillingBusy(false);
+      setBillingError(restored.error || "Couldn't restore purchases. Please try again.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/billing/iap/confirm", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setBillingError(data.error || "We found a purchase but couldn't confirm it yet. Please try again.");
+        setBillingBusy(false);
+        return;
+      }
+    } catch {
+      setBillingError("We found a purchase but couldn't confirm it yet. Please try again.");
+      setBillingBusy(false);
+      return;
+    }
+    await loadProfile();
+    setBillingBusy(false);
+  };
+
   const switchPersona = async (persona) => {
     setPersonaSwitchBusy(persona);
     const res = await fetch("/api/dev/set-persona", {
@@ -240,7 +270,13 @@ function SettingsPageInner() {
         {isActive ? (
           <>
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
-              You&apos;re subscribed to PriorityPay — <strong>$12/month</strong>.
+              You&apos;re subscribed to PriorityPay{billing.isBusiness ? " Business" : ""} —{" "}
+              <strong>
+                {billing.subscriptionSource === "apple"
+                  ? billing.isBusiness ? "$39.99/month" : "$12.99/month"
+                  : "$12/month"}
+              </strong>
+              .
             </p>
             {billing.subscriptionSource === "apple" ? (
               // Apple doesn't let a third party manage or cancel an IAP
@@ -276,10 +312,20 @@ function SettingsPageInner() {
               paused until you subscribe.
             </div>
             <PrimaryButton onClick={isNative ? subscribeNative : subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : "Subscribe — $12/month"}
+              {billingBusy ? "Loading…" : `Subscribe — ${isNative ? "$12.99" : "$12"}/month`}
             </PrimaryButton>
             {billingError && (
               <p style={{ fontSize: 13, color: "#C0392B", margin: "8px 0 0" }}>{billingError}</p>
+            )}
+            {isNative && (
+              <button
+                type="button"
+                onClick={restoreNative}
+                disabled={billingBusy}
+                style={{ display: "block", marginTop: 10, background: "none", border: "none", color: "var(--color-accent-700)", textDecoration: "underline", fontSize: 13, cursor: "pointer", padding: 0 }}
+              >
+                Restore Purchases
+              </button>
             )}
           </>
         ) : (
@@ -288,13 +334,24 @@ function SettingsPageInner() {
               {remaining === null
                 ? "You're on PriorityPay's 30-day free trial."
                 : `${remaining} day${remaining === 1 ? "" : "s"} left in your free trial`}
-              {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}. $12/month after that.
+              {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}.{" "}
+              {isNative ? "$12.99" : "$12"}/month after that.
             </div>
             <PrimaryButton onClick={isNative ? subscribeNative : subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Subscribe now"}
             </PrimaryButton>
             {billingError && (
               <p style={{ fontSize: 13, color: "#C0392B", margin: "8px 0 0" }}>{billingError}</p>
+            )}
+            {isNative && (
+              <button
+                type="button"
+                onClick={restoreNative}
+                disabled={billingBusy}
+                style={{ display: "block", marginTop: 10, background: "none", border: "none", color: "var(--color-accent-700)", textDecoration: "underline", fontSize: 13, cursor: "pointer", padding: 0 }}
+              >
+                Restore Purchases
+              </button>
             )}
           </>
         )}
@@ -315,7 +372,7 @@ function SettingsPageInner() {
                 sync, and a monthly profit true-up.
               </p>
               <GhostButton onClick={isNative ? upgradeToBusinessNative : upgradeToBusiness} disabled={billingBusy}>
-                {billingBusy ? "Loading…" : "Upgrade to Business"}
+                {billingBusy ? "Loading…" : isNative ? "Upgrade to Business — $39.99/month" : "Upgrade to Business"}
               </GhostButton>
             </>
           )}
