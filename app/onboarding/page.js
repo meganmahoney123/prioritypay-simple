@@ -15,16 +15,15 @@ import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // lib/phone.js itself is untouched.
 import { normalizeUSPhone } from "@/lib/phone";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { isNativeApp } from "@/lib/native";
+import { isNativeApp, purchasePlan } from "@/lib/native";
 
 // Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
 // -- manual_approval mode calculates the split and lets the user send each
 // transfer themselves, with zero standing transfer authority required).
-// The old gate below assumed onboarding was blocked on a payments-rail
-// approval that never came through; that assumption no longer holds. Flip
-// back to false only if onboarding needs to be paused for some other
-// reason.
+// The old gate below assumed onboarding was blocked on Dwolla production
+// access; that assumption no longer holds. Flip back to false only if
+// onboarding needs to be paused for some other reason.
 const ONBOARDING_LIVE = true;
 
 // PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
@@ -118,8 +117,8 @@ function OnboardingPageInner() {
   const [employeePayroll, setEmployeePayroll] = useState("");
   const [incomeHandling, setIncomeHandling] = useState(null);
   const isBusinessOwnerWithEmployees = businessType === HAS_EMPLOYEES_TYPE;
-  // Identity verification (KYB/KYC) was required here back when this app
-  // applied to originate real transfers on someone's behalf -- see the
+  // Identity verification (Dwolla KYB/KYC) was required here back when
+  // Dwolla originated real transfers on someone's behalf -- see the
   // removed Identity step below. Manual-approval mode (lib/runSplit.js)
   // means PriorityPay never touches money itself, so there's nothing left
   // that actually requires verifying identity before connecting accounts.
@@ -176,9 +175,8 @@ function OnboardingPageInner() {
   // validation gate (only the two `disabled` Continue buttons below do, and
   // those are bypassed for this account too). Never rendered for anyone
   // else, so nobody can skip ahead of onboarding's real required steps.
-  const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com", "megan+appreview@ignitemysite.com", "megan+appreview2@ignitemysite.com", "megan+appreview3@ignitemysite.com", "megan+appreview4@ignitemysite.com", "megan+applereview@ignitemysite.com"]);
+  const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com"]);
   const [isDevTester, setIsDevTester] = useState(false);
-  const [devPanelOpen, setDevPanelOpen] = useState(false);
   useEffect(() => {
     supabaseBrowser()
       .auth.getUser()
@@ -187,13 +185,25 @@ function OnboardingPageInner() {
 
   // Apple Guideline 3.1.1: starting a NEW paid subscription from inside the
   // native app has to go through Apple's In-App Purchase, not a Stripe
-  // checkout redirect -- so onboarding's final "pay now" step is replaced
-  // with an instruction to finish on the web, on native only. Existing paid
-  // users logging in on native are never gated (see app/(app)/layout.js).
+  // checkout redirect -- so onboarding's final "pay now" step calls
+  // purchasePlan() (lib/native.js) instead of finish() below when running
+  // natively. Existing paid users logging in on native are never gated
+  // (see app/(app)/layout.js).
   const [isNative, setIsNative] = useState(false);
   useEffect(() => {
     isNativeApp().then(setIsNative);
   }, []);
+  // Needed to configure RevenueCat with the right appUserID -- see
+  // purchasePlan() in lib/native.js. Fetched separately from the
+  // emailAddress effect above so this still works even if that one is ever
+  // restructured.
+  const [userId, setUserId] = useState(null);
+  useEffect(() => {
+    supabaseBrowser()
+      .auth.getUser()
+      .then(({ data }) => setUserId(data?.user?.id || null));
+  }, []);
+  const [nativePurchasing, setNativePurchasing] = useState(false);
   // Carried over from the Money Simulator's "Start saving for this" /
   // "Set up my real accounts" buttons (see app/(app)/simulator/page.js),
   // which base64-encode the simulated split into ?sim=. Runs once on
@@ -243,7 +253,7 @@ function OnboardingPageInner() {
         });
     } else if (paid === "cancelled") {
       setStep(STEPS.length - 1);
-      setPaymentError("Checkout was cancelled, no charge was made. Try again when you're ready.");
+      setPaymentError("Checkout was cancelled — no charge was made. Try again when you're ready.");
     }
     // Only ever meant to run once, against whatever ?paid= was on the URL
     // Stripe redirected back to -- not on every searchParams change.
@@ -297,7 +307,7 @@ function OnboardingPageInner() {
         // categories claiming it, but still possible if two rows in this
         // step point at the same account with too much starting balance
         // between them.
-        alert(data.error || "Couldn't save that, please try again.");
+        alert(data.error || "Couldn't save that -- please try again.");
       }
       return res;
     });
@@ -526,6 +536,62 @@ function OnboardingPageInner() {
     }
     window.location.href = data.url;
   };
+  // Native counterpart to finish() -- same /api/onboarding/complete save
+  // (finalize: false, for the same bfcache/reload reasons as finish()
+  // above), but buys the Simple plan through Apple In-App Purchase
+  // (purchasePlan() in lib/native.js) instead of redirecting to Stripe
+  // Checkout, then confirms with RevenueCat via /api/billing/iap/confirm
+  // (onboarding: true flips onboarded -- see that route) rather than
+  // /api/onboarding/confirm-payment's Stripe-session flow.
+  const finishNative = async () => {
+    setNativePurchasing(true);
+    setPaymentError(null);
+    await fetch("/api/onboarding/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        persona: businessType,
+        businessName,
+        entityType,
+        retirementProfile: {
+          incomeHandling: isBusinessOwnerWithEmployees ? incomeHandling || "separate" : "n/a",
+          hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,
+          w2ElectiveDeferralYTD: 0,
+          ageBracket: "under50",
+          estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
+        },
+        splitRules: { percent: settleCaps(percent) },
+        minDepositThreshold,
+        notifications: { phoneNumber: normalizeUSPhone(phoneNumber), smsEnabled, emailEnabled: emailAlertsEnabled, alertEmail },
+        finalize: false,
+      }),
+    });
+
+    const purchase = await purchasePlan("simple", userId);
+    if (!purchase.ok) {
+      setNativePurchasing(false);
+      // A cancelled Apple purchase sheet is an expected, silent outcome --
+      // see purchasePlan()'s own comment -- not an error to surface.
+      if (!purchase.cancelled) {
+        setPaymentError(purchase.error || "Purchase failed. Please try again.");
+      }
+      return;
+    }
+
+    const res = await fetch("/api/billing/iap/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ onboarding: true }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      setNativePurchasing(false);
+      setPaymentError(data.error || "Your purchase went through, but we couldn't confirm it yet. Please try again.");
+      return;
+    }
+    router.push("/dashboard");
+    router.refresh();
+  };
   // Dev-only counterpart to finish() -- same /api/onboarding/complete call,
   // but with finalize: true right away instead of routing through Stripe
   // Checkout, so testing the onboarding flow end-to-end doesn't require a
@@ -556,7 +622,7 @@ function OnboardingPageInner() {
     });
     if (!res.ok) {
       setSubmitting(false);
-      setPaymentError("Couldn't save, please try again.");
+      setPaymentError("Couldn't save -- please try again.");
       return;
     }
     router.push("/dashboard");
@@ -582,7 +648,7 @@ function OnboardingPageInner() {
           </h1>
           <p style={{ fontSize: 16, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 30px" }}>
             We&apos;re finalizing our banking partner integration to make sure your money moves securely. Account
-            setup will open again shortly, check back soon.
+            setup will open again shortly — check back soon.
           </p>
           <a href="/" className="pp-btn pp-btn-primary" style={{ display: "inline-flex", padding: "13px 30px", textDecoration: "none" }}>
             ← &nbsp;Back home
@@ -599,69 +665,44 @@ function OnboardingPageInner() {
         // only megan@ignitemysite.com ever sees this (see DEV_TESTING_EMAILS
         // above). setStep() has no validation gate of its own, so this lets
         // every screen be previewed without filling in real answers first.
-        // Collapsed to a small toggle button by default so it doesn't sit
-        // on top of the Back/Continue buttons; tapping it reveals the full
-        // step-jump panel above the toggle.
-        <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 50 }}>
-          {devPanelOpen && (
-            <div
+        <div
+          style={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            zIndex: 50,
+            background: "#111",
+            color: "#fff",
+            borderRadius: 10,
+            padding: "10px 12px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 6,
+            maxWidth: 280,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+          }}
+        >
+          <span style={{ width: "100%", fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Testing: jump to step</span>
+          {STEPS.map((label, i) => (
+            <button
+              key={label}
+              onClick={() => {
+                setStep(i);
+                window.scrollTo(0, 0);
+              }}
               style={{
-                background: "#111",
-                color: "#fff",
-                borderRadius: 10,
-                padding: "10px 12px",
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 6,
-                maxWidth: 280,
-                marginBottom: 8,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+                fontSize: 12,
+                padding: "4px 8px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,0.25)",
+                background: step === i ? "#fff" : "transparent",
+                color: step === i ? "#111" : "#fff",
+                cursor: "pointer",
               }}
             >
-              <span style={{ width: "100%", fontSize: 11, opacity: 0.7, marginBottom: 2 }}>Testing: jump to step</span>
-              {STEPS.map((label, i) => (
-                <button
-                  key={label}
-                  onClick={() => {
-                    setStep(i);
-                    window.scrollTo(0, 0);
-                  }}
-                  style={{
-                    fontSize: 12,
-                    padding: "4px 8px",
-                    borderRadius: 6,
-                    border: "1px solid rgba(255,255,255,0.25)",
-                    background: step === i ? "#fff" : "transparent",
-                    color: step === i ? "#111" : "#fff",
-                    cursor: "pointer",
-                  }}
-                >
-                  {i}. {label}
-                </button>
-              ))}
-            </div>
-          )}
-          <button
-            onClick={() => setDevPanelOpen((open) => !open)}
-            aria-label={devPanelOpen ? "Hide dev step panel" : "Show dev step panel"}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.25)",
-              background: "#111",
-              color: "#fff",
-              fontSize: 16,
-              cursor: "pointer",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginLeft: "auto",
-            }}
-          >
-            🧪
-          </button>
+              {i}. {label}
+            </button>
+          ))}
         </div>
       )}
       <header
@@ -862,7 +903,7 @@ function OnboardingPageInner() {
               />
             </div>
             <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 34px" }}>
-              Credit cards are for close-out expense tracking only, they&apos;re never used for splits or
+              Credit cards are for close-out expense tracking only — they&apos;re never used for splits or
               transfers.
             </p>
 
@@ -900,7 +941,7 @@ function OnboardingPageInner() {
                         {(a.institution_name || "?").charAt(0).toUpperCase()}
                       </span>
                       <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1, minWidth: 0 }}>
-                        {a.institution_name}, {a.account_name} •••• {a.mask}
+                        {a.institution_name} — {a.account_name} •••• {a.mask}
                         {a.account_type === "credit" ? " (credit card)" : ""}
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
@@ -999,7 +1040,7 @@ function OnboardingPageInner() {
             {availableSuggestions.length > 0 && (
               <div style={{ marginTop: 30 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
-                  Suggestions, click to add, starts at 0%
+                  Suggestions — click to add, starts at 0%
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
                   {availableSuggestions.map((s) => (
@@ -1072,7 +1113,7 @@ function OnboardingPageInner() {
             )}
             {!balancesLoading && startingBalanceGroups.length === 0 && (
               <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Nothing to set here yet, none of your connected accounts have categories linked to them.
+                Nothing to set here yet — none of your connected accounts have categories linked to them.
               </p>
             )}
             {!balancesLoading &&
@@ -1150,7 +1191,7 @@ function OnboardingPageInner() {
               Confirming your payment…
             </h1>
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-              One moment, you&apos;ll land in your dashboard as soon as this is done.
+              One moment — you&apos;ll land in your dashboard as soon as this is done.
             </p>
           </div>
         )}
@@ -1247,8 +1288,9 @@ function OnboardingPageInner() {
 
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
-                PriorityPay is $12/month, billed today to get started. You&apos;ll enter payment details on
-                Stripe&apos;s secure checkout page next, and can cancel anytime from Settings.
+                {isNative
+                  ? "PriorityPay is $12/month, billed today to get started through your Apple ID. Cancel anytime from iOS Settings > Apple ID > Subscriptions."
+                  : "PriorityPay is $12/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
               </p>
             </div>
             {paymentError && (
@@ -1257,12 +1299,12 @@ function OnboardingPageInner() {
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <BackBtn onClick={back} />
               {isNative ? (
-                <p style={{ fontSize: 14, margin: 0, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                  Almost done! To finish setting up your account, open prioritypay.co in a web browser (not this app) and complete payment there. Then come back here and log in.
-                </p>
+                <PrimaryBtn onClick={finishNative} disabled={nativePurchasing} flex>
+                  {nativePurchasing ? "Processing…" : "Continue to payment — $12/month"} &nbsp;→
+                </PrimaryBtn>
               ) : (
                 <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                  {submitting ? "Redirecting to checkout…" : "Continue to payment, $12/month"} &nbsp;→
+                  {submitting ? "Redirecting to checkout…" : "Continue to payment — $12/month"} &nbsp;→
                 </PrimaryBtn>
               )}
             </div>

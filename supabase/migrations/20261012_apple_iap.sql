@@ -1,0 +1,17 @@
+-- Apple Guideline 3.1.1: a subscription started from inside the iOS app
+-- has to be sold through Apple's In-App Purchase, not a Stripe Checkout
+-- redirect (App Review rejects the latter as the ONLY way to pay). This
+-- adds the Apple-side purchase path alongside the existing Stripe one --
+-- see lib/native.js's purchasePlan(), lib/revenuecat.js,
+-- app/api/billing/iap/confirm/route.js, and app/api/revenuecat/webhook/
+-- route.js. Web subscribers are entirely unaffected; they keep going
+-- through Stripe exactly as before.
+--
+-- subscription_source records which rail a given subscriber is actually
+-- on, so the Settings UI knows whether to show the Stripe billing portal
+-- (web/Stripe subscribers) or point someone to iOS Settings > Apple ID >
+-- Subscriptions (Apple subscribers -- Apple doesn't let a third party
+-- manage or cancel an IAP subscription on their behalf). Defaults to
+-- 'stripe' since every existing subscriber predates this column and is,
+-- by definition, on Stripe.
+alter table simple_profiles add column if not exists subscription_source text not null default 'stripe';

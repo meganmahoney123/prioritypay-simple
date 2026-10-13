@@ -11,17 +11,6 @@ export async function GET() {
 
   return Response.json({
     profile: {
-      // The account's real login email -- not stored on simple_profiles at
-      // all, comes straight from Supabase auth. Exposed so Settings can
-      // show it as the visible default for the deposit-alert email field
-      // instead of leaving that input blank while secretly defaulting to
-      // this on the backend (see notifications.alertEmail below).
-      email: user.email || null,
-      // Real first-name field for the Dashboard greeting (see
-      // supabase/migrations/20260926_profile_display_name.sql) -- null
-      // until someone fills in "Your name" in Settings, in which case the
-      // Dashboard falls back to guessing one from the email above.
-      displayName: data.display_name || null,
       persona: data.persona,
       businessName: data.business_name,
       entityType: data.entity_type,
@@ -51,6 +40,12 @@ export async function GET() {
         // duplicating the trial-vs-active logic client-side.
         plan: data.plan || "simple",
         isBusiness: isBusinessPlan(data),
+        // Apple IAP support (supabase/migrations/20261012_apple_iap.sql) --
+        // tells Settings whether to offer the Stripe billing portal or
+        // point an Apple subscriber at iOS Settings > Apple ID >
+        // Subscriptions, since Apple doesn't let a third party manage or
+        // cancel an IAP subscription on their behalf.
+        subscriptionSource: data.subscription_source || "stripe",
       },
       notifications: {
         phoneNumber: data.phone_number,
@@ -88,10 +83,6 @@ export async function PUT(request) {
   const { error } = await supabaseAdmin()
     .from("simple_profiles")
     .update({
-      // Trimmed, empty-string normalized to null -- same convention as
-      // alert_email below, so a whitespace-only name never sticks around
-      // to produce an odd "Good morning, " greeting.
-      display_name: typeof body.displayName === "string" && body.displayName.trim() ? body.displayName.trim() : null,
       persona: body.persona,
       business_name: body.businessName,
       entity_type: body.entityType,

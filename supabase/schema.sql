@@ -117,17 +117,7 @@ create table if not exists simple_transfer_allocations (
   dwolla_transfer_id text,
   status text not null default 'reserved',
   retirement_type text,
-  investment_type text,
-  -- The split-rule-computed amount at the moment this row was created,
-  -- kept permanently even if `amount` is later overridden by the user
-  -- (see app/api/transfer-allocations/[id]/amount/route.js) -- `amount`
-  -- is "what actually happened/will happen" (what the user is asked to
-  -- send, and what reconciliation/history/balances treat as real), while
-  -- calculated_amount is the untouched original math, for audit/history
-  -- integrity. Nullable: existing rows predate this column and have
-  -- nothing to safely backfill it from (see
-  -- supabase/migrations/20260925_calculated_amount.sql).
-  calculated_amount numeric
+  investment_type text
 );
 
 -- The user's REAL Solo 401k / SEP IRA account -- deliberately separate from
@@ -654,6 +644,12 @@ alter table simple_transfer_allocations add column if not exists dest_account_la
 -- the only prior option, full account deletion.
 alter table simple_profiles add column if not exists cancel_at_period_end boolean not null default false;
 alter table simple_profiles add column if not exists current_period_end timestamptz;
+
+-- Apple In-App Purchase support -- see
+-- supabase/migrations/20261012_apple_iap.sql for the full write-up.
+-- Tells the Settings UI whether to show the Stripe billing portal or
+-- point an Apple subscriber to iOS Settings > Apple ID > Subscriptions.
+alter table simple_profiles add column if not exists subscription_source text not null default 'stripe';
 -- One-time discount offer shown when someone starts canceling (see
 -- app/api/billing/retention-offer) -- tracked so the same account can't
 -- redeem it repeatedly across multiple cancel attempts. Defaults false for
@@ -673,45 +669,3 @@ alter table simple_profiles add column if not exists retention_offer_used boolea
 -- already turned on for themselves.
 alter table simple_profiles alter column sms_notifications_enabled set default false;
 update simple_profiles set sms_notifications_enabled = false where sms_notifications_enabled = true;
-
--- PHASE X: near-miss transfer-amount candidates -- see
--- supabase/migrations/20260926_candidate_transaction.sql,
--- lib/reconcileTransfers.js's findNearMissCandidate/
--- maybeRecordNearMissCandidate, and
--- app/api/transfer-allocations/[id]/candidate/{confirm,dismiss}/route.js.
--- When a real Plaid transaction lands in an in_transit allocation's
--- dest_account but its amount falls outside AMOUNT_TOLERANCE of `amount`
--- (e.g. confirmed $200, actually sent $180), that used to just leave the
--- allocation stuck 'in_transit' forever with no signal to anyone. If
--- there is exactly one plausible in_transit allocation for that account
--- (v1 is deliberately conservative -- zero or multiple candidates means
--- doing nothing rather than guessing), these columns record it so the
--- dashboard can ask the user directly instead.
---   candidate_transaction_id: the Plaid transaction_id of the pending,
---     unconfirmed candidate. Null means no live candidate.
---   candidate_amount / candidate_date: that transaction's amount/date,
---     snapshotted so the UI and the confirm route don't need a second
---     Plaid lookup. candidate_amount becomes the allocation's real
---     `amount` if the user confirms it (calculated_amount is untouched,
---     same as the manual amount-override flow in .../amount/route.js).
---   candidate_dismissed: true right after the user says "no, that's not
---     it" -- kept mainly for visibility/debugging, since the actual
---     "don't re-propose this" logic is the column below.
---   candidate_last_dismissed_transaction_id: the one specific
---     transaction_id the user already dismissed for this row, so
---     reconciliation doesn't immediately re-propose that same still-
---     unmatched transaction on the very next pass, while a genuinely
---     different transaction can still become a new candidate.
-alter table simple_transfer_allocations add column if not exists candidate_transaction_id text;
-alter table simple_transfer_allocations add column if not exists candidate_amount numeric;
-alter table simple_transfer_allocations add column if not exists candidate_date date;
-alter table simple_transfer_allocations add column if not exists candidate_dismissed boolean not null default false;
-alter table simple_transfer_allocations add column if not exists candidate_last_dismissed_transaction_id text;
-
--- A real first-name field for the Dashboard's "Good morning/afternoon/
--- evening, <name>" greeting -- see supabase/migrations/
--- 20260926_profile_display_name.sql and app/(app)/settings/page.js's
--- "Your name" field for the full write-up. Nullable/additive; existing
--- rows keep falling back to a name guessed from the login email until
--- filled in.
-alter table simple_profiles add column if not exists display_name text;
