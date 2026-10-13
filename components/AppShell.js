@@ -9,6 +9,7 @@ import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import { currency } from "@/components/ui";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import AppLockGate from "@/components/AppLockGate";
+import { isNativeApp } from "@/lib/native";
 import { isW2NoSideHustle } from "@/lib/allocations";
 import { groupByCategory } from "@/components/PendingTransfers";
 
@@ -117,6 +118,12 @@ export default function AppShell({ children, isSandbox = false }) {
   const router = useRouter();
   const [narrow, setNarrow] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The "Sandbox mode" badge is a web/dev aid only. Inside the iOS app it
+  // reads as an unfinished build to App Review, so hide it there.
+  const [inNativeApp, setInNativeApp] = useState(false);
+  useEffect(() => {
+    isNativeApp().then(setInNativeApp);
+  }, []);
   // DOM nodes for the two Dashboard-only header slots (see
   // DashboardHeaderSlotsContext above) -- state, not refs, so setting them
   // (via the ref callback below) triggers a re-render, which is what lets
@@ -363,7 +370,7 @@ export default function AppShell({ children, isSandbox = false }) {
             // (the sidebar/account context already makes sandbox mode clear
             // elsewhere). Every other page still shows the badge.
             <span ref={setActionsSlotEl} style={{ flex: "none" }} />
-          ) : isSandbox ? (
+          ) : isSandbox && !inNativeApp ? (
             <span
               className="pp-shell-badge"
               style={{
