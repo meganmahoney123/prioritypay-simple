@@ -28,6 +28,18 @@ export async function POST(request) {
     subscriber = await getRevenueCatSubscriber(user.id);
   } catch (err) {
     console.error("IAP confirm: RevenueCat lookup failed", user.id, err);
+    // RevenueCat answers 404 for a customer it has never seen a purchase
+    // for (e.g. an Apple ID that already owns this subscription via another
+    // account, so StoreKit reports "already subscribed" and nothing new is
+    // recorded for this user). That's "no purchase yet", not an outage --
+    // point at Restore Purchases, which attaches the existing Apple
+    // subscription to this account.
+    if (String(err?.message || "").includes(" 404")) {
+      return Response.json(
+        { error: "No active purchase found for your account yet. If you already subscribed with this Apple ID, tap Restore Purchases." },
+        { status: 402 }
+      );
+    }
     return Response.json({ error: "Could not verify your purchase with Apple. Please try again." }, { status: 502 });
   }
 
