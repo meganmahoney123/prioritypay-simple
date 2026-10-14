@@ -10,6 +10,7 @@ import { Card } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { isNativeApp } from "@/lib/native";
 
 function currentPeriod() {
   const now = new Date();
@@ -62,6 +63,10 @@ function toByLabel(categories) {
 }
 
 export default function DashboardPage() {
+  // Inside the iOS app the subscription is Apple IAP at $12.99, not the web's Stripe $12.
+  const [isNative, setIsNative] = useState(false);
+  useEffect(() => { isNativeApp().then(setIsNative).catch(() => {}); }, []);
+  const monthlyPrice = isNative ? "$12.99" : "$12";
   const [splitRules, setSplitRules] = useState(DEFAULT_SPLIT_RULES);
   const [accounts, setAccounts] = useState([]);
   const [mtdByLabel, setMtdByLabel] = useState({});
@@ -277,7 +282,7 @@ export default function DashboardPage() {
           <span>
             <span style={{ fontWeight: 600 }}>Your free trial has ended.</span> You can still see your split rules
             and history, but connecting new accounts and moving money are paused until you subscribe.{" "}
-            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe, $12/month</Link>
+            <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe, {monthlyPrice}/month</Link>
           </span>
         </Card>
       )}
@@ -287,7 +292,7 @@ export default function DashboardPage() {
           <span style={{ fontWeight: 600 }}>
             {trialRemaining === 0 ? "Your free trial ends today." : `${trialRemaining} day${trialRemaining === 1 ? "" : "s"} left in your free trial.`}
           </span>{" "}
-          $12/month after that.{" "}
+          {monthlyPrice}/month after that.{" "}
           <Link href="/settings" style={{ fontWeight: 600, textDecoration: "underline" }}>Subscribe now</Link>
         </Card>
       )}

@@ -81,6 +81,15 @@ function BusinessPageInner() {
 
   const upgrade = async () => {
     setUpgradeBusy(true);
+    // In the iOS app, Business must be bought through Apple IAP (Settings
+    // has that flow), never the Stripe web checkout below.
+    try {
+      const { isNativeApp } = await import("@/lib/native");
+      if (await isNativeApp()) {
+        window.location.href = "/settings";
+        return;
+      }
+    } catch {}
     const res = await fetch("/api/billing/business-checkout", { method: "POST" });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
