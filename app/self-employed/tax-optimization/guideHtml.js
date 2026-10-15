@@ -309,7 +309,7 @@ export default `<div class="wrap">
 <div><span>Catch-up on top of that, age 60 to 63</span><span>$11,250</span></div>
 </div>
 <p>Eligible individuals can also add catch-up contributions on top of the $72,000, so the ceiling for someone aged 50 or older is $80,000, and $83,250 between 60 and 63.</p>
-<p class="fine">New for 2026: anyone who received more than $145,000 in W-2 wages in 2025 must make catch-up contributions as Roth rather than pre-tax. The rule keys off W-2 wages, so a sole proprietor or partner with no W-2 wages is not covered by it. An S-corp owner paid above that figure is.</p>
+<p class="fine">New for 2026: anyone who received more than $150,000 in W-2 wages in 2025 must make catch-up contributions as Roth rather than pre-tax. The rule keys off W-2 wages, so a sole proprietor or partner with no W-2 wages is not covered by it. An S-corp owner paid above that figure is.</p>
 <p>At higher profit levels contributing to a retirement account is often the only lever big enough to move your effective rate by several points in a single year.</p>
 <p>Here&rsquo;s an example of someone who makes $300,000:</p>
 <div class="cmpwrap"><table class="cmp">
