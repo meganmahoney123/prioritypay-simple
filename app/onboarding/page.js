@@ -1325,11 +1325,11 @@ function OnboardingPageInner() {
               {isNative && (
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "10px 0 0" }}>
                   By continuing you agree to our{" "}
-                  <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                    Terms of Use
+                  <a href="/terms" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                    Terms of Use (EULA)
                   </a>{" "}
                   and{" "}
-                  <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                  <a href="/privacy" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
                     Privacy Policy
                   </a>
                   .

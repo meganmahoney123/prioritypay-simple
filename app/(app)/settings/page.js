@@ -10,6 +10,7 @@ import DeleteAccountCard from "@/components/DeleteAccountCard";
 import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
+import SubscriptionDisclosure from "@/components/SubscriptionDisclosure";
 
 // The persona-switch testing panel below (see /api/dev/set-persona, which
 // enforces the same allowlist server-side -- this client-side check is
@@ -314,6 +315,7 @@ function SettingsPageInner() {
             <PrimaryButton onClick={isNative ? subscribeNative : subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : `Subscribe — ${isNative ? "$12.99" : "$12"}/month`}
             </PrimaryButton>
+            <SubscriptionDisclosure plan="simple" isNative={isNative} />
             {billingError && (
               <p style={{ fontSize: 13, color: "#C0392B", margin: "8px 0 0" }}>{billingError}</p>
             )}
@@ -340,6 +342,7 @@ function SettingsPageInner() {
             <PrimaryButton onClick={isNative ? subscribeNative : subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Subscribe now"}
             </PrimaryButton>
+            <SubscriptionDisclosure plan="simple" isNative={isNative} />
             {billingError && (
               <p style={{ fontSize: 13, color: "#C0392B", margin: "8px 0 0" }}>{billingError}</p>
             )}
@@ -374,6 +377,7 @@ function SettingsPageInner() {
               <GhostButton onClick={isNative ? upgradeToBusinessNative : upgradeToBusiness} disabled={billingBusy}>
                 {billingBusy ? "Loading…" : isNative ? "Upgrade to Business — $39.99/month" : "Upgrade to Business"}
               </GhostButton>
+              <SubscriptionDisclosure plan="business" isNative={isNative} />
             </>
           )}
         </div>
