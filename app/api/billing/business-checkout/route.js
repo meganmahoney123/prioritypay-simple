@@ -31,7 +31,7 @@ export async function POST(request) {
     await admin.from("simple_profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
   }
 
-  const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co";
+  const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com";
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",

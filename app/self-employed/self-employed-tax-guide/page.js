@@ -22,11 +22,11 @@ import SelfEmployedTaxGuideClient from "./SelfEmployedTaxGuideClient";
 //   (Home / Blog / Self Employed / this article) so this page files under
 //   the same hub in Google's understanding of the site, not as an orphan.
 export const metadata = {
-  title: "Taxes for Self Employed: The Complete 2026 Guide (Forms, Deadlines, Deductions) | PriorityPay",
+  title: "Taxes for Self Employed: The Complete 2026 Guide (Forms, Deadlines, Deductions) | PrioritySave",
   description:
     "Every form, deadline, deduction and credit that applies to self-employment taxes in 2026, in plain English, plus a 4-question filter that shortens the guide to just what applies to your situation.",
   alternates: {
-    canonical: "https://www.prioritypay.co/self-employed/self-employed-tax-guide",
+    canonical: "https://www.prioritysave.com/self-employed/self-employed-tax-guide",
   },
   robots: {
     index: true,
@@ -39,7 +39,7 @@ export const metadata = {
     title: "The Complete Guide to Taxes for Self Employed (2026)",
     description:
       "Forms, deadlines, deductions and credits for self-employment taxes, explained in plain English, with a filter that shortens the guide to your situation.",
-    url: "https://www.prioritypay.co/self-employed/self-employed-tax-guide",
+    url: "https://www.prioritysave.com/self-employed/self-employed-tax-guide",
   },
   twitter: {
     card: "summary_large_image",
@@ -54,9 +54,9 @@ const articleJsonLd = {
     "A complete, plain-English reference covering how self-employment taxes work, every form you may need to file, all deadlines and payment methods, what counts as income, how the tax bill is calculated, business deductions, tax credits, how much to set aside, and what to do after filing, for the 2026 tax year.",
   datePublished: "2026-08-27",
   dateModified: "2026-08-27",
-  author: { "@type": "Organization", name: "PriorityPay" },
-  publisher: { "@type": "Organization", name: "PriorityPay" },
-  mainEntityOfPage: "https://www.prioritypay.co/self-employed/self-employed-tax-guide",
+  author: { "@type": "Organization", name: "PrioritySave" },
+  publisher: { "@type": "Organization", name: "PrioritySave" },
+  mainEntityOfPage: "https://www.prioritysave.com/self-employed/self-employed-tax-guide",
   inLanguage: "en-US",
 };
 
@@ -64,14 +64,14 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prioritypay.co/" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prioritysave.com/" },
     { "@type": "ListItem", position: 2, name: "Blog" },
-    { "@type": "ListItem", position: 3, name: "Self Employed", item: "https://www.prioritypay.co/self-employed" },
+    { "@type": "ListItem", position: 3, name: "Self Employed", item: "https://www.prioritysave.com/self-employed" },
     {
       "@type": "ListItem",
       position: 4,
       name: "Taxes for Self Employed: The Complete Guide",
-      item: "https://www.prioritypay.co/self-employed/self-employed-tax-guide",
+      item: "https://www.prioritysave.com/self-employed/self-employed-tax-guide",
     },
   ],
 };

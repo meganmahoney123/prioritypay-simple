@@ -8,7 +8,7 @@ import { checkAccountRoomForLabel } from "@/lib/categoryRoom";
 // split. Deliberately NOT modeled as a fake simple_transfers/
 // simple_transfer_allocations row (those represent a real deposit split
 // -- see lib/runSplit.js) -- this is its own small table,
-// simple_manual_contributions, so "money PriorityPay actually split out of
+// simple_manual_contributions, so "money PrioritySave actually split out of
 // a deposit" and "money a person told us to credit to a category by hand"
 // stay distinguishable in the data, even though
 // GET /api/allocations/category-summary blends both into one balance/

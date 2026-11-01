@@ -6,7 +6,7 @@ import { encryptToken } from "@/lib/tokenCrypto";
 
 // Runs after Plaid Link succeeds in the browser: exchanges the public_token
 // for a real access_token (server-only, never sent to the client) and
-// stores the linked account. PriorityPay never originates a transfer
+// stores the linked account. PrioritySave never originates a transfer
 // itself -- it only calculates a split and tells the user exactly what to
 // send, where -- so there's no payment-rail attachment step here for any
 // account type.

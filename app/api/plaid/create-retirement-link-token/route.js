@@ -19,7 +19,7 @@ export async function POST(request) {
   // workplace lineup -- these are usually ALREADY funded via payroll
   // deduction, so this scoped Link flow lets someone connect the real
   // account directly (instead of a savings account holding money for
-  // later, the pattern the two self-employed types use) so PriorityPay can
+  // later, the pattern the two self-employed types use) so PrioritySave can
   // show its live balance growing. See isEmployerRetirementRow, lib/
   // allocations.js.
   const SUBTYPES_BY_RETIREMENT_TYPE = {
@@ -35,13 +35,13 @@ export async function POST(request) {
   }
 
   try {
-    // Same Auth cost-skip as create-link-token -- PriorityPay never
+    // Same Auth cost-skip as create-link-token -- PrioritySave never
     // originates a transfer itself, so there's no reason to request Plaid's
     // Auth product here.
     const products = [Products.Transactions, Products.Investments];
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
-      client_name: "PriorityPay",
+      client_name: "PrioritySave",
       products,
       country_codes: [CountryCode.Us],
       language: "en",
@@ -51,8 +51,8 @@ export async function POST(request) {
       // Must be a URI already on the Allowed redirect URIs list in the
       // Plaid dashboard -- reusing /accounts (already registered for the
       // other Link flows) instead of registering a new one for /dashboard.
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/accounts`,
-      webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/api/plaid/webhook`,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/accounts`,
+      webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/api/plaid/webhook`,
     });
     return Response.json({ link_token: response.data.link_token });
   } catch (err) {

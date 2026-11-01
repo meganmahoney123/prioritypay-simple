@@ -107,7 +107,7 @@ function BusinessPageInner() {
       <div className="max-w-2xl space-y-6">
         <Card className="p-6" style={{ maxWidth: "40em" }}>
           <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>
-            PriorityPay Business
+            PrioritySave Business
           </h2>
           <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 20 }} />
           <p style={{ fontSize: 15, margin: "0 0 14px" }}>
@@ -494,7 +494,7 @@ function TrueUpCard({ entities, connections, setError }) {
     <Card className="p-6">
       <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 400, margin: "0 0 6px" }}>Profit true-up</h2>
       <p style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 18px" }}>
-        Compare QuickBooks&apos; net income for a month against the deposits PriorityPay tracked for that business.
+        Compare QuickBooks&apos; net income for a month against the deposits PrioritySave tracked for that business.
       </p>
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 12, marginBottom: 16 }}>
@@ -546,7 +546,7 @@ function TrueUpCard({ entities, connections, setError }) {
             <strong>{result.snapshot.qbo_net_income === null ? "—" : currency(result.snapshot.qbo_net_income)}</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 6 }}>
-            <span>PriorityPay tracked deposits</span>
+            <span>PrioritySave tracked deposits</span>
             <strong>{result.snapshot.tracked_deposits === null ? "—" : currency(result.snapshot.tracked_deposits)}</strong>
           </div>
           <div style={{ height: 1, background: "var(--color-divider)", margin: "8px 0" }} />
@@ -570,12 +570,12 @@ function TrueUpCard({ entities, connections, setError }) {
                     What&apos;s driving the variance
                   </div>
                   <UnmatchedList
-                    title="In QuickBooks, not tracked by PriorityPay"
+                    title="In QuickBooks, not tracked by PrioritySave"
                     items={result.reconciliation.unmatchedQbo}
                     render={(x) => ({ date: x.date, label: x.name || x.type || "—", amount: x.amount })}
                   />
                   <UnmatchedList
-                    title="Tracked by PriorityPay, not in QuickBooks"
+                    title="Tracked by PrioritySave, not in QuickBooks"
                     items={result.reconciliation.unmatchedTracked}
                     render={(x) => ({ date: x.date, label: x.name || x.category || "—", amount: x.amount })}
                   />

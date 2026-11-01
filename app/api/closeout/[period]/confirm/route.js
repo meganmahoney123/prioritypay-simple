@@ -55,7 +55,7 @@ export async function POST(request, { params }) {
   // out of this sum. Retirement contribution room (Solo 401k/SEP IRA) and
   // the tax reserve estimate below are both derived from netIncome, so a
   // W2 paycheck never inflates either: an employer already withholds taxes
-  // and may already offer a 401k, and PriorityPay has no way to know what
+  // and may already offer a 401k, and PrioritySave has no way to know what
   // room, if any, is left there. w2Income is tracked and returned purely
   // for transparency -- so the confirmed number visibly excludes it
   // instead of silently doing so.

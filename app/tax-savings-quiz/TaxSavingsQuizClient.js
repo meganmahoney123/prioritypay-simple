@@ -228,14 +228,14 @@ export default function TaxSavingsQuizClient() {
           <QuizResultsView
             results={results}
             onStartOver={startOver}
-            emptyStateNote="We didn't find a strong match based on your answers. Try the quiz again with different answers, or create a free PriorityPay account to set up automatic tax reserving."
+            emptyStateNote="We didn't find a strong match based on your answers. Try the quiz again with different answers, or create a free PrioritySave account to set up automatic tax reserving."
             ctaSlot={
               <div style={{ background: "#3B1C7A", color: "#fff", borderRadius: 30, padding: "clamp(28px, 4vw, 40px)", textAlign: "center" }}>
                 <h3 style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 10px" }}>
                   Want to keep a copy, or automate the parts that involve moving money?
                 </h3>
                 <p className="text-sm" style={{ margin: "0 auto 22px", maxWidth: 480, fontSize: 16, lineHeight: 1.6, opacity: 0.85 }}>
-                  A free PriorityPay account saves this report to your email and can automatically set aside money
+                  A free PrioritySave account saves this report to your email and can automatically set aside money
                   for taxes, retirement, and savings from every deposit, on the percentages you choose.
                 </p>
                 <a
@@ -252,7 +252,7 @@ export default function TaxSavingsQuizClient() {
                     padding: "16px 30px",
                   }}
                 >
-                  Try PriorityPay free
+                  Try PrioritySave free
                 </a>
               </div>
             }

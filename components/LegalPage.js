@@ -6,8 +6,8 @@ import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 // Shared prose scaffold for /terms and /privacy -- restyled per the Aug 2026
 // "Bloom" purple redesign handoff (spec 12-terms-and-privacy.md). Deliberately
 // does NOT use PublicHeader/PublicFooter -- the only chrome is the "back to
-// PriorityPay" link, now with the small four-bar logo mark so the page still
-// reads as PriorityPay without pulling in the full nav. Every word of both
+// PrioritySave" link, now with the small four-bar logo mark so the page still
+// reads as PrioritySave without pulling in the full nav. Every word of both
 // documents is verbatim legal text and is untouched by this pass -- this file
 // only changes how it's presented.
 export default function LegalPage({ title, updated, children }) {
@@ -33,7 +33,7 @@ export default function LegalPage({ title, updated, children }) {
             <span style={{ width: 2, height: 6, borderRadius: 1, background: "var(--color-accent-800)" }} />
             <span style={{ width: 2, height: 4, borderRadius: 1, background: "var(--color-accent)" }} />
           </span>
-          &larr; PriorityPay
+          &larr; PrioritySave
         </Link>
 
         <h1

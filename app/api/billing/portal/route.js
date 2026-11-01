@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { stripeClient } from "@/lib/stripe";
 
 // Stripe's own hosted billing portal -- lets a subscribed user update
-// their card or cancel, without PriorityPay needing to build that UI
+// their card or cancel, without PrioritySave needing to build that UI
 // itself. Requires a stripe_customer_id to already exist, which only
 // happens after someone has been through /api/billing/checkout at least
 // once.
@@ -22,7 +22,7 @@ export async function POST(request) {
     return Response.json({ error: "No billing account yet -- subscribe first." }, { status: 400 });
   }
 
-  const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co";
+  const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com";
 
   // Previously uncaught: if Stripe rejects this (most commonly because the
   // Customer Portal hasn't been activated/configured yet for this Stripe

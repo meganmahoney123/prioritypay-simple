@@ -897,9 +897,9 @@ export default function CloseoutPage() {
       <Card className="p-6">
         <h2 className="text-sm font-semibold mb-1">Step 1: Confirm Net Income</h2>
         <p className="text-xs text-[var(--color-neutral-700)] mb-4">
-          PriorityPay pulled every transaction across your linked accounts for {periodLabel(period)} and made a
+          PrioritySave pulled every transaction across your linked accounts for {periodLabel(period)} and made a
           best guess at what&apos;s real income, a real expense, or an internal transfer that shouldn&apos;t count
-          as either (like PriorityPay&apos;s own splits moving between your accounts).
+          as either (like PrioritySave&apos;s own splits moving between your accounts).
         </p>
         {isConfirmed && (
           <div
@@ -1085,8 +1085,8 @@ export default function CloseoutPage() {
                       ) : (
                         <p className="text-xs text-[var(--color-neutral-700)] mb-2">
                           {currency(r.room)} of room left this year ({currency(r.ytdContributed)} sent through
-                          PriorityPay so far this year, doesn&apos;t include anything contributed outside
-                          PriorityPay). Holding in {r.holdingAccountLabel || "no account set"}
+                          PrioritySave so far this year, doesn&apos;t include anything contributed outside
+                          PrioritySave). Holding in {r.holdingAccountLabel || "no account set"}
                           {r.holdingAccountBalance !== null ? ` (${currency(r.holdingAccountBalance)} available)` : ""}.
                         </p>
                       )}
@@ -1238,7 +1238,7 @@ export default function CloseoutPage() {
 
             <p className="text-xs text-[var(--color-neutral-700)] mb-4">
               This calculator is designed to help you get a very rough estimate of how much to set aside for taxes,
-              but actual tax rates and amounts vary. PriorityPay isn&apos;t responsible for this number being
+              but actual tax rates and amounts vary. PrioritySave isn&apos;t responsible for this number being
               accurate, and it&apos;s not tax advice. Talk to a tax professional about your real effective rate.
             </p>
             <p className="text-xs text-[var(--color-neutral-700)] mb-3">
@@ -1451,7 +1451,7 @@ export default function CloseoutPage() {
                 </div>
                 <p className="text-sm text-[var(--color-neutral-700)] mb-6">
                   If any deposit this month was a W2 paycheck (as opposed to business or side-hustle income),
-                  flag it so PriorityPay can leave it out of your retirement contribution room and tax reserve
+                  flag it so PrioritySave can leave it out of your retirement contribution room and tax reserve
                   estimate below. This impacts how much you can contribute to your Solo 401k, SEP IRA, and how
                   much you should set aside for taxes.
                 </p>

@@ -150,7 +150,7 @@ export default function AppLockGate({ children }) {
       >
         <PriorityPayLogo size={26} />
         <p style={{ fontFamily: "var(--font-body)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: 0, maxWidth: 260 }}>
-          {verifying ? "Confirming it's you…" : "Unlock PriorityPay to continue."}
+          {verifying ? "Confirming it's you…" : "Unlock PrioritySave to continue."}
         </p>
         {!verifying && (
           <button onClick={attemptUnlock} className="pp-btn pp-btn-primary" style={{ padding: "12px 26px" }}>

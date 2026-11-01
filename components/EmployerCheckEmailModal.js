@@ -6,7 +6,7 @@
 // leaving someone to guess, this drafts an email to their HR contact asking
 // the two questions that actually resolve the checkbox -- what's already
 // set up, and whether payroll is already funding it -- then hands off to
-// their own mail client via a mailto: link so PriorityPay never sends
+// their own mail client via a mailto: link so PrioritySave never sends
 // anything on their behalf (they still have to hit Send themselves).
 import { useState } from "react";
 import { X } from "lucide-react";

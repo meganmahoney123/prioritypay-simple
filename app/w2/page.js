@@ -4,9 +4,9 @@ import PublicFooter from "@/components/PublicFooter";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 
 export const metadata = {
-  title: "W2 | PriorityPay Blog",
+  title: "W2 | PrioritySave Blog",
   description: "Guides and calculators for W2 employees, withholding, benefits elections, and building savings on top of a steady paycheck.",
-  alternates: { canonical: "https://www.prioritypay.co/w2" },
+  alternates: { canonical: "https://www.prioritysave.com/w2" },
 };
 
 export default function W2HubPage() {

@@ -74,7 +74,7 @@ export async function POST(request) {
   const usage = await checkAdvisorUsage(admin, user.id);
   if (usage.atCap) {
     return Response.json({
-      reply: `You've used all ${usage.cap} tax advisor questions included this month -- your limit resets on the 1st. If you need more room before then, let PriorityPay know.`,
+      reply: `You've used all ${usage.cap} tax advisor questions included this month -- your limit resets on the 1st. If you need more room before then, let PrioritySave know.`,
       toolsUsed: [],
       usage: { cap: usage.cap, remaining: 0 },
     });

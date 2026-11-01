@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { investmentTypeFromLabel } from "@/lib/allocations";
 import { refreshAccountBalance } from "@/lib/refreshAccountBalance";
 
-// PriorityPay Simple has no fixed-minimums layer at all -- every category is
+// PrioritySave Simple has no fixed-minimums layer at all -- every category is
 // a percentage of each deposit, full stop. `fixed` is kept as an always-empty
 // array in the response shape purely so shared components ported from the
 // original app (AccountBalances, etc.) that still read `splitRules.fixed`
@@ -70,7 +70,7 @@ export async function PUT(request) {
   const admin = supabaseAdmin();
 
   // A starting balance is someone declaring "I already had this much saved
-  // in this category before PriorityPay." That can't exceed what's
+  // in this category before PrioritySave." That can't exceed what's
   // actually sitting in the bank account it's linked to -- two categories
   // sharing one account (Savings + Wedding, say) can't each separately
   // claim more of that account's real balance than the account holds in

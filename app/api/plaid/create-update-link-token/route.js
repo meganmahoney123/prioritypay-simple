@@ -37,13 +37,13 @@ export async function POST(request) {
   try {
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
-      client_name: "PriorityPay",
+      client_name: "PrioritySave",
       country_codes: [CountryCode.Us],
       language: "en",
       access_token: decryptToken(account.plaid_access_token),
       additional_consented_products: [Products.Transactions],
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/accounts`,
-      webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/api/plaid/webhook`,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/accounts`,
+      webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/api/plaid/webhook`,
     });
     return Response.json({ link_token: response.data.link_token });
   } catch (err) {

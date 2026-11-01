@@ -103,7 +103,7 @@ export default function BusinessFinancialsPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Business Financials</h1>
         <p style={{ margin: 0, color: "var(--color-neutral-700)", fontSize: 15, lineHeight: 1.5 }}>
-          If you run a separate business entity (LLC, S-corp, or C-corp), PriorityPay only sees what moves through
+          If you run a separate business entity (LLC, S-corp, or C-corp), PrioritySave only sees what moves through
           your personal accounts, not your real business revenue and expenses. Fill in these totals from your
           bookkeeping or last year's return (they follow Schedule C's own categories) so your Tax Summary and tax
           reserve calculations reflect your complete picture. Sole proprietors with no separate entity can skip

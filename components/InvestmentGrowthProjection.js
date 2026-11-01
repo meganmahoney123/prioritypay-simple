@@ -7,7 +7,7 @@ import { bloomInputStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { currency } from "@/lib/allocations";
 
 // Redone (Sep 2026) from three separate scenario-comparison charts
-// (Pre-PriorityPay / Current Progress / Future Progress, one per category)
+// (Pre-PrioritySave / Current Progress / Future Progress, one per category)
 // into a single combined "solve for the missing number" calculator, per
 // explicit request: fetch the person's current combined balance
 // automatically, then let them enter any three of {goal amount, years,
@@ -414,7 +414,7 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
 
       <p className="text-xs text-neutral-500 mt-4">
         This is a hypothetical illustration based on the numbers you enter, not a guarantee or investment advice.
-        PriorityPay is not an investment adviser.
+        PrioritySave is not an investment adviser.
       </p>
     </Card>
   );

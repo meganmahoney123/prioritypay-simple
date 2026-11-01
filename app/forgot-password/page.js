@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
     setLoading(false);
     // Always show the same "check your email" state regardless of whether
     // the address is registered -- otherwise this becomes a way to test
-    // which emails have PriorityPay accounts.
+    // which emails have PrioritySave accounts.
     if (error) {
       setError("Something went wrong. Please try again.");
       return;

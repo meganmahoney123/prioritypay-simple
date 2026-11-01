@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { planForProductId, statusForRevenueCatEvent } from "@/lib/revenuecat";
 
-// Register this URL (https://www.prioritypay.co/api/revenuecat/webhook)
+// Register this URL (https://www.prioritysave.com/api/revenuecat/webhook)
 // in RevenueCat (Project Settings > Integrations > Webhooks), with the
 // "Authorization header value" set to REVENUECAT_WEBHOOK_SECRET below --
 // RevenueCat sends that exact string back as the Authorization header on

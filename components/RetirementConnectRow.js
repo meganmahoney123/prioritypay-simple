@@ -63,7 +63,7 @@ export default function RetirementConnectRow({ retirementType, accountId, accoun
       )}
       <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-1">
         Balance comes straight from Plaid and reflects everything in the account, growth, past contributions,
-        anything sent outside PriorityPay too, not just what PriorityPay has sent it.
+        anything sent outside PrioritySave too, not just what PrioritySave has sent it.
       </p>
     </div>
   );

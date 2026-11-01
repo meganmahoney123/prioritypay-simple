@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui";
 import { isNativeApp, checkBiometricAvailable, getBiometricLockEnabled, setBiometricLockEnabled } from "@/lib/native";
 
-// Renders nothing on the web (prioritypay.co in a browser) and nothing on a
+// Renders nothing on the web (prioritysave.com in a browser) and nothing on a
 // device without Face ID/Touch ID enrolled -- only shows up inside the iOS
 // app, on a device that can actually use it. This toggle is entirely
 // device-local (see lib/native.js) -- it doesn't touch simple_profiles or
@@ -40,7 +40,7 @@ export default function AppLockSettingsCard() {
       <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>App lock</h2>
       <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
       <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-        Require Face ID or Touch ID to open PriorityPay, in addition to your regular login. This only protects
+        Require Face ID or Touch ID to open PrioritySave, in addition to your regular login. This only protects
         this device, it never changes how you sign in on the web.
       </p>
       <label className="flex items-center gap-2.5" style={{ cursor: busy ? "wait" : "pointer" }}>

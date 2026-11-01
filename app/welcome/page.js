@@ -8,7 +8,7 @@ import WelcomeClient from "./WelcomeClient";
 // ends up here. Kept out of the sitemap/robots indexing since it's not a
 // page meant to be found by search -- the equivalent web page is "/".
 export const metadata = {
-  title: "PriorityPay",
+  title: "PrioritySave",
   robots: { index: false, follow: false },
 };
 

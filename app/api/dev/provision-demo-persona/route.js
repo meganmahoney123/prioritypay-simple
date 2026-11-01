@@ -97,7 +97,7 @@ const PERSONAS = {
     ],
     // Smaller, irregular deposits -- meant to read as side-hustle income
     // landing on top of a day job (the day job's own paycheck never
-    // passes through PriorityPay at all, same as any W2 user).
+    // passes through PrioritySave at all, same as any W2 user).
     deposits: [
       { isoDate: "2026-07-08T15:00:00Z", amount: 1400 },
       { isoDate: "2026-07-22T15:00:00Z", amount: 1900 },

@@ -13,7 +13,7 @@ import { computeCardChargesForPeriod } from "@/lib/cardCharges";
 //
 // "Balance" here means the category's own running total, NOT any
 // connected account's balance -- starting_balance (whatever the person
-// declared they already had saved before joining PriorityPay) plus every
+// declared they already had saved before joining PrioritySave) plus every
 // dollar ever split into that category via a real deposit, plus every
 // manual one-time contribution logged against it (see
 // simple_manual_contributions / POST /api/allocations/manual-contribution),
@@ -125,7 +125,7 @@ export async function GET(request) {
     admin.from("simple_profiles").select("created_at").eq("id", user.id).single(),
   ]);
 
-  // A deposit PriorityPay's own webhook already recognized as the landing
+  // A deposit PrioritySave's own webhook already recognized as the landing
   // side of a transfer IT initiated (a One-Time Transfer or Close-Out
   // payoff moving between this user's own linked accounts) never becomes a
   // simple_transfers row at all -- app/api/plaid/webhook/route.js matches
@@ -133,7 +133,7 @@ export async function GET(request) {
   // entirely, so it's already excluded from totalDeposited by construction.
   // What's NOT caught there is a self-transfer the person makes some other
   // way (moving money between their own linked accounts directly through
-  // their bank, Zelle, etc., outside PriorityPay's own transfer flow) --
+  // their bank, Zelle, etc., outside PrioritySave's own transfer flow) --
   // nothing in the app is expecting that one, so it lands looking exactly
   // like fresh income and gets auto-split. Filtering that out of what
   // actually gets split is a real-money change to the live auto-split

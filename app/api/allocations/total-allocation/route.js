@@ -1,7 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-// Live, whole-picture view of every dollar PriorityPay is tracking for this
+// Live, whole-picture view of every dollar PrioritySave is tracking for this
 // person right now -- unlike /api/allocations/category-summary (one
 // month's deposits) or /api/allocations/account-balances (per bank
 // account), this sums EVERYTHING at once, across every connected account,

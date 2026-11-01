@@ -15,11 +15,11 @@ import EntityScenarioClient from "./EntityScenarioClient";
 //   this page sits in the site's topic hierarchy -- it's filed under the
 //   "Self Employed" hub, same as the on-page Blog dropdown.
 export const metadata = {
-  title: "For Self Employed: Sole Proprietor vs. LLC vs. S-Corp (2026 Calculator) | PriorityPay",
+  title: "For Self Employed: Sole Proprietor vs. LLC vs. S-Corp (2026 Calculator) | PrioritySave",
   description:
     "See what a year looks like as a sole proprietor, an LLC and an S-corp side by side, using your own numbers. Free 2026 calculator plus a plain-English guide to what actually changes.",
   alternates: {
-    canonical: "https://www.prioritypay.co/self-employed/sole-proprietor-vs-llc-vs-s-corp",
+    canonical: "https://www.prioritysave.com/self-employed/sole-proprietor-vs-llc-vs-s-corp",
   },
   robots: {
     index: true,
@@ -31,7 +31,7 @@ export const metadata = {
     type: "article",
     title: "For Self Employed: Sole Proprietor vs. LLC vs. S-Corp",
     description: "Put in your own numbers and see all three side by side. Free 2026 calculator plus a plain-English guide.",
-    url: "https://www.prioritypay.co/self-employed/sole-proprietor-vs-llc-vs-s-corp",
+    url: "https://www.prioritysave.com/self-employed/sole-proprietor-vs-llc-vs-s-corp",
   },
   twitter: {
     card: "summary_large_image",
@@ -45,9 +45,9 @@ const articleJsonLd = {
   description: "A plain-English guide and calculator comparing the three business structures for the self employed, for the 2026 tax year.",
   datePublished: "2026-08-20",
   dateModified: "2026-08-20",
-  author: { "@type": "Organization", name: "PriorityPay" },
-  publisher: { "@type": "Organization", name: "PriorityPay" },
-  mainEntityOfPage: "https://www.prioritypay.co/self-employed/sole-proprietor-vs-llc-vs-s-corp",
+  author: { "@type": "Organization", name: "PrioritySave" },
+  publisher: { "@type": "Organization", name: "PrioritySave" },
+  mainEntityOfPage: "https://www.prioritysave.com/self-employed/sole-proprietor-vs-llc-vs-s-corp",
   inLanguage: "en-US",
 };
 
@@ -55,14 +55,14 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prioritypay.co/" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prioritysave.com/" },
     { "@type": "ListItem", position: 2, name: "Blog" },
-    { "@type": "ListItem", position: 3, name: "Self Employed", item: "https://www.prioritypay.co/self-employed" },
+    { "@type": "ListItem", position: 3, name: "Self Employed", item: "https://www.prioritysave.com/self-employed" },
     {
       "@type": "ListItem",
       position: 4,
       name: "Sole Proprietor vs. LLC vs. S-Corp",
-      item: "https://www.prioritypay.co/self-employed/sole-proprietor-vs-llc-vs-s-corp",
+      item: "https://www.prioritysave.com/self-employed/sole-proprietor-vs-llc-vs-s-corp",
     },
   ],
 };

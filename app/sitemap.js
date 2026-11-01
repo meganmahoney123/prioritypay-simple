@@ -3,7 +3,7 @@
 // internal-link crawling. Excludes the authenticated app, auth pages
 // (login/signup carry no unique indexable content), and the noindexed
 // legal pages (terms/privacy).
-const BASE = "https://www.prioritypay.co";
+const BASE = "https://www.prioritysave.com";
 
 export default function sitemap() {
   const lastModified = new Date();

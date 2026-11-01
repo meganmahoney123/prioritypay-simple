@@ -16,11 +16,11 @@ import TaxOptimizationGuideClient from "./TaxOptimizationGuideClient";
 //   Self Employed / this article).
 export const metadata = {
   title:
-    "Tax Optimization for Self Employed: The Complete 2026 Guide (Retirement, S-Corp, Family Payroll) | PriorityPay",
+    "Tax Optimization for Self Employed: The Complete 2026 Guide (Retirement, S-Corp, Family Payroll) | PrioritySave",
   description:
     "Retirement accounts, entity structure, timing, and family payroll, the levers that save self-employed people money on taxes as profit grows, in plain English, plus a 5-question filter that shortens the guide to your situation.",
   alternates: {
-    canonical: "https://www.prioritypay.co/self-employed/tax-optimization",
+    canonical: "https://www.prioritysave.com/self-employed/tax-optimization",
   },
   robots: {
     index: true,
@@ -33,7 +33,7 @@ export const metadata = {
     title: "Tax Optimization for Self Employed: The Complete Guide (2026)",
     description:
       "The levers above the basics, retirement, entity structure, timing, and family payroll, explained in plain English, with a filter that shortens the guide to your situation.",
-    url: "https://www.prioritypay.co/self-employed/tax-optimization",
+    url: "https://www.prioritysave.com/self-employed/tax-optimization",
   },
   twitter: {
     card: "summary_large_image",
@@ -48,9 +48,9 @@ const articleJsonLd = {
     "A complete, plain-English reference covering how self-employed people can reduce their tax bill as profit grows, retirement account choice and sequencing, health insurance, entity structure and the S-corp decision, income timing, family payroll strategies, and investment tax basics, for the 2026 tax year.",
   datePublished: "2026-09-22",
   dateModified: "2026-09-22",
-  author: { "@type": "Organization", name: "PriorityPay" },
-  publisher: { "@type": "Organization", name: "PriorityPay" },
-  mainEntityOfPage: "https://www.prioritypay.co/self-employed/tax-optimization",
+  author: { "@type": "Organization", name: "PrioritySave" },
+  publisher: { "@type": "Organization", name: "PrioritySave" },
+  mainEntityOfPage: "https://www.prioritysave.com/self-employed/tax-optimization",
   inLanguage: "en-US",
 };
 
@@ -58,14 +58,14 @@ const breadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prioritypay.co/" },
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://www.prioritysave.com/" },
     { "@type": "ListItem", position: 2, name: "Blog" },
-    { "@type": "ListItem", position: 3, name: "Self Employed", item: "https://www.prioritypay.co/self-employed" },
+    { "@type": "ListItem", position: 3, name: "Self Employed", item: "https://www.prioritysave.com/self-employed" },
     {
       "@type": "ListItem",
       position: 4,
       name: "Tax Optimization For The Self Employed: Complete Guide",
-      item: "https://www.prioritypay.co/self-employed/tax-optimization",
+      item: "https://www.prioritysave.com/self-employed/tax-optimization",
     },
   ],
 };

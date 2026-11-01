@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 
 // Uploads a Close-Out expense receipt (image or PDF) to Supabase Storage
 // and returns its storage path, to be stored as simple_withdrawals.receipt_url.
-// PriorityPay Simple has no existing Supabase Storage usage anywhere else
+// PrioritySave Simple has no existing Supabase Storage usage anywhere else
 // in the app to mirror -- this is the first. Requires a PRIVATE bucket
 // named "receipts" to exist in the Supabase project already (create it
 // once via the Supabase dashboard: Storage -> New bucket -> "receipts",

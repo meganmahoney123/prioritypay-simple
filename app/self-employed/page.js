@@ -7,9 +7,9 @@ import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 // the Blog dropdown (components/PublicHeader.js), which only shows hub
 // names, not article titles. This page is where the article list lives.
 export const metadata = {
-  title: "Self Employed | PriorityPay Blog",
+  title: "Self Employed | PrioritySave Blog",
   description: "Guides and calculators for freelancers and independent contractors, taxes, entity structure, and managing income that isn't a steady paycheck.",
-  alternates: { canonical: "https://www.prioritypay.co/self-employed" },
+  alternates: { canonical: "https://www.prioritysave.com/self-employed" },
 };
 
 const ARTICLES = [

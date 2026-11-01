@@ -50,7 +50,7 @@ export async function POST(request) {
     } catch (err) {
       // Best-effort: Plaid may already consider the Item gone (e.g. the
       // user revoked access from their bank's side first), and either
-      // way we still want PriorityPay's own record of it gone. Log and
+      // way we still want PrioritySave's own record of it gone. Log and
       // keep going rather than blocking the person from disconnecting.
       console.error("Plaid itemRemove failed during disconnect:", err?.response?.data || err);
     }

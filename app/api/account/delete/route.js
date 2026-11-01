@@ -21,7 +21,7 @@ import { stripeClient } from "@/lib/stripe";
 //
 // What this does NOT delete: the Plaid Item (bank connection) on Plaid's
 // side. Plaid is the system of record for its own data and has its own
-// deletion/GDPR process -- PriorityPay only ever held a reference
+// deletion/GDPR process -- PrioritySave only ever held a reference
 // (plaid_access_token), which is gone the moment simple_accounts
 // cascade-deletes. This is the same boundary the privacy policy already
 // describes for third-party processors.

@@ -11,7 +11,7 @@ import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 // verification-status check below and the equivalent removal in
 // app/onboarding/page.js. That was required back when this app applied to
 // originate real transfers on someone's behalf, which never came through;
-// manual-approval mode (lib/runSplit.js) means PriorityPay never touches
+// manual-approval mode (lib/runSplit.js) means PrioritySave never touches
 // money itself, so
 // there's nothing left that actually needs identity verified before
 // connecting an account.
@@ -129,7 +129,7 @@ export default function AccountsPage() {
   const disconnect = async (acc) => {
     const confirmed = window.confirm(
       `Disconnect ${acc.institution_name} ${acc.account_name} •••• ${acc.mask}? ` +
-        `Any split rule currently sending money here will need a new account, and PriorityPay will stop seeing its deposits.`
+        `Any split rule currently sending money here will need a new account, and PrioritySave will stop seeing its deposits.`
     );
     if (!confirmed) return;
 

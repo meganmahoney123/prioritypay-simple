@@ -7,7 +7,7 @@ import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import guideHtml from "./guideHtml";
 import guideStyles from "./guideStyles";
 
-// Renders the approved Bloom-theme design ("PriorityPay SE Tax Guide.html",
+// Renders the approved Bloom-theme design ("PrioritySave SE Tax Guide.html",
 // from the Aug 2026 redesign handoff zip) essentially verbatim -- this
 // replaced an earlier version built from a different draft
 // (se-basics-guide_3.html) that used its own gold/serif "editorial" look,

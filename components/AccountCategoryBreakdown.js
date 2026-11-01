@@ -324,7 +324,7 @@ export default function AccountCategoryBreakdown({ accountId, data, allCategorie
         // Investment/retirement accounts fluctuate with the market, so
         // "categorized more than the real balance" here almost always
         // means real performance (or a withdrawal made outside
-        // PriorityPay), not a bookkeeping mistake -- there's nothing to
+        // PrioritySave), not a bookkeeping mistake -- there's nothing to
         // "find," so this skips the Find the discrepancy breakdown
         // entirely and just explains what the two numbers mean.
         <div className="text-xs mt-2 p-2" style={bloomWarningCardStyle()}>

@@ -22,7 +22,7 @@ export default `<div class="wrap">
 </nav>
 
 <header class="mast">
-  <div class="eyebrow">PriorityPay &middot; Self Employed</div>
+  <div class="eyebrow">PrioritySave &middot; Self Employed</div>
   <h1>Tax Optimization For The Self Employed: Complete Guide</h1>
   <p class="standfirst">Learn about how to leverage retirement accounts, entity structure, timing, family payroll and other levers that allow you to save money on taxes as your profit grows. This is the layer above the basics.</p>
   <div class="stamp">
@@ -236,7 +236,7 @@ export default `<div class="wrap">
 </tbody>
 </table></div>
 <p>This is why the section on retirement accounts comes before everything else on this page. It is the only lever that reduces your tax bill without spending the money, and the $1,000 inside it also grows without owing tax each year, while the same $1,000 sitting in a taxable brokerage account would owe tax on its dividends and any gains along the way.</p>
-<p>None of which means expenses do not matter. Claiming what you are entitled to is still beneficial, and <a href="https://prioritypay.co/self-employed/">the basics guide</a> covers expense qualification.</p>
+<p>None of which means expenses do not matter. Claiming what you are entitled to is still beneficial, and <a href="https://prioritysave.com/self-employed/">the basics guide</a> covers expense qualification.</p>
 <p class="fine">Illustration only. If the numbers entered were true, this is what the comparison would look like.</p></div>
 </details>
 <details class="row" id="separate-banking" data-t="core">
@@ -253,7 +253,7 @@ export default `<div class="wrap">
 <li><b>Keeping an LLC&rsquo;s protection intact.</b> If you have an LLC, running personal money through the business account is one of the ways a court can set that liability protection aside.</li>
 </ul>
 <p>A business checking account is sufficient. You do not need an entity to open one, though most banks will ask for either an EIN or your Social Security number.</p>
-<p>A second account for tax money is a separate idea, covered in <a href="https://prioritypay.co/self-employed/">the basics guide</a> under setting money aside.</p></div>
+<p>A second account for tax money is a separate idea, covered in <a href="https://prioritysave.com/self-employed/">the basics guide</a> under setting money aside.</p></div>
 </details>
 <details class="row" id="bookkeeping" data-t="core">
 <summary>
@@ -282,7 +282,7 @@ export default `<div class="wrap">
 <div class="cmpwrap"><table class="cmp ann">
 <tbody>
 <tr><td>1. Separate accounts and books</td><td>Everything else needs a reliable profit figure</td><td></td></tr>
-<tr><td>2. Ordinary deductions</td><td>What the business already qualifies for, covered in <a href="https://prioritypay.co/self-employed/">the basics guide</a></td><td></td></tr>
+<tr><td>2. Ordinary deductions</td><td>What the business already qualifies for, covered in <a href="https://prioritysave.com/self-employed/">the basics guide</a></td><td></td></tr>
 <tr><td>3. A retirement account</td><td>The largest lever, and available at any profit level</td><td></td></tr>
 <tr><td>4. Deliberate timing</td><td>Needs books good enough to see the year coming</td><td></td></tr>
 <tr><td>5. Business structure</td><td>Only worth analyzing once profit is consistent</td><td></td></tr>
@@ -340,7 +340,7 @@ export default `<div class="wrap">
 <p class="fine">Illustration using 2026 figures for a sole proprietor with no other household income.</p>
 </div>
 </details>
-<p>Note that contributing to a retirement account does not reduce self-employment tax. Retirement contributions come off income tax only. Self-employment tax is calculated before any of this, which <a href="https://prioritypay.co/self-employed/">the basics guide</a> explains in the section on how your tax bill is calculated.</p>
+<p>Note that contributing to a retirement account does not reduce self-employment tax. Retirement contributions come off income tax only. Self-employment tax is calculated before any of this, which <a href="https://prioritysave.com/self-employed/">the basics guide</a> explains in the section on how your tax bill is calculated.</p>
 <p class="fine">Contribution limits rise most years. These are 2026 figures.</p></div>
 </details>
 <details class="row" id="business-vs-personal" data-t="core">
@@ -986,7 +986,7 @@ export default `<div class="wrap">
 <p>Two things shift this ranking.</p>
 <p>If your income is low enough for the Saver&rsquo;s Credit, retirement contributions carry an extra credit on top of the deduction. Therefore, retirement accounts are often prioritized for low income individuals.</p>
 <p>Additionally, if you expect to need the money before retirement, the flexibility of a Roth IRA or a taxable account matters more than the tax break.</p>
-<p class="fine">The Saver&rsquo;s Credit is covered in <a href="https://prioritypay.co/self-employed/">the basics guide</a>, under tax credits.</p></div>
+<p class="fine">The Saver&rsquo;s Credit is covered in <a href="https://prioritysave.com/self-employed/">the basics guide</a>, under tax credits.</p></div>
 </details>
 </div></section>
 <section id="timing">
@@ -1030,7 +1030,7 @@ export default `<div class="wrap">
 </tbody>
 </table></div>
 <p>Buying these items in December ($130,000 year) rather than January ($70,000 year) saves about $595, because you expect to be in a lower bracket next year. It&rsquo;s the same purchase, just moved one calendar year earlier.</p>
-<p>This works because most self-employed people use cash-basis accounting, where timing follows the payment rather than the invoice. You can learn more about this concept in <a href="https://prioritypay.co/self-employed/">the basics guide</a>, under the section covering what counts as taxable income.</p>
+<p>This works because most self-employed people use cash-basis accounting, where timing follows the payment rather than the invoice. You can learn more about this concept in <a href="https://prioritysave.com/self-employed/">the basics guide</a>, under the section covering what counts as taxable income.</p>
 <h4>Pulling deductions into this year</h4>
 <ul>
 <li>Prepaying software or service subscriptions for next year</li>

@@ -6,7 +6,7 @@ import { isNativeApp } from "@/lib/native";
 
 // Implements the free/paid app split described in the Aug 2026 planning doc:
 // the iOS app is the same webview as the website (capacitor.config.json's
-// server.url points at prioritypay.co with no startPath), so a logged-out
+// server.url points at prioritysave.com with no startPath), so a logged-out
 // visitor normally lands on the marketing Homepage -- fine for the web, but
 // an App Store reviewer (or a curious first-time app user) doesn't need
 // marketing copy, they need something to actually try. This renders nothing

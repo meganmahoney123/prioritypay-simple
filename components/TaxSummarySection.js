@@ -173,7 +173,7 @@ export default function TaxSummarySection() {
             </div>
             {!allReviewed && (
               <p className="text-xs mb-3" style={{ color: "var(--color-neutral-700)" }}>
-                Months not yet confirmed in Close-Out use PriorityPay&apos;s best-guess categorization, review
+                Months not yet confirmed in Close-Out use PrioritySave&apos;s best-guess categorization, review
                 them above before treating these numbers as final.
               </p>
             )}
@@ -199,7 +199,7 @@ export default function TaxSummarySection() {
           <Card className="p-5">
             <h3 className="text-sm font-semibold mb-1">Download for your accountant</h3>
             <p className="text-xs mb-3" style={{ color: "var(--color-neutral-700)" }}>
-              Every transaction PriorityPay saw for {year}, date, description, account, category, and whether
+              Every transaction PrioritySave saw for {year}, date, description, account, category, and whether
               you confirmed it, as a CSV. Not tax advice; a starting point to hand off or import into tax
               software.
             </p>

@@ -4,7 +4,7 @@
 // download-report button, and the closing disclaimer. Used by both the
 // public quiz (app/tax-savings-quiz) and the logged-in in-app version
 // (app/(app)/advisor). `ctaSlot` lets each caller supply its own closing
-// call-to-action (e.g. "Try PriorityPay free" for anonymous visitors,
+// call-to-action (e.g. "Try PrioritySave free" for anonymous visitors,
 // nothing for people who already have an account) without forking the
 // rest of the results markup.
 

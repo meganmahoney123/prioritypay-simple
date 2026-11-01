@@ -33,7 +33,7 @@ function csvField(value) {
 
 // A full transaction-level export, not just the monthly totals from
 // GET /api/tax-summary/[year] -- meant to be handed directly to an
-// accountant or imported into tax software, so every row PriorityPay saw
+// accountant or imported into tax software, so every row PrioritySave saw
 // is here (including excluded transfers, clearly labeled, so nothing
 // looks silently dropped) along with whether the person actually reviewed
 // it or it's still just Plaid's auto-suggestion.
@@ -90,7 +90,7 @@ export async function GET(request, { params }) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="PriorityPay-Tax-Summary-${year}.csv"`,
+      "Content-Disposition": `attachment; filename="PrioritySave-Tax-Summary-${year}.csv"`,
     },
   });
 }

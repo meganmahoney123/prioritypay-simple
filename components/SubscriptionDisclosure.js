@@ -1,8 +1,8 @@
 "use client";
 
 const PLANS = {
-  simple: { name: "PriorityPay Simple", price: "$12.99" },
-  business: { name: "PriorityPay Business", price: "$39.99" },
+  simple: { name: "PrioritySave Simple", price: "$12.99" },
+  business: { name: "PrioritySave Business", price: "$39.99" },
 };
 
 const linkStyle = {

@@ -35,10 +35,10 @@ function SignupPageInner() {
     setLoading(true);
     setError(null);
     const supabase = supabaseBrowser();
-    // PriorityPay never originates a transfer itself in manual_approval mode
+    // PrioritySave never originates a transfer itself in manual_approval mode
     // (see lib/runSplit.js), so there's no identity verification or money
     // movement happening here to consent to --
-    // just PriorityPay's own Terms/Privacy. Still recording the timestamp
+    // just PrioritySave's own Terms/Privacy. Still recording the timestamp
     // in Supabase auth user_metadata (rather than a separate DB table) so
     // it's captured at the moment of signup with no extra migration or
     // authenticated follow-up call needed -- it persists even if email
@@ -113,7 +113,7 @@ function SignupPageInner() {
               style={{ marginTop: 3, flexShrink: 0 }}
             />
             <span>
-              I agree to PriorityPay&apos;s{" "}
+              I agree to PrioritySave&apos;s{" "}
               <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
                 Terms of Service
               </a>{" "}

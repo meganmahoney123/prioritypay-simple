@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { stripeClient, planForPriceId } from "@/lib/stripe";
 
-// Register this URL (https://prioritypay.co/api/stripe/webhook) as a
+// Register this URL (https://prioritysave.com/api/stripe/webhook) as a
 // webhook endpoint in the Stripe dashboard (Developers > Webhooks),
 // listening for the four events below. Verifies Stripe's signature
 // before trusting the payload, using Stripe's own SDK helper instead of

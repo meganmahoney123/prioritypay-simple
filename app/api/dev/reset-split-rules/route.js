@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { DEFAULT_SPLIT_RULES } from "@/lib/allocations";
 
 // DEV/TESTING ONLY. Overwrites the calling user's split rules with
-// PriorityPay Simple's stock defaults (see DEFAULT_SPLIT_RULES in
+// PrioritySave Simple's stock defaults (see DEFAULT_SPLIT_RULES in
 // lib/allocations.js) -- every account/cap left unset, same as a brand
 // new signup. Handy after test data gets wiped by something unrelated
 // (schema changes, manual DB edits, etc.) without re-entering seven rows

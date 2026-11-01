@@ -9,7 +9,7 @@
 export default function RetirementNote({ label, theme, isEmployer }) {
   const text = isEmployer ? (
     <>
-      Connect your real {label} here so PriorityPay can show its balance growing over time. If your employer
+      Connect your real {label} here so PrioritySave can show its balance growing over time. If your employer
       already routes money to it through payroll, you don&apos;t need to send anything here for that, just
       double-check with HR/payroll so you don&apos;t end up over-contributing.
     </>

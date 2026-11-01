@@ -295,7 +295,7 @@ function SplitRulesPageInner() {
 
       <div>
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
-          For example, if you select &quot;10%&quot; for savings, and PriorityPay detects a $100 deposit, it&apos;ll
+          For example, if you select &quot;10%&quot; for savings, and PrioritySave detects a $100 deposit, it&apos;ll
           tell you to send $10 to the savings account connected.
         </p>
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>

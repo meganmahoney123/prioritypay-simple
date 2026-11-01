@@ -20,6 +20,6 @@ export default function robots() {
         "/onboarding",
       ],
     },
-    sitemap: "https://www.prioritypay.co/sitemap.xml",
+    sitemap: "https://www.prioritysave.com/sitemap.xml",
   };
 }

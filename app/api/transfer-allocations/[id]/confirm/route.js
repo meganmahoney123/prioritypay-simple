@@ -2,8 +2,8 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
 // Marks a single manual-approval allocation line as sent -- BY THE USER,
-// not by PriorityPay (see TRANSFER_EXECUTION_MODE in lib/runSplit.js;
-// PriorityPay never originates the transfer itself in manual_approval
+// not by PrioritySave (see TRANSFER_EXECUTION_MODE in lib/runSplit.js;
+// PrioritySave never originates the transfer itself in manual_approval
 // mode). This lands on 'in_transit', not 'completed' -- the user has
 // attested the money is moving, but nothing here has actually seen it
 // arrive yet. lib/reconcileTransfers.js (run opportunistically from

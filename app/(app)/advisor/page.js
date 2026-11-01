@@ -3,7 +3,7 @@
 // Was the "Tax Strategy Assistant" chat UI (see git history / lib/advisorPrompt.js
 // and app/api/advisor/chat/route.js, both left in place but unused). Megan
 // didn't find the chat useful and asked to replace it with the same Tax
-// Savings Quiz used on the public marketing site (prioritypay.co/tax-savings-quiz),
+// Savings Quiz used on the public marketing site (prioritysave.com/tax-savings-quiz),
 // reusing lib/quizEngine.js and the shared components in components/quiz/
 // so this can't drift from the public version.
 //
@@ -14,7 +14,7 @@
 //     not posted to /api/quiz/submit -- that route's rate-limiting,
 //     honeypot, and simple_quiz_leads insert exist specifically to guard
 //     an anonymous public surface and don't apply to an authenticated user.
-//   - No "try PriorityPay free" closing CTA, since they're already a
+//   - No "try PrioritySave free" closing CTA, since they're already a
 //     customer.
 
 import { useEffect, useMemo, useState } from "react";

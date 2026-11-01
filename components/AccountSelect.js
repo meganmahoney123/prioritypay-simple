@@ -10,7 +10,7 @@ const CONNECT = "__connect__";
 // savings account for this bucket?" option alongside the user's
 // already-linked accounts. `onConnectAnother` is separately optional --
 // pass it to surface a plain "Connect another account" option for someone
-// who has a real account they just haven't linked to PriorityPay yet
+// who has a real account they just haven't linked to PrioritySave yet
 // (different from onCreateNew, which walks through opening a brand-new
 // one). Callers that pass neither (e.g. some Split Rules rows) get the
 // plain picker as before.

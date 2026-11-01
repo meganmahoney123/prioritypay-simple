@@ -147,16 +147,16 @@ const STRATEGIES = [
 
 const FAQS = [
   {
-    q: "Who is PriorityPay for?",
-    a: "PriorityPay is built primarily for self-employed people, W2 employees with side income, and entrepreneurs to manage their spend more efficiently. You can set rules to route a percentage of each deposit to specific accounts, like savings, tax reserve, investments, retirement, and specific savings like a wedding, a down payment on a house, or college.",
+    q: "Who is PrioritySave for?",
+    a: "PrioritySave is built primarily for self-employed people, W2 employees with side income, and entrepreneurs to manage their spend more efficiently. You can set rules to route a percentage of each deposit to specific accounts, like savings, tax reserve, investments, retirement, and specific savings like a wedding, a down payment on a house, or college.",
   },
   {
     q: "What accounts can I connect?",
     a: "Any US bank, credit union, or investment/retirement account through Plaid, including all the major banks and roughly 10,000 smaller banks and credit unions across the US and Canada.",
   },
   {
-    q: "Does PriorityPay manage or invest my money?",
-    a: "No. PriorityPay allows you to set percentage rules to send a portion of each deposit to specific accounts. For example, you can set rules to send 10% of each deposit to a tax reserve account, 15% of each deposit to savings, and 15% of each deposit to retirement. However, PriorityPay does not actually touch your money or move it for you. You complete every transfer yourself. PriorityPay is not a bank, broker-dealer, or investment adviser, and never holds, invests, or moves your funds. You stay in control of every account.",
+    q: "Does PrioritySave manage or invest my money?",
+    a: "No. PrioritySave allows you to set percentage rules to send a portion of each deposit to specific accounts. For example, you can set rules to send 10% of each deposit to a tax reserve account, 15% of each deposit to savings, and 15% of each deposit to retirement. However, PrioritySave does not actually touch your money or move it for you. You complete every transfer yourself. PrioritySave is not a bank, broker-dealer, or investment adviser, and never holds, invests, or moves your funds. You stay in control of every account.",
   },
   {
     q: "Can I change my percentages later?",
@@ -164,7 +164,7 @@ const FAQS = [
   },
   {
     q: "Is my account information secure?",
-    a: "Yes. Account connections run through Plaid, the same infrastructure trusted by banks and other financial apps. PriorityPay only ever gets read-only access to balances and transaction data, never the ability to move money. Sensitive account credentials are encrypted (AES-256) before they're stored, and you can turn on two-factor authentication for your PriorityPay account in Settings.",
+    a: "Yes. Account connections run through Plaid, the same infrastructure trusted by banks and other financial apps. PrioritySave only ever gets read-only access to balances and transaction data, never the ability to move money. Sensitive account credentials are encrypted (AES-256) before they're stored, and you can turn on two-factor authentication for your PrioritySave account in Settings.",
   },
 ];
 
@@ -285,7 +285,7 @@ export default function Homepage() {
             <span style={{ color: "var(--color-accent)" }}>Before you spend it.</span>
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.6, color: "#574A68", margin: "22px 0 0", maxWidth: "30em" }}>
-            PriorityPay lets you set rules to split each deposit and send it to retirement, savings, investments,
+            PrioritySave lets you set rules to split each deposit and send it to retirement, savings, investments,
             a tax reserve, or any other goal, like a wedding or college fund.{" "}
             <em style={{ color: "var(--color-text)", fontStyle: "italic" }}>Spend the rest, guilt free.</em>
           </p>
@@ -413,7 +413,7 @@ export default function Homepage() {
             <div>
               <h3 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 10px" }}>A deposit lands</h3>
               <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "#574A68", margin: 0 }}>
-                PriorityPay sends you a text or push notification each time a new deposit hits your account. The
+                PrioritySave sends you a text or push notification each time a new deposit hits your account. The
                 deposit could be a client payment, a check you deposited, or cash from a payment app.
               </p>
             </div>
@@ -450,7 +450,7 @@ export default function Homepage() {
                 Deposit is split by percentages you set
               </h3>
               <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "#574A68", margin: 0 }}>
-                PriorityPay calculates how much of every deposit should go to retirement, savings, taxes, and any
+                PrioritySave calculates how much of every deposit should go to retirement, savings, taxes, and any
                 other accounts you choose, based on the percentages you set once. You see the breakdown for each
                 deposit and send the transfers yourself.
               </p>
@@ -510,7 +510,7 @@ export default function Homepage() {
               Most platforms show what you owe, overspend, and should have done.
             </p>
             <p style={{ fontSize: 17, lineHeight: 1.6, color: "#574A68", margin: "0 0 26px" }}>
-              PriorityPay just shows you what you&apos;ve already, effortlessly, saved. No budgeting homework, no
+              PrioritySave just shows you what you&apos;ve already, effortlessly, saved. No budgeting homework, no
               guilt trip. Just a running total of the retirement, tax, and savings progress that happened
               automatically while you were busy running your business.
             </p>
@@ -754,7 +754,7 @@ export default function Homepage() {
               from.
             </p>
             <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-              PriorityPay&apos;s Month Close-Out walks you through confirming each transaction once, then uses it
+              PrioritySave&apos;s Month Close-Out walks you through confirming each transaction once, then uses it
               to recommend exactly how much to send to your Tax Reserve and retirement accounts. Have W2 income? No
               problem, we&apos;ll separate it out automatically.
             </p>
@@ -817,7 +817,7 @@ export default function Homepage() {
             <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>Withdrawals</h3>
             <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
               Log every expense in one place, whether it&apos;s a specific credit-card charge or a cash purchase, and
-              PriorityPay matches it against the category it came from so your buckets always reflect what&apos;s
+              PrioritySave matches it against the category it came from so your buckets always reflect what&apos;s
               actually still there.
             </p>
           </Reveal>
@@ -831,7 +831,7 @@ export default function Homepage() {
           >
             <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>Month Close-Out</h3>
             <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-              Confirm each month&apos;s transactions once, and PriorityPay recommends exactly how much to send to
+              Confirm each month&apos;s transactions once, and PrioritySave recommends exactly how much to send to
               your Tax Reserve and retirement accounts based on what actually came in.
             </p>
           </Reveal>

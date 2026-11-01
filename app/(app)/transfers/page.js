@@ -938,7 +938,7 @@ export default function TransfersPage() {
             <div>
               <p className="text-sm font-semibold mb-1">Now send it at your bank</p>
               <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
-                PriorityPay never moves your money itself. Log into the account below and send it yourself, then
+                PrioritySave never moves your money itself. Log into the account below and send it yourself, then
                 come back and confirm.
               </p>
             </div>

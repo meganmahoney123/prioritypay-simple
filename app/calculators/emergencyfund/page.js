@@ -1,16 +1,16 @@
 import EmergencyFundPublicClient from "./EmergencyFundPublicClient";
 
 export const metadata = {
-  title: "Free Emergency Fund Calculator | PriorityPay",
+  title: "Free Emergency Fund Calculator | PrioritySave",
   description:
     "Figure out how big your emergency fund should actually be, self-employed and business owners need a bigger cushion than a steady W2 paycheck does. Free, no account needed.",
   alternates: {
-    canonical: "https://www.prioritypay.co/calculators/emergencyfund",
+    canonical: "https://www.prioritysave.com/calculators/emergencyfund",
   },
   openGraph: {
     type: "website",
     title: "Free Emergency Fund Calculator",
-    url: "https://www.prioritypay.co/calculators/emergencyfund",
+    url: "https://www.prioritysave.com/calculators/emergencyfund",
   },
   twitter: {
     card: "summary_large_image",

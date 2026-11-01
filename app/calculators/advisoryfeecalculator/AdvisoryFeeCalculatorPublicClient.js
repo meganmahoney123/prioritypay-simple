@@ -22,11 +22,11 @@
 //      v1 had (every account note flagged reviewed:false) is gone from v4
 //      already -- nothing to do here.
 //   2. The generated email referenced a provider intake form at
-//      prioritypay.co/f/x7k2m9 that doesn't exist. Folded those two items
+//      prioritysave.com/f/x7k2m9 that doesn't exist. Folded those two items
 //      into the plain "email me" list instead of shipping a dead link --
 //      see EMAIL_BODY below. "Send now" now opens a real mailto: draft in
 //      the visitor's own mail client (matching what the button already
-//      claimed to do); PriorityPay's servers never see any of it, same as
+//      claimed to do); PrioritySave's servers never see any of it, same as
 //      every other number on this page.
 
 import { useEffect, useRef } from "react";
@@ -461,7 +461,7 @@ export default function AdvisoryFeeCalculatorPublicClient() {
       if (privtext) {
         privtext.innerHTML = S.path === "ask"
           ? `Your balances stay in this browser. The email you send goes straight from your own inbox to your
-             provider, <b>PriorityPay never sees this message or any reply</b>. Nothing on this page is
+             provider, <b>PrioritySave never sees this message or any reply</b>. Nothing on this page is
              transmitted anywhere.`
           : `Everything on this page stays in this browser. Nothing has been transmitted, there's no account, and
              there's nothing for us to lose.`;
@@ -649,10 +649,10 @@ ${name}`;
           <label class="f" style="margin-top:14px">Their email address</label><input class="in" id="q-em" value="${S.providerEmail}" placeholder="advisor@firm.com" style="max-width:300px">
           <div style="margin-top:22px"><button class="btn" id="q-send">Send now</button></div>
           <div class="flag" style="margin-top:20px"><b>Everything goes to one place.</b><br>
-            This opens a draft in your own mail app, addressed to your provider. <b>PriorityPay never sees this
+            This opens a draft in your own mail app, addressed to your provider. <b>PrioritySave never sees this
             message or any reply</b>, their answer comes back to your inbox, and you type the numbers into
             step 2 on the left yourself.</div>
-          <div class="tnote" style="margin-top:14px">Nothing here is sent by PriorityPay. The draft opens in your
+          <div class="tnote" style="margin-top:14px">Nothing here is sent by PrioritySave. The draft opens in your
             own mail app so you can review it, edit it, and send it yourself.</div>
 
           <div class="eyebrow" style="margin-top:30px">The message</div>

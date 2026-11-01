@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isBusinessPlan, businessPlanRequiredError, getBusinessBillingProfile } from "@/lib/subscription";
 import { getValidAccessToken, fetchNetIncomeForMonth, fetchTransactionsForMonth, monthEndDate } from "@/lib/qbo";
 
-// Line-item reconciliation between QBO's transactions and PriorityPay's own
+// Line-item reconciliation between QBO's transactions and PrioritySave's own
 // confirmed closeout transactions for the same month. Matched greedily on
 // (direction, absolute amount, date within DATE_WINDOW_DAYS) -- QBO and Plaid
 // share no transaction ids, so amount is the only hard key, but requiring the
@@ -81,7 +81,7 @@ function buildDemoTrueUp({ seedKey, year, month, periodEnd }) {
 
   // QBO's side: the same activity, minus the smallest expense (as if the
   // bookkeeper hasn't categorized it in QBO yet) plus one QBO-only bank
-  // fee PriorityPay never saw -- gives the reconciliation something real
+  // fee PrioritySave never saw -- gives the reconciliation something real
   // to show under "what's driving the variance" instead of a suspiciously
   // perfect match every time.
   const expenses = trackedTxns.filter((t) => t.direction === "expense");
@@ -104,7 +104,7 @@ function buildDemoTrueUp({ seedKey, year, month, periodEnd }) {
 }
 // ------------------------------------------------------------------------
 
-// Money-in vs money-out. PriorityPay stores it explicitly (direction). QBO's
+// Money-in vs money-out. PrioritySave stores it explicitly (direction). QBO's
 // TransactionList doesn't, so we infer from the transaction type first (the
 // unambiguous signal) and fall back to the natural amount's sign -- so the
 // sign convention of subt_nat_amount doesn't have to be trusted on its own.
@@ -182,7 +182,7 @@ function reconcile(qboTxns, trackedTxns) {
 }
 
 // PHASE T. Computes one month's profit-vs-deposit true-up for an entity:
-// QBO's real ProfitAndLoss NetIncome vs. what PriorityPay itself tracked
+// QBO's real ProfitAndLoss NetIncome vs. what PrioritySave itself tracked
 // as confirmed net income for that entity's accounts over the same month,
 // and stores the result as a durable snapshot (see the migration's
 // simple_qbo_profit_snapshots comment for why it's stored rather than

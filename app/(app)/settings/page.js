@@ -259,7 +259,7 @@ function SettingsPageInner() {
 
         {billingRedirect === "success" && (
           <p style={{ fontSize: 14, color: "var(--color-accent-700)", marginBottom: 16 }}>
-            Subscription started — thanks for subscribing to PriorityPay.
+            Subscription started — thanks for subscribing to PrioritySave.
           </p>
         )}
         {billingRedirect === "cancelled" && (
@@ -271,7 +271,7 @@ function SettingsPageInner() {
         {isActive ? (
           <>
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
-              You&apos;re subscribed to PriorityPay{billing.isBusiness ? " Business" : ""} —{" "}
+              You&apos;re subscribed to PrioritySave{billing.isBusiness ? " Business" : ""} —{" "}
               <strong>
                 {billing.subscriptionSource === "apple"
                   ? billing.isBusiness ? "$39.99/month" : "$12.99/month"
@@ -334,7 +334,7 @@ function SettingsPageInner() {
           <>
             <div className="text-sm" style={{ ...bloomNoticeCardStyle(), padding: 16, margin: "0 0 16px" }}>
               {remaining === null
-                ? "You're on PriorityPay's 30-day free trial."
+                ? "You're on PrioritySave's 30-day free trial."
                 : `${remaining} day${remaining === 1 ? "" : "s"} left in your free trial`}
               {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}.{" "}
               {isNative ? "$12.99" : "$12"}/month after that.
@@ -371,7 +371,7 @@ function SettingsPageInner() {
           ) : (
             <>
               <p style={{ fontSize: 14, margin: "0 0 12px" }}>
-                Running multiple businesses? <strong>PriorityPay Business</strong> adds separate entities, QuickBooks
+                Running multiple businesses? <strong>PrioritySave Business</strong> adds separate entities, QuickBooks
                 sync, and a monthly profit true-up.
               </p>
               <GhostButton onClick={isNative ? upgradeToBusinessNative : upgradeToBusiness} disabled={billingBusy}>
@@ -429,7 +429,7 @@ function SettingsPageInner() {
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit text alerts</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-          PriorityPay texts you the moment a qualifying deposit lands, with a link straight to your split
+          PrioritySave texts you the moment a qualifying deposit lands, with a link straight to your split
           checklist. Off by default — check the box and add your number below to turn it on. Msg &amp; data
           rates may apply. Reply STOP to opt out, HELP for help.
         </p>
@@ -493,7 +493,7 @@ function SettingsPageInner() {
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit email alerts</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-          PriorityPay emails you the moment a qualifying deposit lands, with a link straight to your split
+          PrioritySave emails you the moment a qualifying deposit lands, with a link straight to your split
           checklist — sent to your account email, on by default, and you can turn it off anytime.
         </p>
         <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>

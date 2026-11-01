@@ -22,20 +22,20 @@ export async function POST(request) {
   }
 
   try {
-    // Auth ($1.50/account, one-time) only matters once PriorityPay actually
+    // Auth ($1.50/account, one-time) only matters once PrioritySave actually
     // originates a transfer to/from this account itself -- it never does
     // (the user sends every transfer themselves), so requesting it here is
     // pure unused cost.
     const products = [Products.Transactions];
     const response = await plaidClient.linkTokenCreate({
       user: { client_user_id: user.id },
-      client_name: "PriorityPay",
+      client_name: "PrioritySave",
       products,
       country_codes: [CountryCode.Us],
       language: "en",
       ...(savingsOnly ? { account_filters: { depository: { account_subtypes: ["savings"] } } } : {}),
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/accounts`,
-      webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritypay.co"}/api/plaid/webhook`,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/accounts`,
+      webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/api/plaid/webhook`,
     });
     return Response.json({ link_token: response.data.link_token });
   } catch (err) {

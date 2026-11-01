@@ -155,7 +155,7 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
   // dashboard will look like once accounts are linked and deposits split.
   return (
     <div className="space-y-6">
-      {/* The "Total saved since joining PriorityPay" hero card that used to
+      {/* The "Total saved since joining PrioritySave" hero card that used to
           open this section is gone -- per the approved mockup, the Total
           Income strip + hero boxes inside CategoryDistributionSection below
           are the Dashboard's opening summary now. Its "waiting for your

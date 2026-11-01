@@ -17,7 +17,7 @@ import { normalizeUSPhone } from "@/lib/phone";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
 
-// Re-enabled: PriorityPay no longer needs a banking partner/ACH approval
+// Re-enabled: PrioritySave no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
 // -- manual_approval mode calculates the split and lets the user send each
 // transfer themselves, with zero standing transfer authority required).
@@ -26,12 +26,12 @@ import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
 // onboarding needs to be paused for some other reason.
 const ONBOARDING_LIVE = true;
 
-// PriorityPay Simple has no fixed-costs step at all -- onboarding is: who
+// PrioritySave Simple has no fixed-costs step at all -- onboarding is: who
 // you are, verified identity (required before any money can move), every
 // account money reaches you through (so nothing skips the split), and the
 // percentage each category gets of every deposit (with its own account
 // connect-or-create option right on each row). Percentages start at
-// PriorityPay Simple's suggested split (see DEFAULT_SPLIT_RULES in
+// PrioritySave Simple's suggested split (see DEFAULT_SPLIT_RULES in
 // lib/allocations.js) and get tuned afterward from Split Rules -- nothing
 // here is final, and every account connection is skippable: the dashboard
 // nudges you to finish connecting before any money actually moves.
@@ -120,7 +120,7 @@ function OnboardingPageInner() {
   // Identity verification (Dwolla KYB/KYC) was required here back when
   // Dwolla originated real transfers on someone's behalf -- see the
   // removed Identity step below. Manual-approval mode (lib/runSplit.js)
-  // means PriorityPay never touches money itself, so there's nothing left
+  // means PrioritySave never touches money itself, so there's nothing left
   // that actually requires verifying identity before connecting accounts.
   // Removed rather than just skipped, so this doesn't quietly collect SSNs
   // for no reason -- see the equivalent removal on the Accounts page.
@@ -269,7 +269,7 @@ function OnboardingPageInner() {
   const [showUnconnectedModal, setShowUnconnectedModal] = useState(false);
   // Step 3: a last-check confirmation before leaving "Connect Accounts" --
   // asks the user to double-check they haven't forgotten an income source,
-  // since PriorityPay can only split deposits it actually sees.
+  // since PrioritySave can only split deposits it actually sees.
   const [showConfirmAccountsModal, setShowConfirmAccountsModal] = useState(false);
   // Step 3 (Onboarding Pass 2, Aug 2026 handoff): the three explainer
   // paragraphs, the "any percentage not assigned..." callout, and the cap
@@ -492,7 +492,7 @@ function OnboardingPageInner() {
 
   // No more 30-day free trial for anyone signing up from here on -- $12/mo
   // is collected via Stripe Checkout right here, before onboarding
-  // actually finishes, since PriorityPay now incurs real costs (Plaid,
+  // actually finishes, since PrioritySave now incurs real costs (Plaid,
   // Twilio, Anthropic) the moment someone starts using it. Existing
   // trialing users are entirely unaffected -- this only ever runs for a
   // brand-new signup finishing onboarding for the first time.
@@ -593,7 +593,7 @@ function OnboardingPageInner() {
     router.refresh();
   };
   // Required by Apple Guideline 3.1.1 -- lets someone who already has an
-  // active PriorityPay subscription under this Apple ID (reinstalled the
+  // active PrioritySave subscription under this Apple ID (reinstalled the
   // app, or a prior purchase that didn't confirm server-side) pick it back
   // up without paying again, instead of being stuck re-purchasing through
   // finishNative() above. Mirrors finishNative()'s shape but calls
@@ -780,7 +780,7 @@ function OnboardingPageInner() {
               Know your split<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
-              Set a percentage of every deposit for investments, savings, and other accounts. PriorityPay
+              Set a percentage of every deposit for investments, savings, and other accounts. PrioritySave
               calculates it the moment a deposit lands (BEFORE you spend it).
             </p>
             <button onClick={next} className="pp-btn pp-btn-primary" style={{ fontSize: 15, padding: "15px 34px" }}>
@@ -892,7 +892,7 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 12px" }}>
-              PriorityPay can only tell you to split a deposit it actually sees. Connect every bank account
+              PrioritySave can only tell you to split a deposit it actually sees. Connect every bank account
               you could receive a payment from. You can always add more inside the dashboard.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
@@ -1243,7 +1243,7 @@ function OnboardingPageInner() {
                 that step back later is a quick revert rather than a
                 rebuild. */}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              PriorityPay emails you the moment a qualifying deposit lands, with a link straight to your split
+              PrioritySave emails you the moment a qualifying deposit lands, with a link straight to your split
               checklist. That&apos;s how you actually confirm and send each transfer. We&apos;ll send it to your
               account email{emailAddress ? `, ${emailAddress}` : ""}.
             </p>
@@ -1305,7 +1305,7 @@ function OnboardingPageInner() {
                     style={bloomInputStyle({ fontSize: 16 })}
                   />
                   <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
-                    By opting in you agree to receive deposit-alert texts from PriorityPay. Message &amp; data rates may
+                    By opting in you agree to receive deposit-alert texts from PrioritySave. Message &amp; data rates may
                     apply; frequency varies with your deposit activity. Reply STOP to cancel or HELP for help. See our{" "}
                     <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
                       Terms
@@ -1319,8 +1319,8 @@ function OnboardingPageInner() {
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
                 {isNative
-                  ? "PriorityPay Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period — cancel anytime from iOS Settings > Apple ID > Subscriptions."
-                  : "PriorityPay is $12/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
+                  ? "PrioritySave Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period — cancel anytime from iOS Settings > Apple ID > Subscriptions."
+                  : "PrioritySave is $12/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
               </p>
               {isNative && (
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "10px 0 0" }}>
@@ -1424,7 +1424,7 @@ function OnboardingPageInner() {
               Are you sure these are all your income accounts?
             </h2>
             <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 26px" }}>
-              PriorityPay can only route money from connected accounts and apps.
+              PrioritySave can only route money from connected accounts and apps.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button

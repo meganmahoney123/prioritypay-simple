@@ -3,7 +3,7 @@
 // Shared brand mark for every surface of the app (sidebar, public header,
 // auth card, homepage footer, favicon) -- rebuilt for the Aug 2026 logo
 // refresh (design_handoff_prioritypay_redesign/logo/*.svg, most recently
-// re-sent in "Redesign PriorityPay homepage (15).zip"): four bars, each
+// re-sent in "Redesign PrioritySave homepage (15).zip"): four bars, each
 // centered on the others (not left-aligned) so the mark reads as a
 // symmetric funnel, tapering 42.24/27.84/18.24/12 wide, each 6.72px tall
 // with a matching gap, in four shades of purple (#3B1C7A / #4E22B8 /
@@ -69,7 +69,7 @@ export function PriorityPayWordmark({ size = 22, color = "var(--color-text)", pa
           marginLeft: -9,
         }}
       >
-        Pay
+        Save
       </span>
     </span>
   );

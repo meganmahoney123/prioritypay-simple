@@ -1,9 +1,9 @@
 import ContactPageClient from "@/components/ContactPageClient";
 
 export const metadata = {
-  title: "Contact | PriorityPay",
-  description: "Get in touch with the PriorityPay team.",
-  alternates: { canonical: "https://www.prioritypay.co/contact" },
+  title: "Contact | PrioritySave",
+  description: "Get in touch with the PrioritySave team.",
+  alternates: { canonical: "https://www.prioritysave.com/contact" },
 };
 
 export default function ContactPage() {

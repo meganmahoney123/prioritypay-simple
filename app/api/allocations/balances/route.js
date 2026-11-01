@@ -2,7 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
 // Current, spendable balance per category label -- NOT the same number as
-// the Dashboard's "Total saved since joining PriorityPay" (allTimeTotal,
+// the Dashboard's "Total saved since joining PrioritySave" (allTimeTotal,
 // see app/api/allocations/history/range/route.js), which is deliberately
 // gross/never-netted. This route is the netted view: starting_balance
 // (a one-time, user-declared opening balance set on the category itself,

@@ -23,7 +23,7 @@ import { bloomPrimaryButtonStyle } from "@/lib/bloomTheme";
 //      several categories) alongside this month's contribution, the most
 //      recent withdrawal if any, and a progress meter toward the
 //      category's goal cap if one is set.
-//   3. surfaces "Saved via PriorityPay" and "Guilt-Free Spending
+//   3. surfaces "Saved via PrioritySave" and "Guilt-Free Spending
 //      Available" as their own hero boxes above the pie, each showing the
 //      real math behind the number, with a This Month/This Year toggle
 //      (year mode sums every month of the selected year via the same
@@ -367,7 +367,7 @@ export default function CategoryDistributionSection({ mode = "month", period, on
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
               <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Saved {periodModeLabel} via PriorityPay
+                Saved {periodModeLabel} via PrioritySave
               </div>
               <div className="font-mono" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
                 {currency(totalAllocated)}

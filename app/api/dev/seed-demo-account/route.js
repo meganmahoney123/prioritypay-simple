@@ -40,7 +40,7 @@ const DEMO_ACCOUNTS = [
 // -- the Self Employed persona's own real defaults, just with every row
 // connected to one of the fake accounts above and two of them (Investments,
 // Solo 401k) given a starting balance so the new Investment Projections tab
-// has a non-zero "Pre-PriorityPay" bar to show off. Both starting balances
+// has a non-zero "Pre-PrioritySave" bar to show off. Both starting balances
 // are comfortably under their account's fake balance, so the starting-
 // balance over-allocation warning stays quiet for the default demo.
 const DEMO_SPLIT_RULES = [

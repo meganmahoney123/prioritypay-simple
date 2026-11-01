@@ -1,10 +1,10 @@
 import LegalPage from "@/components/LegalPage";
 
 export const metadata = {
-  title: "Privacy Policy | PriorityPay",
+  title: "Privacy Policy | PrioritySave",
   description:
-    "What information PriorityPay collects, how it's used, and who it's shared with, including Plaid, Stripe, Supabase, Vercel, and, if you use optional features, Telnyx and Anthropic.",
-  alternates: { canonical: "https://www.prioritypay.co/privacy" },
+    "What information PrioritySave collects, how it's used, and who it's shared with, including Plaid, Stripe, Supabase, Vercel, and, if you use optional features, Telnyx and Anthropic.",
+  alternates: { canonical: "https://www.prioritysave.com/privacy" },
   robots: { index: false, follow: true },
 };
 
@@ -12,8 +12,8 @@ export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" updated="August 22, 2026">
       <p>
-        This Privacy Policy explains what information PriorityPay collects, how it&apos;s used, and who it&apos;s
-        shared with when you use PriorityPay (the &quot;Service&quot;), operated by PriorityPay LLC, a Virginia
+        This Privacy Policy explains what information PrioritySave collects, how it&apos;s used, and who it&apos;s
+        shared with when you use PrioritySave (the &quot;Service&quot;), operated by PriorityPay LLC, a Virginia
         limited liability company.
       </p>
 
@@ -22,9 +22,9 @@ export default function PrivacyPage() {
       <ul>
         <li><strong>Account information:</strong> your email address and password (stored securely, hashed, we never see or store your password in plain text).</li>
         <li><strong>Profile information:</strong> details you provide during onboarding, such as your business type and how you handle income.</li>
-        <li><strong>Linked account and transaction data:</strong> via Plaid, we receive read-only account balances and transaction data for accounts you choose to connect, used to detect deposits and calculate your split rules. PriorityPay never receives the ability to move money in or out of these accounts.</li>
-        <li><strong>Split rules and checklist history:</strong> the percentages, caps, and categories you configure, and records of what PriorityPay calculated for each deposit, which you then complete yourself as a transfer.</li>
-        <li><strong>Billing information:</strong> if you subscribe, Stripe processes your payment method directly; PriorityPay does not receive or store your full card number.</li>
+        <li><strong>Linked account and transaction data:</strong> via Plaid, we receive read-only account balances and transaction data for accounts you choose to connect, used to detect deposits and calculate your split rules. PrioritySave never receives the ability to move money in or out of these accounts.</li>
+        <li><strong>Split rules and checklist history:</strong> the percentages, caps, and categories you configure, and records of what PrioritySave calculated for each deposit, which you then complete yourself as a transfer.</li>
+        <li><strong>Billing information:</strong> if you subscribe, Stripe processes your payment method directly; PrioritySave does not receive or store your full card number.</li>
         <li><strong>Optional feature data:</strong> if you enable deposit text alerts, your phone number; if you use the in-app Tax Strategy Advisor chat, the questions you ask it.</li>
       </ul>
 
@@ -43,14 +43,14 @@ export default function PrivacyPage() {
 
       <h2>3. Who We Share Information With</h2>
       <p>
-        We share information with the service providers that power PriorityPay, and don&apos;t sell your personal
+        We share information with the service providers that power PrioritySave, and don&apos;t sell your personal
         information to third parties for their own marketing purposes:
       </p>
       <ul>
         <li><strong>Plaid Inc.</strong>, bank account linking and read-only transaction data. See the <a href="https://plaid.com/legal/" target="_blank" rel="noreferrer">Plaid Privacy Policy</a>.</li>
         <li><strong>Stripe</strong>, payment processing for your subscription. See the <a href="https://stripe.com/privacy" target="_blank" rel="noreferrer">Stripe Privacy Policy</a>.</li>
         <li><strong>Supabase</strong>, our database and authentication provider, which stores your account and app data.</li>
-        <li><strong>Vercel</strong>, hosts the PriorityPay application.</li>
+        <li><strong>Vercel</strong>, hosts the PrioritySave application.</li>
         <li><strong>Telnyx</strong>, sends deposit-alert text messages once you provide a phone number and opt in in Settings. This feature is off by default; you can turn it off again anytime in Settings.</li>
         <li><strong>Anthropic</strong>, powers the optional Tax Strategy Advisor chat feature, only if you use it; your questions are sent to Anthropic&apos;s API to generate a response.</li>
       </ul>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
       </p>
 
       <h2>7. Children&apos;s Privacy</h2>
-      <p>PriorityPay is not intended for use by anyone under 18, and we don&apos;t knowingly collect information from children.</p>
+      <p>PrioritySave is not intended for use by anyone under 18, and we don&apos;t knowingly collect information from children.</p>
 
       <h2>8. Changes to This Policy</h2>
       <p>We may update this Privacy Policy from time to time. Material changes will be reflected by an updated &quot;Last updated&quot; date above.</p>

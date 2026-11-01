@@ -51,7 +51,7 @@ export default async function Image() {
           </div>
           <div style={{ width: 2, height: 74, background: "#E3D6FA" }} />
           <div style={{ display: "flex", fontSize: 64, fontWeight: 800, color: "#241634" }}>
-            Priority<span style={{ color: "#6D3BE0", fontStyle: "italic" }}>Pay</span>
+            Priority<span style={{ color: "#6D3BE0", fontStyle: "italic" }}>Save</span>
           </div>
         </div>
         <div style={{ display: "flex", fontSize: 30, color: "#574A68", textAlign: "center", maxWidth: 820 }}>

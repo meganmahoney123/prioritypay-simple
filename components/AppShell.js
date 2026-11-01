@@ -56,7 +56,7 @@ const TITLES = {
 // paths to the same "Income Split Rules" header title and nav highlight.
 function titleFor(pathname) {
   if (pathname.startsWith("/splits")) return TITLES["/splits"];
-  return TITLES[pathname] || "PriorityPay";
+  return TITLES[pathname] || "PrioritySave";
 }
 
 // Lets the Dashboard page (only) inject content into AppShell's own
@@ -219,7 +219,7 @@ export default function AppShell({ children, isSandbox = false }) {
   // pending" line once there's more than one, per Megan's call that
   // correctness here matters more than naming every single one.
   useEffect(() => {
-    const normalTitle = `${titleFor(pathname)} | PriorityPay`;
+    const normalTitle = `${titleFor(pathname)} | PrioritySave`;
     if (!hasPendingTransfers) {
       document.title = normalTitle;
       return;
@@ -231,9 +231,9 @@ export default function AppShell({ children, isSandbox = false }) {
       const destName = destAccount
         ? `${destAccount.institution_name} •••• ${destAccount.mask}`
         : g.dest_account_label || "your account";
-      document.title = `→ ${currency(g.amount)} to ${destName} | PriorityPay`;
+      document.title = `→ ${currency(g.amount)} to ${destName} | PrioritySave`;
     } else {
-      document.title = `Transfers pending (${allGroups.length}) | PriorityPay`;
+      document.title = `Transfers pending (${allGroups.length}) | PrioritySave`;
     }
     return () => {
       document.title = normalTitle;

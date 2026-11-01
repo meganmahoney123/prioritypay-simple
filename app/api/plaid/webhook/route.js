@@ -4,7 +4,7 @@ import { runSplit } from "@/lib/runSplit";
 import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
 import { matchInTransitAllocation, markAllocationCompleted, maybeRecordNearMissCandidate } from "@/lib/reconcileTransfers";
 
-// This is what makes PriorityPay actually live up to "splits the moment it
+// This is what makes PrioritySave actually live up to "splits the moment it
 // hits your account," instead of requiring someone to open Payments and
 // click a button. Plaid calls this URL (registered via the `webhook` param
 // on linkTokenCreate) whenever something changes on a linked Item; we only

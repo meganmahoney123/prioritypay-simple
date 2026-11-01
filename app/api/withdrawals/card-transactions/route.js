@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 
 // Powers the "match this to a credit card transaction" picker on the
 // Withdrawals tab (app/(app)/withdrawals/page.js) -- every credit-card
-// account this user has connected, plus every transaction PriorityPay has
+// account this user has connected, plus every transaction PrioritySave has
 // ever synced for those accounts (see lib/closeoutSync.js -- credit
 // accounts get pulled into simple_closeout_transactions the same as
 // depository ones, across every month's close-out, not just the current
