@@ -66,6 +66,8 @@ function systemPrompt(answers, matched, guides) {
 WRITING RULES
 - Plain text only. No asterisks, no pound signs, no markdown, no tables. Short paragraphs. Use a simple "1." numbered list only when listing options.
 - Never use em dashes or en dashes. Use commas, periods or the word "to".
+- Start directly with the answer. Never open by saying numbers "check out", that you verified something, or "good news". Do not narrate your searching.
+- Always put what you learn from official sources in your own words. Never copy sentences from the IRS or any other source, and do not use quotation marks around source text.
 - Warm, plain, specific. No jargon without a short explanation.
 
 WHAT TO DO
