@@ -540,7 +540,7 @@ export default function EntityScenarioClient() {
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
                     <label htmlFor="salary" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>
-                      The paycheck part <span style={{ color: "var(--color-accent)" }}>&mdash; S-corp only</span>
+                      The paycheck part <span style={{ color: "var(--color-accent)" }}>(S-corp only)</span>
                     </label>
                     <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 16px", maxWidth: "62em", ...muted(76) }}>An S-corp splits your profit into two parts: a <b>paycheck</b>, and <b>the rest</b>. You take both. Only the paycheck pays payroll tax, and that is where the savings come from.</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
@@ -581,14 +581,14 @@ export default function EntityScenarioClient() {
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
                     <label htmlFor="adminCost" style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, marginBottom: 9, color: "var(--color-text)" }}>Who would handle your payroll and tax returns?</label>
-                    <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 12px", maxWidth: "62em", ...muted(76) }}>With an S-corp, your company pays you like an employee. So there is payroll to run for <b>one person &mdash; you</b>. There is also a second tax return, for the company. Both cost money every year, and this is the part people forget.</p>
+                    <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 12px", maxWidth: "62em", ...muted(76) }}>With an S-corp, your company pays you like an employee. So there is payroll to run for <b>one person: you</b>. There is also a second tax return, for the company. Both cost money every year, and this is the part people forget.</p>
                     <p style={{ fontSize: 16, lineHeight: 1.68, margin: "0 0 16px", maxWidth: "62em", ...muted(56) }}>Contractors work differently. You pay them and send a 1099. They never go on your payroll, so having them or not does not change this cost.</p>
                     <div style={{ position: "relative", maxWidth: 200 }}>
                       <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, color: "var(--color-neutral-700)" }}>$</span>
                       <input type="number" onFocus={(e) => e.target.select()} id="adminCost" min="0" step="250" value={adminCost} onChange={(e) => setAdminCost(parseFloat(e.target.value) || 0)}
                         style={bloomInputStyle({ height: 56, fontSize: 22, fontFamily: "var(--font-mono)", fontWeight: 800, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "0 16px 0 32px", fontVariantNumeric: "tabular-nums" })} />
                     </div>
-                    <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, maxWidth: "62em", ...muted(55) }}>Most people land somewhere between <b>$700 and $3,500 a year</b>, depending on how much you hand off. Only the company return is extra &mdash; you would pay for a personal return either way. Get a real quote before you decide anything.</div>
+                    <div style={{ fontSize: 14, lineHeight: 1.55, marginTop: 8, maxWidth: "62em", ...muted(55) }}>Most people land somewhere between <b>$700 and $3,500 a year</b>, depending on how much you hand off. Only the company return is extra, you would pay for a personal return either way. Get a real quote before you decide anything.</div>
                   </div>
 
                   <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--color-divider)", paddingTop: 24 }}>
@@ -682,7 +682,7 @@ export default function EntityScenarioClient() {
 
             <div style={{ marginTop: 48, paddingTop: 26, borderTop: "1px solid var(--color-divider)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.72, margin: "0 0 14px", ...muted(74) }}>
-                <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800, color: "var(--color-text)" }}>About this article.</b> This is general educational information about how these rules work, not tax or legal advice for your situation. Entity and tax decisions depend on facts specific to you &mdash; your state, your income, your filing status, the nature of your work &mdash; and the right answer for one self employed individual is often wrong for another. Figures are current for the 2026 tax year as of publication. Rules change; check the date. Talk to a CPA or attorney licensed in your state before making a decision.
+                <b style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800, color: "var(--color-text)" }}>About this article.</b> This is general educational information about how these rules work, not tax or legal advice for your situation. Entity and tax decisions depend on facts specific to you, your state, your income, your filing status, the nature of your work, and the right answer for one self employed individual is often wrong for another. Figures are current for the 2026 tax year as of publication. Rules change; check the date. Talk to a CPA or attorney licensed in your state before making a decision.
               </p>
               <h4 style={h4Pros}>Sources</h4>
               <ul style={{ margin: 0, paddingLeft: 0, fontSize: 16, lineHeight: 1.6, listStyle: "none", display: "grid", gap: 10 }}>

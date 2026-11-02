@@ -526,7 +526,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                             marginBottom: 6,
                           }}
                         >
-                          Step 1 &mdash; go send it
+                          Step 1: go send it
                         </div>
                         <div className="flex items-center gap-4 flex-wrap">
                           {sourceBankUrl && (
@@ -662,7 +662,7 @@ export default function PendingTransfers({ allocations, accounts, onConfirmed })
                       }}
                     >
                       <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text)", lineHeight: 1.5 }}>
-                        We saw {currency(candidate.amount)} land in {accountLabel(destAccount, g.dest_account_label)} &mdash; is
+                        We saw {currency(candidate.amount)} land in {accountLabel(destAccount, g.dest_account_label)}. Is
                         this your {g.label} transfer? You confirmed {currency(g.amount)}
                         {candidate.date ? ` on ${candidate.date}` : ""}.
                       </div>

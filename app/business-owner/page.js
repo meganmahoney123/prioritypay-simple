@@ -62,7 +62,7 @@ export default function BusinessOwnerHubPage() {
             Business Owner
           </h1>
           <p style={{ fontSize: 20, lineHeight: 1.6, maxWidth: "34em", margin: "0 0 42px", color: "var(--color-neutral-800)" }}>
-            Guides for business owners with a team &mdash; payroll, entity structure, and keeping business money
+            Guides for business owners with a team, payroll, entity structure, and keeping business money
             separate from your own.
           </p>
 

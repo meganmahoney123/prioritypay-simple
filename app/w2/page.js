@@ -62,7 +62,7 @@ export default function W2HubPage() {
             W2
           </h1>
           <p style={{ fontSize: 20, lineHeight: 1.6, maxWidth: "34em", margin: "0 0 42px", color: "var(--color-neutral-800)" }}>
-            Guides for W2 employees &mdash; withholding, benefits elections, and building savings on top of a steady
+            Guides for W2 employees, withholding, benefits elections, and building savings on top of a steady
             paycheck.
           </p>
 
