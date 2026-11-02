@@ -30,9 +30,9 @@ export default function SubscriptionDisclosure({ plan = "simple", isNative }) {
         Apple ID &gt; Subscriptions.
       </p>
       <p style={{ margin: 0 }}>
-        <a href="/terms" style={linkStyle}>Terms of Use (EULA)</a>
+        <a href="https://www.prioritypay.co/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>Terms of Use (EULA)</a>
         {" · "}
-        <a href="/privacy" style={linkStyle}>Privacy Policy</a>
+        <a href="https://www.prioritypay.co/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>Privacy Policy</a>
       </p>
     </div>
   );
