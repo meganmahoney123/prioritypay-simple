@@ -12,6 +12,8 @@ import { checkAdvisorUsage, incrementAdvisorUsage } from "@/lib/advisorUsage";
 import { maskSensitive, plainText } from "@/lib/privacyFilter";
 import { searchGuides } from "@/lib/guideSearch";
 
+export const maxDuration = 120;
+
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
 function cleanAnswers(raw) {
