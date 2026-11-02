@@ -48,22 +48,22 @@ export async function POST(request) {
           console.error("Stripe webhook: could not resolve plan for session", session.id, err?.message);
         }
 
-        // If this account already had a different Stripe subscription (for
-        // example a standard plan, now upgrading to Business), end the old
-        // one so the customer is not billed twice.
-        try {
-          const { data: existing } = await admin
-            .from("simple_profiles")
-            .select("stripe_subscription_id")
-            .eq("stripe_customer_id", session.customer)
-            .maybeSingle();
-          const oldId = existing?.stripe_subscription_id;
-          if (oldId && oldId !== session.subscription && String(oldId).startsWith("sub_")) {
-            await stripe.subscriptions.cancel(oldId, { prorate: true });
-            console.log("Stripe webhook: canceled replaced subscription", oldId);
+        // Upgrading to Business: end any OTHER active subscription this Stripe
+        // customer has (the standard plan being replaced) so they are not
+        // billed twice. Looked up in Stripe itself, not our database.
+        if (plan === "business") {
+          try {
+            const others = await stripe.subscriptions.list({ customer: session.customer, status: "active", limit: 20 });
+            for (const other of others.data) {
+              if (other.id === session.subscription) continue;
+              const otherPrices = (other.items?.data || []).map((i) => i?.price?.id).filter(Boolean);
+              if (otherPrices.some((id) => planForPriceId(id) === "business")) continue;
+              await stripe.subscriptions.cancel(other.id, { prorate: true });
+              console.log("Stripe webhook: canceled replaced subscription", other.id);
+            }
+          } catch (err) {
+            console.error("Stripe webhook: could not cancel previous subscription", err?.message);
           }
-        } catch (err) {
-          console.error("Stripe webhook: could not cancel previous subscription", err?.message);
         }
 
         const profileUpdate = {
