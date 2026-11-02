@@ -37,45 +37,55 @@ export async function POST(request) {
         // subscriber by accident, since their price id still resolves
         // correctly either way.
         let plan = null;
-        // PHASE V: hoisted out of the try block (was declared with `const`
-        // inside it) so current_period_end below can still read it even
-        // when the block itself did nothing but resolve `plan`.
         let subscription = null;
         try {
           subscription = await stripe.subscriptions.retrieve(session.subscription);
-          const subscribedPriceId = subscription.items?.data?.[0]?.price?.id;
-          plan = planForPriceId(subscribedPriceId);
+          // Look at every item on the subscription, not just the first one.
+          const priceIds = (subscription.items?.data || []).map((i) => i?.price?.id).filter(Boolean);
+          plan = priceIds.some((id) => planForPriceId(id) === "business") ? "business" : "simple";
+          console.log("Stripe webhook: checkout completed", session.id, "prices", priceIds.join(","), "plan", plan);
         } catch (err) {
-          console.error("Stripe webhook: could not resolve plan for session", session.id, err);
+          console.error("Stripe webhook: could not resolve plan for session", session.id, err?.message);
+        }
+
+        // If this account already had a different Stripe subscription (for
+        // example a standard plan, now upgrading to Business), end the old
+        // one so the customer is not billed twice.
+        try {
+          const { data: existing } = await admin
+            .from("simple_profiles")
+            .select("stripe_subscription_id")
+            .eq("stripe_customer_id", session.customer)
+            .maybeSingle();
+          const oldId = existing?.stripe_subscription_id;
+          if (oldId && oldId !== session.subscription && String(oldId).startsWith("sub_")) {
+            await stripe.subscriptions.cancel(oldId, { prorate: true });
+            console.log("Stripe webhook: canceled replaced subscription", oldId);
+          }
+        } catch (err) {
+          console.error("Stripe webhook: could not cancel previous subscription", err?.message);
         }
 
         const profileUpdate = {
           stripe_subscription_id: session.subscription,
           subscription_status: "active",
-          // PHASE V: a fresh checkout is never mid-cancellation, and this
-          // also covers someone re-subscribing after a previous
-          // cancel_at_period_end -- see app/api/billing/cancel.
           cancel_at_period_end: false,
         };
-        // Only write `plan` when it actually resolved -- a transient Stripe
-        // API error must never silently downgrade a Business subscriber to
-        // "simple". planForPriceId() already maps a genuine Simple checkout
-        // to "simple", so skipping it here only affects the rare
-        // couldn't-look-it-up case, leaving any existing plan untouched.
         if (plan) profileUpdate.plan = plan;
-        // PHASE V: current_period_end mirrors Stripe's own field so
-        // Settings can show the actual renewal/end date without a live API
-        // call -- see supabase/migrations/20260908_cancel_at_period_end.sql.
-        // Guarded the same way as `plan` above: a transient lookup failure
-        // just leaves this column stale rather than writing garbage.
-        if (subscription?.current_period_end) {
-          profileUpdate.current_period_end = new Date(subscription.current_period_end * 1000).toISOString();
+        // Newer Stripe API versions keep the period end on the item, older ones on the subscription.
+        const periodEnd = subscription?.current_period_end ?? subscription?.items?.data?.[0]?.current_period_end;
+        if (periodEnd) {
+          profileUpdate.current_period_end = new Date(periodEnd * 1000).toISOString();
         }
 
-        await admin
+        const { error: updateError } = await admin
           .from("simple_profiles")
           .update(profileUpdate)
           .eq("stripe_customer_id", session.customer);
+        if (updateError) {
+          console.error("Stripe webhook: profile update failed", session.id, updateError.message);
+          return Response.json({ error: "profile update failed" }, { status: 500 });
+        }
       }
       break;
     }
@@ -87,6 +97,16 @@ export async function POST(request) {
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       const subscription = event.data.object;
+      // Ignore events for a subscription that is no longer the account's current one
+      // (e.g. the standard plan that was just replaced by Business).
+      {
+        const { data: current } = await admin
+          .from("simple_profiles")
+          .select("stripe_subscription_id")
+          .eq("stripe_customer_id", subscription.customer)
+          .maybeSingle();
+        if (current?.stripe_subscription_id && current.stripe_subscription_id !== subscription.id) break;
+      }
       // PHASE V: cancel_at_period_end and current_period_end let the
       // Settings UI show "ending <date>" the whole stretch between someone
       // confirming cancellation (app/api/billing/cancel) and the period
@@ -100,8 +120,8 @@ export async function POST(request) {
         .update({
           subscription_status: subscription.status,
           cancel_at_period_end: event.type === "customer.subscription.deleted" ? false : !!subscription.cancel_at_period_end,
-          current_period_end: subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000).toISOString()
+          current_period_end: (subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end)
+            ? new Date((subscription.current_period_end ?? subscription.items.data[0].current_period_end) * 1000).toISOString()
             : null,
         })
         .eq("stripe_customer_id", subscription.customer);

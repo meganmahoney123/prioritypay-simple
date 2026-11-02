@@ -116,12 +116,19 @@ export default function CancelSubscriptionCard({ currentPeriodEnd, cancelAtPerio
 
   if (step === "idle") {
     return (
+      <>
+      {retentionOfferUsed && (
+        <p className="text-sm" style={{ margin: "12px 0 0", color: "var(--color-accent-700, var(--color-accent))" }}>
+          Your 50% off for 3 months has been applied.
+        </p>
+      )}
       <button
         onClick={startCancelFlow}
         style={{ marginTop: 12, marginLeft: 20, background: "none", border: 0, padding: 0, cursor: "pointer", fontFamily: "var(--font-body)", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textDecoration: "underline" }}
       >
         Cancel subscription
       </button>
+      </>
     );
   }
 
