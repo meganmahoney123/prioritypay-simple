@@ -64,6 +64,12 @@ const BUSINESS_TYPES = [
   PERSONA_W2_NO_SIDE_HUSTLE,
 ];
 const HAS_EMPLOYEES_TYPE = "Business Owner (With Employees)";
+// Friendlier wording shown in the dropdown, matching the first question of
+// the Tax Savings Quiz. The stored value stays the exact persona string.
+const BUSINESS_TYPE_LABELS = {
+  "Self Employed (No Employees)": "Self-employed: freelance, 1099 or a solo business, with or without an LLC",
+  "Business Owner (With Employees)": "I own a business with full-time employees or business partners",
+};
 
 // "Tax Reserve" / "Investments and Emergency Fund" / "A, B, and C" -- used
 // to list unconnected category names in one sentence on Step 4 (see
@@ -817,7 +823,7 @@ function OnboardingPageInner() {
                   }}
                   style={bloomInputStyle({ fontSize: 16 })}
                 >
-                  {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{BUSINESS_TYPE_LABELS[t] || t}</option>)}
                 </select>
               </div>
 
