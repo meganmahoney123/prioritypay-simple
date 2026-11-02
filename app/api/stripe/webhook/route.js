@@ -48,24 +48,6 @@ export async function POST(request) {
           console.error("Stripe webhook: could not resolve plan for session", session.id, err?.message);
         }
 
-        // Upgrading to Business: end any OTHER active subscription this Stripe
-        // customer has (the standard plan being replaced) so they are not
-        // billed twice. Looked up in Stripe itself, not our database.
-        if (plan === "business") {
-          try {
-            const others = await stripe.subscriptions.list({ customer: session.customer, status: "active", limit: 20 });
-            for (const other of others.data) {
-              if (other.id === session.subscription) continue;
-              const otherPrices = (other.items?.data || []).map((i) => i?.price?.id).filter(Boolean);
-              if (otherPrices.some((id) => planForPriceId(id) === "business")) continue;
-              await stripe.subscriptions.cancel(other.id, { prorate: true });
-              console.log("Stripe webhook: canceled replaced subscription", other.id);
-            }
-          } catch (err) {
-            console.error("Stripe webhook: could not cancel previous subscription", err?.message);
-          }
-        }
-
         const profileUpdate = {
           stripe_subscription_id: session.subscription,
           subscription_status: "active",
@@ -86,6 +68,27 @@ export async function POST(request) {
           console.error("Stripe webhook: profile update failed", session.id, updateError.message);
           return Response.json({ error: "profile update failed" }, { status: 500 });
         }
+
+        // (Runs AFTER the profile now points at the new subscription, so the old plan's
+        // cancellation event is ignored instead of marking the account canceled.)
+        // Upgrading to Business: end any OTHER active subscription this Stripe
+        // customer has (the standard plan being replaced) so they are not
+        // billed twice. Looked up in Stripe itself, not our database.
+        if (plan === "business") {
+          try {
+            const others = await stripe.subscriptions.list({ customer: session.customer, status: "active", limit: 20 });
+            for (const other of others.data) {
+              if (other.id === session.subscription) continue;
+              const otherPrices = (other.items?.data || []).map((i) => i?.price?.id).filter(Boolean);
+              if (otherPrices.some((id) => planForPriceId(id) === "business")) continue;
+              await stripe.subscriptions.cancel(other.id, { prorate: true });
+              console.log("Stripe webhook: canceled replaced subscription", other.id);
+            }
+          } catch (err) {
+            console.error("Stripe webhook: could not cancel previous subscription", err?.message);
+          }
+        }
+
       }
       break;
     }
