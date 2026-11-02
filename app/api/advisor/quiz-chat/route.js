@@ -14,6 +14,29 @@ import { searchGuides } from "@/lib/guideSearch";
 
 export const maxDuration = 120;
 
+// Verified 2026 figures from IRS and SSA publications. The first reply uses
+// these directly (no live lookup, which is what made it slow). Follow-up
+// questions still search official sites for anything not listed here.
+// REFRESH EVERY JANUARY.
+const BUILTIN_FACTS = `
+- 401(k), 403(b) and Solo 401(k) employee deferral limit, tax year 2026: $24,500. Catch-up at 50 or older: $8,000. Ages 60 to 63: $11,250 catch-up. Overall limit across employee, employer and after-tax contributions: $72,000 (before catch-up). Source: IRS.
+- SIMPLE IRA deferral limit, 2026: $17,000. Catch-up at 50 or older: $4,000 ($5,250 at ages 60 to 63). Source: IRS.
+- IRA contribution limit, 2026: $7,500. Catch-up at 50 or older: $1,100. Source: IRS.
+- HSA limits, 2026: $4,400 self-only, $8,750 family, plus $1,000 catch-up at 55 or older. Source: IRS.
+- Health FSA limit, 2026: $3,400 with up to $680 carryover. Dependent care FSA: $7,500. Commuter benefits: $340 a month. Source: IRS.
+- Standard deduction, 2026: $16,100 single, $32,200 married filing jointly, $24,150 head of household. SALT deduction cap, 2026: $40,400. Source: IRS.
+- Long-term capital gains 0 percent rate applies up to taxable income of $49,450 single, $98,900 married filing jointly, $66,200 head of household, 2026. Net investment income tax of 3.8 percent applies above $200,000 single and $250,000 married filing jointly. Source: IRS.
+- Social Security benefit taxation thresholds (provisional income, not indexed): $25,000 and $34,000 single, $32,000 and $44,000 married filing jointly. Up to 50 percent then up to 85 percent of benefits can be taxable. Source: IRS and SSA.
+- Medicare premium surcharges (IRMAA) for 2026 are based on 2024 income. Standard Part B premium 2026: $202.90 a month. Surcharges start above $109,000 single and $218,000 married filing jointly. Source: SSA and CMS.
+- Required minimum distributions start at age 73 for people born 1951 to 1959 and age 75 for those born in 1960 or later. Qualified charitable distributions are allowed from age 70 and a half. Source: IRS.
+- Standard mileage rate, 2026: business 72.5 cents per mile before July 1 and 76 cents per mile from July 1; medical and moving 20.5 cents before July 1 and 23.5 cents from July 1; charitable 14 cents. Source: IRS Notice 2026-10 and Announcement 2026-11.
+- SECURE 2.0 small employer retirement plan startup credit: up to $5,000 a year for 3 years (100 percent of costs, employers with 50 or fewer employees). Employer contribution credit up to $1,000 per employee, phased 100, 100, 75, 50, 25 percent. Source: IRS.
+- Small business health care tax credit (Section 45R): up to 50 percent of premiums (35 percent for tax-exempt employers), for fewer than 25 full-time-equivalent employees. Source: IRS.
+- Employer-provided child care credit (Section 45F), from 2026: 40 percent of qualified costs up to a $500,000 credit, or 50 percent up to $600,000 for eligible small businesses (average gross receipts of $32 million or less). Paid family and medical leave credit (Section 45S) is permanent. Source: IRS.
+- Employer education assistance (Section 127): up to $5,250 a year tax-free per employee. Source: IRS.
+- The Work Opportunity Tax Credit expired December 31, 2025 and had not been renewed as of early 2026; check IRS.gov. Source: IRS.
+`.trim();
+
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
 function cleanAnswers(raw) {
@@ -173,7 +196,7 @@ export async function POST(request) {
         content: `Today is ${new Date().toISOString().slice(0, 10)}. A self-employed person asked: "${lastUserMsg}"${kickoff ? ` Topics likely relevant: ${topics}.` : ""}\nUse web search on official government sites to confirm the CURRENT tax year's figures (dollar limits, thresholds, rates, credit amounts, deadlines) needed to answer well. Reply with a short plain list, one line each: the figure, its value, the tax year it applies to, and the source site. Use your own words. If no figures are needed, reply NONE.`,
       },
     ];
-    for (let round = 0; round < 4; round++) {
+    for (let round = 0; round < (kickoff ? 0 : 4); round++) {
       const data = await call({ max_tokens: 900, system: "You are a careful tax research assistant. Plain text only.", messages: msgs, tools: [SEARCH] });
       if (!data) break;
       if (data.stop_reason === "pause_turn") {
@@ -188,9 +211,9 @@ export async function POST(request) {
     // Step 2: write the answer from the verified facts, no tools.
     const system =
       systemPrompt(answers, matched, guides) +
-      (facts && facts !== "NONE"
-        ? `\n\nVERIFIED CURRENT-YEAR FIGURES FROM OFFICIAL SOURCES (use these over the guides if they differ, and say which tax year each figure is for)\n${facts}`
-        : "\n\nNo official figures could be verified for this message. If you cite any dollar limit, rate or deadline, say it is unverified and should be confirmed at irs.gov.");
+      `\n\nVERIFIED CURRENT-YEAR FIGURES FROM OFFICIAL SOURCES (use these over the guides if they differ, and say which tax year each figure is for)\n${BUILTIN_FACTS}` +
+      (facts && facts !== "NONE" ? `\n${facts}` : "") +
+      "\nIf you need a dollar limit, rate or deadline that is not listed above, say it is unverified and should be confirmed at irs.gov, and do not guess it.";
     // Answers are kept short by the prompt, but the token budget leaves room
     // for the model's own reasoning so a long list of matches never runs it
     // out before any text is written.
