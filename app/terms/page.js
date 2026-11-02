@@ -13,7 +13,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" updated="August 22, 2026">
+    <LegalPage title="Terms of Service" updated="November 1, 2026">
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your access to and use of PriorityPay (the
         &quot;Service&quot;), operated by PriorityPay LLC, a Virginia limited liability company (&quot;PriorityPay,&quot;
@@ -93,12 +93,29 @@ export default function TermsPage() {
 
       <h2>6. Fees</h2>
       <p>
-        PriorityPay offers a 30-day free trial starting from the date you create an account. After the trial ends,
-        continued use of the Service requires a paid subscription, currently <strong>$7 per month</strong>, billed
-        through Stripe to the payment method you provide. If your trial ends without an active subscription, your
-        account moves to a read-only mode: you can still view your split rules, dashboard, and history, but
-        connecting new accounts is paused until you subscribe. We may change the subscription price going forward,
-        but any change will be disclosed to you before it takes effect for your account.
+        PriorityPay is offered on iPhone and iPad as an auto-renewable subscription, purchased only through Apple
+        In-App Purchase. Two plans are available: <strong>PriorityPay Simple, $12.99 per month</strong>, and{" "}
+        <strong>PriorityPay Business, $39.99 per month</strong>. Each subscription renews monthly at the price shown
+        until you cancel.
+      </p>
+      <p>
+        Payment is charged to your Apple ID account at confirmation of purchase. Your subscription renews
+        automatically unless you cancel it at least 24 hours before the end of the current period, and your account
+        is charged for renewal within 24 hours before the end of the current period. You can manage or cancel your
+        subscription at any time in your device&apos;s Settings under your name, then Subscriptions. Deleting the app
+        does not cancel your subscription. Refunds are handled by Apple, per Apple&apos;s policies.
+      </p>
+      <p>
+        If your subscription ends, your account moves to a read-only mode: you can still view your split rules,
+        dashboard, and history, but connecting new accounts is paused until you subscribe again. We may change
+        subscription prices going forward, but any change will be disclosed to you, and handled through Apple, before
+        it takes effect for your account.
+      </p>
+      <p>
+        Your use of the Service is also subject to Apple&apos;s standard{" "}
+        <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noreferrer">
+          Terms of Use (EULA)
+        </a>.
       </p>
 
       <h2>7. Prohibited Use</h2>
