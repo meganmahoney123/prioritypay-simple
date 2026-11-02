@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
-import { QUIZ_QUESTIONS } from "@/lib/quizEngine";
+import { QUIZ_QUESTIONS, questionView } from "@/lib/quizEngine";
 import { OptionButton } from "@/components/quiz/QuizShared";
 import { maskSensitive } from "@/lib/privacyFilter";
 
@@ -18,7 +18,8 @@ const STARTERS = [
 ];
 
 function answerLines(answers) {
-  return QUIZ_QUESTIONS.map((q) => {
+  return QUIZ_QUESTIONS.map((q0) => {
+    const q = questionView(q0, answers);
     const v = answers[q.id];
     if (!v || (Array.isArray(v) && !v.length)) return null;
     const labels = (Array.isArray(v) ? v : [v]).map((x) => q.options.find((o) => o.value === x)?.label).filter(Boolean);
@@ -40,7 +41,7 @@ export default function QuizAdvisor() {
   const started = useRef(false);
 
 
-  const visible = useMemo(() => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)), [answers]);
+  const visible = useMemo(() => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => questionView(q, answers)), [answers]);
   const current = stepIndex < visible.length ? visible[stepIndex] : null;
 
   function selectSingle(q, value) {

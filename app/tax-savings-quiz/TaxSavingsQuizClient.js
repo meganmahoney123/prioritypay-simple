@@ -5,7 +5,7 @@ import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
-import { QUIZ_QUESTIONS } from "@/lib/quizEngine";
+import { QUIZ_QUESTIONS, questionView } from "@/lib/quizEngine";
 import { OptionButton } from "@/components/quiz/QuizShared";
 import QuizResultsView from "@/components/quiz/QuizResultsView";
 
@@ -19,7 +19,7 @@ export default function TaxSavingsQuizClient() {
   const [results, setResults] = useState(null);
 
   const visibleQuestions = useMemo(
-    () => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)),
+    () => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => questionView(q, answers)),
     [answers]
   );
 
