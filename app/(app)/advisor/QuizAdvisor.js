@@ -179,7 +179,7 @@ export default function QuizAdvisor() {
               </ul>
               <p className="mb-1">Your latest message, after phone numbers, emails, SSNs and card or account numbers are masked:</p>
               <p style={{ fontStyle: "italic", margin: "0 0 8px" }}>{lastUser ? lastUser.content : "(nothing yet)"}</p>
-              <p style={{ margin: 0 }}>Nothing else: no name, email, bank, or transaction data.</p>
+              <p style={{ margin: 0 }}>Nothing else: no name, email, bank, or transaction data. To check current-year limits, the AI may also search official IRS and government sites using only your tax question.</p>
             </div>
           )}
 

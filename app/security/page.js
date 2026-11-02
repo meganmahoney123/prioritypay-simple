@@ -16,7 +16,7 @@ export default function SecurityPage() {
         <li>Before each message is sent, phone numbers, email addresses, Social Security numbers, and card or account numbers are masked. This happens in your browser and again on our server.</li>
         <li>Your chat messages are not saved. We store only a count of messages, to enforce the monthly limit.</li>
         <li>Use &quot;See what was sent&quot; inside the chat to view exactly what goes to the AI.</li>
-        <li>The AI answers from PrioritySave&apos;s own tax reference notes. It is a guide, not a CPA or attorney.</li>
+        <li>The AI answers from PrioritySave&apos;s own tax guides and its general tax knowledge, and may look up official government sources (IRS, SSA and similar) to confirm current-year numbers. Those lookups are built only from your tax question, never from personal details. It is a guide, not a CPA or attorney.</li>
       </ul>
       <h2>Your account data</h2>
       <ul>
