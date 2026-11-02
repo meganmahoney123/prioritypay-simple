@@ -20,7 +20,7 @@ function PlainAccountCard({ acc }) {
         <span className="text-xs" style={{ color: "var(--color-neutral-700)" }}>•••• {acc.mask}</span>
       </div>
       <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "12px 0 0" }}>
-        {acc.current_balance === null || acc.current_balance === undefined ? "—" : currency(acc.current_balance)}
+        {acc.current_balance === null || acc.current_balance === undefined ? "-" : currency(acc.current_balance)}
       </div>
     </div>
   );
@@ -97,7 +97,7 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
               <span className="text-xs" style={{ color: "var(--color-neutral-700)" }}>•••• {acc.mask}</span>
             </div>
             <div className="font-mono" style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "12px 0 16px" }}>
-              {acc.current_balance === null || acc.current_balance === undefined ? "—" : currency(acc.current_balance)}
+              {acc.current_balance === null || acc.current_balance === undefined ? "-" : currency(acc.current_balance)}
             </div>
             <div className="space-y-1" style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 12 }}>
               {byAccount[acc.id].map((r) => (

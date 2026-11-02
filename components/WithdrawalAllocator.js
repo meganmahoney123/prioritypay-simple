@@ -72,7 +72,7 @@ export default function WithdrawalAllocator({ totalAmount, primaryLabel, balance
   };
 
   if (!primaryLabel && total > 0) {
-    // "Other" — untracked spending, no balance impact, nothing to cascade.
+    // "Other", untracked spending, no balance impact, nothing to cascade.
     return (
       <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
         Categorized as untracked spending, no category balance is affected.

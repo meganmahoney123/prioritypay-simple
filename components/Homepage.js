@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Btn from "./PublicBtn";
 import PublicHeader from "./PublicHeader";
 import PublicFooter from "./PublicFooter";
-// Design: "Bloom" (working name) — the purple, card-based redesign Megan
+// Design: "Bloom" (working name), the purple, card-based redesign Megan
 // built in Claude Design (Aug 25 2026), exported as static HTML and ported
 // here 1:1, replacing the earlier "Ledger" concept. Colors/spacing/type
 // below are the design's actual tokens (see the exported .dc.html), not

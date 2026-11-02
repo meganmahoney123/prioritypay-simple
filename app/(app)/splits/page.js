@@ -48,7 +48,7 @@ function SplitRulesPageInner() {
       // A person arriving from the Money Simulator (dashboard tab or the
       // public one under Resources -> via signup+onboarding first) via
       // "Update my real split rules" carries their simulated split in
-      // ?sim= — that takes priority over whatever's already saved, since
+      // ?sim=, that takes priority over whatever's already saved, since
       // it's the whole reason they clicked through. Still requires
       // pressing Save below before it's actually persisted.
       const simmed = decodeSim(searchParams.get("sim"));

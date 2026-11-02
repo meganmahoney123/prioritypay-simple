@@ -23,7 +23,7 @@ export default function SubscriptionDisclosure({ plan = "simple", isNative }) {
       }}
     >
       <p style={{ margin: "0 0 6px" }}>
-        <strong>{p.name}</strong> — monthly subscription (1 month), {p.price}/month.
+        <strong>{p.name}</strong>: monthly subscription (1 month), {p.price}/month.
         Payment is charged to your Apple ID at confirmation. The subscription renews
         automatically each month at {p.price} unless cancelled at least 24 hours
         before the end of the current period. Manage or cancel in iOS Settings &gt;

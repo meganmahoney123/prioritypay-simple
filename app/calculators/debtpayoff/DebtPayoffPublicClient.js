@@ -713,7 +713,7 @@ export default function DebtPayoffPublicClient() {
                   {row.reachedCap ? "50+ yrs" : monthsToYearsLabel(row.months)}
                 </span>
                 <span style={{ flex: "0 0 120px", textAlign: "right", fontSize: 18, fontWeight: row.isCurrent ? 800 : 500, fontFamily: "var(--font-mono)" }}>
-                  {row.reachedCap ? "—" : currency(row.totalInterest)}
+                  {row.reachedCap ? "-" : currency(row.totalInterest)}
                 </span>
               </div>
             ))}

@@ -20,7 +20,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 // app uses -- there's no separate admin/service-role login needed. Whoever
 // is logged into the app and hits this endpoint seeds their OWN account
 // only.
-const DEMO_NOTE = "Demo data — total allocation preview";
+const DEMO_NOTE = "Demo data: total allocation preview";
 
 // Cycles through a few round, presentable amounts so different categories
 // don't all show the exact same balance.
@@ -38,7 +38,7 @@ export async function POST() {
 
   if (!rules || !rules.length) {
     return Response.json(
-      { error: "No categories found yet — add at least one category on the Income Split Rules page first." },
+      { error: "No categories found yet. Add at least one category on the Income Split Rules page first." },
       { status: 400 }
     );
   }

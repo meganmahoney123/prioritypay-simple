@@ -444,7 +444,7 @@ function UnmatchedList({ title, items, render }) {
             return (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
                 <span style={{ color: "color-mix(in srgb, var(--color-text) 65%, transparent)", whiteSpace: "nowrap" }}>
-                  {r.date || "—"}
+                  {r.date || "-"}
                 </span>
                 <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
                 <strong style={{ whiteSpace: "nowrap" }}>{currency(r.amount)}</strong>
@@ -543,16 +543,16 @@ function TrueUpCard({ entities, connections, setError }) {
         <div style={{ ...bloomAccentCardStyle(), padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 6 }}>
             <span>QuickBooks net income</span>
-            <strong>{result.snapshot.qbo_net_income === null ? "—" : currency(result.snapshot.qbo_net_income)}</strong>
+            <strong>{result.snapshot.qbo_net_income === null ? "-" : currency(result.snapshot.qbo_net_income)}</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 6 }}>
             <span>PrioritySave tracked deposits</span>
-            <strong>{result.snapshot.tracked_deposits === null ? "—" : currency(result.snapshot.tracked_deposits)}</strong>
+            <strong>{result.snapshot.tracked_deposits === null ? "-" : currency(result.snapshot.tracked_deposits)}</strong>
           </div>
           <div style={{ height: 1, background: "var(--color-divider)", margin: "8px 0" }} />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
             <span style={{ fontWeight: 600 }}>Variance</span>
-            <strong>{result.snapshot.variance === null ? "—" : currency(result.snapshot.variance)}</strong>
+            <strong>{result.snapshot.variance === null ? "-" : currency(result.snapshot.variance)}</strong>
           </div>
           {result.note && (
             <p style={{ fontSize: 13, color: "var(--color-accent-800)", margin: "12px 0 0" }}>{result.note}</p>
@@ -572,12 +572,12 @@ function TrueUpCard({ entities, connections, setError }) {
                   <UnmatchedList
                     title="In QuickBooks, not tracked by PrioritySave"
                     items={result.reconciliation.unmatchedQbo}
-                    render={(x) => ({ date: x.date, label: x.name || x.type || "—", amount: x.amount })}
+                    render={(x) => ({ date: x.date, label: x.name || x.type || "-", amount: x.amount })}
                   />
                   <UnmatchedList
                     title="Tracked by PrioritySave, not in QuickBooks"
                     items={result.reconciliation.unmatchedTracked}
-                    render={(x) => ({ date: x.date, label: x.name || x.category || "—", amount: x.amount })}
+                    render={(x) => ({ date: x.date, label: x.name || x.category || "-", amount: x.amount })}
                   />
                   {result.reconciliation.truncated && (
                     <p style={{ fontSize: 12, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 8 }}>

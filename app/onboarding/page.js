@@ -253,7 +253,7 @@ function OnboardingPageInner() {
         });
     } else if (paid === "cancelled") {
       setStep(STEPS.length - 1);
-      setPaymentError("Checkout was cancelled — no charge was made. Try again when you're ready.");
+      setPaymentError("Checkout was cancelled. No charge was made. Try again when you're ready.");
     }
     // Only ever meant to run once, against whatever ?paid= was on the URL
     // Stripe redirected back to -- not on every searchParams change.
@@ -678,7 +678,7 @@ function OnboardingPageInner() {
           </h1>
           <p style={{ fontSize: 16, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 30px" }}>
             We&apos;re finalizing our banking partner integration to make sure your money moves securely. Account
-            setup will open again shortly — check back soon.
+            setup will open again shortly. Check back soon.
           </p>
           <a href="/" className="pp-btn pp-btn-primary" style={{ display: "inline-flex", padding: "13px 30px", textDecoration: "none" }}>
             ← &nbsp;Back home
@@ -933,7 +933,7 @@ function OnboardingPageInner() {
               />
             </div>
             <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 34px" }}>
-              Credit cards are for close-out expense tracking only — they&apos;re never used for splits or
+              Credit cards are for close-out expense tracking only. They&apos;re never used for splits or
               transfers.
             </p>
 
@@ -971,7 +971,7 @@ function OnboardingPageInner() {
                         {(a.institution_name || "?").charAt(0).toUpperCase()}
                       </span>
                       <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, flex: 1, minWidth: 0 }}>
-                        {a.institution_name} — {a.account_name} •••• {a.mask}
+                        {a.institution_name}, {a.account_name} •••• {a.mask}
                         {a.account_type === "credit" ? " (credit card)" : ""}
                       </span>
                       <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-heading)", fontSize: 11.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
@@ -1070,7 +1070,7 @@ function OnboardingPageInner() {
             {availableSuggestions.length > 0 && (
               <div style={{ marginTop: 30 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
-                  Suggestions — click to add, starts at 0%
+                  Suggestions: click to add, starts at 0%
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
                   {availableSuggestions.map((s) => (
@@ -1143,7 +1143,7 @@ function OnboardingPageInner() {
             )}
             {!balancesLoading && startingBalanceGroups.length === 0 && (
               <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Nothing to set here yet — none of your connected accounts have categories linked to them.
+                Nothing to set here yet. None of your connected accounts have categories linked to them.
               </p>
             )}
             {!balancesLoading &&
@@ -1221,7 +1221,7 @@ function OnboardingPageInner() {
               Confirming your payment…
             </h1>
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-              One moment — you&apos;ll land in your dashboard as soon as this is done.
+              One moment. You&apos;ll land in your dashboard as soon as this is done.
             </p>
           </div>
         )}
@@ -1319,7 +1319,7 @@ function OnboardingPageInner() {
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
                 {isNative
-                  ? "PrioritySave Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period — cancel anytime from iOS Settings > Apple ID > Subscriptions."
+                  ? "PrioritySave Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period. Cancel anytime from iOS Settings > Apple ID > Subscriptions."
                   : "PrioritySave is $12/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
               </p>
               {isNative && (
@@ -1343,11 +1343,11 @@ function OnboardingPageInner() {
               <BackBtn onClick={back} />
               {isNative ? (
                 <PrimaryBtn onClick={finishNative} disabled={nativePurchasing} flex>
-                  {nativePurchasing ? "Processing…" : "Continue to payment — $12.99/month"} &nbsp;→
+                  {nativePurchasing ? "Processing…" : "Continue to payment ($12.99/month)"} &nbsp;→
                 </PrimaryBtn>
               ) : (
                 <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                  {submitting ? "Redirecting to checkout…" : "Continue to payment — $12/month"} &nbsp;→
+                  {submitting ? "Redirecting to checkout…" : "Continue to payment ($12/month)"} &nbsp;→
                 </PrimaryBtn>
               )}
             </div>

@@ -365,7 +365,7 @@ export default function MoneySimulator({
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, margin: "0 0 10px" }}>
                     <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{isRecurring ? "—" : months}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{isRecurring ? "-" : months}</div>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
                         {isRecurring ? "recurring" : "months away"}
                       </div>

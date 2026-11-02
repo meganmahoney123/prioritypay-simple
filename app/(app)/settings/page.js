@@ -259,19 +259,19 @@ function SettingsPageInner() {
 
         {billingRedirect === "success" && (
           <p style={{ fontSize: 14, color: "var(--color-accent-700)", marginBottom: 16 }}>
-            Subscription started — thanks for subscribing to PrioritySave.
+            Subscription started. Thanks for subscribing to PrioritySave.
           </p>
         )}
         {billingRedirect === "cancelled" && (
           <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 16 }}>
-            Checkout cancelled — no charge was made.
+            Checkout cancelled. No charge was made.
           </p>
         )}
 
         {isActive ? (
           <>
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
-              You&apos;re subscribed to PrioritySave{billing.isBusiness ? " Business" : ""} —{" "}
+              You&apos;re subscribed to PrioritySave{billing.isBusiness ? " Business" : ""}:{" "}
               <strong>
                 {billing.subscriptionSource === "apple"
                   ? billing.isBusiness ? "$39.99/month" : "$12.99/month"
@@ -313,7 +313,7 @@ function SettingsPageInner() {
               paused until you subscribe.
             </div>
             <PrimaryButton onClick={isNative ? subscribeNative : subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : `Subscribe — ${isNative ? "$12.99" : "$12"}/month`}
+              {billingBusy ? "Loading…" : `Subscribe (${isNative ? "$12.99" : "$12"}/month)`}
             </PrimaryButton>
             <SubscriptionDisclosure plan="simple" isNative={isNative} />
             {billingError && (
@@ -375,7 +375,7 @@ function SettingsPageInner() {
                 sync, and a monthly profit true-up.
               </p>
               <GhostButton onClick={isNative ? upgradeToBusinessNative : upgradeToBusiness} disabled={billingBusy}>
-                {billingBusy ? "Loading…" : isNative ? "Upgrade to Business — $39.99/month" : "Upgrade to Business"}
+                {billingBusy ? "Loading…" : isNative ? "Upgrade to Business ($39.99/month)" : "Upgrade to Business"}
               </GhostButton>
               <SubscriptionDisclosure plan="business" isNative={isNative} />
             </>
@@ -389,7 +389,7 @@ function SettingsPageInner() {
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit splitting</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-          Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all — $100 is the
+          Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all. $100 is the
           lowest you can set it.
         </p>
         <div style={{ maxWidth: 220 }}>
@@ -430,7 +430,7 @@ function SettingsPageInner() {
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
           PrioritySave texts you the moment a qualifying deposit lands, with a link straight to your split
-          checklist. Off by default — check the box and add your number below to turn it on. Msg &amp; data
+          checklist. Off by default. Check the box and add your number below to turn it on. Msg &amp; data
           rates may apply. Reply STOP to opt out, HELP for help.
         </p>
         <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
@@ -494,7 +494,7 @@ function SettingsPageInner() {
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
           PrioritySave emails you the moment a qualifying deposit lands, with a link straight to your split
-          checklist — sent to your account email, on by default, and you can turn it off anytime.
+          checklist, sent to your account email, on by default, and you can turn it off anytime.
         </p>
         <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
           <input
@@ -567,7 +567,7 @@ function SettingsPageInner() {
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
           Instantly switches your own account to a different onboarding persona and resets your split rules to
-          that persona&apos;s defaults — no need to sign up a second account to see how Dashboard, Close Out, and
+          that persona&apos;s defaults, so there's no need to sign up a second account to see how Dashboard, Close Out, and
           Split Rules look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.
         </p>
         <div className="flex flex-wrap gap-2">

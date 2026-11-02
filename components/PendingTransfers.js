@@ -21,7 +21,7 @@ function accountLabel(acc, fallbackLabel) {
 // account across EVERY still-open deposit, not just one -- so if a $1,000
 // deposit puts $100 toward Savings and, two days later, a $2,000 deposit
 // puts another $200 toward Savings before either gets confirmed, this
-// shows one "Savings — $300" line instead of two separate ones. Most
+// shows one "Savings, $300" line instead of two separate ones. Most
 // people don't want to go make a bank transfer for every single deposit;
 // this lets them let a few pile up and send one transfer for the combined
 // total. Confirming/deleting the combined line acts on every allocation id

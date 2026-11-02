@@ -38,7 +38,7 @@ export async function POST(request) {
   const amount = Number(body.amount) || 0;
 
   if (!fromLabel && !toLabel) {
-    return Response.json({ error: "Pick at least one tracked category — moving cash between accounts isn't tracked here." }, { status: 400 });
+    return Response.json({ error: "Pick at least one tracked category. Moving cash between accounts isn't tracked here." }, { status: 400 });
   }
   if (fromLabel && fromLabel === toLabel) {
     return Response.json({ error: "Source and destination categories must be different." }, { status: 400 });

@@ -379,7 +379,7 @@ export default function CloseoutPage() {
 
   // Backs the "Paid by" / "For" columns added on each Deposit row -- two
   // free-text notes folded into one string in
-  // simple_closeout_transactions.income_source ("Acme Corp — Website
+  // simple_closeout_transactions.income_source ("Acme Corp, Website
   // redesign"), saved on blur only if it actually changed, mirroring
   // setCategory's optimistic-update-with-rollback pattern above.
   const [incomeSourceDrafts, setIncomeSourceDrafts] = useState({});

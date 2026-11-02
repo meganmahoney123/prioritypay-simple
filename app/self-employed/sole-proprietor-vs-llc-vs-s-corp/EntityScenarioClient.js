@@ -323,7 +323,7 @@ export default function EntityScenarioClient() {
     result.cols.forEach((c) => {
       L.push(
         c.label,
-        "  paycheck " + (c.wages ? M(c.wages) : "—") + " / profit " + (c.dist ? M(c.dist) : "—"),
+        "  paycheck " + (c.wages ? M(c.wages) : "-") + " / profit " + (c.dist ? M(c.dist) : "-"),
         "  self-employment or payroll tax " + M(c.workTax),
         "  20% small business deduction " + M(c.qbiDed) + (c.qbiLimited ? " (limited)" : ""),
         "  income you get taxed on " + M(c.taxable),
@@ -735,8 +735,8 @@ function ResultRows({ cols }) {
     <>
       {grp("How the money reaches you")}
       {row("Profit for the year", cols.map((x) => x.profit))}
-      {row("Paid as a paycheck", cols.map((x) => (x.wages === 0 ? "—" : M(x.wages))))}
-      {row("Paid as profit", cols.map((x) => (x.dist === 0 ? "—" : M(x.dist))))}
+      {row("Paid as a paycheck", cols.map((x) => (x.wages === 0 ? "-" : M(x.wages))))}
+      {row("Paid as profit", cols.map((x) => (x.dist === 0 ? "-" : M(x.dist))))}
       {grp("Federal tax")}
       {row("Self-employment or payroll tax", cols.map((x) => x.workTax))}
       {row("20% small business deduction", cols.map((x) => x.qbiDed))}
@@ -744,11 +744,11 @@ function ResultRows({ cols }) {
       {row("Income tax", cols.map((x) => x.incomeTax))}
       {row("Total tax", cols.map((x) => x.tax), "total")}
       {grp("Fees and forms")}
-      {row("State fee", cols.map((x) => (x.stateFee === 0 ? "—" : M(x.stateFee))))}
-      {row("Payroll and extra tax prep", cols.map((x) => (x.adminFee === 0 ? "—" : M(x.adminFee))))}
+      {row("State fee", cols.map((x) => (x.stateFee === 0 ? "-" : M(x.stateFee))))}
+      {row("Payroll and extra tax prep", cols.map((x) => (x.adminFee === 0 ? "-" : M(x.adminFee))))}
       {grp("The bottom line")}
       {row("What is left", cols.map((x) => x.left), "total")}
-      {row("Next to sole proprietor", cols.map((x, i) => (i === 0 ? "—" : Math.abs(x.left - cols[0].left) < 1 ? "the same" : M(x.left - cols[0].left))))}
+      {row("Next to sole proprietor", cols.map((x, i) => (i === 0 ? "-" : Math.abs(x.left - cols[0].left) < 1 ? "the same" : M(x.left - cols[0].left))))}
     </>
   );
 }

@@ -446,7 +446,7 @@ export default function CategoryDistributionSection({ mode = "month", period, on
               </div>
               <div style={{ fontSize: 12, color: "var(--color-neutral-700)", marginTop: 3, lineHeight: 1.4 }}>
                 {currency(guiltFree)} unused with {daysLeftInMonth()} day{daysLeftInMonth() === 1 ? "" : "s"} left this month.
-                Paying down debt first is usually the better move — it&apos;s a guaranteed return equal to your card&apos;s APR.
+                Paying down debt first is usually the better move. It&apos;s a guaranteed return equal to your card&apos;s APR.
               </div>
               <Link
                 href="/transfers"

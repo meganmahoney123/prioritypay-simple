@@ -56,7 +56,7 @@ function buildDemoTrueUp({ seedKey, year, month, periodEnd }) {
   for (let i = 0; i < incomeCount; i++) {
     trackedTxns.push({
       txn_date: dateInMonth(1 + Math.floor(rand() * daysInMonth)),
-      name: `${pick(DEMO_CLIENT_NAMES)} — Invoice`,
+      name: `${pick(DEMO_CLIENT_NAMES)} Invoice`,
       amount: Math.round((400 + rand() * 3600) * 100) / 100,
       direction: "income",
       confirmed_category: "income",
