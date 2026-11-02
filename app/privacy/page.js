@@ -87,7 +87,7 @@ export default function PrivacyPage() {
       <h2>9. Contact</h2>
       <p>
         Questions about this policy or your data? Reach us at{" "}
-        <a href="mailto:hello@prioritypay.co">hello@prioritypay.co</a>.
+        <a href="mailto:hello@prioritysave.com">hello@prioritysave.com</a>.
       </p>
     </LegalPage>
   );

@@ -157,7 +157,7 @@ export default function TermsPage() {
       <h2>14. Customer Support</h2>
       <p>
         If you have a question or issue with your split calculations, account linking, or anything else about the
-        Service, contact us at <a href="mailto:hello@prioritypay.co">hello@prioritypay.co</a> and we&apos;ll help
+        Service, contact us at <a href="mailto:hello@prioritysave.com">hello@prioritysave.com</a> and we&apos;ll help
         you resolve it. Because PrioritySave never initiates a transfer, a dispute about a specific transfer you sent
         is between you and your bank, we&apos;re glad to help you track down what our checklist showed at the time,
         but we can&apos;t reverse or trace the transfer itself.
@@ -166,7 +166,7 @@ export default function TermsPage() {
       <h2>15. Contact</h2>
       <p>
         Questions about these Terms? Reach us at{" "}
-        <a href="mailto:hello@prioritypay.co">hello@prioritypay.co</a>.
+        <a href="mailto:hello@prioritysave.com">hello@prioritysave.com</a>.
       </p>
     </LegalPage>
   );

@@ -9,7 +9,7 @@ import { BLOOM_TOKENS, bloomInputStyle, bloomPrimaryButtonStyle } from "@/lib/bl
 // a real page with a real form. Submits to app/api/contact, which stores
 // the message in simple_contact_messages (read via the Supabase table
 // editor) rather than sending an email directly -- see that route's
-// comment for why. hello@prioritypay.co is still shown below as a plain
+// comment for why. hello@prioritysave.com is still shown below as a plain
 // fallback for anyone who'd rather just email directly.
 export default function ContactPageClient() {
   const [form, setForm] = useState({ name: "", email: "", message: "", website: "" });
@@ -61,8 +61,8 @@ export default function ContactPageClient() {
         <p style={{ fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "0 0 36px" }}>
           Questions, feedback, or something not working right? Send us a message and we&apos;ll get back to you,
           or email us directly at{" "}
-          <a href="mailto:hello@prioritypay.co" style={{ color: "var(--color-accent)", textDecoration: "underline" }}>
-            hello@prioritypay.co
+          <a href="mailto:hello@prioritysave.com" style={{ color: "var(--color-accent)", textDecoration: "underline" }}>
+            hello@prioritysave.com
           </a>
           .
         </p>
