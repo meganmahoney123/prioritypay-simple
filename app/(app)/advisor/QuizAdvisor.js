@@ -155,6 +155,28 @@ export default function QuizAdvisor() {
         </p>
       </div>
 
+      <div className="text-xs mb-5 p-3 rounded-lg" style={{ background: "var(--color-neutral-200)", color: "var(--color-neutral-700)" }}>
+        <p style={{ margin: 0 }}>
+          <strong>Your tax savings chat</strong>{" "}
+          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full" style={{ background: "#EDE6FF", color: "#3B1C7A" }}>Beta</span>
+          <br />
+          The chat only knows your quiz answers. It cannot see your accounts or transactions, and your messages aren&apos;t saved.{" "}
+          <button type="button" className="underline" onClick={() => setShowSent((s) => !s)}>See what was sent</button>{" · "}
+          <Link href="/security" className="underline">How we protect your data</Link>
+        </p>
+        {showSent && (
+          <div className="mt-3">
+            <p className="font-semibold mb-1">Sent to the AI with each message:</p>
+            <ul style={{ paddingLeft: 16, listStyle: "disc", margin: "0 0 8px" }}>
+              {lines.length ? lines.map((l, i) => <li key={i}>{l.q} {l.a}</li>) : <li>Your quiz answers so far (none yet)</li>}
+            </ul>
+            <p className="mb-1">Your latest chat message, after phone numbers, emails, SSNs and card or account numbers are masked:</p>
+            <p style={{ fontStyle: "italic", margin: "0 0 8px" }}>{lastUser ? lastUser.content : "(nothing yet)"}</p>
+            <p style={{ margin: 0 }}>Nothing else: no name, email, bank, or transaction data. To check current-year limits, the AI may also search official IRS and government sites using only your tax question.</p>
+          </div>
+        )}
+      </div>
+
       {!done && (
         <Card style={{ padding: "clamp(20px, 4vw, 32px)" }}>
           <div style={{ fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.6, marginBottom: 18 }}>
@@ -188,26 +210,7 @@ export default function QuizAdvisor() {
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-1">
             <h2 className="text-sm font-semibold">Your tax savings chat</h2>
-            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full" style={{ background: "#EDE6FF", color: "#3B1C7A" }}>Beta</span>
           </div>
-          <p className="text-xs mb-4" style={{ color: "var(--color-neutral-700)" }}>
-            The chat only knows your quiz answers. It cannot see your accounts or transactions, and your messages aren&apos;t saved.{" "}
-            <button type="button" className="underline" onClick={() => setShowSent((s) => !s)}>See what was sent</button>{" · "}
-            <Link href="/security" className="underline">How we protect your data</Link>
-          </p>
-
-          {showSent && (
-            <div className="text-xs mb-4 p-3 rounded-lg" style={{ background: "var(--color-neutral-200)" }}>
-              <p className="font-semibold mb-1">Sent to the AI with each message:</p>
-              <ul style={{ paddingLeft: 16, listStyle: "disc", margin: "0 0 8px" }}>
-                {lines.map((l, i) => <li key={i}>{l.q} {l.a}</li>)}
-              </ul>
-              <p className="mb-1">Your latest message, after phone numbers, emails, SSNs and card or account numbers are masked:</p>
-              <p style={{ fontStyle: "italic", margin: "0 0 8px" }}>{lastUser ? lastUser.content : "(nothing yet)"}</p>
-              <p style={{ margin: 0 }}>Nothing else: no name, email, bank, or transaction data. To check current-year limits, the AI may also search official IRS and government sites using only your tax question.</p>
-            </div>
-          )}
-
           <div className="space-y-3">
             {messages.filter((m) => !m.hidden).map((m, i) => (
               <div key={i} className="text-sm px-3 py-2 rounded-xl"
