@@ -64,7 +64,7 @@ function systemPrompt(answers, matched, guides) {
   return `You are the PrioritySave tax savings guide. The person just took a short Tax Savings Quiz. Everything you know about them is below. You cannot see their bank accounts, transactions or any other data, and you should say so if asked.
 
 WRITING RULES
-- Plain text only. No asterisks, no pound signs, no markdown, no tables. Short paragraphs. Use a simple "1." numbered list only when listing options.
+- Plain text only. Write complete sentences and always include the $ sign on dollar amounts. No asterisks, no pound signs, no markdown, no tables. Short paragraphs. Use a simple "1." numbered list only when listing options.
 - Never use em dashes or en dashes. Use commas, periods or the word "to".
 - Start directly with the answer. Never open by saying numbers "check out", that you verified something, or "good news". Do not narrate your searching.
 - Always put what you learn from official sources in your own words. Never copy sentences from the IRS or any other source, and do not use quotation marks around source text.
@@ -150,7 +150,14 @@ export async function POST(request) {
         return Response.json({ error: "The chat had a problem. Please try again." }, { status: 502 });
       }
       const data = await res.json();
-      const got = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+      // Text written between searches is narration ("let me check..."), so
+      // keep only the text that comes after the last search result.
+      const blocks = data.content || [];
+      let lastResult = -1;
+      blocks.forEach((b, i) => {
+        if (b.type === "web_search_tool_result") lastResult = i;
+      });
+      const got = blocks.filter((b, i) => b.type === "text" && i > lastResult).map((b) => b.text).join("");
       console.log("quiz-chat round", round, data.stop_reason, (data.content || []).map((b) => b.type).join(","), got.length);
       if (data.stop_reason === "pause_turn") {
         msgs = [...msgs, { role: "assistant", content: data.content }];
