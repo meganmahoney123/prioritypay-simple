@@ -275,7 +275,7 @@ function SettingsPageInner() {
               <strong>
                 {billing.subscriptionSource === "apple"
                   ? billing.isBusiness ? "$39.99/month" : "$12.99/month"
-                  : "$12/month"}
+                  : billing.isBusiness ? "$39.99/month" : "$12.99/month"}
               </strong>
               .
             </p>
@@ -313,7 +313,7 @@ function SettingsPageInner() {
               paused until you subscribe.
             </div>
             <PrimaryButton onClick={isNative ? subscribeNative : subscribe} disabled={billingBusy}>
-              {billingBusy ? "Loading…" : `Subscribe (${isNative ? "$12.99" : "$12"}/month)`}
+              {billingBusy ? "Loading…" : "Subscribe ($12.99/month)"}
             </PrimaryButton>
             <SubscriptionDisclosure plan="simple" isNative={isNative} />
             {billingError && (
@@ -337,7 +337,7 @@ function SettingsPageInner() {
                 ? "You're on PrioritySave's 30-day free trial."
                 : `${remaining} day${remaining === 1 ? "" : "s"} left in your free trial`}
               {billing.trialEndsAt ? ` (ends ${formatDate(billing.trialEndsAt)})` : ""}.{" "}
-              {isNative ? "$12.99" : "$12"}/month after that.
+              $12.99/month after that.
             </div>
             <PrimaryButton onClick={isNative ? subscribeNative : subscribe} disabled={billingBusy}>
               {billingBusy ? "Loading…" : "Subscribe now"}
@@ -375,7 +375,7 @@ function SettingsPageInner() {
                 sync, and a monthly profit true-up.
               </p>
               <GhostButton onClick={isNative ? upgradeToBusinessNative : upgradeToBusiness} disabled={billingBusy}>
-                {billingBusy ? "Loading…" : isNative ? "Upgrade to Business ($39.99/month)" : "Upgrade to Business"}
+                {billingBusy ? "Loading…" : "Upgrade to Business ($39.99/month)"}
               </GhostButton>
               <SubscriptionDisclosure plan="business" isNative={isNative} />
             </>

@@ -66,7 +66,7 @@ export default function DashboardPage() {
   // Inside the iOS app the subscription is Apple IAP at $12.99, not the web's Stripe $12.
   const [isNative, setIsNative] = useState(false);
   useEffect(() => { isNativeApp().then(setIsNative).catch(() => {}); }, []);
-  const monthlyPrice = isNative ? "$12.99" : "$12";
+  const monthlyPrice = "$12.99";
   const [splitRules, setSplitRules] = useState(DEFAULT_SPLIT_RULES);
   const [accounts, setAccounts] = useState([]);
   const [mtdByLabel, setMtdByLabel] = useState({});

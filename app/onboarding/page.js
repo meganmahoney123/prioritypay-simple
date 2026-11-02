@@ -1320,7 +1320,7 @@ function OnboardingPageInner() {
               <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
                 {isNative
                   ? "PrioritySave Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period. Cancel anytime from iOS Settings > Apple ID > Subscriptions."
-                  : "PrioritySave is $12/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
+                  : "PrioritySave is $12.99/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
               </p>
               {isNative && (
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "10px 0 0" }}>
@@ -1347,7 +1347,7 @@ function OnboardingPageInner() {
                 </PrimaryBtn>
               ) : (
                 <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                  {submitting ? "Redirecting to checkout…" : "Continue to payment ($12/month)"} &nbsp;→
+                  {submitting ? "Redirecting to checkout…" : "Continue to payment ($12.99/month)"} &nbsp;→
                 </PrimaryBtn>
               )}
             </div>
