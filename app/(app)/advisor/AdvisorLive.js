@@ -19,7 +19,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
-import { QUIZ_QUESTIONS, matchStrategies } from "@/lib/quizEngine";
+import { QUIZ_QUESTIONS, matchStrategies, questionView } from "@/lib/quizEngine";
 import { OptionButton } from "@/components/quiz/QuizShared";
 import QuizResultsView from "@/components/quiz/QuizResultsView";
 import QuizChat from "@/components/quiz/QuizChat";
@@ -43,7 +43,7 @@ export default function AdvisorPage() {
   }, []);
 
   const visibleQuestions = useMemo(
-    () => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)),
+    () => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)).map((q) => questionView(q, answers)),
     [answers]
   );
 

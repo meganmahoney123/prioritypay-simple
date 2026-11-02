@@ -6,7 +6,7 @@
 // the monthly limit).
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { QUIZ_QUESTIONS, matchStrategies } from "@/lib/quizEngine";
+import { QUIZ_QUESTIONS, matchStrategies, questionView } from "@/lib/quizEngine";
 import { TAX_STRATEGIES } from "@/lib/advisorKnowledge";
 import { checkAdvisorUsage, incrementAdvisorUsage } from "@/lib/advisorUsage";
 import { maskSensitive, plainText } from "@/lib/privacyFilter";
@@ -29,7 +29,8 @@ function cleanAnswers(raw) {
 }
 
 function describeAnswers(answers) {
-  return QUIZ_QUESTIONS.map((q) => {
+  return QUIZ_QUESTIONS.map((q0) => {
+    const q = questionView(q0, answers);
     const v = answers[q.id];
     if (!v || (Array.isArray(v) && !v.length)) return null;
     const vals = Array.isArray(v) ? v : [v];
