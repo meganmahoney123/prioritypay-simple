@@ -13,7 +13,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" updated="August 22, 2026">
+    <LegalPage title="Terms of Service" updated="November 2, 2026">
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your access to and use of PrioritySave (the
         &quot;Service&quot;), operated by PriorityPay LLC, a Virginia limited liability company (&quot;PrioritySave,&quot;
@@ -68,17 +68,17 @@ export default function TermsPage() {
         Accounts page.
       </p>
 
-      <h2>5. How Split Rules Work, A Checklist, Not Automatic Transfers</h2>
+      <h2>5. How Split Rules Work: A Checklist, Not Automatic Transfers</h2>
       <p>
         You control the percentages, caps, and destination categories in your split rules. Each rule you create or
-        change applies automatically to every qualifying deposit into your linked account from that point forward --
+        change applies automatically to every qualifying deposit into your linked account from that point forward,
         but &quot;applies&quot; means PrioritySave recalculates and updates your checklist, not that money moves on its
         own. There is no fixed dollar amount and no fixed calendar schedule: the amount shown for each category is a
         percentage of whatever deposit triggered the calculation, computed the moment that deposit is detected.
       </p>
       <p>
         You are responsible for actually completing each transfer on your checklist, using whatever method your own
-        bank supports. PrioritySave marks a transfer as done only after you confirm you&apos;ve sent it, we have no
+        bank supports. PrioritySave marks a transfer as done only after you confirm you&apos;ve sent it. We have no
         independent way to verify that a transfer you mark complete actually reached its destination, since we never
         touch the transfer itself.
       </p>
@@ -160,7 +160,7 @@ export default function TermsPage() {
         If you have a question or issue with your split calculations, account linking, or anything else about the
         Service, contact us at <a href="mailto:hello@prioritysave.com">hello@prioritysave.com</a> and we&apos;ll help
         you resolve it. Because PrioritySave never initiates a transfer, a dispute about a specific transfer you sent
-        is between you and your bank, we&apos;re glad to help you track down what our checklist showed at the time,
+        is between you and your bank. We&apos;re glad to help you track down what our checklist showed at the time,
         but we can&apos;t reverse or trace the transfer itself.
       </p>
 

@@ -39,6 +39,9 @@ export async function POST() {
     // Only a failure here means the cancellation itself didn't happen --
     // this is the one case where it's correct to tell the user it failed.
     console.error("[billing/cancel] Stripe update failed", err.message);
+    if (/canceled subscription/i.test(err.message || "")) {
+      return Response.json({ error: "Your subscription has already ended.", ended: true }, { status: 409 });
+    }
     return Response.json({ error: "Couldn't cancel your subscription. Please try again or contact support." }, { status: 500 });
   }
 

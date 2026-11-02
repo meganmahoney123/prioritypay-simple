@@ -62,6 +62,7 @@ export default function CancelSubscriptionCard({ currentPeriodEnd, cancelAtPerio
       if (!res.ok) {
         setError(data?.error || "Couldn't cancel your subscription.");
         setBusy(false);
+        if (data?.ended) onChanged?.();
         return;
       }
       setBusy(false);
