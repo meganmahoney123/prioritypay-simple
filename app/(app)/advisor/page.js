@@ -20,12 +20,24 @@ const QUESTIONS = [
   },
   {
     n: 2,
-    prompt: "What's your approximate annual household income before taxes?",
+    prompt: "About how much profit do you make from your business each year?",
     options: ["Under $75,000", "$75,000 - $150,000", "$150,000 - $250,000"],
     pick: 1,
   },
   {
     n: 3,
+    prompt: "Where do you do most of your work?",
+    options: ["At home, in a dedicated office space", "At home, at the kitchen table or a shared room", "Outside the home"],
+    pick: 0,
+  },
+  {
+    n: 4,
+    prompt: "Do you travel for work or take clients out for meals?",
+    options: ["Yes, both", "Travel only", "Neither"],
+    pick: 0,
+  },
+  {
+    n: 5,
     prompt: "Do you currently save into a retirement account?",
     options: ["Yes, through an employer plan", "Yes, an IRA or self-directed plan", "Not yet"],
     pick: 2,
@@ -34,14 +46,22 @@ const QUESTIONS = [
 
 const USER_MESSAGE = "What are the top things I should look into to save on taxes?";
 
+// Illustrative numbers: about $100,000 of net profit. Employee deferral limit
+// shown is the 2026 figure; employer share is ~20% of net profit after the
+// deductible half of self-employment tax (100,000 - 7,064 = 92,936 x 20% = ~18,600).
 const REPLY = [
-  "Based on your answers, here are a few of the best places to start:",
+  "Based on your answers (self-employed, about $75,000 to $150,000 in profit, a dedicated home office, and business travel and meals), here is where I would start:",
   "",
-  "1. A Solo 401(k). Retirement contributions can lower your taxable income, and self-employed people often have more room than they expect.",
-  "2. The qualified business income (QBI) deduction. It can reduce the tax on part of your self-employment income.",
-  "3. Business expenses you may be missing, like a home office, software, and mileage.",
+  "1. Solo 401(k)",
+  "You said you are not saving for retirement yet, so this is the big one. At roughly $100,000 of profit, you could put away about $43,000 this year: up to $24,500 as the \"employee\" (the 2026 limit) plus about $18,600 as the \"employer\" (around 20% of your profit after the self-employment tax adjustment). Every dollar lowers your taxable income, so in the 22% federal bracket that is roughly $9,500 less tax. Plan deadlines matter, so set it up before year end.",
   "",
-  "Want me to explain any of these in more detail?",
+  "2. Home office deduction",
+  "You said you work from a dedicated office space, which is the key requirement. The space has to be used regularly and only for your business. You can deduct $5 per square foot up to 300 square feet (a $1,500 maximum), or use actual costs like your share of rent, utilities and insurance. A desk in a guest room or living room that you also use for other things usually does not qualify. Keep the square footage and a few photos of the space.",
+  "",
+  "3. Business meals and travel",
+  "Since you meet clients and travel, these can add up. Business meals are generally 50% deductible and need a clear business purpose. Keep the receipt and note who you met with and why. Travel counts when the trip is primarily for business and takes you away overnight. Keep receipts for flights and lodging plus a log of the dates and purpose. Personal parts of a trip are not deductible.",
+  "",
+  "Want me to walk through any of these or estimate your home office deduction?",
 ].join("\n");
 
 const STEPS = [
@@ -78,10 +98,10 @@ function Demo() {
           setUserShown(false);
           setThinking(false);
           setTyped(0);
-          await sleep(1500);
+          await sleep(1100);
           if (cancelled) return;
           setPicked(true);
-          await sleep(1100);
+          await sleep(800);
         }
         if (cancelled) return;
         setScene(QUESTIONS.length);
@@ -100,9 +120,9 @@ function Demo() {
         setThinking(false);
         for (let c = 1; c <= REPLY.length && !cancelled; c++) {
           setTyped(c);
-          await sleep(16);
+          await sleep(7);
         }
-        await sleep(4500);
+        await sleep(6000);
       }
     })();
     return () => {
@@ -142,7 +162,7 @@ function Demo() {
           borderRadius: "var(--radius-md)",
           background: "var(--color-neutral-100)",
           padding: "clamp(16px, 3vw, 24px)",
-          minHeight: 400,
+          minHeight: 560,
         }}
       >
         {q && (
