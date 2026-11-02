@@ -142,7 +142,17 @@ export default function MoneySimulator({
         )}
       </Card>
 
-      <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+      {/* Two columns on wider screens; on phones a single column with Goals
+          pulled up directly under Monthly income (above the split). */}
+      <style>{`
+        .sim-columns { display: grid; gap: 24px; grid-template-columns: 1fr; }
+        .sim-goals { order: -1; }
+        @media (min-width: 701px) {
+          .sim-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .sim-goals { order: 0; }
+        }
+      `}</style>
+      <div className="sim-columns">
         <div>
           <div className="flex items-center justify-between mb-3">
             <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800 }}>Your split</span>
@@ -191,11 +201,11 @@ export default function MoneySimulator({
                   <input
                     value={r.label}
                     onChange={(e) => updateRow(r.id, { label: e.target.value })}
-                    style={bloomInputStyle({ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700 })}
+                    style={bloomInputStyle({ flex: "1 1 170px", minWidth: 120, fontSize: 15, fontWeight: 700 })}
                   />
                 ) : (
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{r.label}</span>
+                  <span style={{ flex: "1 1 170px", minWidth: 120, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{r.label}</span>
                     {r.fixed && (
                       <span
                         style={{
@@ -251,7 +261,7 @@ export default function MoneySimulator({
           </GhostButton>
         </div>
 
-        <div>
+        <div className="sim-goals">
           <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, display: "block", marginBottom: 12 }}>Goals</span>
           {goals.length === 0 && (
             <p className="text-sm mb-3" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>

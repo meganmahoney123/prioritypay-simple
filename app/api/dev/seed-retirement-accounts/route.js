@@ -13,7 +13,7 @@ import { encryptToken } from "@/lib/tokenCrypto";
 // connected elsewhere.
 const SEED_ACCOUNTS = [
   { displayInstitution: "Fidelity", accountName: "Solo 401k", mask: "8842", subtype: "savings", balance: 6340.2 },
-  { displayInstitution: "Charles Schwab", accountName: "SEP IRA", mask: "2107", subtype: "savings", balance: 2180.75 },
+  { displayInstitution: "Charles Schwab", accountName: "Employer Retirement Plan", mask: "2107", subtype: "savings", balance: 2180.75 },
 ];
 
 const SANDBOX_INSTITUTION_ID = "ins_109508"; // First Platypus Bank

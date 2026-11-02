@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/accounts", label: "Accounts" },
   { href: "/splits", label: "Income Split Rules" },
-  { href: "/simulator", label: "Income Split Simulator" },
+  { href: "/simulator", label: "Savings Planner" },
   { href: "/transfers", label: "One-Time Transfer" },
   { href: "/withdrawals", label: "Withdrawals" },
   { href: "/closeout", label: "Close Out" },
@@ -41,7 +41,7 @@ const TITLES = {
   "/projections": "Investment & Retirement Projections",
   "/accounts": "Linked Accounts",
   "/splits": "Income Split Rules",
-  "/simulator": "Income Split Simulator",
+  "/simulator": "Savings Planner",
   "/transfers": "One-Time Transfer",
   "/withdrawals": "Withdrawals",
   "/closeout": "Monthly Close-Out",
@@ -138,6 +138,9 @@ export default function AppShell({ children, isSandbox = false }) {
   // still relevant to every other persona (including W2 + side hustle,
   // since side income IS self-employment income).
   const [navItems, setNavItems] = useState(NAV_ITEMS);
+  // W2-only users see Close Out as "Month in Review" (no tax steps).
+  const [isW2Only, setIsW2Only] = useState(false);
+  const pageTitle = (path) => (isW2Only && path === "/closeout" ? "Month in Review" : titleFor(path));
   // Powers both the persistent "transfer pending" banner below and the
   // browser-tab title reminder -- same /api/transfers/pending shape the
   // Dashboard already fetches (see app/(app)/dashboard/page.js), plus
@@ -158,7 +161,8 @@ export default function AppShell({ children, isSandbox = false }) {
         // Hide the Tax Savings Quiz for a plain W2-no-side-hustle persona
         // (see the comment on navItems above).
         if (isW2NoSideHustle(d.profile?.persona)) {
-          items = items.filter((n) => n.href !== "/advisor");
+          setIsW2Only(true);
+          items = items.filter((n) => n.href !== "/advisor").map((n) => (n.href === "/closeout" ? { ...n, label: "Month in Review" } : n));
         }
         // Business tier (PHASE T): the /business hub only appears for a
         // user actually on the Business plan. Simple-plan users reach the
@@ -219,7 +223,7 @@ export default function AppShell({ children, isSandbox = false }) {
   // pending" line once there's more than one, per Megan's call that
   // correctness here matters more than naming every single one.
   useEffect(() => {
-    const normalTitle = `${titleFor(pathname)} | PrioritySave`;
+    const normalTitle = `${pageTitle(pathname)} | PrioritySave`;
     if (!hasPendingTransfers) {
       document.title = normalTitle;
       return;
@@ -238,7 +242,7 @@ export default function AppShell({ children, isSandbox = false }) {
     return () => {
       document.title = normalTitle;
     };
-  }, [pathname, hasPendingTransfers, pendingGroups, inTransitGroups, pendingAccountsById]);
+  }, [pathname, hasPendingTransfers, pendingGroups, inTransitGroups, pendingAccountsById, isW2Only]);
 
   useEffect(() => {
     const onResize = () => {
@@ -358,7 +362,7 @@ export default function AppShell({ children, isSandbox = false }) {
               <span ref={setTitleSlotEl} style={{ minWidth: 0, flex: "1 1 auto" }} />
             ) : (
               <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
-                {titleFor(pathname)}
+                {pageTitle(pathname)}
               </h1>
             )}
           </span>

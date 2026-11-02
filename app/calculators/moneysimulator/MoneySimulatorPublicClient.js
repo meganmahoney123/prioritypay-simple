@@ -47,7 +47,7 @@ export default function MoneySimulatorPublicClient() {
             margin: "0 0 14px",
           }}
         >
-          Income Distribution Simulator
+          Savings Planner
         </h1>
         <p style={{ fontSize: 19, lineHeight: 1.6, maxWidth: "46em", color: "var(--color-neutral-800)", margin: "0 0 32px" }}>
           Enter what you make, set percentages for taxes, savings, and everything else, and add a real goal with a

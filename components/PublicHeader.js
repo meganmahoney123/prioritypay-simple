@@ -42,7 +42,7 @@ const BLOG_HUBS = [
 // The top-level links every nav surface (desktop row + mobile drawer)
 // needs, kept in one place so the two don't drift.
 const TOP_LINKS = [
-  { href: "/calculators/moneysimulator", label: "Income Distribution Simulator" },
+  { href: "/calculators/moneysimulator", label: "Savings Planner" },
   { href: "/tax-savings-quiz", label: "Tax Savings Quiz" },
 ];
 

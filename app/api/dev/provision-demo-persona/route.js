@@ -4,6 +4,7 @@ import {
   computeAllocations,
   investmentTypeFromLabel,
   PERSONA_BUSINESS_OWNER,
+  PERSONA_SELF_EMPLOYED,
   PERSONA_W2_NO_SIDE_HUSTLE,
   PERSONA_W2_WITH_SIDE_HUSTLE,
 } from "@/lib/allocations";
@@ -30,6 +31,38 @@ const CALLER_EMAIL = "megan@ignitemysite.com";
 const DEMO_PASSWORD = "PriorityPayDemo2026!";
 
 const PERSONAS = {
+  // Self Employed (No Employees) -- same fake accounts/rules/deposits as
+  // /api/dev/seed-demo-account, but on its own separate demo login so it
+  // never touches megan@ignitemysite.com's own account.
+  self_employed: {
+    email: "megan+selfemployed@ignitemysite.com",
+    personaLabel: PERSONA_SELF_EMPLOYED,
+    accounts: [
+      { key: "tax_reserve", institution_name: "Ally Bank", account_name: "Tax Reserve Savings", mask: "7756", subtype: "savings", current_balance: 8540.0 },
+      { key: "investments", institution_name: "Vanguard", account_name: "Cash Reserve", mask: "5510", subtype: "savings", current_balance: 9480.0 },
+      { key: "solo_401k", institution_name: "Fidelity", account_name: "Solo 401k Contributions", mask: "3391", subtype: "savings", current_balance: 13640.0 },
+      { key: "emergency_fund", institution_name: "Marcus by Goldman Sachs", account_name: "Emergency Fund", mask: "2290", subtype: "savings", current_balance: 12340.0 },
+      { key: "opex", institution_name: "Chase", account_name: "Business Checking", mask: "4821", subtype: "checking", current_balance: 4380.0 },
+      { key: "savings", institution_name: "Capital One", account_name: "Online Savings", mask: "6094", subtype: "savings", current_balance: 4560.0 },
+    ],
+    splitRules: [
+      { label: "Tax Reserve", group: null, pct: 20, color: "#a3a3a3", accountKey: "tax_reserve", startingBalance: null },
+      { label: "Investments", group: "Investments", pct: 10, color: "#14b8a6", accountKey: "investments", startingBalance: 5000 },
+      { label: "Solo 401k", group: "Retirement", pct: 15, color: "#8b5cf6", accountKey: "solo_401k", retirementType: "solo_401k", startingBalance: 7000 },
+      { label: "Emergency Fund", group: "Savings", pct: 10, color: "#f59e0b", accountKey: "emergency_fund", startingBalance: null },
+      { label: "Business Expenses (OPEX)", group: null, pct: 10, color: "#7c3aed", accountKey: "opex", startingBalance: null },
+      { label: "Savings", group: "Savings", pct: 10, color: "#ef4444", accountKey: "savings", startingBalance: null },
+    ],
+    deposits: [
+      { isoDate: "2026-07-03T15:00:00Z", amount: 6200 },
+      { isoDate: "2026-07-16T15:00:00Z", amount: 5400 },
+      { isoDate: "2026-07-29T15:00:00Z", amount: 4800 },
+      { isoDate: "2026-08-04T15:00:00Z", amount: 6800 },
+      { isoDate: "2026-08-18T15:00:00Z", amount: 5200 },
+      { isoDate: "2026-09-05T15:00:00Z", amount: 7100 },
+      { isoDate: "2026-09-19T15:00:00Z", amount: 5600 },
+    ],
+  },
   w2_only: {
     email: "megan+w2only@ignitemysite.com",
     personaLabel: PERSONA_W2_NO_SIDE_HUSTLE,
@@ -369,7 +402,14 @@ export async function POST(request) {
   }
 
   const createdTransfers = [];
-  for (const dep of persona.deposits) {
+  // One deposit in the current month (Oct 2026) so the dashboard's
+  // month-to-date totals aren't empty -- same size as each persona's most
+  // recent deposit.
+  const allDeposits = [
+    ...persona.deposits,
+    { isoDate: "2026-10-02T15:00:00Z", amount: persona.deposits[persona.deposits.length - 1].amount },
+  ];
+  for (const dep of allDeposits) {
     const { data: transfer, error: transferError } = await admin
       .from("simple_transfers")
       .insert({

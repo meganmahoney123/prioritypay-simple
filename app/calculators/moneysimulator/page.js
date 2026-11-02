@@ -1,7 +1,7 @@
 import MoneySimulatorPublicClient from "./MoneySimulatorPublicClient";
 
 export const metadata = {
-  title: "Free Income Distribution Simulator | PrioritySave",
+  title: "Free Savings Planner | PrioritySave",
   description:
     "Model your monthly income against percentage-based savings, tax, and investment buckets, and see exactly what a goal like a wedding or a down payment takes each month to reach.",
   alternates: {
@@ -9,7 +9,7 @@ export const metadata = {
   },
   openGraph: {
     type: "website",
-    title: "Free Income Distribution Simulator",
+    title: "Free Savings Planner",
     url: "https://www.prioritysave.com/calculators/moneysimulator",
   },
   twitter: {

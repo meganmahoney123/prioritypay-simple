@@ -837,7 +837,7 @@ function OnboardingPageInner() {
                       style={bloomInputStyle({ fontSize: 16 })}
                     />
                     <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
-                      A ballpark is fine. This only shapes what a SEP IRA would cost you once your team&apos;s
+                      A ballpark is fine. This only shapes what an employer retirement plan would cost you once your team&apos;s
                       required share is included. Adjustable anytime.
                     </p>
                   </div>

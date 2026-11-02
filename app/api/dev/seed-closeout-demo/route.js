@@ -35,6 +35,7 @@ import { isW2NoSideHustle } from "@/lib/allocations";
 const DEMO_EMAILS = new Set([
   "megan@ignitemysite.com",
   "megan+w2only@ignitemysite.com",
+  "megan+selfemployed@ignitemysite.com",
   "megan+sidehustle@ignitemysite.com",
   "megan+bizowner@ignitemysite.com",
   "megan+bizsingle@ignitemysite.com",
@@ -45,9 +46,14 @@ const DEMO_EMAILS = new Set([
 // categories -- just enough recurring texture that a month doesn't read
 // as 100% income. Repeats every month touched.
 const EXPENSE_TEMPLATE = [
-  { name: "Software Subscriptions", amount: 129 },
-  { name: "Office Supplies", amount: 84.5 },
-  { name: "Business Insurance", amount: 210 },
+  { name: "Software Subscriptions", amount: 129, pfc: "GENERAL_SERVICES" },
+  { name: "Office Supplies", amount: 84.5, pfc: "GENERAL_MERCHANDISE" },
+  { name: "Business Insurance", amount: 210, pfc: "GENERAL_SERVICES" },
+  { name: "Grocery Store", amount: 312.4, pfc: "FOOD_AND_DRINK" },
+  { name: "Restaurants & Coffee", amount: 186.75, pfc: "FOOD_AND_DRINK" },
+  { name: "Gas & Rideshare", amount: 142.3, pfc: "TRANSPORTATION" },
+  { name: "Streaming & Fun", amount: 64.97, pfc: "ENTERTAINMENT" },
+  { name: "Rent & Utilities", amount: 1480, pfc: "RENT_AND_UTILITIES" },
 ];
 
 function monthKey(isoDate) {
@@ -165,6 +171,7 @@ export async function POST() {
         amount: exp.amount,
         direction: "out",
         suggested_category: "expense",
+        pfc_primary: exp.pfc,
       });
     });
   });

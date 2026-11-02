@@ -118,7 +118,7 @@ export default function CancelSubscriptionCard({ currentPeriodEnd, cancelAtPerio
     return (
       <button
         onClick={startCancelFlow}
-        style={{ marginTop: 12, background: "none", border: 0, padding: 0, cursor: "pointer", fontFamily: "var(--font-body)", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textDecoration: "underline" }}
+        style={{ marginTop: 12, marginLeft: 20, background: "none", border: 0, padding: 0, cursor: "pointer", fontFamily: "var(--font-body)", fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", textDecoration: "underline" }}
       >
         Cancel subscription
       </button>

@@ -22,6 +22,7 @@ import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { QUIZ_QUESTIONS, matchStrategies } from "@/lib/quizEngine";
 import { OptionButton } from "@/components/quiz/QuizShared";
 import QuizResultsView from "@/components/quiz/QuizResultsView";
+import QuizChat from "@/components/quiz/QuizChat";
 import { isW2NoSideHustle } from "@/lib/allocations";
 
 export default function AdvisorPage() {
@@ -159,6 +160,8 @@ export default function AdvisorPage() {
           emptyStateNote="We didn't find a strong match based on your answers. Try the quiz again with different answers."
         />
       )}
+
+      {results && <QuizChat answers={answers} results={results} />}
     </div>
   );
 }

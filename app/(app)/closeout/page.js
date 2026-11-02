@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, CheckCircle2, Loader2, Send, Plus, Calculator, Briefcase, Calendar, CreditCard, AlertTriangle } from "lucide-react";
+import SpendByCategory from "@/components/SpendByCategory";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import { BLOOM_TOKENS, bloomBadgeStyle, bloomNoticeCardStyle, bloomWarningCardStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
@@ -895,7 +896,7 @@ export default function CloseoutPage() {
         </Card>
       )}
       <Card className="p-6">
-        <h2 className="text-sm font-semibold mb-1">Step 1: Confirm Net Income</h2>
+        <h2 className="text-sm font-semibold mb-1">{isW2NoSideHustlePersona ? "Your Money In & Out" : "Step 1: Confirm Net Income"}</h2>
         <p className="text-xs text-[var(--color-neutral-700)] mb-4">
           PrioritySave pulled every transaction across your linked accounts for {periodLabel(period)} and made a
           best guess at what&apos;s real income, a real expense, or an internal transfer that shouldn&apos;t count
@@ -979,12 +980,14 @@ export default function CloseoutPage() {
         {!isConfirmed && (
           <PrimaryButton onClick={handleConfirm} disabled={confirming} className="w-full mt-4">
             {confirming ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-            {confirming ? "Confirming…" : "Confirm and see recommendations"}
+            {confirming ? "Confirming…" : isW2NoSideHustlePersona ? "Save this month" : "Confirm and see recommendations"}
           </PrimaryButton>
         )}
       </Card>
 
-      {recommendations && (
+      <SpendByCategory transactions={transactions} />
+
+      {recommendations && !isW2NoSideHustlePersona && (
         <>
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-1">Step 2: Contribute to Retirement</h2>
@@ -1048,7 +1051,7 @@ export default function CloseoutPage() {
                 <p className="text-xs text-[var(--color-neutral-700)]">
                   {isW2NoSideHustlePersona
                     ? "Want a 401k, IRA, HSA, or another retirement account?"
-                    : "Want a SEP IRA or another retirement account instead?"}{" "}
+                    : "Want a different retirement account instead?"}{" "}
                   <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Connect another retirement account</Link> in
                   Income Split Rules so a share of every deposit gets set aside for it automatically.
                 </p>
@@ -1065,9 +1068,9 @@ export default function CloseoutPage() {
                           <div className="text-sm font-semibold text-[#9C3B22] mb-1">Solo 401k isn&apos;t available to you</div>
                           <p className="text-xs text-[#9C3B22]">
                             Solo 401k plans only cover a business owner and their spouse, with other employees on
-                            payroll, the business isn&apos;t eligible for this specific plan, no exceptions. A SEP
-                            IRA (below, if set up) or a standard employer 401(k) are the options to look into
-                            instead, worth a conversation with a tax professional about which fits.
+                            payroll, the business isn&apos;t eligible for this specific plan, no exceptions. A
+                            standard employer 401(k) or another employer-sponsored plan are the options to look
+                            into instead, worth a conversation with a tax professional about which fits.
                           </p>
                         </div>
                       </div>
@@ -1078,9 +1081,8 @@ export default function CloseoutPage() {
                       <div className="text-sm font-semibold mb-1">{RETIREMENT_LABELS[r.retirementType] || r.label}</div>
                       {r.retirementType === "sep_ira" ? (
                         <p className="text-xs text-[var(--color-neutral-700)] mb-2">
-                          A Simplified Employee Pension (SEP) IRA is a retirement plan that allows business owners
-                          and self-employed individuals to make tax-deductible contributions for themselves and
-                          their eligible employees.
+                          An employer-sponsored retirement plan that allows business owners to make tax-deductible
+                          contributions for themselves and their eligible employees.
                         </p>
                       ) : (
                         <p className="text-xs text-[var(--color-neutral-700)] mb-2">
@@ -1452,7 +1454,7 @@ export default function CloseoutPage() {
                 <p className="text-sm text-[var(--color-neutral-700)] mb-6">
                   If any deposit this month was a W2 paycheck (as opposed to business or side-hustle income),
                   flag it so PrioritySave can leave it out of your retirement contribution room and tax reserve
-                  estimate below. This impacts how much you can contribute to your Solo 401k, SEP IRA, and how
+                  estimate below. This impacts how much you can contribute to your Solo 401k or other retirement accounts, and how
                   much you should set aside for taxes.
                 </p>
                 <div className="flex gap-3">

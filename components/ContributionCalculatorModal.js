@@ -43,7 +43,7 @@ function Step({ title, subtitle, children }) {
 
 export default function ContributionCalculatorModal({ planType, defaultEmployeePayroll, onClose }) {
   const isSolo = planType === "solo_401k";
-  const planLabel = isSolo ? "Solo 401k" : "SEP IRA";
+  const planLabel = isSolo ? "Solo 401k" : "Employer plan";
 
   const [step, setStep] = useState(0);
   const [businessType, setBusinessType] = useState(null);
@@ -126,7 +126,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
             subtitle={
               isSolo
                 ? "A Solo 401k can only cover a business owner and their spouse, any other common-law employee makes the business ineligible for this specific plan."
-                : "SEP IRA doesn't block on this, but if you contribute for yourself, you're required to contribute the same percentage of compensation for every eligible employee too."
+                : "An employer plan doesn't block on this, but if you contribute for yourself, you're required to contribute the same percentage of compensation for every eligible employee too."
             }
           >
             <OptionButton selected={hasEmployees === false} onClick={() => setHasEmployees(false)}>
@@ -145,7 +145,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
               <p className="text-sm font-semibold text-[#9C3B22] mb-1">Not eligible for a Solo 401k</p>
               <p className="text-xs text-[#9C3B22]">
                 Solo 401k plans are only available to owner-only (plus spouse) businesses. With other employees on
-                payroll, a SEP IRA or a standard employer 401k would be the options to look into instead, worth a
+                payroll, a standard employer 401k or another employer-sponsored plan would be the options to look into instead, worth a
                 conversation with a tax professional about which fits.
               </p>
             </div>
@@ -155,7 +155,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
         {current === "employeePayroll" && (
           <Step
             title="Roughly what's your total employee payroll?"
-            subtitle="A ballpark is fine. SEP IRA requires contributing the same percentage of compensation to every eligible employee that you contribute for yourself, so this is what turns that rule into a real dollar number below."
+            subtitle="A ballpark is fine. An employer plan requires contributing the same percentage of compensation to every eligible employee that you contribute for yourself, so this is what turns that rule into a real dollar number below."
           >
             <input
               type="number"
@@ -302,7 +302,7 @@ export default function ContributionCalculatorModal({ planType, defaultEmployeeP
                           <span className="font-mono font-semibold">{currency(result.employeeParityContribution)}</span>
                         </div>
                         <p className="text-[11px] text-[var(--color-neutral-700)] leading-snug mt-0.5">
-                          SEP IRA requires the same percentage of compensation for every eligible employee --
+                          An employer plan requires the same percentage of compensation for every eligible employee --
                           calculated here off your effective rate ({(result.effectiveRate * 100).toFixed(1)}%)
                           applied to the payroll estimate you entered.
                         </p>
