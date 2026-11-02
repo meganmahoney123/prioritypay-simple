@@ -15,6 +15,7 @@ export const CATEGORY_BLURBS = {
   "Family & Dependents": "Strategies tied to a spouse, kids, or dependents.",
   "Business Deductions": "Everyday business spending that may be deductible.",
   "Business Structure & Elections": "How your entity is set up, and elections available to it.",
+  "Planning & Cash Flow": "Estimated taxes and staying ahead of the bill.",
   "Investment Tax": "Managing taxes on a taxable brokerage account.",
   "Charitable Giving": "Ways to structure giving more tax-efficiently.",
   "Equity & Startups": "Stock options, QSBS, and startup-equity mechanics.",

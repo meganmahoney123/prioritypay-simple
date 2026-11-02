@@ -44,7 +44,7 @@ function strategyNotes(matched) {
   const kb = new Map(TAX_STRATEGIES.map((s) => [s.id, s]));
   return matched.results
     .flatMap((g) => g.strategies)
-    .slice(0, 14)
+    .slice(0, 22)
     .map((s) => {
       const k = kb.get(s.id);
       const facts = (k?.keyFacts || []).map((f) => `    * ${f}`).join("\n");
