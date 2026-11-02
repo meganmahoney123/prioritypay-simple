@@ -75,7 +75,7 @@ WRITING RULES
 - Warm, plain, specific. No jargon without a short explanation.
 
 WHAT TO DO
-- The first reply: a one-line intro, then their top 5 options, most valuable first (fewer only if fewer match). Format each option as a numbered line with a short label, then three short lines with these exact lead-ins: "Why it fits:" (one sentence tied to their answers), "Example:" (one sentence showing roughly how it saves tax in dollars, using a round number in the middle of their income band and the verified rates and limits, starting with "Say you..." or "Say your..." so it reads as an illustration and not their real number), and "First step:" (one short action). Keep each line to one sentence, leave a blank line between options, and keep the whole reply around 300 words. After the options, add one line saying more ideas that fit them are listed below the chat, then end with one short question about what they want to dig into.
+- The first reply: a one-line intro, then their matched options (up to 5 in this format). Format each option as a numbered line with a short label, then three short lines with these exact lead-ins: "Why it fits:" (one sentence tied to their answers), "Example:" (one sentence showing roughly how it saves tax in dollars, using a round number in the middle of their income band and the verified rates and limits, starting with "Say you..." or "Say your..." so it reads as an illustration and not their real number), and "First step:" (one short action). Keep each line to one sentence, leave a blank line between options, and keep the whole reply around 300 words. After the options, end with one short question about what they want to dig into.
 - Every example must compare two outcomes, with the strategy and without it, and end with the rough dollar difference (for example "about $2,400 less tax" or "about $5,000 more kept"). An example that only states a cost or has no dollar figure is not acceptable; if no honest dollar comparison exists, say the benefit in one plain sentence instead and label it "Why it helps:". Respect eligibility in the example: for instance, qualified charitable distributions only start at age 70 and a half, so do not use one for someone under 70. For a Roth conversion, compare paying tax now at a lower bracket against the higher bracket later or for heirs.
 - Keep examples conservative so they never overpromise: use the lower of the plausible tax brackets for their income band and filing status (for a single filer at $150,000 to $250,000, use 24 percent rather than 32 percent), include self-employment tax only where it really applies, round the savings down, and word the result as "roughly" or "up to".
 - Every example must be simple, correct arithmetic. Pick easy numbers, work out the tax effect step by step before writing it (for example, a deduction times a plausible bracket rate, or income that moves from a higher rate to 0 percent), and state the result as a rough range or "about". If you cannot support an example with verified figures or sound math, describe the benefit in words instead of guessing a number. The matched options below include scenario ideas you can adapt.
@@ -195,18 +195,49 @@ export async function POST(request) {
     // Longer replies with examples need more room, and the model's own
     // reasoning counts against the budget, so step up if it runs out.
     const textOf = (f) => (f?.content || []).filter((x) => x.type === "text").map((x) => x.text).join("");
+    const generate = async (sys, msgs) => {
+      let f = null;
+      let t = "";
+      for (const budget of [4000, 10000]) {
+        f = await call({ max_tokens: budget, system: sys, messages: msgs });
+        t = textOf(f);
+        console.log("quiz-chat final", budget, f?.stop_reason, (f?.content || []).map((x) => x.type).join(","), t.length);
+        if (t.trim() && f?.stop_reason !== "max_tokens") break;
+      }
+      if (f?.stop_reason === "max_tokens" && t.trim()) {
+        const cut = t.lastIndexOf("\n\n");
+        if (cut > 200) t = t.slice(0, cut).trimEnd();
+      }
+      return { f, t };
+    };
+
     let final = null;
     let text = "";
-    for (const budget of [6000, 12000]) {
-      final = await call({ max_tokens: budget, system, messages: history });
-      text = textOf(final);
-      console.log("quiz-chat final", budget, final?.stop_reason, (final?.content || []).map((x) => x.type).join(","), text.length);
-      if (text.trim() && final?.stop_reason !== "max_tokens") break;
-    }
-    // Last resort: never show a reply that stops mid-option.
-    if (final?.stop_reason === "max_tokens" && text.trim()) {
-      const cut = text.lastIndexOf("\n\n");
-      if (cut > 200) text = text.slice(0, cut).trimEnd();
+    const allTitles = matched.results.flatMap((g) => g.strategies.map((x) => x.title)).slice(0, 18);
+    if (kickoff && allTitles.length > 5) {
+      // First reply lists every matched idea. Write it in parallel chunks so
+      // a long list does not take much longer than a short one.
+      const SIZE = 6;
+      const chunks = [];
+      for (let i = 0; i < allTitles.length; i += SIZE) chunks.push(allTitles.slice(i, i + SIZE));
+      const parts = await Promise.all(
+        chunks.map((titles, ci) => {
+          const start = ci * SIZE + 1;
+          const first = ci === 0;
+          const last = ci === chunks.length - 1;
+          const extra =
+            `\n\nTHIS PART OF THE REPLY\nWrite ONLY these ${titles.length} options, in this exact order, numbered starting at ${start}: ${titles.join("; ")}.\n` +
+            `Use the three-line format (label, Why it fits, Example, First step) for each, with a blank line between options. Keep every line to one short sentence. ` +
+            (first ? `Begin with one short intro line (no list in it). ` : `Do NOT write an intro line. `) +
+            (last ? `After the last option, end with one short question about what they want to dig into. ` : `Do NOT write any closing line or question. `) +
+            `Do not mention other parts of the list.`;
+          return generate(system + extra, history);
+        })
+      );
+      final = parts.find((x) => x.f)?.f || null;
+      text = parts.map((x) => x.t.trim()).filter(Boolean).join("\n\n");
+    } else {
+      ({ f: final, t: text } = await generate(system, history));
     }
     if (!final) return Response.json({ error: "The chat had a problem. Please try again." }, { status: 502 });
     await incrementAdvisorUsage(admin, user.id);
