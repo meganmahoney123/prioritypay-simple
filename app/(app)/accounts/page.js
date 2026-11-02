@@ -202,7 +202,7 @@ export default function AccountsPage() {
       ) : acc.account_type === "business" ? (
         <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
       ) : acc.autoDetectEnabled ? (
-        <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Deposits here are split automatically, you'll get a checklist to confirm and send each transfer</p>
+        <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Each deposit here is split for you, and you'll get a checklist to confirm and send each transfer</p>
       ) : acc.hasPlaidConnection ? (
         <div>
           <PlaidLinkButton

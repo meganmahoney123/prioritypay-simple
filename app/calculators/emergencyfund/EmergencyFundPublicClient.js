@@ -388,7 +388,7 @@ export default function EmergencyFundPublicClient() {
         {/* CTA banner */}
         <div style={{ background: "#EDE6FF", borderRadius: 26, padding: "28px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
           <p style={{ fontSize: 19, fontWeight: 700, margin: 0, color: "var(--color-text)" }}>
-            Want this saved automatically every time you get paid?
+            Want this split worked out for you every time you get paid?
           </p>
           <PrimaryButton onClick={() => router.push("/signup")}>
             Get started free <ArrowRight size={14} />

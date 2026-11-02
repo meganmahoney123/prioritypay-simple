@@ -1053,7 +1053,7 @@ export default function CloseoutPage() {
                     ? "Want a 401k, IRA, HSA, or another retirement account?"
                     : "Want a different retirement account instead?"}{" "}
                   <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Connect another retirement account</Link> in
-                  Income Split Rules so a share of every deposit gets set aside for it automatically.
+                  Income Split Rules so a share of every deposit is planned for it.
                 </p>
               </div>
             ) : (
@@ -1294,8 +1294,8 @@ export default function CloseoutPage() {
               <h2 className="text-sm font-semibold mb-1">Team & Plan Obligations</h2>
               <p className="text-xs text-[var(--color-neutral-700)] mb-4">
                 For employer payroll tax, unemployment insurance, workers&apos; comp, or a standard 401(k) match --
-                anything your accountant or plan administrator calculates a number for. This routes money toward it
-                automatically, same as everything else above, but it&apos;s money staged and ready, not the actual
+                anything your accountant or plan administrator calculates a number for. This plans money toward it,
+                same as everything else above, but it&apos;s money staged and ready, not the actual
                 contribution or filing itself, that still goes through your payroll provider or TPA when it&apos;s
                 due.
               </p>

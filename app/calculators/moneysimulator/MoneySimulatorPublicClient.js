@@ -52,7 +52,7 @@ export default function MoneySimulatorPublicClient() {
         <p style={{ fontSize: 19, lineHeight: 1.6, maxWidth: "46em", color: "var(--color-neutral-800)", margin: "0 0 32px" }}>
           Enter what you make, set percentages for taxes, savings, and everything else, and add a real goal with a
           date. Free to use, no account needed. When you're ready, you can carry it straight into a real PrioritySave
-          setup and it will automatically route your money according to the rules you set below.
+          setup and it will split each deposit according to the rules you set below.
         </p>
         <MoneySimulator
           initialIncome={10000}

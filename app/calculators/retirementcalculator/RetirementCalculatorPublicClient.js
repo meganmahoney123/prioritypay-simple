@@ -400,7 +400,7 @@ export default function RetirementCalculatorPublicClient() {
           }}
         >
           <p style={{ fontSize: 19, fontWeight: 700, margin: 0, color: "var(--color-text)" }}>
-            Want this contributed automatically every time you get paid?
+            Want your retirement contribution worked out for you every time you get paid?
           </p>
           <PrimaryButton onClick={() => router.push("/signup")}>
             Get started free <ArrowRight size={14} />

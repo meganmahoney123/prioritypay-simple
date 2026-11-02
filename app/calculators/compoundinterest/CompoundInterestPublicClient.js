@@ -438,7 +438,7 @@ export default function CompoundInterestPublicClient() {
           }}
         >
           <p style={{ fontSize: 19, fontWeight: 700, margin: 0, color: "var(--color-text)" }}>
-            Want your investing contribution set aside automatically every time you get paid?
+            Want your investing contribution worked out for you every time you get paid?
           </p>
           <PrimaryButton onClick={() => router.push("/signup")}>
             Get started free <ArrowRight size={14} />

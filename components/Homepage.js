@@ -511,8 +511,8 @@ export default function Homepage() {
             </p>
             <p style={{ fontSize: 17, lineHeight: 1.6, color: "#574A68", margin: "0 0 26px" }}>
               PrioritySave just shows you what you&apos;ve already, effortlessly, saved. No budgeting homework, no
-              guilt trip. Just a running total of the retirement, tax, and savings progress that happened
-              automatically while you were busy running your business.
+              guilt trip. Just a running total of the retirement, tax, and savings progress that built up
+              while you were busy running your business.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {BENEFITS.map((b, i) => (
@@ -666,7 +666,7 @@ export default function Homepage() {
               </span>
               <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.025em", margin: "18px 0 12px" }}>Spend the rest, guilt free</h3>
               <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-                That&apos;s it. From here, every future deposit gets split automatically the moment it lands.
+                That&apos;s it. From here, every future deposit gets split the moment it lands.
                 Whatever&apos;s sitting in checking is yours to spend, guilt free.
               </p>
             </div>
@@ -756,7 +756,7 @@ export default function Homepage() {
             <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
               PrioritySave&apos;s Month Close-Out walks you through confirming each transaction once, then uses it
               to recommend exactly how much to send to your Tax Reserve and retirement accounts. Have W2 income? No
-              problem, we&apos;ll separate it out automatically.
+              problem, we&apos;ll separate it out for you.
             </p>
           </div>
           <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 26 }}>
@@ -953,7 +953,7 @@ export default function Homepage() {
             Stop reacting to your finances. Take an effortless, proactive approach.
           </h2>
           <p style={{ fontSize: 17, lineHeight: 1.6, color: "#574A68", margin: "0 auto 30px", maxWidth: "34em" }}>
-            Set your percentages once. Every deposit after that is routed to savings and investments automatically.
+            Set your percentages once. Every deposit after that is split between savings and investments for you.
           </p>
           <Btn href="/signup" variant="primary" style={PILL_PRIMARY}>
             Get started free

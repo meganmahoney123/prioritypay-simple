@@ -34,7 +34,7 @@ function statusLabel(status) {
 
 function TriggerLabel({ trigger }) {
   if (trigger === "manual") return "Manual split";
-  if (trigger === "plaid_webhook" || trigger === "webhook") return "Automatic (deposit detected)";
+  if (trigger === "plaid_webhook" || trigger === "webhook") return "Deposit detected";
   return trigger || "Split";
 }
 

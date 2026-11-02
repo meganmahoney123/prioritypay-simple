@@ -55,7 +55,7 @@ export default async function Image() {
           </div>
         </div>
         <div style={{ display: "flex", fontSize: 30, color: "#574A68", textAlign: "center", maxWidth: 820 }}>
-          Automatically route income to savings, taxes, and investments.
+          Split each deposit between savings, taxes, and investments.
         </div>
       </div>
     ),
