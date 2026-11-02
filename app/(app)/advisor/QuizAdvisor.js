@@ -9,7 +9,6 @@ import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { QUIZ_QUESTIONS } from "@/lib/quizEngine";
 import { OptionButton } from "@/components/quiz/QuizShared";
 import { maskSensitive } from "@/lib/privacyFilter";
-import { isW2NoSideHustle } from "@/lib/allocations";
 
 const KICKOFF = "Based on my quiz answers, what are my top tax savings options?";
 const STARTERS = [
@@ -31,7 +30,6 @@ export default function QuizAdvisor() {
   const [answers, setAnswers] = useState({});
   const [stepIndex, setStepIndex] = useState(0);
   const [done, setDone] = useState(false);
-  const [blocked, setBlocked] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -41,9 +39,6 @@ export default function QuizAdvisor() {
   const endRef = useRef(null);
   const started = useRef(false);
 
-  useEffect(() => {
-    fetch("/api/profile").then((r) => r.json()).then((d) => setBlocked(isW2NoSideHustle(d.profile?.persona))).catch(() => {});
-  }, []);
 
   const visible = useMemo(() => QUIZ_QUESTIONS.filter((q) => !q.showIf || q.showIf(answers)), [answers]);
   const current = stepIndex < visible.length ? visible[stepIndex] : null;
@@ -106,16 +101,6 @@ export default function QuizAdvisor() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
-
-  if (blocked) {
-    return (
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <Card className="p-6 text-sm">
-          The Tax Savings Quiz is built around self-employment and business tax strategies, so it isn&apos;t relevant for a W2-only income setup.
-        </Card>
-      </div>
-    );
-  }
 
   const lines = answerLines(answers);
   const lastUser = [...messages].reverse().find((m) => m.role === "user");

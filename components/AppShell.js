@@ -162,7 +162,7 @@ export default function AppShell({ children, isSandbox = false }) {
         // (see the comment on navItems above).
         if (isW2NoSideHustle(d.profile?.persona)) {
           setIsW2Only(true);
-          items = items.filter((n) => n.href !== "/advisor").map((n) => (n.href === "/closeout" ? { ...n, label: "Month in Review" } : n));
+          items = items.map((n) => (n.href === "/closeout" ? { ...n, label: "Month in Review" } : n));
         }
         // Business tier (PHASE T): the /business hub only appears for a
         // user actually on the Business plan. Simple-plan users reach the
