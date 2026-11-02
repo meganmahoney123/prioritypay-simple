@@ -191,12 +191,21 @@ export async function POST(request) {
     // Answers are kept short by the prompt, but the token budget leaves room
     // for the model's own reasoning so a long list of matches never runs it
     // out before any text is written.
-    let final = await call({ max_tokens: 3000, system, messages: history });
-    let text = (final?.content || []).filter((x) => x.type === "text").map((x) => x.text).join("");
-    console.log("quiz-chat final", final?.stop_reason, (final?.content || []).map((x) => x.type).join(","), text.length);
-    if (!text.trim()) {
-      final = await call({ max_tokens: 4000, system, messages: history });
-      text = (final?.content || []).filter((x) => x.type === "text").map((x) => x.text).join("");
+    // Longer replies with examples need more room, and the model's own
+    // reasoning counts against the budget, so step up if it runs out.
+    const textOf = (f) => (f?.content || []).filter((x) => x.type === "text").map((x) => x.text).join("");
+    let final = null;
+    let text = "";
+    for (const budget of [6000, 12000]) {
+      final = await call({ max_tokens: budget, system, messages: history });
+      text = textOf(final);
+      console.log("quiz-chat final", budget, final?.stop_reason, (final?.content || []).map((x) => x.type).join(","), text.length);
+      if (text.trim() && final?.stop_reason !== "max_tokens") break;
+    }
+    // Last resort: never show a reply that stops mid-option.
+    if (final?.stop_reason === "max_tokens" && text.trim()) {
+      const cut = text.lastIndexOf("\n\n");
+      if (cut > 200) text = text.slice(0, cut).trimEnd();
     }
     if (!final) return Response.json({ error: "The chat had a problem. Please try again." }, { status: 502 });
     await incrementAdvisorUsage(admin, user.id);
