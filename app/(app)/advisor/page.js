@@ -37,11 +37,11 @@ const USER_MESSAGE = "What are the top things I should look into to save on taxe
 const REPLY = [
   "Based on your answers, here are a few of the best places to start:",
   "",
-  "1. A Solo 401(k) or SEP IRA. Retirement contributions can lower your taxable income, and self-employed people often have more room than they expect.",
+  "1. A Solo 401(k). Retirement contributions can lower your taxable income, and self-employed people often have more room than they expect.",
   "2. The qualified business income (QBI) deduction. It can reduce the tax on part of your self-employment income.",
   "3. Business expenses you may be missing, like a home office, software, and mileage.",
   "",
-  "Want me to explain any of these, or compare the retirement options?",
+  "Want me to explain any of these in more detail?",
 ].join("\n");
 
 const STEPS = [
