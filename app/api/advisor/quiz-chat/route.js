@@ -226,7 +226,7 @@ export async function POST(request) {
     const generate = async (sys, msgs) => {
       let f = null;
       let t = "";
-      for (const budget of [4000, 10000]) {
+      for (const budget of [3500, 8000]) {
         f = await call({ max_tokens: budget, system: sys, messages: msgs });
         t = textOf(f);
         console.log("quiz-chat final", budget, f?.stop_reason, (f?.content || []).map((x) => x.type).join(","), t.length);
@@ -245,7 +245,7 @@ export async function POST(request) {
     if (kickoff && allTitles.length > 5) {
       // First reply lists every matched idea. Write it in parallel chunks so
       // a long list does not take much longer than a short one.
-      const SIZE = 6;
+      const SIZE = 5;
       const chunks = [];
       for (let i = 0; i < allTitles.length; i += SIZE) chunks.push(allTitles.slice(i, i + SIZE));
       const parts = await Promise.all(
