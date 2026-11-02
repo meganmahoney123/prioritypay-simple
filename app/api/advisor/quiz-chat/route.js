@@ -131,7 +131,7 @@ export async function POST(request) {
     let msgs = history;
     let text = "";
     let useSearch = true;
-    for (let round = 0; round < 4; round++) {
+    for (let round = 0; round < 6; round++) {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
@@ -147,10 +147,18 @@ export async function POST(request) {
         return Response.json({ error: "The chat had a problem. Please try again." }, { status: 502 });
       }
       const data = await res.json();
-      text += (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+      const got = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+      console.log("quiz-chat round", round, data.stop_reason, (data.content || []).map((b) => b.type).join(","), got.length);
       if (data.stop_reason === "pause_turn") {
         msgs = [...msgs, { role: "assistant", content: data.content }];
-        text = "";
+        text += got;
+        continue;
+      }
+      text += got;
+      if (!text.trim() && useSearch) {
+        // Search-heavy turn produced no text: answer again without search.
+        useSearch = false;
+        msgs = history;
         continue;
       }
       break;
