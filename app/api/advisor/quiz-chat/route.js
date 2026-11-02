@@ -183,9 +183,17 @@ export async function POST(request) {
       (facts && facts !== "NONE"
         ? `\n\nVERIFIED CURRENT-YEAR FIGURES FROM OFFICIAL SOURCES (use these over the guides if they differ, and say which tax year each figure is for)\n${facts}`
         : "\n\nNo official figures could be verified for this message. If you cite any dollar limit, rate or deadline, say it is unverified and should be confirmed at irs.gov.");
-    const final = await call({ max_tokens: 800, system, messages: history });
+    // Answers are kept short by the prompt, but the token budget leaves room
+    // for the model's own reasoning so a long list of matches never runs it
+    // out before any text is written.
+    let final = await call({ max_tokens: 3000, system, messages: history });
+    let text = (final?.content || []).filter((x) => x.type === "text").map((x) => x.text).join("");
+    console.log("quiz-chat final", final?.stop_reason, (final?.content || []).map((x) => x.type).join(","), text.length);
+    if (!text.trim()) {
+      final = await call({ max_tokens: 4000, system, messages: history });
+      text = (final?.content || []).filter((x) => x.type === "text").map((x) => x.text).join("");
+    }
     if (!final) return Response.json({ error: "The chat had a problem. Please try again." }, { status: 502 });
-    const text = (final.content || []).filter((x) => x.type === "text").map((x) => x.text).join("");
     await incrementAdvisorUsage(admin, user.id);
     return Response.json({
       reply: plainText(text) || "I couldn't put an answer together that time. Try rephrasing.",
