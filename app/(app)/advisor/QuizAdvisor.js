@@ -34,6 +34,13 @@ export default function QuizAdvisor() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [waited, setWaited] = useState(0);
+  useEffect(() => {
+    if (!sending) { setWaited(0); return; }
+    const t = setInterval(() => setWaited((w) => w + 1), 1000);
+    return () => clearInterval(t);
+  }, [sending]);
+  const waitingText = waited < 6 ? "Reading your quiz answers..." : waited < 18 ? "Checking the current IRS numbers..." : waited < 40 ? "Writing your options. This can take up to a minute the first time." : "Still working, almost there...";
   const [error, setError] = useState("");
   const [remaining, setRemaining] = useState(null);
   const [showSent, setShowSent] = useState(false);
@@ -177,7 +184,7 @@ export default function QuizAdvisor() {
                 {m.content}
               </div>
             ))}
-            {sending && <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Thinking…</p>}
+            {sending && <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{waitingText}</p>}
             {error && <p className="text-xs" style={{ color: "#9C3B22" }}>{error}</p>}
             <div ref={endRef} />
           </div>
