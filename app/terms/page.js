@@ -93,12 +93,13 @@ export default function TermsPage() {
 
       <h2>6. Fees</h2>
       <p>
-        PrioritySave offers a 30-day free trial starting from the date you create an account. After the trial ends,
-        continued use of the Service requires a paid subscription, currently <strong>$7 per month</strong>, billed
-        through Stripe to the payment method you provide. If your trial ends without an active subscription, your
-        account moves to a read-only mode: you can still view your split rules, dashboard, and history, but
-        connecting new accounts is paused until you subscribe. We may change the subscription price going forward,
-        but any change will be disclosed to you before it takes effect for your account.
+        PrioritySave requires a paid subscription, currently <strong>$12 per month</strong>, billed through Stripe to the
+        payment method you provide. You are charged when you complete onboarding and then each month until you cancel.
+        You can cancel anytime in Settings. After you cancel, your access continues until the end of the period you&apos;ve
+        paid for, and you won&apos;t be charged again. If a subscription lapses, your account moves to a read-only mode: you
+        can still view your split rules, dashboard, and history, but connecting new accounts is paused until you
+        subscribe. We may change the subscription price going forward, but any change will be disclosed to you before it
+        takes effect for your account.
       </p>
 
       <h2>7. Prohibited Use</h2>
