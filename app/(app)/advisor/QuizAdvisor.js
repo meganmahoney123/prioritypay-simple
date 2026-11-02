@@ -11,11 +11,43 @@ import { OptionButton } from "@/components/quiz/QuizShared";
 import { maskSensitive } from "@/lib/privacyFilter";
 
 const KICKOFF = "Based on my quiz answers, what are my top tax savings options?";
-const STARTERS = [
-  "How much could I put into a Solo 401(k)?",
-  "What are the home office rules?",
-  "What can I deduct for meals and travel, and what receipts do I need?",
-];
+// Suggested follow-ups that fit the person's own quiz answers.
+function startersFor(answers) {
+  const has = (id, v) => (Array.isArray(answers[id]) ? answers[id].includes(v) : answers[id] === v);
+  const work = answers.work || [];
+  const out = [];
+  const add = (q) => { if (!out.includes(q)) out.push(q); };
+  if (work.includes("retired") && !work.includes("self_employed") && !work.includes("business_owner")) {
+    if (has("retiredIncome", "withdraws_pretax")) add("How much could I convert to a Roth each year without a big tax hit?");
+    if (has("retiredIncome", "takes_social_security")) add("How much of my Social Security will be taxed?");
+    if (has("retiredIncome", "rmd_age")) add("How are required minimum distributions calculated, and can I reduce them?");
+    if (has("retiredIncome", "on_medicare")) add("Could my income raise my Medicare premiums?");
+    if (has("retiredIncome", "leaving_to_heirs")) add("How are inherited IRAs taxed for my kids?");
+    if (has("retiredIncome", "considering_move")) add("How do states tax retirement income?");
+    add("Which accounts should I withdraw from first?");
+    add("How can I use charitable giving to lower my taxes in retirement?");
+  } else if (work.includes("business_owner")) {
+    add("Which retirement plan makes sense for me and my employees?");
+    if (has("employerSituation", "offers_health_insurance")) add("How does the small employer health insurance credit work?");
+    if (has("employerSituation", "reimburses_expenses")) add("How does an accountable plan work?");
+    add("Would an S-corp save me money?");
+    if (has("business", "drives_for_business")) add("How do I deduct vehicle costs?");
+  } else if (work.includes("self_employed")) {
+    add("How much could I put into a Solo 401(k)?");
+    if (has("business", "home_office")) add("What are the home office rules?");
+    if (has("business", "drives_for_business")) add("How do I deduct vehicle costs?");
+    if (has("estimatedTaxes", "annual_or_unsure")) add("How do quarterly estimated taxes work?");
+    add("What can I deduct for meals and travel, and what receipts do I need?");
+  } else if (work.includes("w2")) {
+    add("How should I set my withholding so I don't owe in April?");
+    add("How much can I put into my 401(k) this year?");
+    if (has("workBenefits", "rsu_espp")) add("How are RSUs and my stock purchase plan taxed?");
+    if (has("workBenefits", "fsa_available")) add("How much can I put into an FSA?");
+    if (answers.hsaStatus === "has_hsa" || answers.hsaStatus === "hdhp_no_hsa") add("How much can I put into an HSA?");
+  }
+  add("What should I do before year end to lower my taxes?");
+  return out.slice(0, 3);
+}
 
 function answerLines(answers) {
   return QUIZ_QUESTIONS.map((q0) => {
@@ -184,14 +216,29 @@ export default function QuizAdvisor() {
                 {m.content}
               </div>
             ))}
-            {sending && <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{waitingText}</p>}
+            {sending && (
+              <div role="status" aria-live="polite" className="mt-2">
+                <style>{`@keyframes psdot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}@keyframes psbar{0%{left:-35%}100%{left:100%}}`}</style>
+                <div className="flex items-center gap-2 text-xs" style={{ color: "var(--color-neutral-700)" }}>
+                  <span style={{ display: "inline-flex", gap: 4 }}>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} style={{ width: 7, height: 7, borderRadius: 999, background: "#6B4FD8", animation: `psdot 1.2s ${i * 0.2}s infinite ease-in-out` }} />
+                    ))}
+                  </span>
+                  <span>{waitingText}</span>
+                </div>
+                <div style={{ position: "relative", height: 3, marginTop: 8, borderRadius: 999, background: "rgba(107,79,216,.15)", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, height: "100%", width: "35%", borderRadius: 999, background: "#6B4FD8", animation: "psbar 1.4s infinite ease-in-out" }} />
+                </div>
+              </div>
+            )}
             {error && <p className="text-xs" style={{ color: "#9C3B22" }}>{error}</p>}
             <div ref={endRef} />
           </div>
 
           {messages.length > 1 && messages.length < 4 && !sending && (
             <div className="flex flex-wrap gap-2 mt-4">
-              {STARTERS.map((q) => (
+              {startersFor(answers).map((q) => (
                 <button key={q} type="button" onClick={() => send(q)}
                   className="text-xs px-3 py-1.5 rounded-full border border-[var(--color-divider)] hover:bg-[var(--color-neutral-200)]">{q}</button>
               ))}
