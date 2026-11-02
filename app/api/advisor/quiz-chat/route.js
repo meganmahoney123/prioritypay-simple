@@ -228,7 +228,7 @@ export async function POST(request) {
           const extra =
             `\n\nTHIS PART OF THE REPLY\nWrite ONLY these ${titles.length} options, in this exact order, numbered starting at ${start}: ${titles.join("; ")}.\n` +
             `Use the three-line format (label, Why it fits, Example, First step) for each, with a blank line between options. Keep every line to one short sentence. ` +
-            (first ? `Begin with one short intro line (no list in it). ` : `Do NOT write an intro line. `) +
+            (first ? `Begin with one short intro line such as "Here are the ideas that fit your answers, starting with the most targeted." Do not say how many there are or describe a theme for the group. ` : `Do NOT write an intro line. `) +
             (last ? `After the last option, end with one short question about what they want to dig into. ` : `Do NOT write any closing line or question. `) +
             `Do not mention other parts of the list.`;
           return generate(system + extra, history);
