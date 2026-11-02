@@ -1,13 +1,10 @@
 "use client";
 
+import LegalLink from "@/components/LegalLink";
+
 const PLANS = {
   simple: { name: "PriorityPay Simple", price: "$12.99" },
   business: { name: "PriorityPay Business", price: "$39.99" },
-};
-
-const linkStyle = {
-  color: "var(--color-accent-700)",
-  textDecoration: "underline",
 };
 
 export default function SubscriptionDisclosure({ plan = "simple", isNative }) {
@@ -30,9 +27,9 @@ export default function SubscriptionDisclosure({ plan = "simple", isNative }) {
         Apple ID &gt; Subscriptions.
       </p>
       <p style={{ margin: 0 }}>
-        <a href="https://www.prioritypay.co/terms" target="_blank" rel="noopener noreferrer" style={linkStyle}>Terms of Use (EULA)</a>
+        <LegalLink kind="terms">Terms of Use (EULA)</LegalLink>
         {" · "}
-        <a href="https://www.prioritypay.co/privacy" target="_blank" rel="noopener noreferrer" style={linkStyle}>Privacy Policy</a>
+        <LegalLink kind="privacy">Privacy Policy</LegalLink>
       </p>
     </div>
   );

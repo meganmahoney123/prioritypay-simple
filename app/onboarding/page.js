@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
+import LegalLink from "@/components/LegalLink";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
@@ -1325,13 +1326,9 @@ function OnboardingPageInner() {
               {isNative && (
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "10px 0 0" }}>
                   By continuing you agree to our{" "}
-                  <a href="/terms" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                    Terms of Use (EULA)
-                  </a>{" "}
+                  <LegalLink kind="terms">Terms of Use (EULA)</LegalLink>{" "}
                   and{" "}
-                  <a href="/privacy" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                    Privacy Policy
-                  </a>
+                  <LegalLink kind="privacy">Privacy Policy</LegalLink>
                   .
                 </p>
               )}
