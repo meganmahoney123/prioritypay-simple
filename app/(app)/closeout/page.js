@@ -107,7 +107,9 @@ export default function CloseoutPage() {
   // for every persona regardless of relevance.
   useEffect(() => {
     if (persona === null) return;
-    setW2PopupStep(isW2NoSideHustlePersona || isW2WithSideHustle(persona) ? "ask" : "closed");
+    // W2-only users already told us they only have W2 income, so asking again
+    // is redundant -- the popup is only for W2 + side hustle/business.
+    setW2PopupStep(isW2WithSideHustle(persona) ? "ask" : "closed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persona]);
   const baseDepositCats = hasW2Income ? DEPOSIT_CATS : DEPOSIT_CATS.filter((c) => c.value !== "w2_income");
