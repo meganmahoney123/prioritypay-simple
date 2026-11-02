@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
-import { QUIZ_QUESTIONS, questionView } from "@/lib/quizEngine";
+import { QUIZ_QUESTIONS, questionView, matchStrategies } from "@/lib/quizEngine";
 import { OptionButton } from "@/components/quiz/QuizShared";
 import { maskSensitive } from "@/lib/privacyFilter";
 
@@ -66,6 +66,12 @@ export default function QuizAdvisor() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const allMatched = useMemo(() => {
+    try {
+      const m = matchStrategies(answers);
+      return m.results.flatMap((g) => g.strategies.map((x) => x.title));
+    } catch { return []; }
+  }, [answers]);
   const [waited, setWaited] = useState(0);
   useEffect(() => {
     if (!sending) { setWaited(0); return; }
@@ -235,6 +241,20 @@ export default function QuizAdvisor() {
             {error && <p className="text-xs" style={{ color: "#9C3B22" }}>{error}</p>}
             <div ref={endRef} />
           </div>
+
+          {messages.length > 1 && !sending && allMatched.length > 0 && (
+            <details className="mt-4">
+              <summary className="text-xs cursor-pointer" style={{ color: "var(--color-neutral-700)", fontWeight: 600 }}>
+                See all {allMatched.length} ideas that fit you
+              </summary>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {allMatched.map((t) => (
+                  <button key={t} type="button" onClick={() => send(`Tell me about ${t} and roughly how much it could save me.`)}
+                    className="text-xs px-3 py-1.5 rounded-full border border-[var(--color-divider)] hover:bg-[var(--color-neutral-200)] text-left">{t}</button>
+                ))}
+              </div>
+            </details>
+          )}
 
           {messages.length > 1 && messages.length < 4 && !sending && (
             <div className="flex flex-wrap gap-2 mt-4">
