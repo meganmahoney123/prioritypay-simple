@@ -44,6 +44,18 @@ const P = [
     awareness: [/each of your businesses/i],
   },
   {
+    name: "Self-employed, married filing separately at $75k to $150k: backdoor Roth applies",
+    a: { work: ["self_employed"], income: "75-150k", filingStatus: "mfs", age: "40_59", retirement: ["none"], structure: "sole_prop_or_single_member_llc", entities: "one" },
+    n: {},
+    has: [/backdoor/i],
+  },
+  {
+    name: "Self-employed, single at $75k to $150k: no backdoor Roth",
+    a: { work: ["self_employed"], income: "75-150k", filingStatus: "single", age: "40_59", retirement: ["none"], structure: "sole_prop_or_single_member_llc", entities: "one" },
+    n: {},
+    never: [/backdoor/i],
+  },
+  {
     name: "Self-employed, one business: no multiple-entity items",
     a: { work: ["self_employed"], income: "75-150k", filingStatus: "single", age: "under_40", retirement: ["none"], entities: "one" },
     n: {},
