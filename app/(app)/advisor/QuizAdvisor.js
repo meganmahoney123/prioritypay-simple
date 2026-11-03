@@ -184,6 +184,7 @@ export default function QuizAdvisor() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [moreLoading, setMoreLoading] = useState(false);
   const [waited, setWaited] = useState(0);
   useEffect(() => {
     if (!sending) { setWaited(0); return; }
@@ -231,7 +232,7 @@ export default function QuizAdvisor() {
 
   async function send(text, hidden = false) {
     const content = (text ?? input).trim();
-    if (!content || sending) return;
+    if (!content || sending || moreLoading) return;
     const shown = maskSensitive(content).text;
     const next = [...messages, { role: "user", content: shown, hidden }];
     setMessages(next);
@@ -239,11 +240,17 @@ export default function QuizAdvisor() {
     setSending(true);
     setError("");
     try {
-      const res = await fetch("/api/advisor/quiz-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, numbers: cleanNums(nums), messages: next.map(({ role, content }) => ({ role, content })) }),
-      });
+      const isKickoff = hidden && content === KICKOFF && messages.length === 0;
+      const post = (phase) =>
+        fetch("/api/advisor/quiz-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers, numbers: cleanNums(nums), phase, messages: next.map(({ role, content }) => ({ role, content })) }),
+        });
+      // First reply: ask for the main list and the extra ideas at the same time,
+      // show the main list as soon as it is ready, and add the rest when it lands.
+      const morePromise = isKickoff ? post("extras").then((r) => r.json().then((d) => ({ ok: r.ok, d }))).catch(() => null) : null;
+      const res = await post(isKickoff ? "main" : undefined);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
       if (data.overageOffer) {
@@ -258,6 +265,21 @@ export default function QuizAdvisor() {
       setMessages([...next, { role: "assistant", content: data.reply }]);
       if (data.overage) setExtra(data.overage);
       if (data.usage) setRemaining(data.usage.remaining);
+      if (morePromise) {
+        setMoreLoading(true);
+        setSending(false);
+        const more = await morePromise;
+        const tail = more?.ok && more.d?.reply
+          ? more.d.reply
+          : "These are suggestions to bring to your CPA, not tax or legal advice. What would you like to dig into?";
+        setMessages((cur) => {
+          const out = cur.slice();
+          const last = out.length - 1;
+          if (last >= 0 && out[last].role === "assistant") out[last] = { ...out[last], content: out[last].content + "\n\n" + tail };
+          return out;
+        });
+        setMoreLoading(false);
+      }
     } catch (e) {
       setError(e.message || "Something went wrong. Try again.");
     }
@@ -395,6 +417,11 @@ export default function QuizAdvisor() {
                 </div>
               </div>
             )}
+            {moreLoading && (
+              <p role="status" aria-live="polite" className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+                Checking for more ideas a CPA might raise for your situation...
+              </p>
+            )}
             {error && <p className="text-xs" style={{ color: "#9C3B22" }}>{error}</p>}
             {offer && !sending && (
               <div className="p-3 rounded-lg text-sm" style={{ background: "#EDE6FF" }}>
@@ -427,7 +454,7 @@ export default function QuizAdvisor() {
           <form className="flex items-center gap-2 mt-4" onSubmit={(e) => { e.preventDefault(); send(); }}>
             <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask a question…"
               className="flex-1 border border-[var(--color-divider)] rounded-lg px-3 py-2 text-sm" style={{ minWidth: 0 }} />
-            <PrimaryButton type="submit" disabled={sending || !input.trim()} className="text-xs px-4 py-2">Send</PrimaryButton>
+            <PrimaryButton type="submit" disabled={sending || moreLoading || !input.trim()} className="text-xs px-4 py-2">Send</PrimaryButton>
           </form>
           <div className="flex justify-between mt-2">
             <p className="text-[11px]" style={{ color: "var(--color-neutral-700)" }}>
