@@ -334,25 +334,37 @@ export async function POST(request) {
         `EVERY option must have exactly three parts and nothing else, even short or minor ones: a numbered label line like "12. Move idle cash into a money market fund", then a line starting "Do this:" with one specific instruction, then a line starting "Savings:" with the benefit as a fact or a dollar figure from their numbers. Never put the label and a sentence on one line. Use the two-line format from the instructions (numbered label, "Do this:", "Savings:") for each, with a blank line between options. Never write a "Why it fits" line. Labels are actions, not topic names. The mega backdoor Roth option, if it is in this part, uses the four-line format. Keep every line to one or two short sentences. `;
 
       const brainstorm = async () => {
-        try {
-          const covered = [...matched.ranked, ...(matched.awareness || [])].map((x) => x.title).join("; ");
-          const data = await call({
-            max_tokens: 4000,
-            system: "You are a senior CPA doing a tax planning review. Reply with a JSON array only, no other text.",
-            messages: [
-              {
-                role: "user",
-                content: `Client profile from their quiz:\n${describeAnswers(answers)}${Object.keys(numbers).length ? `\n\nTheir numbers:\n${numbersNotes(numbers, answers)}` : ""}\n\nIdeas ALREADY covered (do not repeat or rephrase these): ${covered || "none"}.\n\nList up to 6 ADDITIONAL legitimate tax-saving strategies a CPA would bring to THIS client for the 2026 tax year, based on their specific answers and numbers. Be comprehensive across retirement, business, real estate, family, health, investing, equity, charity, gifting and estate, credits, state taxes and timing, but include only strategies that clearly fit what they told us. Never include aggressive or abusive strategies. If they run more than one business, never suggest moving expenses between businesses. Fit every idea to their exact business structure and filing status: strategies that need a separate entity (the Augusta rule, accountable plan reimbursements, pass-through entity tax elections, owner salary strategies) must not be offered to a sole proprietor or single-member LLC without an S-corp election, and use the individual limit, not the family limit, for a single filer. Skip anything that is commonly challenged by the IRS. Each item: {"title": an action such as "Open a Roth IRA", "do": one specific step in plain words using their numbers where it helps, "claims": the specific limits, thresholds or rules it depends on}. JSON array only.`,
-              },
-            ],
-          });
-          const raw = textOf(data).replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-          const arr = JSON.parse(raw.slice(raw.indexOf("["), raw.lastIndexOf("]") + 1));
-          return Array.isArray(arr) ? arr.filter((x) => x && x.title && x.do).slice(0, 6) : [];
-        } catch (e) {
-          console.error("quiz-chat brainstorm failed", e?.message);
-          return [];
+        const covered = [...matched.ranked, ...(matched.awareness || [])].map((x) => x.title).join("; ");
+        const prompt = `Client profile from their quiz:\n${describeAnswers(answers)}${Object.keys(numbers).length ? `\n\nTheir numbers:\n${numbersNotes(numbers, answers)}` : ""}\n\nIdeas ALREADY covered (do not repeat or rephrase these): ${covered || "none"}.\n\nList up to 6 ADDITIONAL legitimate tax-saving strategies a CPA would bring to THIS client for the 2026 tax year, based on their specific answers and numbers. Be comprehensive across retirement, business, real estate, family, health, investing, equity, charity, gifting and estate, credits, state taxes and timing, but include only strategies that clearly fit what they told us. Never include aggressive or abusive strategies. If they run more than one business, never suggest moving expenses between businesses. Fit every idea to their exact business structure and filing status: strategies that need a separate entity (the Augusta rule, accountable plan reimbursements, pass-through entity tax elections, owner salary strategies) must not be offered to a sole proprietor or single-member LLC without an S-corp election, and use the individual limit, not the family limit, for a single filer. Skip anything that is commonly challenged by the IRS. Each item: {"title": an action such as "Open a Roth IRA", "do": one specific step in plain words using their numbers where it helps, "claims": the specific limits, thresholds or rules it depends on}. Keep each field short. JSON array only.`;
+        for (const budget of [6000, 10000]) {
+          try {
+            const data = await call({
+              max_tokens: budget,
+              system: "You are a senior CPA doing a tax planning review. Reply with a JSON array only, no other text.",
+              messages: [{ role: "user", content: prompt }],
+            });
+            const raw = textOf(data).replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+            let arr = [];
+            try {
+              arr = JSON.parse(raw.slice(raw.indexOf("["), raw.lastIndexOf("]") + 1));
+            } catch {
+              // Salvage complete objects from a cut-off answer.
+              arr = (raw.match(/\{[^{}]*\}/g) || []).map((o) => {
+                try {
+                  return JSON.parse(o);
+                } catch {
+                  return null;
+                }
+              });
+            }
+            const ok = (Array.isArray(arr) ? arr : []).filter((x) => x && x.title && x.do).slice(0, 6);
+            if (ok.length) return ok;
+            console.log("quiz-chat brainstorm empty", budget, data?.stop_reason, raw.length);
+          } catch (e) {
+            console.error("quiz-chat brainstorm failed", e?.message);
+          }
         }
+        return [];
       };
 
       const verify = async (items) => {
