@@ -17,6 +17,26 @@ const { matchStrategies } = await import(pathToFileURL(path.join(tmp, "quizEngin
 
 const P = [
   {
+    name: "Owner: professional services firm, $400k profit, S-corp on distributions only",
+    a: { work: ["business_owner"], income: "250-500k", filingStatus: "single", age: "40_59", retirement: ["none"], bizType: "professional", ownership: "solo_owner", bizProfit: "250_500k", bizStage: "established", staffSize: "5_19", ownerPay: "draws", structure: "s_corp_election", purchases: ["none"], bizSpecial: ["none"], employerSituation: ["no_employee_retirement_plan"] },
+    n: {},
+    has: [/losing the 20% QBI deduction/i, /Put yourself on payroll/i, /Start a retirement plan for your employees and claim the startup credit/i, /cash balance/i],
+    never: [/Max out your Solo 401\(k\)/],
+  },
+  {
+    name: "Owner: new software startup with a building purchase and R&D",
+    a: { work: ["business_owner"], income: "75-150k", filingStatus: "mfj", age: "under_40", retirement: ["none"], bizType: "tech", ownership: "with_investors", bizProfit: "loss", bizStage: "startup", staffSize: "1_4", ownerPay: "w2_salary", structure: "c_corp", purchases: ["equipment", "building"], bizSpecial: ["rd"] },
+    n: {},
+    has: [/startup and organization costs/i, /research and development credit/i, /loss can reduce your other income/i],
+  },
+  {
+    name: "Owner: product business planning to sell, with inventory",
+    a: { work: ["business_owner"], income: "500k+", filingStatus: "mfj", age: "60_69", retirement: ["employer_401k"], bizType: "products", ownership: "with_spouse", bizProfit: "500k_1m", bizStage: "exit", staffSize: "20_49", ownerPay: "mixed", structure: "partnership_multi_member", purchases: ["heavy_vehicle"], bizSpecial: ["inventory", "debt"] },
+    n: {},
+    has: [/business sale now/i],
+    awareness: [/accounting method and inventory/i],
+  },
+  {
     name: "Self-employed with two businesses",
     a: { work: ["self_employed"], income: "150-250k", filingStatus: "single", age: "40_59", retirement: ["solo_401k"], structure: "sole_prop_or_single_member_llc", entities: "multiple" },
     n: { netProfit: 150000 },
