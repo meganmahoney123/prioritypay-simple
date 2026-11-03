@@ -4,7 +4,7 @@ import PublicFooter from "@/components/PublicFooter";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 
 // Shared layout for blog posts adapted from PrioritySave YouTube scripts
-// (app/business-owner/business-tax-deductions, app/self-employed/solo-401k,
+// (app/blog/business-tax-deductions, app/self-employed/solo-401k,
 // app/self-employed/how-to-save-on-taxes). Unlike the long reference guides in this folder
 // (self-employed-tax-guide, tax-optimization), which mount a design-file
 // HTML string, these posts are plain readable articles written as JSX, so
@@ -55,9 +55,9 @@ export default function BlogArticle({
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
-      { "@type": "ListItem", position: 2, name: "Blog" },
-      { "@type": "ListItem", position: 3, name: hub.name, item: `${SITE}${hub.href}` },
-      { "@type": "ListItem", position: 4, name: title, item: url },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE}/blog` },
+      ...(hub ? [{ "@type": "ListItem", position: 3, name: hub.name, item: `${SITE}${hub.href}` }] : []),
+      { "@type": "ListItem", position: hub ? 4 : 3, name: title, item: url },
     ],
   };
 
@@ -86,13 +86,17 @@ export default function BlogArticle({
           <nav aria-label="Breadcrumb" className="ps-crumbs">
             <Link href="/">Home</Link>
             <span aria-hidden="true">/</span>
-            <span>Blog</span>
-            <span aria-hidden="true">/</span>
-            <Link href={hub.href}>{hub.name}</Link>
+            <Link href="/blog">Blog</Link>
+            {hub ? (
+              <>
+                <span aria-hidden="true">/</span>
+                <Link href={hub.href}>{hub.name}</Link>
+              </>
+            ) : null}
           </nav>
 
           <header className="ps-head">
-            <div className="ps-eyebrow">PrioritySave &middot; {hub.name}</div>
+            <div className="ps-eyebrow">PrioritySave &middot; {hub ? hub.name : "Blog"}</div>
             <h1>{title}</h1>
             <p className="ps-dek">{dek}</p>
             <div className="ps-stamp">

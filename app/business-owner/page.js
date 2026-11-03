@@ -2,6 +2,7 @@ import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
+import { postsForHub } from "@/lib/blogPosts";
 
 export const metadata = {
   title: "Business Owner | PrioritySave Blog",
@@ -9,13 +10,7 @@ export const metadata = {
   alternates: { canonical: "https://www.prioritysave.com/business-owner" },
 };
 
-const ARTICLES = [
-  {
-    href: "/business-owner/business-tax-deductions",
-    title: "10 Tax Deductions Business Owners Should Know About",
-    dek: "Home office, mileage, health insurance, hiring your kids, QBI, and more, with 2026 numbers, how to qualify, and common mistakes.",
-  },
-];
+const ARTICLES = postsForHub("business-owner");
 
 export default function BusinessOwnerHubPage() {
   return (
@@ -27,7 +22,11 @@ export default function BusinessOwnerHubPage() {
             <Link href="/" style={{ color: "var(--color-accent)", fontWeight: 600, textDecoration: "none" }}>
               Home
             </Link>
-            {" / Blog / "}
+            {" / "}
+            <Link href="/blog" style={{ color: "var(--color-accent)", fontWeight: 600, textDecoration: "none" }}>
+              Blog
+            </Link>
+            {" / "}
             <span style={{ color: "var(--color-text)", fontWeight: 700 }}>Business Owner</span>
           </nav>
 

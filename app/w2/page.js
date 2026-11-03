@@ -19,7 +19,11 @@ export default function W2HubPage() {
             <Link href="/" style={{ color: "var(--color-accent)", fontWeight: 600, textDecoration: "none" }}>
               Home
             </Link>
-            {" / Blog / "}
+            {" / "}
+            <Link href="/blog" style={{ color: "var(--color-accent)", fontWeight: 600, textDecoration: "none" }}>
+              Blog
+            </Link>
+            {" / "}
             <span style={{ color: "var(--color-text)", fontWeight: 700 }}>W2</span>
           </nav>
 
