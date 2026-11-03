@@ -7,6 +7,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { QUIZ_QUESTIONS, matchStrategies, questionView } from "@/lib/quizEngine";
+import { taxFacts } from "@/lib/quizNumbers";
 import { TAX_STRATEGIES } from "@/lib/advisorKnowledge";
 import { checkAdvisorUsage, incrementAdvisorUsage, recordOverage, OVERAGE_CENTS, OVERAGE_LIMITS_CENTS } from "@/lib/advisorUsage";
 import { stripeClient } from "@/lib/stripe";
@@ -92,34 +93,16 @@ function numbersNotes(n, answers) {
     if (n.payroll) lines.push(`- Rough cost of a 3 percent safe harbor contribution to employees: about ${f(0.03 * n.payroll)} a year (an upper estimate, since owners and some employees may be excluded).`);
     return lines.join("\n");
   }
-  if (n.netProfit) {
-    const np = n.netProfit;
-    const seBase = np * 0.9235;
-    const se = 0.124 * Math.min(seBase, 184500) + 0.029 * seBase;
-    const adj = np - se / 2;
-    const employee = Math.min(24500, Math.max(0, adj));
-    const employer = Math.max(0, Math.min(0.2 * adj, 72000 - employee));
-    lines.push(`- Rough self-employment tax: ${f(se)}. Profit after half of it: ${f(adj)}.`);
-    lines.push(`- Rough Solo 401(k) room if taxed as a sole proprietor or single-member LLC: employee deferral up to ${f(employee)} plus employer share about ${f(employer)} (20 percent of profit after half of self-employment tax), total about ${f(employee + employer)} of the $72,000 overall limit, before any catch-up.`);
-    if (n.contributed) lines.push(`- Remaining room after what they have already put in: about ${f(Math.max(0, employee + employer - n.contributed))}.`);
-    // Rough federal bracket from 2026 IRS tables, using the household income band as a floor.
-    const band = { "<75k": 0, "75-150k": 75000, "150-250k": 150000, "250-500k": 250000, "500k+": 500000 }[answers?.income] || 0;
-    const fs = answers?.filingStatus === "mfj" ? "mfj" : answers?.filingStatus === "hoh" ? "hoh" : "single";
-    const std = { single: 16100, mfj: 32200, hoh: 24150 }[fs];
-    const tops = {
-      single: [[12400, 10], [50400, 12], [105700, 22], [201775, 24], [256225, 32], [640600, 35], [Infinity, 37]],
-      mfj: [[24800, 10], [100800, 12], [211400, 22], [403550, 24], [512450, 32], [768700, 35], [Infinity, 37]],
-      hoh: [[17700, 10], [67450, 12], [105700, 22], [201750, 24], [256200, 32], [640600, 35], [Infinity, 37]],
-    }[fs];
-    const gross = Math.max(np + (n.wages || 0), band);
-    const taxable = Math.max(0, gross - se / 2 - std);
-    const rate = (tops.find(([top]) => taxable <= top) || [0, 37])[1];
-    lines.push(`- Rough top federal bracket: ${rate} percent (2026 IRS brackets, using their household income band as a floor; they should confirm).`);
-    const left = Math.max(0, employee + employer - (n.contributed || 0));
-    lines.push(`- Rough federal tax deferred by putting the remaining Solo 401(k) room (${f(left)}) into pre-tax contributions: about ${f(left * rate / 100)} at ${rate} percent. Putting in the full ${f(employee + employer)} defers about ${f((employee + employer) * rate / 100)}.`);
+  const facts = taxFacts(answers, n);
+  if (n.netProfit && facts?.solo) {
+    const { employee, employer, room, remaining, mega } = facts.solo;
+    lines.push(`- Rough self-employment tax: ${f(facts.se)}. Profit after half of it: ${f(facts.adj)}.`);
+    lines.push(`- Rough Solo 401(k) room if taxed as a sole proprietor or single-member LLC: employee deferral up to ${f(employee)} plus employer share about ${f(employer)} (20 percent of profit after half of self-employment tax), total about ${f(room)} of the $72,000 overall limit, before any catch-up.`);
+    if (n.contributed) lines.push(`- Remaining room after what they have already put in: about ${f(remaining)}.`);
+    lines.push(`- Rough top federal bracket: ${facts.rate} percent (2026 IRS brackets, using their household income band as a floor; they should confirm).`);
+    lines.push(`- Rough federal tax deferred by putting the remaining Solo 401(k) room (${f(remaining)}) into pre-tax contributions: about ${f(remaining * facts.rate / 100)} at ${facts.rate} percent. Putting in the full ${f(room)} defers about ${f(room * facts.rate / 100)}.`);
     const hasSep = (answers?.retirement || []).includes("sep_ira") && (answers?.retirement || []).includes("solo_401k");
     if (hasSep) lines.push("- They have BOTH a SEP-IRA and a Solo 401(k). Flag clearly that the SEP-IRA is blocking their mega backdoor Roth: SEP contributions from the same business count against the same $72,000 limit dollar for dollar, so every SEP dollar shrinks the after-tax room below. They should stop funding the SEP-IRA and roll its balance into the Solo 401(k).");
-    const mega = Math.max(0, 72000 - employee - employer);
     if (mega > 0) {
       const grown = mega * Math.pow(1.07, 20);
       lines.push(`- Rough mega backdoor Roth room after maxing both parts: about ${f(mega)} of after-tax contributions converted to Roth (only if the plan allows it). It does not lower this year's tax. At a 7 percent return for 20 years that ${f(mega)} could grow to about ${f(grown)}, and the roughly ${f(grown - mega)} of growth would not be taxed.`);
@@ -144,13 +127,14 @@ function describeAnswers(answers) {
 
 function strategyNotes(matched) {
   const kb = new Map(TAX_STRATEGIES.map((s) => [s.id, s]));
-  return matched.results
-    .flatMap((g) => g.strategies)
+  return matched.ranked
     .slice(0, 22)
     .map((s) => {
       const k = kb.get(s.id);
       const facts = (k?.keyFacts || []).map((f) => `    * ${f}`).join("\n");
-      return `${s.title}\n  What they told us: ${s.condition}\n  What to do: ${s.action}\n  Potential benefit: ${s.benefit}\n  Reference facts:\n${facts}`;
+      const tag = s.blocker ? "BLOCKER (something in their way; list it first)\n  " : "";
+      const dollars = s.dollars ? `\n  Estimated yearly tax saved from THEIR numbers: about $${s.dollars.toLocaleString("en-US")}` : "";
+      return `${s.title}\n  ${tag}What they told us: ${s.condition}\n  What to do: ${s.action}\n  Potential benefit: ${s.benefit}${dollars}\n  Reference facts:\n${facts}`;
     })
     .join("\n\n");
 }
@@ -172,6 +156,7 @@ WRITING RULES
 - Always put what you learn from official sources in your own words. Never copy sentences from the IRS or any other source, and do not use quotation marks around source text.
 - BE BRIEF AND SKIMMABLE. This is the most important rule. Never write paragraphs longer than two short sentences. Put a blank line between items. Lead each item with a short label (a few words) followed by a colon, then one short line. Use "1." numbered lines for options and "-" lines for steps or facts. Follow-up answers: at most about 120 words. Skip background the person did not ask for, skip repeating the question, and cut every sentence that does not add a fact or a next step. If there is more to say, end with one line offering to go deeper on a specific part.
 - Warm, plain, specific. No jargon without a short explanation.
+- BLOCKERS AND RANKING: the matched options below are already ranked, biggest first. Options marked BLOCKER are combinations of their answers that break or limit something (for example a SEP-IRA or old IRA balance in the way). List blockers first, keep their order, make the label the fix, and in "Savings:" say what ignoring it costs. When an option shows an estimated yearly tax saved from their numbers, state that dollar figure and keep the options in the order given. Do not reorder them.
 - BE DIRECT. Every option label is the action to take (for example "Max out your Solo 401(k)"), never just the name of a product or topic (never "Solo 401(k) for the Self-Employed"). Tell them the specific step, with the dollar figure, and state benefits as facts with numbers instead of "can help" or "may". Only hedge for a real unknown, in a few words. This applies to every reply, including follow-ups.
 - MEGA BACKDOOR ROTH: this one option gets four short lines instead of two: "Do this:" (use the mega backdoor Roth, and the target amount from their numbers if given), "How it works:" (one sentence: after maxing the normal employee and employer amounts, put extra after-tax dollars in up to the $72,000 overall limit and convert them to Roth so growth is tax-free), "How to check your plan:" (ask the provider two questions: does the plan accept after-tax, non-Roth employee contributions, and does it allow in-plan Roth conversions or in-service rollovers to a Roth IRA; both must be yes, otherwise use a provider that supports both), and "Savings:" (their after-tax room and the tax-free growth from their numbers; it does not lower this year's tax).
 
@@ -245,7 +230,7 @@ export async function POST(request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return Response.json({ error: "The chat isn't available right now." }, { status: 503 });
 
-  const matched = matchStrategies(answers);
+  const matched = matchStrategies(answers, numbers);
   try {
     const guides = guideNotes(matched, history);
     const SEARCH = {
@@ -279,7 +264,7 @@ export async function POST(request) {
     // question needs and report them as short plain facts.
     const lastUserMsg = history[history.length - 1].content;
     const kickoff = history.length <= 1;
-    const topics = matched.results.flatMap((g) => g.strategies.map((x) => x.title)).slice(0, 6).join("; ");
+    const topics = matched.ranked.map((x) => x.title).slice(0, 6).join("; ");
     let facts = "";
     let msgs = [
       {
@@ -329,7 +314,7 @@ export async function POST(request) {
 
     let final = null;
     let text = "";
-    const allTitles = matched.results.flatMap((g) => g.strategies.map((x) => x.title)).slice(0, 18);
+    const allTitles = matched.ranked.map((x) => x.title).slice(0, 18);
     if (kickoff && allTitles.length > 5) {
       // First reply lists every matched idea. Write it in parallel chunks so
       // a long list does not take much longer than a short one.
