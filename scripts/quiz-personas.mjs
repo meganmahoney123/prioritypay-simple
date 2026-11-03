@@ -17,6 +17,19 @@ const { matchStrategies } = await import(pathToFileURL(path.join(tmp, "quizEngin
 
 const P = [
   {
+    name: "Self-employed with two businesses",
+    a: { work: ["self_employed"], income: "150-250k", filingStatus: "single", age: "40_59", retirement: ["solo_401k"], structure: "sole_prop_or_single_member_llc", entities: "multiple" },
+    n: { netProfit: 150000 },
+    has: [/expenses with that business only/i, /second Solo 401\(k\)/i],
+    awareness: [/each of your businesses/i],
+  },
+  {
+    name: "Self-employed, one business: no multiple-entity items",
+    a: { work: ["self_employed"], income: "75-150k", filingStatus: "single", age: "under_40", retirement: ["none"], entities: "one" },
+    n: {},
+    never: [/expenses with that business only/i, /second Solo 401/i],
+  },
+  {
     name: "W-2 age 50s earning 150-250k with a 401(k): Roth catch-up blocker",
     a: { work: ["w2"], income: "150-250k", filingStatus: "single", age: "40_59", retirement: ["employer_401k"] },
     n: {},
