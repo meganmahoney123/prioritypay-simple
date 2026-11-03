@@ -193,6 +193,9 @@ export default function QuizAdvisor() {
   const waitingText = waited < 6 ? "Reading your quiz answers..." : waited < 18 ? "Checking the current IRS numbers..." : waited < 40 ? "Writing your options. This can take up to a minute the first time." : "Still working, almost there...";
   const [error, setError] = useState("");
   const [remaining, setRemaining] = useState(null);
+  const [offer, setOffer] = useState(null); // { reply, priceCents, limitsCents, limitReached, text, hidden }
+  const [extra, setExtra] = useState(null); // { count, spentCents, limitCents }
+  const [optingIn, setOptingIn] = useState(false);
   const [showSent, setShowSent] = useState(false);
   const endRef = useRef(null);
   const started = useRef(false);
@@ -223,7 +226,7 @@ export default function QuizAdvisor() {
     else setStepIndex((i) => i + 1);
   }
   function startOver() {
-    setAnswers({}); setNums({}); setNumStage(false); setStepIndex(0); setDone(false); setMessages([]); setError(""); started.current = false;
+    setOffer(null); setExtra(null); setAnswers({}); setNums({}); setNumStage(false); setStepIndex(0); setDone(false); setMessages([]); setError(""); started.current = false;
   }
 
   async function send(text, hidden = false) {
@@ -243,13 +246,42 @@ export default function QuizAdvisor() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
+      if (data.overageOffer) {
+        // Over the included messages: show the pay-as-you-go choice and keep this question to resend.
+        setMessages(messages);
+        setOffer({ ...data.overageOffer, reply: data.reply, text: content, hidden });
+        setRemaining(0);
+        setSending(false);
+        return;
+      }
+      setOffer(null);
       setMessages([...next, { role: "assistant", content: data.reply }]);
+      if (data.overage) setExtra(data.overage);
       if (data.usage) setRemaining(data.usage.remaining);
     } catch (e) {
       setError(e.message || "Something went wrong. Try again.");
     }
     setSending(false);
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+  }
+
+  async function chooseLimit(limitCents) {
+    setOptingIn(true);
+    setError("");
+    try {
+      const res = await fetch("/api/advisor/overage", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ limitCents }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Could not save that.");
+      const o = offer;
+      setOffer(null);
+      setOptingIn(false);
+      if (o) await send(o.text, o.hidden);
+    } catch (e) {
+      setError(e.message || "Could not save that.");
+      setOptingIn(false);
+    }
   }
 
   useEffect(() => {
@@ -364,6 +396,22 @@ export default function QuizAdvisor() {
               </div>
             )}
             {error && <p className="text-xs" style={{ color: "#9C3B22" }}>{error}</p>}
+            {offer && !sending && (
+              <div className="p-3 rounded-lg text-sm" style={{ background: "#EDE6FF" }}>
+                <p style={{ margin: "0 0 8px" }}>{offer.reply}</p>
+                <p className="text-xs" style={{ margin: "0 0 10px" }}>
+                  Extra messages are ${(offer.priceCents / 100).toFixed(2)} each and appear on your next PrioritySave invoice. Pick a monthly spending limit. We stop when you reach it, and you can change it anytime.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {offer.limitsCents.map((c) => (
+                    <button key={c} type="button" disabled={optingIn} onClick={() => chooseLimit(c)}
+                      className="text-xs px-3 py-1.5 rounded-full border border-[var(--color-divider)] bg-white hover:bg-[var(--color-neutral-200)]">
+                      Up to ${c / 100} a month ({Math.floor(c / offer.priceCents)} messages)
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div ref={endRef} />
           </div>
 
@@ -383,7 +431,7 @@ export default function QuizAdvisor() {
           </form>
           <div className="flex justify-between mt-2">
             <p className="text-[11px]" style={{ color: "var(--color-neutral-700)" }}>
-              {remaining !== null ? `${remaining} messages left this month` : ""}
+              {extra ? `Extra messages this month: ${extra.count} ($${(extra.spentCents / 100).toFixed(2)} of your $${extra.limitCents / 100} limit)` : remaining !== null ? `${remaining} messages left this month` : ""}
             </p>
             <button type="button" className="text-[11px] underline" onClick={startOver}>Retake the quiz</button>
           </div>
