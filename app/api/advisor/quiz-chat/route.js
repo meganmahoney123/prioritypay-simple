@@ -76,6 +76,22 @@ function numbersNotes(n, answers) {
   if (n.employees) lines.push(`- Employees (not counting them): ${n.employees}`);
   if (n.payroll) lines.push(`- Total employee pay: ${f(n.payroll)}`);
   if (n.ownerPay) lines.push(`- Owner W-2 salary: ${f(n.ownerPay)}`);
+  const work = answers?.work || [];
+  const hasStaff = work.includes("business_owner") || (n.employees || 0) > 0;
+  const isScorp = answers?.structure === "s_corp_election";
+  if (hasStaff) {
+    lines.push("- IMPORTANT: this owner has employees, so a Solo 401(k) does NOT apply and must not be mentioned as an option or used as a ceiling. Compare an employer plan instead: safe harbor 401(k) (employer match or 3 percent contribution, owner can defer up to $24,500 and the total can reach $72,000 if pay supports it), SIMPLE IRA (employee deferral limit about $17,000, plus a 3 percent match or 2 percent contribution, much smaller room), and SEP only as a comparison point (employer-only, and the same percentage must go to every eligible employee).");
+    if (isScorp) {
+      lines.push("- S-corp: retirement contributions are based on the owner's W-2 salary, not on net profit. Use the owner W-2 salary if given; otherwise say the estimate needs it.");
+      if (n.ownerPay) {
+        const emp = Math.min(24500, n.ownerPay);
+        const er = Math.min(0.25 * n.ownerPay, 72000 - emp);
+        lines.push(`- Rough owner room in a 401(k) on a ${f(n.ownerPay)} salary: deferral up to ${f(emp)} plus employer share about ${f(Math.max(0, er))} (up to 25 percent of salary), total about ${f(emp + Math.max(0, er))}, before the cost of required employee contributions.`);
+      }
+    }
+    if (n.payroll) lines.push(`- Rough cost of a 3 percent safe harbor contribution to employees: about ${f(0.03 * n.payroll)} a year (an upper estimate, since owners and some employees may be excluded).`);
+    return lines.join("\n");
+  }
   if (n.netProfit) {
     const np = n.netProfit;
     const seBase = np * 0.9235;
@@ -274,7 +290,7 @@ export async function POST(request) {
     const generate = async (sys, msgs) => {
       let f = null;
       let t = "";
-      for (const budget of [3500, 8000]) {
+      for (const budget of [8000, 12000]) {
         f = await call({ max_tokens: budget, system: sys, messages: msgs });
         t = textOf(f);
         console.log("quiz-chat final", budget, f?.stop_reason, (f?.content || []).map((x) => x.type).join(","), t.length);
