@@ -1,12 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Moved from the Self Employed hub to the Business Owner hub (Nov 2026).
+  // The deductions post moved to the general blog (Nov 2026) because it
+  // applies to both self-employed people and business owners.
   async redirects() {
     return [
       {
         source: "/self-employed/business-tax-deductions",
-        destination: "/business-owner/business-tax-deductions",
+        destination: "/blog/business-tax-deductions",
+        permanent: true,
+      },
+      {
+        source: "/business-owner/business-tax-deductions",
+        destination: "/blog/business-tax-deductions",
         permanent: true,
       },
     ];

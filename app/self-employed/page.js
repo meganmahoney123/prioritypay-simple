@@ -2,43 +2,18 @@ import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
+import { postsForHub } from "@/lib/blogPosts";
 
 // Hub landing page for the "Self Employed" Blog category -- linked from
 // the Blog dropdown (components/PublicHeader.js), which only shows hub
 // names, not article titles. This page is where the article list lives.
 export const metadata = {
   title: "Self Employed | PrioritySave Blog",
-  description: "Guides and calculators for freelancers and independent contractors, taxes, entity structure, and managing income that isn't a steady paycheck.",
+  description: "Guides and calculators for self-employed people and independent contractors: taxes, entity structure, and managing income that isn't a steady paycheck.",
   alternates: { canonical: "https://www.prioritysave.com/self-employed" },
 };
 
-const ARTICLES = [
-  {
-    href: "/self-employed/self-employed-tax-guide",
-    title: "Taxes for Self Employed: The Complete Guide",
-    dek: "Understand the basics of how taxes work for self employed individuals. This guide discusses every form, deadline, deduction and credit that applies to self-employment taxes, in plain English.",
-  },
-  {
-    href: "/self-employed/sole-proprietor-vs-llc-vs-s-corp",
-    title: "Sole Proprietor vs. LLC vs. S-Corp",
-    dek: "See what a year looks like as each structure side by side, using your own numbers. Free 2026 calculator plus a plain-English guide.",
-  },
-  {
-    href: "/self-employed/how-to-save-on-taxes",
-    title: "How to Save on Taxes When You're Self-Employed (2026)",
-    dek: "Four high-impact strategies and two bonuses: retirement contributions, the health insurance deduction, year-end timing, the S corp election, the Augusta rule, and hiring your kids.",
-  },
-  {
-    href: "/self-employed/solo-401k",
-    title: "What Is a Solo 401(k)? 2026 Limits and Examples",
-    dek: "How self-employed people with no employees can put away up to $72,000 in 2026, with a worked tax example and the Mega Backdoor Roth.",
-  },
-  {
-    href: "/self-employed/tax-optimization",
-    title: "Tax Optimization for Self Employed: The Complete Guide",
-    dek: "The levers above the basics: retirement, entity structure, timing, and family payroll, explained in plain English, with a filter that shortens the guide to your situation.",
-  },
-];
+const ARTICLES = postsForHub("self-employed");
 
 export default function SelfEmployedHubPage() {
   return (
@@ -50,7 +25,11 @@ export default function SelfEmployedHubPage() {
             <Link href="/" style={{ color: "var(--color-accent)", fontWeight: 600, textDecoration: "none" }}>
               Home
             </Link>
-            {" / Blog / "}
+            {" / "}
+            <Link href="/blog" style={{ color: "var(--color-accent)", fontWeight: 600, textDecoration: "none" }}>
+              Blog
+            </Link>
+            {" / "}
             <span style={{ color: "var(--color-text)", fontWeight: 700 }}>Self Employed</span>
           </nav>
 

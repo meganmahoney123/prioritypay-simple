@@ -34,6 +34,7 @@ const CALCULATORS = [
 // one post; Business Owner and W2 show a "coming soon" state on their
 // hub page until Megan files content under them.
 const BLOG_HUBS = [
+  { hub: "All posts", href: "/blog" },
   { hub: "Self Employed", href: "/self-employed" },
   { hub: "Business Owner", href: "/business-owner" },
   { hub: "W2", href: "/w2" },
