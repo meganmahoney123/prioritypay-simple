@@ -53,6 +53,43 @@ function cleanAnswers(raw) {
   return out;
 }
 
+function cleanNumbers(raw) {
+  const lim = { netProfit: 1e8, wages: 1e8, contributed: 1e6, employees: 5000, payroll: 1e9, ownerPay: 1e8 };
+  const out = {};
+  for (const [k, max] of Object.entries(lim)) {
+    const v = Number(raw?.[k]);
+    if (Number.isFinite(v) && v > 0) out[k] = Math.min(Math.round(v), max);
+  }
+  return out;
+}
+
+// Deterministic estimate so the model never does this arithmetic itself.
+function numbersNotes(n, answers) {
+  const keys = Object.keys(n);
+  if (!keys.length) return "";
+  const f = (v) => "$" + Math.round(v).toLocaleString("en-US");
+  const lines = [];
+  if (n.netProfit) lines.push(`- Net profit this year: ${f(n.netProfit)}`);
+  if (n.wages) lines.push(`- W-2 pay this year: ${f(n.wages)}`);
+  if (n.contributed) lines.push(`- Retirement contributions already made this year: ${f(n.contributed)}`);
+  if (n.employees) lines.push(`- Employees (not counting them): ${n.employees}`);
+  if (n.payroll) lines.push(`- Total employee pay: ${f(n.payroll)}`);
+  if (n.ownerPay) lines.push(`- Owner W-2 salary: ${f(n.ownerPay)}`);
+  if (n.netProfit) {
+    const np = n.netProfit;
+    const seBase = np * 0.9235;
+    const se = 0.124 * Math.min(seBase, 184500) + 0.029 * seBase;
+    const adj = np - se / 2;
+    const employee = Math.min(24500, Math.max(0, adj));
+    const employer = Math.max(0, Math.min(0.2 * adj, 72000 - employee));
+    lines.push(`- Rough self-employment tax: ${f(se)}. Profit after half of it: ${f(adj)}.`);
+    lines.push(`- Rough Solo 401(k) room if taxed as a sole proprietor or single-member LLC: employee deferral up to ${f(employee)} plus employer share about ${f(employer)} (20 percent of profit after half of self-employment tax), total about ${f(employee + employer)} of the $72,000 overall limit, before any catch-up.`);
+    if (n.contributed) lines.push(`- Remaining room after what they have already put in: about ${f(Math.max(0, employee + employer - n.contributed))}.`);
+    lines.push(`- If instead they are an S-corp owner: the employer share is about 25 percent of their W-2 salary, so profit above a reasonable salary does not add to the employer share.`);
+  }
+  return lines.join("\n");
+}
+
 function describeAnswers(answers) {
   return QUIZ_QUESTIONS.map((q0) => {
     const q = questionView(q0, answers);
@@ -86,7 +123,7 @@ function guideNotes(matched, history) {
   return hits.map((h) => `[${h.tier}] ${h.doc}: ${h.title}\n${h.text}`).join("\n\n---\n\n");
 }
 
-function systemPrompt(answers, matched, guides) {
+function systemPrompt(answers, matched, guides, numbers = {}) {
   return `You are the PrioritySave tax savings guide. The person just took a short Tax Savings Quiz. Everything you know about them is below. You cannot see their bank accounts, transactions or any other data, and you should say so if asked.
 
 WRITING RULES
@@ -108,6 +145,7 @@ WHAT TO DO
 - Be concrete. For a Solo 401(k), explain the two parts (employee deferral plus employer share of roughly 20 percent of net profit for sole proprietors) and give a rough example using the middle of their income band, clearly labeled as an illustration and not their real number. Ask for their net profit if they want a closer estimate.
 - For home office, explain the regular and exclusive use rule and the simplified method versus actual expense method. For meals and travel, explain the 50 percent meal limit, that travel must be primarily for business, and which receipts and notes to keep (what, who, business purpose, date, amount).
 - Use everything you have: the PrioritySave guide excerpts and reference notes below come first, then your own general tax knowledge, then the verified figures.
+- REAL NUMBERS: if a THEIR REAL NUMBERS section appears below, they chose to share it. Build every Example from those exact figures instead of "Say you..." examples (start with "With your numbers..."), use the rough estimates listed there rather than doing your own tax math, say these are rough estimates, and use the lower plausible bracket for their income. Do not ask for numbers they already gave. If it is not there, keep using illustrations and say once they can retake the quiz and add their numbers for a closer estimate.
 - SEP IRAs: do not list a SEP IRA as an option or recommend one. For self-employed people the Solo 401(k) is the main retirement account to maximize. If their answers show they have a SEP IRA or similar plan, tell them a Solo 401(k) usually lets them save more (an employee deferral plus the employer share) and unlocks Roth contributions and the backdoor Roth, and that a SEP balance can block a backdoor Roth. Mention SEP IRAs only for that purpose.
 - SEP IRA PLUS SOLO 401(K): if their answers show both, make sure the options explain that the SEP-IRA can get in the way of their mega backdoor Roth in two precise ways: SEP contributions from the same business share the same overall limit ($72,000 for 2026) so they shrink the room for after-tax Solo 401(k) contributions, and a SEP balance can make a regular backdoor Roth IRA mostly taxable under the pro-rata rule. Do not say the SEP blocks the in-plan mega backdoor conversion itself. The Action is to roll the SEP balance into the Solo 401(k) if it accepts rollovers and stop funding the SEP.
 - EMPLOYERS: if their answers show they own a business with employees, the reply should end by offering to run the numbers for them: compare a safe harbor 401(k), a SIMPLE IRA, a SEP-IRA, or a combination, such as a 401(k) with profit sharing or a cash balance plan on top, for their situation. Ask for three things: how many employees they have, roughly what those employees are paid in total, and what they pay themselves. When they answer, give a short side-by-side using the verified 2026 limits: what the employer would have to contribute for employees under each option (a safe harbor 401(k) requires either a match of 100 percent of the first 3 percent of pay plus 50 percent of the next 2 percent, or a 3 percent contribution for everyone; a SEP-IRA must give every eligible employee the same percentage of pay that the owner gets; a SIMPLE IRA requires a match of up to 3 percent or 2 percent for all), what the owner could put away under each, and where each option wins. Clearly label it as an illustration to take to a CPA.
@@ -118,7 +156,7 @@ WHAT TO DO
 - If the person types something like an account number, it has been removed before reaching you. Do not ask for personal identifiers.
 
 THEIR QUIZ ANSWERS
-${describeAnswers(answers)}
+${describeAnswers(answers)}${Object.keys(numbers).length ? `\n\nTHEIR REAL NUMBERS (optional, shared by them)\n${numbersNotes(numbers, answers)}` : ""}
 
 OPTIONS THE QUIZ MATCHED FOR THEM (most targeted first)
 ${strategyNotes(matched) || "None matched. Say so honestly and ask what they would like to understand."}
@@ -133,6 +171,7 @@ export async function POST(request) {
 
   const body = await request.json().catch(() => ({}));
   const answers = cleanAnswers(body.answers);
+  const numbers = cleanNumbers(body.numbers);
   if (!answers.work?.length) {
     return Response.json({ error: "Please finish the quiz first." }, { status: 400 });
   }
@@ -215,7 +254,7 @@ export async function POST(request) {
 
     // Step 2: write the answer from the verified facts, no tools.
     const system =
-      systemPrompt(answers, matched, guides) +
+      systemPrompt(answers, matched, guides, numbers) +
       `\n\nVERIFIED CURRENT-YEAR FIGURES FROM OFFICIAL SOURCES (use these over the guides if they differ, and say which tax year each figure is for)\n${BUILTIN_FACTS}` +
       (facts && facts !== "NONE" ? `\n${facts}` : "") +
       "\nIf you need a dollar limit, rate or deadline that is not listed above, say it is unverified and should be confirmed at irs.gov, and do not guess it.";
