@@ -24,7 +24,7 @@ export default function sitemap() {
     { path: "/self-employed/self-employed-tax-guide", priority: 0.85, changeFrequency: "monthly" },
     { path: "/self-employed/tax-optimization", priority: 0.8, changeFrequency: "monthly" },
     { path: "/self-employed/how-to-save-on-taxes", priority: 0.8, changeFrequency: "monthly" },
-    { path: "/self-employed/business-tax-deductions", priority: 0.8, changeFrequency: "monthly" },
+    { path: "/business-owner/business-tax-deductions", priority: 0.8, changeFrequency: "monthly" },
     { path: "/self-employed/solo-401k", priority: 0.8, changeFrequency: "monthly" },
   ];
 

@@ -9,6 +9,14 @@ export const metadata = {
   alternates: { canonical: "https://www.prioritysave.com/business-owner" },
 };
 
+const ARTICLES = [
+  {
+    href: "/business-owner/business-tax-deductions",
+    title: "10 Tax Deductions Business Owners Should Know About",
+    dek: "Home office, mileage, health insurance, hiring your kids, QBI, and more, with 2026 numbers, how to qualify, and common mistakes.",
+  },
+];
+
 export default function BusinessOwnerHubPage() {
   return (
     <div style={BLOOM_TOKENS}>
@@ -66,24 +74,47 @@ export default function BusinessOwnerHubPage() {
             separate from your own.
           </p>
 
-          <div
-            style={{
-              border: "2px dashed var(--color-accent-400)",
-              background: "#FDFCFF",
-              borderRadius: 28,
-              padding: "48px 28px",
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 800, color: "var(--color-accent-700)", margin: 0 }}>
-              Coming soon.
-            </p>
-            <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "10px 0 0" }}>
-              The first Business Owner guide is on its way.
-            </p>
+          <div style={{ display: "grid", gap: 16 }}>
+            {ARTICLES.map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className="business-owner-hub-card"
+                style={{
+                  display: "block",
+                  textDecoration: "none",
+                  color: "inherit",
+                  border: "1px solid var(--color-divider)",
+                  borderRadius: 28,
+                  background: "var(--color-surface)",
+                  boxShadow: "0 18px 40px -32px rgba(52,26,102,0.3)",
+                  padding: "30px 32px",
+                  transition: "border-color 160ms ease, background 160ms ease",
+                }}
+              >
+                <h2
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontSize: "clamp(24px, 2.6vw, 30px)",
+                    fontWeight: 800,
+                    letterSpacing: "-0.025em",
+                    margin: "0 0 10px",
+                  }}
+                >
+                  {a.title}
+                </h2>
+                <p style={{ fontSize: 17, lineHeight: 1.6, margin: 0, color: "var(--color-neutral-800)" }}>{a.dek}</p>
+              </Link>
+            ))}
           </div>
         </div>
       </div>
+      <style>{`
+        .business-owner-hub-card:hover {
+          border-color: var(--color-accent-400) !important;
+          background: #FDFCFF !important;
+        }
+      `}</style>
       <PublicFooter />
     </div>
   );

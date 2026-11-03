@@ -69,7 +69,7 @@ const FAQ = [
 
 const RELATED = [
   { href: "/self-employed/how-to-save-on-taxes", title: "How to Save on Taxes When You're Self-Employed (2026)" },
-  { href: "/self-employed/business-tax-deductions", title: "10 Tax Deductions Business Owners Should Know About" },
+  { href: "/business-owner/business-tax-deductions", title: "10 Tax Deductions Business Owners Should Know About" },
   { href: "/self-employed/tax-optimization", title: "Tax Optimization for Self Employed: The Complete Guide" },
   { href: "/calculators/retirementcalculator", title: "Retirement calculator" },
 ];

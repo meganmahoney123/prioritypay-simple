@@ -69,7 +69,7 @@ const FAQ = [
 ];
 
 const RELATED = [
-  { href: "/self-employed/business-tax-deductions", title: "10 Tax Deductions Business Owners Should Know About" },
+  { href: "/business-owner/business-tax-deductions", title: "10 Tax Deductions Business Owners Should Know About" },
   { href: "/self-employed/solo-401k", title: "What Is a Solo 401(k)? 2026 Limits and Examples" },
   { href: "/self-employed/sole-proprietor-vs-llc-vs-s-corp", title: "Sole Proprietor vs. LLC vs. S Corp (free calculator)" },
   { href: "/self-employed/tax-optimization", title: "Tax Optimization for Self Employed: The Complete Guide" },
@@ -368,7 +368,7 @@ export default function HowToSaveOnTaxesPage() {
       </ol>
       <p>
         These don't cover the everyday business deductions. For those, read{" "}
-        <Link href="/self-employed/business-tax-deductions">10 Tax Deductions Business Owners Should Know About</Link>.
+        <Link href="/business-owner/business-tax-deductions">10 Tax Deductions Business Owners Should Know About</Link>.
       </p>
     </BlogArticle>
   );
