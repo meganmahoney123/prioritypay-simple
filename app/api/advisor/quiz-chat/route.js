@@ -421,24 +421,36 @@ export async function POST(request) {
           history
         );
 
+      // phase "main": library options only (fast). phase "extras": CPA-style
+      // extras plus the closing (slower). The page asks for both at once and
+      // shows the main list as soon as it is ready. No phase: everything.
+      const phase = body.phase === "main" || body.phase === "extras" ? body.phase : "all";
+      const none = { f: null, t: "" };
       const [parts, extras, closing] = await Promise.all([
-        Promise.all(
-          chunks.map((titles, ci) => {
-            const start = ci * SIZE + 1;
-            const first = ci === 0;
-            const extra =
-              `\n\nTHIS PART OF THE REPLY\nWrite ONLY these ${titles.length} options, in this exact order, numbered starting at ${start}: ${titles.join("; ")}.\n` +
-              fmt +
-              (first ? `Begin with one short intro line such as "Here are the ideas that fit your answers, starting with the most targeted." Do not say how many there are or describe a theme for the group. ` : `Do NOT write an intro line. `) +
-              `Do NOT write a closing line or a disclaimer. Do not mention other parts of the list.`;
-            return generate(system + extra, history);
-          })
-        ),
-        writeExtras(),
-        writeClosing(),
+        phase === "extras"
+          ? Promise.resolve([])
+          : Promise.all(
+              chunks.map((titles, ci) => {
+                const start = ci * SIZE + 1;
+                const first = ci === 0;
+                const extra =
+                  `\n\nTHIS PART OF THE REPLY\nWrite ONLY these ${titles.length} options, in this exact order, numbered starting at ${start}: ${titles.join("; ")}.\n` +
+                  fmt +
+                  (first ? `Begin with one short intro line such as "Here are the ideas that fit your answers, starting with the most targeted." Do not say how many there are or describe a theme for the group. ` : `Do NOT write an intro line. `) +
+                  `Do NOT write a closing line or a disclaimer. Do not mention other parts of the list.`;
+                return generate(system + extra, history);
+              })
+            ),
+        phase === "main" ? Promise.resolve(none) : writeExtras(),
+        phase === "main" ? Promise.resolve(none) : writeClosing(),
       ]);
       final = [...parts, extras, closing].find((x) => x?.f)?.f || null;
       text = [...parts, extras, closing].map((x) => (x?.t || "").trim()).filter(Boolean).join("\n\n");
+      if (phase === "extras") {
+        // Usage was counted by the "main" request for this same kickoff.
+        if (!final) return Response.json({ error: "The chat had a problem. Please try again." }, { status: 502 });
+        return Response.json({ reply: plainText(text), usage: { cap: usage.cap, remaining: Math.max(0, usage.remaining) } });
+      }
     } else {
       ({ f: final, t: text } = await generate(system, history));
     }
