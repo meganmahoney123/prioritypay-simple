@@ -369,16 +369,10 @@ function SettingsPageInner() {
               <a href="/business" style={{ color: "var(--color-accent-700)" }}>Business</a> page.
             </p>
           ) : (
-            <>
-              <p style={{ fontSize: 14, margin: "0 0 12px" }}>
-                Running multiple businesses? <strong>PriorityPay Business</strong> adds separate entities, QuickBooks
-                sync, and a monthly profit true-up.
-              </p>
-              <GhostButton onClick={isNative ? upgradeToBusinessNative : upgradeToBusiness} disabled={billingBusy}>
-                {billingBusy ? "Loading…" : isNative ? "Upgrade to Business — $39.99/month" : "Upgrade to Business"}
-              </GhostButton>
-              <SubscriptionDisclosure plan="business" isNative={isNative} />
-            </>
+            <p style={{ fontSize: 14, margin: 0 }}>
+              Running multiple businesses? <strong>PriorityPay Business</strong> is coming soon, with separate
+              entities, QuickBooks sync, and a monthly profit true-up.
+            </p>
           )}
         </div>
       </Card>

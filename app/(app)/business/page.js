@@ -121,9 +121,7 @@ function BusinessPageInner() {
           {error && (
             <div className="text-sm" style={{ ...bloomWarningCardStyle(), padding: 14, margin: "0 0 16px" }}>{error}</div>
           )}
-          <PrimaryButton onClick={upgrade} disabled={upgradeBusy}>
-            {upgradeBusy ? "Loading…" : "Upgrade to Business"}
-          </PrimaryButton>
+          <p style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Coming soon.</p>
         </Card>
       </div>
     );
