@@ -59,10 +59,128 @@ function answerLines(answers) {
   }).filter(Boolean);
 }
 
+
+const NUM_FIELDS = {
+  netProfit: "Net profit from your business this year (so far or expected)",
+  wages: "Your W-2 pay this year (before taxes)",
+  contributed: "Retirement contributions you have made so far this year",
+  employees: "Number of employees (not counting you)",
+  payroll: "Total yearly pay for those employees",
+  ownerPay: "What you pay yourself in W-2 salary (leave blank if none)",
+};
+function cleanNums(n) {
+  const out = {};
+  for (const k of Object.keys(NUM_FIELDS)) {
+    const v = Number(String(n?.[k] ?? "").replace(/[^0-9.]/g, ""));
+    if (Number.isFinite(v) && v > 0) out[k] = Math.round(v);
+  }
+  return out;
+}
+const money = (v) => "$" + Number(v).toLocaleString("en-US");
+
+function NumberInput({ label, value, onChange, prefix = "$" }) {
+  return (
+    <label style={{ display: "block", marginBottom: 12 }}>
+      <span style={{ display: "block", fontSize: 13, marginBottom: 4 }}>{label}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {prefix && <span style={{ opacity: 0.6 }}>{prefix}</span>}
+        <input inputMode="numeric" value={value || ""} onChange={(e) => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
+          className="border border-[var(--color-divider)] rounded-lg px-3 py-2 text-sm" style={{ flex: 1, minWidth: 0 }} />
+      </span>
+    </label>
+  );
+}
+
+function NumbersStep({ answers, nums, setNums, onSkip, onContinue, onBack }) {
+  const work = answers.work || [];
+  const biz = work.includes("self_employed") || work.includes("business_owner");
+  const w2 = work.includes("w2");
+  const owner = work.includes("business_owner");
+  const [calc, setCalc] = useState(false);
+  const [rev, setRev] = useState("");
+  const [exp, setExp] = useState("");
+  const [pull, setPull] = useState({ state: "idle" });
+  async function pullFromPrioritySave() {
+    setPull({ state: "loading" });
+    try {
+      const res = await fetch("/api/business-financials");
+      const d = await res.json();
+      const f = d.financials;
+      if (!res.ok || !f || !f.grossReceipts) { setPull({ state: "none" }); return; }
+      const { taxYear, updatedAt, grossReceipts, ...rest } = f;
+      const expenses = Object.values(rest).reduce((a, v) => a + (Number(v) || 0), 0);
+      setRev(String(Math.round(grossReceipts)));
+      setExp(String(Math.round(expenses)));
+      setNums((p) => ({ ...p, netProfit: String(Math.max(0, Math.round(grossReceipts - expenses))) }));
+      setPull({ state: "ok", updatedAt, taxYear });
+    } catch { setPull({ state: "none" }); }
+  }
+  const net = Math.max(0, (Number(String(rev).replace(/,/g, "")) || 0) - (Number(String(exp).replace(/,/g, "")) || 0));
+  const set = (k) => (v) => setNums((p) => ({ ...p, [k]: v }));
+  return (
+    <Card style={{ padding: "clamp(20px, 4vw, 32px)" }}>
+      <div style={{ fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.6, marginBottom: 18 }}>Optional last step</div>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, margin: "0 0 8px" }}>Want to see your own numbers instead of examples?</h2>
+      <p style={{ margin: "0 0 16px", fontSize: 14, lineHeight: 1.5, color: "var(--color-neutral-700)" }}>
+        Rough numbers are fine. The chat will use them to show estimates for you instead of &quot;say you earn...&quot; examples. They are only sent with your chat messages, never saved, and you can skip this.
+      </p>
+      {biz && (
+        <div>
+          <div className="p-3 rounded-lg mb-3" style={{ background: "#EDE6FF" }}>
+            <p className="text-xs" style={{ margin: "0 0 8px" }}>
+              Already tracking your business in PrioritySave? We can fill this in from the business numbers you entered there. They only help if they are up to date for this year, so check them below before continuing.
+            </p>
+            <button type="button" className="text-xs underline" onClick={pullFromPrioritySave} disabled={pull.state === "loading"}>
+              {pull.state === "loading" ? "Looking..." : "Use my PrioritySave numbers"}
+            </button>
+            {pull.state === "ok" && (
+              <p className="text-xs" style={{ margin: "8px 0 0" }}>
+                Filled in from your {pull.taxYear} business numbers, last updated {pull.updatedAt ? new Date(pull.updatedAt).toLocaleDateString() : "unknown"}. If that is out of date, update them in PrioritySave or edit the number below. Revenue was {money(Number(rev))} and expenses {money(Number(exp))}.
+              </p>
+            )}
+            {pull.state === "none" && <p className="text-xs" style={{ margin: "8px 0 0" }}>We did not find business numbers for this year. Enter them below instead.</p>}
+          </div>
+          <NumberInput label={NUM_FIELDS.netProfit} value={nums.netProfit} onChange={set("netProfit")} />
+          <button type="button" className="underline text-xs" style={{ marginBottom: 12 }} onClick={() => setCalc((c) => !c)}>
+            {calc ? "Hide the calculator" : "Not sure? Help me calculate it"}
+          </button>
+          {calc && (
+            <div className="p-3 rounded-lg mb-3" style={{ background: "var(--color-neutral-200)" }}>
+              <p className="text-xs" style={{ margin: "0 0 10px" }}>Net profit is what your business brought in minus what it spent, before income taxes and before any retirement contributions you make for yourself. Your profit and loss report or Schedule C has both numbers.</p>
+              <NumberInput label="Total business income (revenue) for the year" value={rev} onChange={setRev} />
+              <NumberInput label="Total business expenses for the year" value={exp} onChange={setExp} />
+              <p className="text-sm" style={{ margin: "0 0 8px" }}>Estimated net profit: <strong>{money(net)}</strong></p>
+              <button type="button" className="text-xs underline" disabled={!net} onClick={() => { setNums((p) => ({ ...p, netProfit: String(net) })); setCalc(false); }}>Use this number</button>
+            </div>
+          )}
+        </div>
+      )}
+      {w2 && <NumberInput label={NUM_FIELDS.wages} value={nums.wages} onChange={set("wages")} />}
+      {owner && (
+        <div>
+          <NumberInput label={NUM_FIELDS.employees} value={nums.employees} onChange={set("employees")} prefix="" />
+          <NumberInput label={NUM_FIELDS.payroll} value={nums.payroll} onChange={set("payroll")} />
+          <NumberInput label={NUM_FIELDS.ownerPay} value={nums.ownerPay} onChange={set("ownerPay")} />
+        </div>
+      )}
+      <NumberInput label={NUM_FIELDS.contributed} value={nums.contributed} onChange={set("contributed")} />
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 22, gap: 8, flexWrap: "wrap" }}>
+        <GhostButton onClick={onBack}>Back</GhostButton>
+        <div style={{ display: "flex", gap: 8 }}>
+          <GhostButton onClick={onSkip}>Skip</GhostButton>
+          <PrimaryButton onClick={onContinue}>See my options</PrimaryButton>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function QuizAdvisor() {
   const [answers, setAnswers] = useState({});
   const [stepIndex, setStepIndex] = useState(0);
   const [done, setDone] = useState(false);
+  const [numStage, setNumStage] = useState(false);
+  const [nums, setNums] = useState({});
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -101,11 +219,11 @@ export default function QuizAdvisor() {
   }
   function goNext() {
     if (!canAdvance()) return;
-    if (stepIndex + 1 >= visible.length) setDone(true);
+    if (stepIndex + 1 >= visible.length) setNumStage(true);
     else setStepIndex((i) => i + 1);
   }
   function startOver() {
-    setAnswers({}); setStepIndex(0); setDone(false); setMessages([]); setError(""); started.current = false;
+    setAnswers({}); setNums({}); setNumStage(false); setStepIndex(0); setDone(false); setMessages([]); setError(""); started.current = false;
   }
 
   async function send(text, hidden = false) {
@@ -121,7 +239,7 @@ export default function QuizAdvisor() {
       const res = await fetch("/api/advisor/quiz-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, messages: next.map(({ role, content }) => ({ role, content })) }),
+        body: JSON.stringify({ answers, numbers: cleanNums(nums), messages: next.map(({ role, content }) => ({ role, content })) }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
@@ -143,6 +261,8 @@ export default function QuizAdvisor() {
   }, [done]);
 
   const lines = answerLines(answers);
+  const numLines = Object.entries(cleanNums(nums)).map(([k, v]) => ({ q: NUM_FIELDS[k] + ":", a: k === "employees" ? String(v) : money(v) }));
+  lines.push(...numLines);
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
 
   return (
@@ -177,7 +297,12 @@ export default function QuizAdvisor() {
         )}
       </div>
 
-      {!done && (
+      {!done && numStage && (
+        <NumbersStep answers={answers} nums={nums} setNums={setNums} onBack={() => setNumStage(false)}
+          onSkip={() => { setNums({}); setNumStage(false); setDone(true); }} onContinue={() => { setNumStage(false); setDone(true); }} />
+      )}
+
+      {!done && !numStage && (
         <Card style={{ padding: "clamp(20px, 4vw, 32px)" }}>
           <div style={{ fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.6, marginBottom: 18 }}>
             Question {stepIndex + 1} of {visible.length}
