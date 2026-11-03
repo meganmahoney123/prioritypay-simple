@@ -4,8 +4,8 @@ import PublicFooter from "@/components/PublicFooter";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 
 // Shared layout for blog posts adapted from PrioritySave YouTube scripts
-// (app/self-employed/business-tax-deductions, solo-401k,
-// how-to-save-on-taxes). Unlike the long reference guides in this folder
+// (app/business-owner/business-tax-deductions, app/self-employed/solo-401k,
+// app/self-employed/how-to-save-on-taxes). Unlike the long reference guides in this folder
 // (self-employed-tax-guide, tax-optimization), which mount a design-file
 // HTML string, these posts are plain readable articles written as JSX, so
 // this component supplies the shared chrome: breadcrumb, header, optional

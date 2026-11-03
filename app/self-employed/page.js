@@ -29,11 +29,6 @@ const ARTICLES = [
     dek: "Four high-impact strategies and two bonuses: retirement contributions, the health insurance deduction, year-end timing, the S corp election, the Augusta rule, and hiring your kids.",
   },
   {
-    href: "/self-employed/business-tax-deductions",
-    title: "10 Tax Deductions Business Owners Should Know About",
-    dek: "Home office, mileage, health insurance, hiring your kids, QBI, and more, with 2026 numbers, how to qualify, and common mistakes.",
-  },
-  {
     href: "/self-employed/solo-401k",
     title: "What Is a Solo 401(k)? 2026 Limits and Examples",
     dek: "How self-employed people with no employees can put away up to $72,000 in 2026, with a worked tax example and the Mega Backdoor Roth.",

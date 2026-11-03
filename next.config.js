@@ -1,6 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Moved from the Self Employed hub to the Business Owner hub (Nov 2026).
+  async redirects() {
+    return [
+      {
+        source: "/self-employed/business-tax-deductions",
+        destination: "/business-owner/business-tax-deductions",
+        permanent: true,
+      },
+    ];
+  },
   // `eslint.ignoreDuringBuilds` was removed in Next.js 16 (next.config.js
   // no longer runs ESLint during the build at all -- `next lint` itself
   // was removed too). No eslint devDependency is installed in this repo

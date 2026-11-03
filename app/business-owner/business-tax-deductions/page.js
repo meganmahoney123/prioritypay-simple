@@ -7,7 +7,7 @@ import BlogArticle from "@/components/BlogArticle";
 // 2026", "small business tax write-offs". 2026 figures: IRS mileage rate
 // (72.5 cents Jan to Jun, 76 cents from Jul 1), Section 179 ($2,560,000),
 // Solo 401(k) ($24,500 / $72,000).
-const PATH = "/self-employed/business-tax-deductions";
+const PATH = "/business-owner/business-tax-deductions";
 const TITLE = "10 Tax Deductions Business Owners Should Know About (2026)";
 const DEK =
   "The home office, mileage, health insurance, hiring your kids, the QBI deduction, and five more write-offs for self-employed people and business owners, with 2026 numbers, how to qualify, and the mistakes that get people in trouble.";
@@ -78,6 +78,7 @@ export default function BusinessTaxDeductionsPage() {
   return (
     <BlogArticle
       path={PATH}
+      hub={{ name: "Business Owner", href: "/business-owner" }}
       title={TITLE}
       dek={DEK}
       updated="November 2026"
