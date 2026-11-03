@@ -17,6 +17,25 @@ const { matchStrategies } = await import(pathToFileURL(path.join(tmp, "quizEngin
 
 const P = [
   {
+    name: "W-2 age 50s earning 150-250k with a 401(k): Roth catch-up blocker",
+    a: { work: ["w2"], income: "150-250k", filingStatus: "single", age: "40_59", retirement: ["employer_401k"] },
+    n: {},
+    has: [/Roth before you add catch-up/i],
+    firstBlocker: /Roth before you add catch-up/i,
+  },
+  {
+    name: "W-2 under 75k saving nothing: Saver's Credit",
+    a: { work: ["w2"], income: "<75k", filingStatus: "single", age: "under_40", retirement: ["none"] },
+    n: {},
+    has: [/Saver's Credit/i],
+  },
+  {
+    name: "W-2 50s with RSUs and a 401(k): awareness tier",
+    a: { work: ["w2"], income: "250-500k", filingStatus: "mfj", age: "40_59", retirement: ["employer_401k"], workBenefits: ["rsu_espp"] },
+    n: {},
+    awareness: [/net unrealized appreciation/i, /before 59 and a half/i],
+  },
+  {
     name: "Self-employed with SEP + Solo 401(k), $120k profit",
     a: { work: ["self_employed"], income: "150-250k", filingStatus: "single", age: "40_59", retirement: ["solo_401k", "sep_ira"] },
     n: { netProfit: 120000, contributed: 10000 },
@@ -131,6 +150,9 @@ for (const p of P) {
     const x = r.ranked.find((y) => y.id === id);
     if (!x || !(x.dollars >= lo && x.dollars <= hi)) errs.push(`${id} dollars ${x?.dollars} not in ${lo}-${hi}`);
   }
+  const awText = (r.awareness || []).map((x) => x.title + " " + x.action).join("\n");
+  for (const re of p.awareness || []) if (!re.test(awText)) errs.push(`awareness missing ${re}`);
+  if (p.awareness && r.ranked.some((x) => (r.awareness || []).some((y) => y.id === x.id))) errs.push("awareness idea also in ranked");
   if (p.firstBlocker && !p.firstBlocker.test(titles[0] || "")) errs.push(`first idea is not ${p.firstBlocker}`);
   if (p.first && !p.first.test(titles.find((t, i) => r.ranked[i].dollars) || "")) errs.push(`first dollar-ranked idea is not ${p.first}`);
   console.log(`${errs.length ? "FAIL" : "ok  "}  ${p.name}`);

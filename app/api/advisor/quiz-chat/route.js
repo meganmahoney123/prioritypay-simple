@@ -125,6 +125,12 @@ function describeAnswers(answers) {
     .join("\n");
 }
 
+function awarenessLine(matched) {
+  const list = (matched.awareness || []).slice(0, 5);
+  if (!list.length) return "";
+  return 'also write this exact heading line: "Also worth asking a CPA about:" followed by one short plain line for each of these (title, a colon, then one sentence using the detail given), no numbering: ' + list.map((x) => `${x.title}: ${x.action}`).join(" | ") + ". Then ";
+}
+
 function strategyNotes(matched) {
   const kb = new Map(TAX_STRATEGIES.map((s) => [s.id, s]));
   return matched.ranked
@@ -330,7 +336,7 @@ export async function POST(request) {
             `\n\nTHIS PART OF THE REPLY\nWrite ONLY these ${titles.length} options, in this exact order, numbered starting at ${start}: ${titles.join("; ")}.\n` +
             `Use the two-line format from the instructions (numbered label, "Do this:", "Savings:") for each, with a blank line between options. Never write a "Why it fits" line. Labels are actions, not topic names. The mega backdoor Roth option, if it is in this part, uses the four-line format. Keep every line to one or two short sentences. ` +
             (first ? `Begin with one short intro line such as "Here are the ideas that fit your answers, starting with the most targeted." Do not say how many there are or describe a theme for the group. ` : `Do NOT write an intro line. `) +
-            (last ? `After the last option, ${Object.keys(numbers).length ? 'first write this exact line: "These estimates use the numbers you entered, so check that they are right." and then ' : ""}write this exact line: "These are suggestions to bring to your CPA, not tax or legal advice." and then end with one short question about what they want to dig into` + ((answers.work || []).includes("business_owner") ? ", which for a business owner with employees is an offer to run the numbers comparing a safe harbor 401(k), a SIMPLE IRA, a SEP-IRA or a combination, asking how many employees they have, roughly their total pay and what they pay themselves. " : ". ") : `Do NOT write any closing line or question. `) +
+            (last ? `After the last option, ${awarenessLine(matched)}${Object.keys(numbers).length ? 'first write this exact line: "These estimates use the numbers you entered, so check that they are right." and then ' : ""}write this exact line: "These are suggestions to bring to your CPA, not tax or legal advice." and then end with one short question about what they want to dig into` + ((answers.work || []).includes("business_owner") ? ", which for a business owner with employees is an offer to run the numbers comparing a safe harbor 401(k), a SIMPLE IRA, a SEP-IRA or a combination, asking how many employees they have, roughly their total pay and what they pay themselves. " : ". ") : `Do NOT write any closing line or question. `) +
             `Do not mention other parts of the list.`;
           return generate(system + extra, history);
         })
