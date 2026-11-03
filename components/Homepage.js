@@ -81,7 +81,7 @@ const BUCKETS = [
 ];
 
 // Real domains behind each bank name, used to pull an actual brand logo
-// from Clearbit's free public logo API (logo.clearbit.com/<domain>) instead
+// from Google's public favicon service (Clearbit's free logo API was shut down) instead
 // of a plain-text pill or a blank placeholder circle -- for illustrative
 // "connect with your bank" UI only, not an endorsement/partnership claim.
 const BANK_DOMAINS = {
@@ -99,9 +99,45 @@ const BANK_DOMAINS = {
   Chime: "chime.com",
   SoFi: "sofi.com",
 };
-function clearbitLogoUrl(name) {
+function bankLogoUrl(name) {
   const domain = BANK_DOMAINS[name];
-  return domain ? `https://logo.clearbit.com/${domain}?size=128` : null;
+  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null;
+}
+
+// Bank logo that never shows a broken-image icon: if the picture fails to load
+// (including before the page finished hydrating), it falls back to the bank's
+// first letter in a soft tile, or to nothing for the small pills.
+function BankLogo({ name, size, tile }) {
+  const url = bankLogoUrl(name);
+  const [failed, setFailed] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const img = ref.current;
+    if (img && img.complete && img.naturalWidth === 0) setFailed(true);
+  }, []);
+  if (!url || failed) {
+    if (!tile) return null;
+    return (
+      <span
+        aria-hidden="true"
+        style={{ width: size, height: size, borderRadius: 10, background: "var(--color-accent-200)", color: "var(--color-accent-700)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: Math.round(size * 0.46), fontWeight: 700 }}
+      >
+        {name.charAt(0)}
+      </span>
+    );
+  }
+  return (
+    <img
+      ref={ref}
+      src={url}
+      alt=""
+      width={size}
+      height={size}
+      referrerPolicy="no-referrer"
+      style={{ width: size, height: size, borderRadius: tile ? 10 : 4, background: tile ? "var(--color-accent-200)" : "transparent", display: "block", flexShrink: 0, objectFit: "contain" }}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 const INSTITUTIONS = [
@@ -601,21 +637,7 @@ export default function Homepage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
                 {INSTITUTIONS.map((i) => (
                   <div key={i.name} style={{ display: "flex", alignItems: "center", gap: 12, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
-                    {clearbitLogoUrl(i.name) ? (
-                      <img
-                        src={clearbitLogoUrl(i.name)}
-                        alt={`${i.name} logo`}
-                        width={30}
-                        height={30}
-                        style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent-200)", display: "block", flexShrink: 0, objectFit: "contain" }}
-                        onError={(e) => {
-                          e.currentTarget.style.background = "var(--color-accent-200)";
-                          e.currentTarget.style.visibility = "hidden";
-                        }}
-                      />
-                    ) : (
-                      <span style={{ width: 30, height: 30, borderRadius: 10, background: "var(--color-accent-200)", display: "block", flexShrink: 0 }} />
-                    )}
+                    <BankLogo name={i.name} size={30} tile />
                     <span style={{ flex: 1 }}>
                       <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{i.name}</span>
                       <span style={{ display: "block", fontSize: 13, color: "#6B5E7A" }}>{i.kind}</span>
@@ -690,7 +712,7 @@ export default function Homepage() {
         </div>
         <div className="pp-marquee-track" style={{ display: "flex", width: "max-content", gap: 12 }}>
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((m, idx) => {
-            const logoUrl = clearbitLogoUrl(m);
+            const logoUrl = bankLogoUrl(m);
             return (
               <span
                 key={idx}
@@ -708,21 +730,7 @@ export default function Homepage() {
                   whiteSpace: "nowrap",
                 }}
               >
-                {logoUrl && (
-                  <img
-                    src={logoUrl}
-                    alt=""
-                    width={20}
-                    height={20}
-                    style={{ width: 20, height: 20, objectFit: "contain", flexShrink: 0 }}
-                    // Clearbit occasionally has no logo for a given domain; fall
-                    // back to the plain text pill rather than showing a broken
-                    // image icon.
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                )}
+                {logoUrl && <BankLogo name={m} size={20} />}
                 {m}
               </span>
             );
