@@ -117,6 +117,8 @@ function numbersNotes(n, answers) {
     lines.push(`- Rough top federal bracket: ${rate} percent (2026 IRS brackets, using their household income band as a floor; they should confirm).`);
     const left = Math.max(0, employee + employer - (n.contributed || 0));
     lines.push(`- Rough federal tax deferred by putting the remaining Solo 401(k) room (${f(left)}) into pre-tax contributions: about ${f(left * rate / 100)} at ${rate} percent. Putting in the full ${f(employee + employer)} defers about ${f((employee + employer) * rate / 100)}.`);
+    const hasSep = (answers?.retirement || []).includes("sep_ira") && (answers?.retirement || []).includes("solo_401k");
+    if (hasSep) lines.push("- They have BOTH a SEP-IRA and a Solo 401(k). Flag clearly that the SEP-IRA is blocking their mega backdoor Roth: SEP contributions from the same business count against the same $72,000 limit dollar for dollar, so every SEP dollar shrinks the after-tax room below. They should stop funding the SEP-IRA and roll its balance into the Solo 401(k).");
     const mega = Math.max(0, 72000 - employee - employer);
     if (mega > 0) {
       const grown = mega * Math.pow(1.07, 20);
