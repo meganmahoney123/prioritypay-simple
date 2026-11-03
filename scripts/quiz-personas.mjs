@@ -189,7 +189,27 @@ const P = [
   },
 ];
 
-let fail = 0;
+// Multi-business owners: each extra business is matched on its own answers.
+const MB = {
+  work: ["business_owner"], income: "500k+", filingStatus: "mfj", age: "40_59", retirement: ["none"], bizType: ["professional"],
+  ownership: "solo_owner", bizProfit: "500k_1m", bizStage: "established", staffSize: "5_19", ownerPay: "draws", structure: "s_corp_election",
+  purchases: ["none"], bizSpecial: ["none"], employerSituation: ["no_employee_retirement_plan"], entities: "multiple", bizCount: "3",
+  b2_type: ["real_estate"], b2_structure: "partnership_multi_member", b2_ownership: "with_partners", b2_profit: "250_500k", b2_staff: "none", b2_pay: "guaranteed",
+  b3_type: ["products"], b3_structure: "c_corp", b3_ownership: "with_investors", b3_profit: "over_1m", b3_staff: "20_49", b3_pay: "w2_salary",
+};
+const mb = matchStrategies(MB, {});
+const mbErr = [];
+if (mb.businesses.length !== 2) mbErr.push(`expected 2 extra businesses, got ${mb.businesses.length}`);
+const t2 = (mb.businesses[0]?.ranked || []).map((x) => x.id);
+const t3 = (mb.businesses[1]?.ranked || []).map((x) => x.id);
+if (!t2.includes("real-estate-depreciation-offset-active-income")) mbErr.push("business 2 missing real estate depreciation");
+if (t3.includes("qbi-section-199a-deduction")) mbErr.push("C-corp business 3 should not get QBI");
+for (const id of ["roth-ira", "backdoor-roth-ira", "charitable-giving-strategies"]) if (t2.includes(id) || t3.includes(id)) mbErr.push(`personal idea ${id} repeated in a business section`);
+const single = matchStrategies({ ...MB, entities: "one", bizCount: undefined }, {});
+if ((single.businesses || []).length) mbErr.push("single-entity answers should have no extra businesses");
+console.log(`${mbErr.length ? "FAIL" : "ok  "}  Owner of three businesses gets per-business sections`);
+for (const e of mbErr) console.log(`        - ${e}`);
+let fail = mbErr.length ? 1 : 0;
 for (const p of P) {
   const r = matchStrategies(p.a, p.n);
   const titles = r.ranked.map((x) => x.title);
