@@ -335,7 +335,7 @@ export async function POST(request) {
 
       const brainstorm = async () => {
         const covered = [...matched.ranked, ...(matched.awareness || [])].map((x) => x.title).join("; ");
-        const prompt = `Client profile from their quiz:\n${describeAnswers(answers)}${Object.keys(numbers).length ? `\n\nTheir numbers:\n${numbersNotes(numbers, answers)}` : ""}\n\nIdeas ALREADY covered (do not repeat or rephrase these): ${covered || "none"}.\n\nList up to ${(answers.work || []).includes("business_owner") ? 10 : 6} ADDITIONAL legitimate tax-saving strategies a CPA would bring to THIS client for the 2026 tax year, based on their specific answers and numbers. Be comprehensive across retirement, business, real estate, family, health, investing, equity, charity, gifting and estate, credits, state taxes and timing, but include only strategies that clearly fit what they told us. Never include aggressive or abusive strategies. If they run more than one business, never suggest moving expenses between businesses. Fit every idea to their exact business structure and filing status: strategies that need a separate entity (the Augusta rule, accountable plan reimbursements, pass-through entity tax elections, owner salary strategies) must not be offered to a sole proprietor or single-member LLC without an S-corp election, and use the individual limit, not the family limit, for a single filer. Skip anything that is commonly challenged by the IRS. Each item: {"title": an action such as "Open a Roth IRA", "do": one specific step in plain words using their numbers where it helps, "claims": the specific limits, thresholds or rules it depends on}. Keep each field short. JSON array only.`;
+        const prompt = `Client profile from their quiz:\n${describeAnswers(answers)}${Object.keys(numbers).length ? `\n\nTheir numbers:\n${numbersNotes(numbers, answers)}` : ""}\n\nIdeas ALREADY covered (do not repeat or rephrase these): ${covered || "none"}.\n\nList up to ${(answers.work || []).includes("business_owner") ? 8 : 6} ADDITIONAL legitimate tax-saving strategies a CPA would bring to THIS client for the 2026 tax year, based on their specific answers and numbers. Be comprehensive across retirement, business, real estate, family, health, investing, equity, charity, gifting and estate, credits, state taxes and timing, but include only strategies that clearly fit what they told us. Never include aggressive or abusive strategies. If they run more than one business, never suggest moving expenses between businesses. Fit every idea to their exact business structure and filing status: strategies that need a separate entity (the Augusta rule, accountable plan reimbursements, pass-through entity tax elections, owner salary strategies) must not be offered to a sole proprietor or single-member LLC without an S-corp election, and use the individual limit, not the family limit, for a single filer. Skip anything that is commonly challenged by the IRS. Each item: {"title": an action such as "Open a Roth IRA", "do": one specific step in plain words using their numbers where it helps, "claims": the specific limits, thresholds or rules it depends on}. Keep each field short. JSON array only.`;
         for (const budget of [6000, 10000]) {
           try {
             const data = await call({
@@ -357,7 +357,7 @@ export async function POST(request) {
                 }
               });
             }
-            const ok = (Array.isArray(arr) ? arr : []).filter((x) => x && x.title && x.do).slice(0, (answers.work || []).includes("business_owner") ? 10 : 6);
+            const ok = (Array.isArray(arr) ? arr : []).filter((x) => x && x.title && x.do).slice(0, (answers.work || []).includes("business_owner") ? 8 : 6);
             if (ok.length) return ok;
             console.log("quiz-chat brainstorm empty", budget, data?.stop_reason, raw.length);
           } catch (e) {
@@ -394,7 +394,7 @@ export async function POST(request) {
             if (m && items[Number(m[1]) - 1]) keep.push({ ...items[Number(m[1]) - 1], verified: m[2].trim() });
           }
           console.log("quiz-chat extras", items.length, "verified", keep.length);
-          return keep.slice(0, (answers.work || []).includes("business_owner") ? 10 : 6);
+          return keep.slice(0, (answers.work || []).includes("business_owner") ? 8 : 6);
         } catch (e) {
           console.error("quiz-chat verify failed", e?.message);
           return [];
