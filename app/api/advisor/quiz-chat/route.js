@@ -8,7 +8,8 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { QUIZ_QUESTIONS, matchStrategies, questionView } from "@/lib/quizEngine";
 import { TAX_STRATEGIES } from "@/lib/advisorKnowledge";
-import { checkAdvisorUsage, incrementAdvisorUsage } from "@/lib/advisorUsage";
+import { checkAdvisorUsage, incrementAdvisorUsage, recordOverage, OVERAGE_CENTS, OVERAGE_LIMITS_CENTS } from "@/lib/advisorUsage";
+import { stripeClient } from "@/lib/stripe";
 import { maskSensitive, plainText } from "@/lib/privacyFilter";
 import { searchGuides } from "@/lib/guideSearch";
 
@@ -188,10 +189,16 @@ export async function POST(request) {
 
   const admin = supabaseAdmin();
   const usage = await checkAdvisorUsage(admin, user.id);
-  if (usage.atCap) {
+  if (usage.atCap && !usage.overageActive) {
+    const offer = usage.canOverage
+      ? { priceCents: OVERAGE_CENTS, limitsCents: OVERAGE_LIMITS_CENTS, limitReached: usage.overageLimitReached }
+      : null;
     return Response.json({
-      reply: `You've used all ${usage.cap} chat messages included this month. Your limit resets on the 1st.`,
+      reply: usage.overageLimitReached
+        ? `You've reached the extra message spending limit you chose for this month. You can raise it below, or your included messages reset on the 1st.`
+        : `You've used all ${usage.cap} chat messages included this month. ${offer ? "You can keep chatting and pay only for the extra messages you use." : "Your limit resets on the 1st."}`,
       usage: { cap: usage.cap, remaining: 0 },
+      overageOffer: offer,
     });
   }
 
@@ -309,10 +316,15 @@ export async function POST(request) {
       ({ f: final, t: text } = await generate(system, history));
     }
     if (!final) return Response.json({ error: "The chat had a problem. Please try again." }, { status: 502 });
-    await incrementAdvisorUsage(admin, user.id);
+    if (usage.overageActive) {
+      await recordOverage(admin, user.id, usage, stripeClient());
+    } else {
+      await incrementAdvisorUsage(admin, user.id);
+    }
     return Response.json({
       reply: plainText(text) || "I couldn't put an answer together that time. Try rephrasing.",
       usage: { cap: usage.cap, remaining: Math.max(0, usage.remaining - 1) },
+      overage: usage.overageActive ? { count: usage.overageCount + 1, spentCents: (usage.overageCount + 1) * OVERAGE_CENTS, limitCents: usage.limitCents } : null,
     });
   } catch (err) {
     console.error("quiz-chat failed", err?.message);
