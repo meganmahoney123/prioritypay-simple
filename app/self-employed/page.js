@@ -24,6 +24,21 @@ const ARTICLES = [
     dek: "See what a year looks like as each structure side by side, using your own numbers. Free 2026 calculator plus a plain-English guide.",
   },
   {
+    href: "/self-employed/how-to-save-on-taxes",
+    title: "How to Save on Taxes When You're Self-Employed (2026)",
+    dek: "Four high-impact strategies and two bonuses: retirement contributions, the health insurance deduction, year-end timing, the S corp election, the Augusta rule, and hiring your kids.",
+  },
+  {
+    href: "/self-employed/business-tax-deductions",
+    title: "10 Tax Deductions Business Owners Should Know About",
+    dek: "Home office, mileage, health insurance, hiring your kids, QBI, and more, with 2026 numbers, how to qualify, and common mistakes.",
+  },
+  {
+    href: "/self-employed/solo-401k",
+    title: "What Is a Solo 401(k)? 2026 Limits and Examples",
+    dek: "How self-employed people with no employees can put away up to $72,000 in 2026, with a worked tax example and the Mega Backdoor Roth.",
+  },
+  {
     href: "/self-employed/tax-optimization",
     title: "Tax Optimization for Self Employed: The Complete Guide",
     dek: "The levers above the basics: retirement, entity structure, timing, and family payroll, explained in plain English, with a filter that shortens the guide to your situation.",
