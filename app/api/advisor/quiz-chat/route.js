@@ -342,13 +342,13 @@ export async function POST(request) {
             messages: [
               {
                 role: "user",
-                content: `Client profile from their quiz:\n${describeAnswers(answers)}${Object.keys(numbers).length ? `\n\nTheir numbers:\n${numbersNotes(numbers, answers)}` : ""}\n\nIdeas ALREADY covered (do not repeat or rephrase these): ${covered || "none"}.\n\nList up to 8 ADDITIONAL legitimate tax-saving strategies a CPA would bring to THIS client for the 2026 tax year, based on their specific answers and numbers. Be comprehensive across retirement, business, real estate, family, health, investing, equity, charity, gifting and estate, credits, state taxes and timing, but include only strategies that clearly fit what they told us. Never include aggressive or abusive strategies. If they run more than one business, never suggest moving expenses between businesses. Each item: {"title": an action such as "Open a Roth IRA", "do": one specific step in plain words using their numbers where it helps, "claims": the specific limits, thresholds or rules it depends on}. JSON array only.`,
+                content: `Client profile from their quiz:\n${describeAnswers(answers)}${Object.keys(numbers).length ? `\n\nTheir numbers:\n${numbersNotes(numbers, answers)}` : ""}\n\nIdeas ALREADY covered (do not repeat or rephrase these): ${covered || "none"}.\n\nList up to 6 ADDITIONAL legitimate tax-saving strategies a CPA would bring to THIS client for the 2026 tax year, based on their specific answers and numbers. Be comprehensive across retirement, business, real estate, family, health, investing, equity, charity, gifting and estate, credits, state taxes and timing, but include only strategies that clearly fit what they told us. Never include aggressive or abusive strategies. If they run more than one business, never suggest moving expenses between businesses. Fit every idea to their exact business structure and filing status: strategies that need a separate entity (the Augusta rule, accountable plan reimbursements, pass-through entity tax elections, owner salary strategies) must not be offered to a sole proprietor or single-member LLC without an S-corp election, and use the individual limit, not the family limit, for a single filer. Skip anything that is commonly challenged by the IRS. Each item: {"title": an action such as "Open a Roth IRA", "do": one specific step in plain words using their numbers where it helps, "claims": the specific limits, thresholds or rules it depends on}. JSON array only.`,
               },
             ],
           });
           const raw = textOf(data).replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
           const arr = JSON.parse(raw.slice(raw.indexOf("["), raw.lastIndexOf("]") + 1));
-          return Array.isArray(arr) ? arr.filter((x) => x && x.title && x.do).slice(0, 8) : [];
+          return Array.isArray(arr) ? arr.filter((x) => x && x.title && x.do).slice(0, 6) : [];
         } catch (e) {
           console.error("quiz-chat brainstorm failed", e?.message);
           return [];
@@ -361,7 +361,7 @@ export async function POST(request) {
           let vmsgs = [
             {
               role: "user",
-              content: `Check each tax strategy below against official government sources for the 2026 tax year. For each numbered strategy, reply with one line: "n|OK|the correct limits or rules in your own words" if it exists and its claims are right (correct any figure), or "n|DROP" only if it clearly does not exist or clearly does not apply in 2026. Correct wrong figures instead of dropping the strategy, and keep well-established strategies even if you cannot find a single page that confirms every detail. Plain text, one line per strategy, nothing else.\n\n${items.map((x, i) => `${i + 1}. ${x.title}: ${x.do} (relies on: ${Array.isArray(x.claims) ? x.claims.join("; ") : x.claims || "n/a"})`).join("\n")}`,
+              content: `Check each tax strategy below against official government sources for the 2026 tax year. The client's business structure is: ${answers.structure || "not given or not self-employed"} and filing status ${answers.filingStatus || "unknown"}. Reply DROP for any strategy that does not work for that structure or status. For each numbered strategy, reply with one line: "n|OK|the correct limits or rules in your own words" if it exists and its claims are right (correct any figure), or "n|DROP" only if it clearly does not exist or clearly does not apply in 2026. Correct wrong figures instead of dropping the strategy, and keep well-established strategies even if you cannot find a single page that confirms every detail. Plain text, one line per strategy, nothing else.\n\n${items.map((x, i) => `${i + 1}. ${x.title}: ${x.do} (relies on: ${Array.isArray(x.claims) ? x.claims.join("; ") : x.claims || "n/a"})`).join("\n")}`,
             },
           ];
           let out = "";
