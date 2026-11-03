@@ -21,6 +21,7 @@ export const maxDuration = 120;
 // questions still search official sites for anything not listed here.
 // REFRESH EVERY JANUARY.
 const BUILTIN_FACTS = `
+- QBI (20 percent pass-through) deduction, tax year 2026: the full deduction applies below taxable income of $201,750 (single, head of household, married filing separately) or $403,500 (married filing jointly); above that, limits on wages and the type of business phase in over a range of $75,000 ($150,000 joint). Do NOT use the 2025 figure of $191,950. Source: IRS Rev. Proc. 2025-32 and the One Big Beautiful Bill Act.
 - 401(k), 403(b) and Solo 401(k) employee deferral limit, tax year 2026: $24,500. Catch-up at 50 or older: $8,000. Ages 60 to 63: $11,250 catch-up. Overall limit across employee, employer and after-tax contributions: $72,000 (before catch-up). Source: IRS.
 - SIMPLE IRA deferral limit, 2026: $17,000. Catch-up at 50 or older: $4,000 ($5,250 at ages 60 to 63). Source: IRS.
 - IRA contribution limit, 2026: $7,500. Catch-up at 50 or older: $1,100. Source: IRS.
@@ -330,7 +331,7 @@ export async function POST(request) {
       const chunks = [];
       for (let i = 0; i < allTitles.length; i += SIZE) chunks.push(allTitles.slice(i, i + SIZE));
       const fmt =
-        `Use the two-line format from the instructions (numbered label, "Do this:", "Savings:") for each, with a blank line between options. Never write a "Why it fits" line. Labels are actions, not topic names. The mega backdoor Roth option, if it is in this part, uses the four-line format. Keep every line to one or two short sentences. `;
+        `EVERY option must have exactly three parts and nothing else, even short or minor ones: a numbered label line like "12. Move idle cash into a money market fund", then a line starting "Do this:" with one specific instruction, then a line starting "Savings:" with the benefit as a fact or a dollar figure from their numbers. Never put the label and a sentence on one line. Use the two-line format from the instructions (numbered label, "Do this:", "Savings:") for each, with a blank line between options. Never write a "Why it fits" line. Labels are actions, not topic names. The mega backdoor Roth option, if it is in this part, uses the four-line format. Keep every line to one or two short sentences. `;
 
       const brainstorm = async () => {
         try {
@@ -360,7 +361,7 @@ export async function POST(request) {
           let vmsgs = [
             {
               role: "user",
-              content: `Check each tax strategy below against official government sources for the 2026 tax year. For each numbered strategy, reply with one line: "n|OK|the correct limits or rules in your own words" if it exists and its claims are right (correct any figure), or "n|DROP" if it does not exist, does not apply in 2026, or you cannot confirm it. Plain text, one line per strategy, nothing else.\n\n${items.map((x, i) => `${i + 1}. ${x.title}: ${x.do} (relies on: ${Array.isArray(x.claims) ? x.claims.join("; ") : x.claims || "n/a"})`).join("\n")}`,
+              content: `Check each tax strategy below against official government sources for the 2026 tax year. For each numbered strategy, reply with one line: "n|OK|the correct limits or rules in your own words" if it exists and its claims are right (correct any figure), or "n|DROP" only if it clearly does not exist or clearly does not apply in 2026. Correct wrong figures instead of dropping the strategy, and keep well-established strategies even if you cannot find a single page that confirms every detail. Plain text, one line per strategy, nothing else.\n\n${items.map((x, i) => `${i + 1}. ${x.title}: ${x.do} (relies on: ${Array.isArray(x.claims) ? x.claims.join("; ") : x.claims || "n/a"})`).join("\n")}`,
             },
           ];
           let out = "";
@@ -374,9 +375,10 @@ export async function POST(request) {
             out = textAfterSearch(data);
             break;
           }
+          console.log("quiz-chat verify raw", out.slice(0, 500).replace(/\n/g, " / "));
           const keep = [];
           for (const line of out.split("\n")) {
-            const m = line.match(/^\s*(\d+)\s*\|\s*OK\s*\|\s*(.+)$/i);
+            const m = line.match(/^\W*(\d+)\W*\s*(?:\||:|-)?\s*OK\b\W*(.*)$/i);
             if (m && items[Number(m[1]) - 1]) keep.push({ ...items[Number(m[1]) - 1], verified: m[2].trim() });
           }
           console.log("quiz-chat extras", items.length, "verified", keep.length);
