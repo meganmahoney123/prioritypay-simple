@@ -151,11 +151,11 @@ const INSTITUTIONS = [
 
 const PERCENTAGES = [
   { name: "Solo 401k", pct: "10%", width: "50%" },
-  { name: "SEP IRA", pct: "5%", width: "25%" },
+  { name: "Wedding", pct: "5%", width: "25%" },
   { name: "Investments", pct: "10%", width: "50%" },
   { name: "Tax Reserve", pct: "20%", width: "100%" },
   { name: "Emergency Fund", pct: "10%", width: "50%" },
-  { name: "OPEX", pct: "10%", width: "50%" },
+  { name: "Travel", pct: "10%", width: "50%" },
   { name: "Savings", pct: "10%", width: "50%" },
 ];
 
@@ -625,6 +625,32 @@ export default function Homepage() {
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-accent-700)", background: "var(--color-accent-200)", padding: "7px 14px", borderRadius: "var(--radius-pill)", fontFamily: "var(--font-mono)" }}>
                 Step 1
               </span>
+              <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.025em", margin: "18px 0 12px" }}>Set your percentages</h3>
+              <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
+                We start you off with buckets built for self-employed income, like Solo 401k, Investments, Tax
+                Reserve, Emergency Fund and Savings. Add your own goals, like a wedding or travel. Don&apos;t need
+                one? Remove it.
+              </p>
+            </div>
+            <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+              {PERCENTAGES.map((p) => (
+                <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 14, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "13px 16px" }}>
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>{p.name}</span>
+                  <span style={{ width: 90, height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-divider)", display: "block", overflow: "hidden" }}>
+                    <span style={{ display: "block", height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-accent)", width: p.width }} />
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: 700, width: 44, textAlign: "right", fontFamily: "var(--font-mono)" }}>{p.pct}</span>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          {/* step 2 */}
+          <Reveal style={{ background: "var(--color-surface)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", padding: 34, display: "flex", gap: 44, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 380px", minWidth: 280 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-accent-700)", background: "var(--color-accent-200)", padding: "7px 14px", borderRadius: "var(--radius-pill)", fontFamily: "var(--font-mono)" }}>
+                Step 2
+              </span>
               <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.025em", margin: "18px 0 12px" }}>
                 Connect how you actually get paid
               </h3>
@@ -659,32 +685,6 @@ export default function Homepage() {
               <div style={{ fontSize: 13, color: "#6B5E7A", marginTop: 14, textAlign: "center" }}>
                 + 10,000 more banks &amp; credit unions available
               </div>
-            </div>
-          </Reveal>
-
-          {/* step 2 */}
-          <Reveal style={{ background: "var(--color-surface)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", padding: 34, display: "flex", gap: 44, flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 380px", minWidth: 280 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-accent-700)", background: "var(--color-accent-200)", padding: "7px 14px", borderRadius: "var(--radius-pill)", fontFamily: "var(--font-mono)" }}>
-                Step 2
-              </span>
-              <h3 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.025em", margin: "18px 0 12px" }}>Set your percentages</h3>
-              <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-                We start you off with seven buckets built for self-employed income: Solo 401k, SEP IRA,
-                Investments, Tax Reserve, Emergency Fund, business expenses (OPEX), and Savings. Don&apos;t need
-                one? Remove it. Want more? Add your own.
-              </p>
-            </div>
-            <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 22, display: "flex", flexDirection: "column", gap: 10 }}>
-              {PERCENTAGES.map((p) => (
-                <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 14, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "13px 16px" }}>
-                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>{p.name}</span>
-                  <span style={{ width: 90, height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-divider)", display: "block", overflow: "hidden" }}>
-                    <span style={{ display: "block", height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-accent)", width: p.width }} />
-                  </span>
-                  <span style={{ fontSize: 15, fontWeight: 700, width: 44, textAlign: "right", fontFamily: "var(--font-mono)" }}>{p.pct}</span>
-                </div>
-              ))}
             </div>
           </Reveal>
 
