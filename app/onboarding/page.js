@@ -180,21 +180,31 @@ function OnboardingPageInner() {
   // Retirement picker on the percentage step: one row per account the person
   // has. The group's total stays the same and is shared evenly between them.
   const isRetRow = (r) => (r.group || "").startsWith("Retirement");
+  // type: one of the account values, "other" (untick removes every custom row),
+  // or "add-other" (one more custom row).
   const toggleRetirement = (type) =>
     setPercent((prev) => {
       const existing = prev.filter(isRetRow);
-      const has = existing.some((r) => r.retirementType === type);
       const defaultTotal = getDefaultSplitRules(businessType).percent.filter(isRetRow).reduce((n, r) => n + (Number(r.pct) || 0), 0);
       const currentTotal = existing.reduce((n, r) => n + (Number(r.pct) || 0), 0);
       const total = currentTotal > 0 ? currentTotal : defaultTotal || 15;
-      const picked = existing.filter((r) => r.retirementType);
-      let rows = has
-        ? picked.filter((r) => r.retirementType !== type)
-        : [...picked, buildRetirementRow(type, businessType, prev.map((r) => r.color))];
+      const colors = prev.map((r) => r.color);
+      let typed = existing.filter((r) => r.retirementType);
+      let customs = existing.filter((r) => !r.retirementType && r.id !== "retirement_savings");
+      if (type === "other") {
+        customs = customs.length ? [] : [{ ...newSubAccountRow("Retirement", colors), label: "Other retirement account" }];
+      } else if (type === "add-other") {
+        customs = [...customs, { ...newSubAccountRow("Retirement", [...colors, ...customs.map((r) => r.color)]), label: "Other retirement account" }];
+      } else if (typed.some((r) => r.retirementType === type)) {
+        typed = typed.filter((r) => r.retirementType !== type);
+      } else {
+        typed = [...typed, buildRetirementRow(type, businessType, colors)];
+      }
       const order = retirementPickerOptions().map((o) => o.value);
-      rows = [...rows].sort((x, y) => order.indexOf(x.retirementType) - order.indexOf(y.retirementType));
-      if (!rows.length) rows = [buildGenericRetirementRow(total, prev.map((r) => r.color))];
-      const share = rows.length ? Math.floor((total / rows.length) * 100) / 100 : 0;
+      typed = [...typed].sort((x, y) => order.indexOf(x.retirementType) - order.indexOf(y.retirementType));
+      let rows = [...typed, ...customs];
+      if (!rows.length) rows = [buildGenericRetirementRow(total, colors)];
+      const share = Math.floor((total / rows.length) * 100) / 100;
       rows = rows.map((r, i) => ({ ...r, pct: i === 0 ? roundPct(total - share * (rows.length - 1)) : share }));
       const firstIdx = prev.findIndex(isRetRow);
       const rest = prev.filter((r) => !isRetRow(r));
@@ -241,7 +251,10 @@ function OnboardingPageInner() {
   const needsRetirement = earnsIncome && retirementPct < 1;
   const retirementPicker = {
     options: retirementPickerOptions(),
-    selected: percent.filter((r) => isRetRow(r) && r.retirementType).map((r) => r.retirementType),
+    selected: [
+      ...percent.filter((r) => isRetRow(r) && r.retirementType).map((r) => r.retirementType),
+      ...(percent.some((r) => isRetRow(r) && !r.retirementType && r.id !== "retirement_savings") ? ["other"] : []),
+    ],
     onToggle: toggleRetirement,
   };
   // $50 is a hard floor (see PHASE N, supabase/schema.sql) -- enforced
