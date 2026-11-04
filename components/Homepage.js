@@ -465,22 +465,25 @@ export default function Homepage() {
             <span style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF", background: "var(--color-accent)", width: 34, height: 34, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)" }}>
               01
             </span>
-            <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "#6B5E7A", fontFamily: "var(--font-mono)" }}>
-                CHECKING · · · · 4412
+            <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: "16px 18px 20px" }}>
+              <div style={{ textAlign: "center", paddingBottom: 12, borderBottom: "1px solid var(--color-divider)", marginBottom: 14 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 700 }}>PrioritySave</span>
+                <span style={{ display: "block", fontSize: 11.5, color: "#6B5E7A", marginTop: 2 }}>Text Message · Today 9:14 AM</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, fontSize: 14 }}>
-                <span style={{ color: "#574A68" }}>Deposit · Bridgeway Studio</span>
-                <span style={{ fontWeight: 700, color: "var(--color-accent-700)", fontFamily: "var(--font-mono)" }}>+$4,200.00</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, fontSize: 14 }}>
-                <span style={{ color: "#574A68" }}>Invoice 118</span>
-                <span style={{ fontWeight: 700, color: "var(--color-accent-700)", fontFamily: "var(--font-mono)" }}>+$860.00</span>
-              </div>
-              <div style={{ height: 1, background: "var(--color-divider)", margin: "16px 0 12px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "#6B5E7A" }}>BALANCE</span>
-                <span style={{ fontSize: 20, fontWeight: 800, fontFamily: "var(--font-mono)" }}>$6,120.00</span>
+              <div
+                style={{
+                  background: "#E9E7EE",
+                  color: "#1F1730",
+                  fontSize: 14.5,
+                  lineHeight: 1.45,
+                  padding: "12px 15px",
+                  borderRadius: "18px 18px 18px 6px",
+                  maxWidth: "92%",
+                }}
+              >
+                PrioritySave: <strong>$4,200.00</strong> deposit detected. Your split is calculated and ready.
+                Confirm each transfer here:{" "}
+                <span style={{ color: "#2563C9", textDecoration: "underline" }}>prioritysave.com/dashboard</span>
               </div>
             </div>
             <div>
