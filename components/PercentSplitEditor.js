@@ -416,6 +416,14 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 )}
                 {!isGrouped && (
                   <p style={{ margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>Total Category Cap:</strong> the most you want saved
+                    toward this category overall: your starting balance plus everything PrioritySave has sent here, minus
+                    anything you&apos;ve withdrawn. It stops sending money here once it hits this amount, and starts again
+                    if withdrawals bring it back below.
+                  </p>
+                )}
+                {!isGrouped && (
+                  <p style={{ margin: 0 }}>
                     <strong style={{ color: "var(--color-text)" }}>Account Balance Cap:</strong> stops sending money here
                     once the connected account&apos;s balance reaches this amount, and starts again if the balance
                     falls below it.
@@ -436,6 +444,13 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                   hint="resets automatically each month"
                   value={rule.max}
                   onChange={(v) => onUpdate(rule.id, { max: v })}
+                  theme="ledger"
+                />
+                <CapField
+                  label="Total Category Cap $"
+                  hint="everything saved toward this category, starting balance included"
+                  value={rule.categoryCap}
+                  onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
                   theme="ledger"
                 />
                 <CapField
@@ -716,6 +731,12 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             hint="resets automatically each month"
             value={rule.max}
             onChange={(v) => onUpdate(rule.id, { max: v })}
+          />
+          <CapField
+            label="Total Category Cap $"
+            hint="everything saved toward this category, starting balance included"
+            value={rule.categoryCap}
+            onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
           />
           <CapField
             label="Account Balance Cap $"
