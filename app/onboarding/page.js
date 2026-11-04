@@ -1216,14 +1216,10 @@ function OnboardingPageInner() {
               Connect everywhere money reaches you
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 12px" }}>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
               {paysByDraw(entityType)
                 ? "PrioritySave can only tell you to split money it actually sees. Connect the account where your pay lands. You can always add more inside the dashboard."
                 : "PrioritySave can only tell you to split a deposit it actually sees. Connect every bank account you could receive a payment from. You can always add more inside the dashboard."}
-            </p>
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              Also connect any credit cards. This will help you track expenses which will help you keep
-              balances accurate.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
               <PlaidLinkButton
@@ -1242,26 +1238,7 @@ function OnboardingPageInner() {
                   padding: "13px 26px",
                 }}
               />
-              <PlaidLinkButton
-                label="Add a credit card"
-                creditCard
-                onLinked={(account) => onAccountLinked(account)}
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  fontWeight: 600,
-                  fontSize: 13.5,
-                  color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
-                  background: "transparent",
-                  border: "1px solid var(--color-divider)",
-                  borderRadius: "var(--radius-md)",
-                  padding: "13px 22px",
-                }}
-              />
             </div>
-            <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 34px" }}>
-              Credit cards are for close-out expense tracking only. They&apos;re never used for splits or
-              transfers.
-            </p>
 
             {accounts.length > 0 && (
               <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", overflow: "hidden", marginBottom: 34 }}>
@@ -1446,6 +1423,27 @@ function OnboardingPageInner() {
               retirementPicker={editSplits ? retirementPicker : null}
               persona={businessType}
             />
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 30, paddingTop: 24 }}>
+              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 14px" }}>
+                Optional: connect your credit cards to track expenses and keep balances accurate. They&apos;re only
+                used for close-out expense tracking, never for splits or transfers.
+              </p>
+                <PlaidLinkButton
+                  label="Add a credit card"
+                  creditCard
+                  onLinked={(account) => onAccountLinked(account)}
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    fontWeight: 600,
+                    fontSize: 13.5,
+                    color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
+                    background: "transparent",
+                    border: "1px solid var(--color-divider)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "13px 22px",
+                  }}
+                />
+            </div>
             {editSplits ? (
               <>
                 <button
