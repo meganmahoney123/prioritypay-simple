@@ -309,7 +309,7 @@ export default function Homepage() {
         style={{
           maxWidth: 1180,
           margin: "0 auto",
-          padding: "clamp(44px, 8vw, 88px) clamp(18px, 4vw, 40px) clamp(48px, 7vw, 72px)",
+          padding: "clamp(24px, 3vw, 32px) clamp(18px, 4vw, 40px) clamp(24px, 3vw, 32px)",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 330px), 1fr))",
           gap: "clamp(40px, 5vw, 64px)",
@@ -320,23 +320,23 @@ export default function Homepage() {
           <Eyebrow>Designed for irregular income</Eyebrow>
           <h1
             style={{
-              fontSize: "clamp(36px, 5.2vw, 60px)",
+              fontSize: "clamp(34px, 4.4vw, 54px)",
               lineHeight: 1.04,
               letterSpacing: "-0.03em",
               fontWeight: 800,
-              margin: "24px 0 0",
+              margin: "14px 0 0",
             }}
           >
-            Route a % of each deposit to savings and investments.{" "}
+            Split and route deposits.{" "}
             <span style={{ color: "var(--color-accent)" }}>Before you spend it.</span>
           </h1>
-          <p style={{ fontSize: 18, lineHeight: 1.6, color: "#574A68", margin: "22px 0 0", maxWidth: "30em" }}>
+          <p style={{ fontSize: 18, lineHeight: 1.6, color: "#574A68", margin: "16px 0 0", maxWidth: "30em" }}>
             Built for sole proprietors (freelancers, solopreneurs and more) and small business owners. Set rules
             once, and every client payment is split the moment it lands: retirement, savings, investments, a tax
-            reserve, or any other goal, like a wedding or college fund. Own an LLC? We split your draws.{" "}
+            reserve, or any other goal, like a wedding or college fund.{" "}
             <em style={{ color: "var(--color-text)", fontStyle: "italic" }}>Spend the rest, guilt free.</em>
           </p>
-          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 30 }}>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 22 }}>
             <Btn href="/signup" variant="primary" style={PILL_PRIMARY}>
               Get started free
             </Btn>
@@ -353,7 +353,7 @@ export default function Homepage() {
               border: "1px solid var(--color-divider)",
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--shadow-md)",
-              padding: 28,
+              padding: 22,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -362,15 +362,15 @@ export default function Homepage() {
               </span>
               <span style={{ fontSize: 13, color: "#6B5E7A", fontFamily: "var(--font-mono)" }}>Today, 9:14 AM</span>
             </div>
-            <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.03em", marginTop: 14 }}>$4,200.00</div>
+            <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.03em", marginTop: 8 }}>$4,200.00</div>
             <div style={{ fontSize: 15, color: "#574A68", marginTop: 4 }}>Client payment · Bridgeway Studio</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0 12px" }}>
               <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6B5E7A" }}>
                 Split
               </span>
               <span style={{ flex: 1, height: 1, background: "var(--color-divider)", display: "block" }} />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {SPLIT_ROWS.map((row) => (
                 <div
                   key={row.name}
@@ -380,7 +380,7 @@ export default function Homepage() {
                     gap: 14,
                     background: "var(--color-bg)",
                     borderRadius: "var(--radius-sm)",
-                    padding: "14px 16px",
+                    padding: "11px 16px",
                   }}
                 >
                   <span style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>{row.name}</span>
@@ -408,11 +408,11 @@ export default function Homepage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginTop: 18,
+                marginTop: 14,
                 background: "var(--color-accent-900)",
                 color: "#FFFFFF",
                 borderRadius: "var(--radius-md)",
-                padding: "20px 22px",
+                padding: "16px 22px",
               }}
             >
               <span style={{ fontSize: 15, fontWeight: 600, opacity: 0.85 }}>Left to spend</span>
@@ -423,6 +423,32 @@ export default function Homepage() {
           </div>
         </Reveal>
       </section>
+
+      {/* WHO THIS IS FOR */}
+      <section style={{ padding: "0 0 clamp(28px, 4vw, 44px)", overflow: "hidden" }}>
+        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6B5E7A", marginBottom: 16 }}>
+          Who this is for
+        </div>
+        <div className="pp-marquee-track" style={{ display: "flex", width: "max-content", gap: 12 }}>
+          {[...WHO_FOR, ...WHO_FOR, ...WHO_FOR, ...WHO_FOR].map((w, idx) => (
+            <span
+              key={idx}
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "var(--color-accent-700)",
+                background: "var(--color-accent-200)",
+                borderRadius: "var(--radius-pill)",
+                padding: "13px 24px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {w}
+            </span>
+          ))}
+        </div>
+      </section>
+
 
       {/* HOW IT WORKS / 3 STEPS */}
       <section style={{ maxWidth: 1180, margin: "0 auto", padding: "clamp(52px, 8vw, 84px) clamp(18px, 4vw, 40px)" }}>
@@ -716,31 +742,6 @@ export default function Homepage() {
               <div style={{ fontSize: 15, opacity: 0.75 }}>already split &amp; saved this month</div>
             </div>
           </Reveal>
-        </div>
-      </section>
-
-      {/* WHO THIS IS FOR */}
-      <section style={{ padding: "20px 0 clamp(36px, 5vw, 48px)", overflow: "hidden" }}>
-        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6B5E7A", marginBottom: 26 }}>
-          Who this is for
-        </div>
-        <div className="pp-marquee-track" style={{ display: "flex", width: "max-content", gap: 12 }}>
-          {[...WHO_FOR, ...WHO_FOR, ...WHO_FOR, ...WHO_FOR].map((w, idx) => (
-            <span
-              key={idx}
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: "var(--color-accent-700)",
-                background: "var(--color-accent-200)",
-                borderRadius: "var(--radius-pill)",
-                padding: "13px 24px",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {w}
-            </span>
-          ))}
         </div>
       </section>
 
