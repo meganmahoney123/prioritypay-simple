@@ -289,6 +289,23 @@ export default function DashboardPage() {
         actionsSlot
       )}
 
+      {/* Business plan pitch: web only, only for people who said they run a
+          separate business, and only once their first deposit has been split. */}
+      {!isNative && billing && !billing.isBusiness && !billing.readOnly && allTimeTotal > 0 && showsBusinessPitch(businessInfo.entityType) && (
+        <BusinessUpgradeCard entityType={businessInfo.entityType} businessName={businessInfo.businessName} accounts={accounts} />
+      )}
+      {/* Testing only: add ?bizpreview=1 to the dashboard URL to see the card
+          without a deposit (sample businesses if none on the profile).
+          Restricted to Megan's own accounts. */}
+      {bizPreview && (
+        <BusinessUpgradeCard
+          forceShow
+          entityType={showsBusinessPitch(businessInfo.entityType) ? businessInfo.entityType : "Sole proprietor / freelancer; Single-member LLC"}
+          businessName={showsBusinessPitch(businessInfo.entityType) ? businessInfo.businessName : "Ignite My Site, PriorityPay"}
+          accounts={accounts}
+        />
+      )}
+
       <PendingTransfers allocations={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
 
       {billing?.readOnly && (
@@ -381,23 +398,6 @@ export default function DashboardPage() {
               ))}
           </div>
         </div>
-      )}
-
-      {/* Business plan pitch: web only, only for people who said they run a
-          separate business, and only once their first deposit has been split. */}
-      {!isNative && billing && !billing.isBusiness && !billing.readOnly && allTimeTotal > 0 && showsBusinessPitch(businessInfo.entityType) && (
-        <BusinessUpgradeCard entityType={businessInfo.entityType} businessName={businessInfo.businessName} accounts={accounts} />
-      )}
-      {/* Testing only: add ?bizpreview=1 to the dashboard URL to see the card
-          without a deposit (sample businesses if none on the profile).
-          Restricted to Megan's own accounts. */}
-      {bizPreview && (
-        <BusinessUpgradeCard
-          forceShow
-          entityType={showsBusinessPitch(businessInfo.entityType) ? businessInfo.entityType : "Sole proprietor / freelancer; Single-member LLC"}
-          businessName={showsBusinessPitch(businessInfo.entityType) ? businessInfo.businessName : "Ignite My Site, PriorityPay"}
-          accounts={accounts}
-        />
       )}
 
       {/* CloseoutNudge ("You've started but haven't finished closing out

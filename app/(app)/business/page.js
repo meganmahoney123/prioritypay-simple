@@ -14,7 +14,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
-import { businessesFromOnboarding } from "@/lib/entityCopy";
+import { businessesFromOnboarding, ENTITY_SHORT } from "@/lib/entityCopy";
+import { loadBusinessDraft, clearBusinessDraft } from "@/lib/businessDraft";
 import { bloomInputStyle, bloomNoticeCardStyle, bloomWarningCardStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 
 const DEFAULT_SLOT = "__default__"; // stands in for "no entity / the single default pool"
@@ -52,6 +53,8 @@ function BusinessPageInner() {
 
   const [upgradeBusy, setUpgradeBusy] = useState(false);
   const [onboardingBusinesses, setOnboardingBusinesses] = useState([]);
+  const [hasDraft, setHasDraft] = useState(false);
+  useEffect(() => { setHasDraft(Boolean(loadBusinessDraft())); }, []);
 
   async function loadAll() {
     // try/finally so a failed fetch or non-JSON error response can't leave
@@ -157,8 +160,8 @@ function BusinessPageInner() {
         <div className="text-sm" style={{ ...bloomWarningCardStyle(), padding: 14 }}>{error}</div>
       )}
 
-      {entities.length === 0 && onboardingBusinesses.length > 0 && (
-        <SetupFromOnboardingCard businesses={onboardingBusinesses} onChange={loadAll} setError={setError} />
+      {entities.length === 0 && (onboardingBusinesses.length > 0 || hasDraft) && (
+        <SetupFromOnboardingCard businesses={onboardingBusinesses} accounts={accounts} onChange={loadAll} setError={setError} />
       )}
       <EntitiesCard entities={entities} onChange={loadAll} setError={setError} />
       <AccountsEntityCard accounts={accounts} entities={entities} onChange={loadAll} setError={setError} />
@@ -169,34 +172,57 @@ function BusinessPageInner() {
 }
 
 // ---- One-click setup from onboarding answers ---------------------------
-function SetupFromOnboardingCard({ businesses, onChange, setError }) {
+function SetupFromOnboardingCard({ businesses, accounts, onChange, setError }) {
   const [busy, setBusy] = useState(false);
+  // Choices made in the free walkthrough (this browser only) win over the
+  // onboarding answers, including which account goes in which business.
+  const [draft, setDraft] = useState(null);
+  useEffect(() => { setDraft(loadBusinessDraft()); }, []);
+  const list = draft
+    ? draft.businesses.filter((b) => b.name?.trim()).map((b) => ({ id: b.id, name: b.name.trim(), typeLabel: (ENTITY_SHORT[b.entityType] || b.entityType) }))
+    : businesses.map((b, i) => ({ id: `b${i + 1}`, name: b.name, typeLabel: b.typeLabel }));
   const create = async () => {
     setBusy(true);
-    for (const b of businesses) {
+    const idMap = {};
+    for (const b of list) {
       const res = await fetch("/api/entities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: b.name, entity_type: b.typeLabel }),
       });
       const data = await res.json();
-      if (!data.entity) { setError(data.error || "Could not create business."); break; }
+      if (!data.entity) { setError(data.error || "Could not create business."); setBusy(false); onChange(); return; }
+      idMap[b.id] = data.entity.id;
     }
+    if (draft?.assign) {
+      for (const [accountId, target] of Object.entries(draft.assign)) {
+        const entityId = idMap[target];
+        if (!entityId || !accounts.some((a) => a.id === accountId)) continue;
+        await fetch(`/api/accounts/${accountId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entity_id: entityId }),
+        });
+      }
+    }
+    clearBusinessDraft();
     setBusy(false);
     onChange();
   };
   return (
     <Card className="p-6" style={bloomAccentCardStyle()}>
       <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 400, margin: "0 0 6px" }}>
-        Start with what you told us
+        {draft ? "Finish setting up your businesses" : "Start with what you told us"}
       </h2>
       <p style={{ fontSize: 14, margin: "0 0 14px" }}>
-        Add {businesses.length > 1 ? "these businesses" : "this business"} in one click, then assign your accounts to {businesses.length > 1 ? "them" : "it"} below. You can rename or delete any of them.
+        {draft
+          ? "We saved the setup you built. One click puts it in place, and you can change anything afterwards."
+          : `Add ${list.length > 1 ? "these businesses" : "this business"} in one click, then assign your accounts below. You can rename or delete any of them.`}
       </p>
       <ul style={{ fontSize: 15, lineHeight: 1.7, margin: "0 0 16px", paddingLeft: 20 }}>
-        {businesses.map((b, i) => (<li key={i}><strong>{b.name}</strong> · {b.typeLabel}</li>))}
+        {list.map((b, i) => (<li key={i}><strong>{b.name}</strong> · {b.typeLabel}</li>))}
       </ul>
-      <PrimaryButton onClick={create} disabled={busy}>{busy ? "Adding…" : "Add my businesses"}</PrimaryButton>
+      <PrimaryButton onClick={create} disabled={busy || !list.length}>{busy ? "Setting up…" : draft ? "Set it up" : "Add my businesses"}</PrimaryButton>
     </Card>
   );
 }
