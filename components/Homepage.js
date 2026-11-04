@@ -771,8 +771,9 @@ export default function Homepage() {
             </p>
             <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
               PrioritySave&apos;s Month Close-Out walks you through confirming each transaction once, then uses it
-              to recommend exactly how much to send to your Tax Reserve and retirement accounts. Have W2 income? No
-              problem, we&apos;ll separate it out for you.
+              to keep your records clean. Sole proprietors also get a tax set-aside estimate; LLC and corporation
+              owners should base taxes on their business profit with their CPA. Have W2 income? No problem,
+              we&apos;ll separate it out for you.
             </p>
           </div>
           <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 26 }}>
@@ -821,6 +822,17 @@ export default function Homepage() {
               category with unallocated cash you&apos;re sitting on. Works category to category, or into and out of
               unallocated.
             </p>
+            <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 16, marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
+                <span style={{ flex: 1, fontWeight: 600 }}>Wedding</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "#B4432F" }}>−$3,000</span>
+              </div>
+              <div aria-hidden="true" style={{ textAlign: "center", color: "var(--color-accent)", fontWeight: 800, lineHeight: 1 }}>↓</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
+                <span style={{ flex: 1, fontWeight: 600 }}>Maintenance</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "#2F7D5B" }}>+$3,000</span>
+              </div>
+            </div>
           </Reveal>
           <Reveal
             style={{
@@ -836,6 +848,24 @@ export default function Homepage() {
               PrioritySave matches it against the category it came from so your buckets always reflect what&apos;s
               actually still there.
             </p>
+            <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 16, marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
+                <span style={{ flex: 1 }}>
+                  <span style={{ display: "block", fontWeight: 600 }}>Airfare · credit card</span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "#6B5E7A" }}>From Travel</span>
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>−$420</span>
+              </div>
+              <div style={{ padding: "2px 4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#6B5E7A", marginBottom: 6 }}>
+                  <span>Travel still available</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--color-text)" }}>$1,380</span>
+                </div>
+                <div style={{ height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-divider)", overflow: "hidden" }}>
+                  <span style={{ display: "block", height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-accent)", width: "77%" }} />
+                </div>
+              </div>
+            </div>
           </Reveal>
           <Reveal
             style={{
@@ -847,9 +877,26 @@ export default function Homepage() {
           >
             <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>Month Close-Out</h3>
             <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-              Confirm each month&apos;s transactions once, and PrioritySave recommends exactly how much to send to
-              your Tax Reserve and retirement accounts based on what actually came in.
+              Confirm each month&apos;s transactions once, so you always know what actually came in, what was income,
+              and what wasn&apos;t.
             </p>
+            <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 16, marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
+                <span style={{ flex: 1, fontWeight: 600 }}>Client payment</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$4,200</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "4px 9px", borderRadius: "var(--radius-pill)" }}>✓ Income</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
+                <span style={{ flex: 1, fontWeight: 600 }}>Bank refund</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$60</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "4px 9px", borderRadius: "var(--radius-pill)" }}>✓ Not income</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
+                <span style={{ flex: 1, fontWeight: 600 }}>Payment app</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$850</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "4px 9px", borderRadius: "var(--radius-pill)" }}>✓ Income</span>
+              </div>
+            </div>
           </Reveal>
         </div>
       </section>
