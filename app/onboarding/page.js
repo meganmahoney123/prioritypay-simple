@@ -280,7 +280,7 @@ function OnboardingPageInner() {
   // depending on a Settings visit nobody's prompted to make.
   const [phoneNumber, setPhoneNumber] = useState("");
   // Off by default -- users must actively opt in to SMS deposit alerts.
-  const [smsEnabled, setSmsEnabled] = useState(false);
+  const [smsEnabled, setSmsEnabled] = useState(true);
   // Note: actual SMS *delivery* stays gated by SMS_ALERTS_ENABLED
   // (lib/runSplit.js) until the Telnyx toll-free number clears Toll-Free
   // Verification -- this step only collects the opt-in + phone number and
