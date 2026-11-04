@@ -44,7 +44,6 @@ const BLOG_HUBS = [
 // needs, kept in one place so the two don't drift.
 const TOP_LINKS = [
   { href: "/calculators/moneysimulator", label: "Savings Planner" },
-  { href: "/tax-savings-quiz", label: "Tax Savings Quiz" },
 ];
 
 function NavDropdown({ label, open, setOpen, children }) {

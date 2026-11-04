@@ -971,49 +971,6 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* TAX SAVINGS QUIZ TEASER */}
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "0 clamp(18px, 4vw, 40px) clamp(60px, 9vw, 88px)" }}>
-        <Reveal
-          style={{
-            background: "var(--color-accent-900)",
-            color: "#FFFFFF",
-            borderRadius: "var(--radius-lg)",
-            padding: "clamp(36px, 5vw, 52px) clamp(24px, 4vw, 46px)",
-            display: "flex",
-            gap: 56,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ flex: "1 1 420px", minWidth: 280 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--color-accent-300)" }}>
-              Free tool
-            </span>
-            <h2 style={{ fontSize: "clamp(28px, 3.4vw, 42px)", lineHeight: 1.08, letterSpacing: "-0.03em", fontWeight: 800, margin: "14px 0 16px" }}>
-              Not sure what tax strategies apply to you?
-            </h2>
-            <p style={{ fontSize: 16.5, lineHeight: 1.6, margin: "0 0 28px", opacity: 0.85 }}>
-              Take our free 2-minute quiz. Answer a few questions about your income, family, and business setup,
-              and get a personalized list of tax strategies worth researching. No account needed.
-            </p>
-            <Btn href="/tax-savings-quiz" variant="primary" style={{ ...PILL_PRIMARY, background: "#FFFFFF", color: "var(--color-accent-900)", border: "1px solid #FFFFFF" }}>
-              Take the free quiz
-            </Btn>
-          </div>
-          <div style={{ flex: "1 1 300px", minWidth: 260 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-accent-300)", marginBottom: 16 }}>
-              A few of the strategies covered
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {STRATEGIES.map((s) => (
-                <span key={s} style={{ display: "block", fontSize: 15.5, fontWeight: 600, background: "rgba(255,255,255,0.1)", borderRadius: "var(--radius-sm)", padding: "15px 18px" }}>
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
       {/* FAQ */}
       <section style={{ maxWidth: 900, margin: "0 auto", padding: "0 clamp(18px, 4vw, 40px) clamp(60px, 9vw, 88px)" }}>
         <Reveal style={{ textAlign: "center", marginBottom: 36 }}>
