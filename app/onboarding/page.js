@@ -465,6 +465,8 @@ function OnboardingPageInner() {
   // asks the user to double-check they haven't forgotten an income source,
   // since PrioritySave can only split deposits it actually sees.
   const [showConfirmAccountsModal, setShowConfirmAccountsModal] = useState(false);
+  const [opAcctAck, setOpAcctAck] = useState(false);
+  const [showOpAcctHint, setShowOpAcctHint] = useState(false);
   // Step 3 (Onboarding Pass 2, Aug 2026 handoff): the three explainer
   // paragraphs, the "any percentage not assigned..." callout, and the cap
   // explanation all now live inside one collapsible panel instead of
@@ -1300,10 +1302,28 @@ function OnboardingPageInner() {
                 {mixedOrDrawConnectNote(entityType)}
               </p>
             )}
+            {paysByDraw(entityType) && (
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14.5, lineHeight: 1.5, margin: "0 0 20px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={opAcctAck}
+                  onChange={(e) => { setOpAcctAck(e.target.checked); if (e.target.checked) setShowOpAcctHint(false); }}
+                  style={{ marginTop: 3 }}
+                />
+                <span>
+                  I&apos;m connecting the accounts where I get paid, not my business operating account.
+                  {showOpAcctHint && !opAcctAck && (
+                    <span style={{ display: "block", fontSize: 13.5, marginTop: 4, color: "color-mix(in srgb, var(--color-text) 70%, transparent)" }}>
+                      Please check this box to continue.
+                    </span>
+                  )}
+                </span>
+              </label>
+            )}
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
               {accounts.length > 0 && (
-                <PrimaryBtn onClick={() => setShowConfirmAccountsModal(true)} flex>Continue &nbsp;→</PrimaryBtn>
+                <PrimaryBtn onClick={() => { if (paysByDraw(entityType) && !opAcctAck) { setShowOpAcctHint(true); return; } setShowConfirmAccountsModal(true); }} flex>Continue &nbsp;→</PrimaryBtn>
               )}
             </div>
             <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "16px 0 0" }}>

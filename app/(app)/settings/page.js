@@ -361,28 +361,16 @@ function SettingsPageInner() {
           </>
         )}
 
-        {/* PHASE T: Business-tier upsell / status. The /business nav item is
-            hidden for Simple-plan users, so this is their entry point to
-            upgrade; Business-plan users get a pointer to the hub instead. */}
-        <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--color-divider)" }}>
-          {billing.isBusiness ? (
+        {/* Business plan: no longer offered to new customers. Existing
+            Business subscribers still get a pointer to their hub. */}
+        {billing.isBusiness && (
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--color-divider)" }}>
             <p style={{ fontSize: 14, margin: 0 }}>
               You&apos;re on the <strong>Business</strong> plan. Manage businesses and QuickBooks from the{" "}
               <a href="/business" style={{ color: "var(--color-accent-700)" }}>Business</a> page.
             </p>
-          ) : (
-            <>
-              <p style={{ fontSize: 14, margin: "0 0 12px" }}>
-                Running multiple businesses? <strong>PrioritySave Business</strong> adds separate entities, QuickBooks
-                sync, and a monthly profit true-up.
-              </p>
-              <GhostButton onClick={isNative ? upgradeToBusinessNative : upgradeToBusiness} disabled={billingBusy}>
-                {billingBusy ? "Loading…" : "Upgrade to Business ($39.99/month)"}
-              </GhostButton>
-              <SubscriptionDisclosure plan="business" isNative={isNative} />
-            </>
-          )}
-        </div>
+          </div>
+        )}
       </Card>
 
       <MfaSettings />

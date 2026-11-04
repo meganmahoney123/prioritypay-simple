@@ -93,7 +93,7 @@ export default function TermsPage() {
 
       <h2>6. Fees</h2>
       <p>
-        PrioritySave requires a paid subscription, currently <strong>$12.99 per month</strong> for the standard plan and <strong>$39.99 per month</strong> for the Business plan, billed through Stripe to the
+        PrioritySave requires a paid subscription, currently <strong>$12.99 per month</strong>, billed through Stripe to the
         payment method you provide. You are charged when you complete onboarding and then each month until you cancel.
         You can cancel anytime in Settings. After you cancel, your access continues until the end of the period you&apos;ve
         paid for, and you won&apos;t be charged again. If a subscription lapses, your account moves to a read-only mode: you

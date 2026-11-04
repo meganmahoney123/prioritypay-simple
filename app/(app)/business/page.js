@@ -101,7 +101,7 @@ function BusinessPageInner() {
 
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
-  // --- Not on the Business plan: pitch + upgrade -------------------------
+  // --- Not on the Business plan: the tier is not offered right now -------
   if (!isBusiness) {
     return (
       <div className="max-w-2xl space-y-6">
@@ -110,20 +110,10 @@ function BusinessPageInner() {
             PrioritySave Business
           </h2>
           <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 20 }} />
-          <p style={{ fontSize: 15, margin: "0 0 14px" }}>
-            The Business plan adds tools for owners running one or more separate businesses:
+          <p style={{ fontSize: 15, margin: 0 }}>
+            The Business plan isn&apos;t available right now. Your PrioritySave plan covers splitting every deposit or
+            draw you receive.
           </p>
-          <ul style={{ fontSize: 15, lineHeight: 1.7, margin: "0 0 18px", paddingLeft: 20 }}>
-            <li>Group connected accounts into separate business entities</li>
-            <li>Connect each entity&apos;s QuickBooks Online company</li>
-            <li>Monthly profit-vs-deposit true-up against QuickBooks&apos; own books</li>
-          </ul>
-          {error && (
-            <div className="text-sm" style={{ ...bloomWarningCardStyle(), padding: 14, margin: "0 0 16px" }}>{error}</div>
-          )}
-          <PrimaryButton onClick={upgrade} disabled={upgradeBusy}>
-            {upgradeBusy ? "Loading…" : "Upgrade to Business"}
-          </PrimaryButton>
         </Card>
       </div>
     );

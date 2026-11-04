@@ -12,6 +12,9 @@ import { stripeClient, businessPriceId } from "@/lib/stripe";
 export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
+  // The Business plan is not offered right now (kept in code to bring back later).
+  return Response.json({ error: "The Business plan isn't available right now." }, { status: 410 });
+  // eslint-disable-next-line no-unreachable
   const admin = supabaseAdmin();
 
   const { data: profile } = await admin
