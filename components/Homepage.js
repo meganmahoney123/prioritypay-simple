@@ -338,9 +338,7 @@ export default function Homepage() {
             <span style={{ color: "var(--color-accent)" }}>Before you spend it.</span>
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.6, color: "#574A68", margin: "16px 0 0", maxWidth: "30em" }}>
-            Built for sole proprietors (freelancers, solopreneurs and more) and small business owners. Set rules
-            once, and every client payment is split the moment it lands: retirement, savings, investments, a tax
-            reserve, or any other goal, like a wedding or college fund.{" "}
+            Split each deposit by percentages you set.{" "}
             <em style={{ color: "var(--color-text)", fontStyle: "italic" }}>Spend the rest, guilt free.</em>
           </p>
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 22 }}>
