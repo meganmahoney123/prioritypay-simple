@@ -1437,6 +1437,7 @@ function OnboardingPageInner() {
               hideCapDetails
               theme="ledger"
               hideStartingBalance
+              hideCreateNew
               persona={businessType}
             />
           </div>
