@@ -1018,7 +1018,7 @@ export default function PercentSplitEditor({
                     />
                   ))}
                 </div>
-                {!(retirementPicker && section.group.startsWith("Retirement")) && (
+                {!hideAccountPicker && !(retirementPicker && section.group.startsWith("Retirement")) && (
                 <button
                   onClick={() => onAddSubAccount(section.group)}
                   className="pp-ledger-add"
