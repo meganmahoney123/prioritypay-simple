@@ -792,7 +792,7 @@ export default function Homepage() {
               <span style={{ fontSize: 22, fontWeight: 800, color: "var(--color-accent-900)", fontFamily: "var(--font-mono)" }}>{NET_INCOME.value}</span>
             </div>
             <p style={{ fontSize: 14, lineHeight: 1.5, color: "#6B5E7A", margin: "16px 0 0" }}>
-              Calculate your Solo 401k and SEP IRA contributions effortlessly inside the dashboard.
+              Calculate your Solo 401k contributions effortlessly inside the dashboard.
             </p>
           </div>
         </Reveal>
