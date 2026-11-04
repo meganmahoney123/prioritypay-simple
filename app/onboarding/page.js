@@ -655,10 +655,8 @@ function OnboardingPageInner() {
   // nowhere to send it yet.
   const unconnectedForStep4 = percent.filter((r) => (Number(r.pct) || 0) > 0 && !r.accountId);
   const handleStep4Continue = () => {
-    if (unconnectedForStep4.length > 0) {
-      setShowUnconnectedModal(true);
-      return;
-    }
+    // Every split with a percentage needs an account before moving on.
+    if (unconnectedForStep4.length > 0) return;
     next();
   };
 
@@ -1397,7 +1395,7 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              Your plan is active. Last setup step: choose which account each split should go to, so your checklist
+              Your plan is active. Last setup step: choose an account for every split, so your checklist
               knows where to send it. You can connect accounts right on each row.
             </p>
             <PercentSplitEditor
@@ -1732,13 +1730,26 @@ function OnboardingPageInner() {
                 {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
               </span>
             </div>
+            {step === STEP_MATCH && unconnectedForStep4.length > 0 && (
+              <p style={{ fontSize: 14, lineHeight: 1.5, color: "#b3261e", margin: "0 0 12px" }}>
+                Choose an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} to continue.
+              </p>
+            )}
             {step === 2 && needsRetirement && (
               <p style={{ fontSize: 14, color: "#b3261e", margin: "0 0 12px" }}>Put at least 1% toward retirement to continue.</p>
             )}
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={step === 2 ? next : handleStep4Continue} disabled={step === 2 && needsRetirement} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={step === 2 ? next : handleStep4Continue} disabled={step === 2 ? needsRetirement : unconnectedForStep4.length > 0} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
+            {step === STEP_MATCH && unconnectedForStep4.length > 0 && isDevTester && (
+              <button
+                onClick={next}
+                style={{ marginTop: 10, width: "100%", padding: "10px 0", fontSize: 13, borderRadius: 8, border: "1px dashed color-mix(in srgb, var(--color-text) 30%, transparent)", background: "transparent", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", cursor: "pointer" }}
+              >
+                Testing only: continue without connecting accounts
+              </button>
+            )}
           </div>
         </div>
       )}
