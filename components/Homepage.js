@@ -141,10 +141,10 @@ function BankLogo({ name, size, tile }) {
 }
 
 const INSTITUTIONS = [
-  { name: "Capital One", kind: "Business checking" },
+  { name: "Capital One", kind: "Personal checking" },
   { name: "Ally Bank", kind: "Savings" },
   { name: "Chime", kind: "Personal checking" },
-  { name: "Chase", kind: "Business checking" },
+  { name: "Chase", kind: "Personal checking" },
   { name: "Bank of America", kind: "Personal checking" },
   { name: "Wells Fargo", kind: "Savings" },
 ];
@@ -182,6 +182,10 @@ const STRATEGIES = [
 ];
 
 const FAQS = [
+  {
+    q: "I have an LLC or corporation. Does PrioritySave split every customer payment?",
+    a: "No. For an LLC, partnership or corporation, PrioritySave splits the draws, distributions or salary you pay yourself, not every payment your business receives. Connect the personal account where your pay lands and skip the business operating account, so business and personal money stay separate. If you also have a sole proprietorship, the income you receive from it is split as it comes in.",
+  },
   {
     q: "Who is PrioritySave for?",
     a: "PrioritySave is built primarily for self-employed people, W2 employees with side income, and entrepreneurs to manage their spend more efficiently. You can set rules to route a percentage of each deposit to specific accounts, like savings, tax reserve, investments, retirement, and specific savings like a wedding, a down payment on a house, or college.",
@@ -322,7 +326,8 @@ export default function Homepage() {
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.6, color: "#574A68", margin: "22px 0 0", maxWidth: "30em" }}>
             PrioritySave lets you set rules to split each deposit and send it to retirement, savings, investments,
-            a tax reserve, or any other goal, like a wedding or college fund.{" "}
+            a tax reserve, or any other goal, like a wedding or college fund. Works for client payments and for
+            the draws you pay yourself from an LLC.{" "}
             <em style={{ color: "var(--color-text)", fontStyle: "italic" }}>Spend the rest, guilt free.</em>
           </p>
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 30 }}>
@@ -450,7 +455,8 @@ export default function Homepage() {
               <h3 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", margin: "0 0 10px" }}>A deposit lands</h3>
               <p style={{ fontSize: 15.5, lineHeight: 1.65, color: "#574A68", margin: 0 }}>
                 PrioritySave sends you a text or push notification each time a new deposit hits your account. The
-                deposit could be a client payment, a check you deposited, or cash from a payment app.
+                deposit could be a client payment, a check you deposited, cash from a payment app, or, if you own
+                an LLC or corporation, a draw or distribution from your business.
               </p>
             </div>
           </Reveal>
@@ -623,8 +629,10 @@ export default function Homepage() {
                 Connect how you actually get paid
               </h3>
               <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-                Connect all of your income-receiving bank accounts so that every deposit is accounted for. We
-                connect with over 10,000 banks and credit unions across the US and Canada.
+                Connect the accounts where your pay lands. Sole proprietors connect where client payments arrive.
+                LLC and corporation owners connect where their draws or distributions arrive, usually a personal
+                account, not the business operating account. We connect with over 10,000 banks and credit unions
+                across the US and Canada.
               </p>
             </div>
             <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 22 }}>
