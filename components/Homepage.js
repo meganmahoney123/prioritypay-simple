@@ -68,7 +68,7 @@ const SPLIT_ROWS = [
 ];
 
 const BENEFITS = [
-  { text: "See total saved across every bucket at a glance" },
+  { text: "See every bucket's balance and monthly contributions at a glance" },
   { text: "Know your taxes are already set aside before you owe them" },
   { text: "Spend what’s left without doing mental math first" },
 ];
@@ -157,6 +157,13 @@ const PERCENTAGES = [
   { name: "Emergency Fund", pct: "10%", width: "50%" },
   { name: "Travel", pct: "10%", width: "50%" },
   { name: "Savings", pct: "10%", width: "50%" },
+];
+
+const CATEGORY_CARDS = [
+  { name: "Tax Reserve", pct: "20%", color: "#2B1470", balance: "$8,220", contributed: "+$840", withdrawals: "No withdrawals yet" },
+  { name: "Solo 401k", pct: "15%", color: "#7C4DDB", balance: "$13,165", contributed: "+$630", withdrawals: "No withdrawals yet" },
+  { name: "Emergency Fund", pct: "10%", color: "#3B1C7A", balance: "$4,110", contributed: "+$420", withdrawals: "No withdrawals yet" },
+  { name: "Savings", pct: "10%", color: "#B79CF0", balance: "$4,110", contributed: "+$420", withdrawals: "1 this month" },
 ];
 
 const WHO_FOR = [
@@ -619,26 +626,30 @@ export default function Homepage() {
           </Reveal>
 
           <Reveal>
-            <div style={{ background: "var(--color-surface)", borderRadius: "var(--radius-lg)", padding: 30, boxShadow: "var(--shadow-md)" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6B5E7A" }}>
-                Total saved since joining
-              </div>
-              <div style={{ fontSize: "clamp(40px, 6vw, 52px)", fontWeight: 800, letterSpacing: "-0.035em", margin: "8px 0 22px", color: "var(--color-accent-900)", fontFamily: "var(--font-mono)" }}>
-                $34,218
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {BUCKETS.map((bk) => (
-                  <div key={bk.name} style={{ background: "var(--color-bg)", borderRadius: "var(--radius-sm)", padding: "16px 18px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>{bk.name}</span>
-                      <span style={{ fontSize: 17, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{bk.amt}</span>
-                    </div>
-                    <div style={{ height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-divider)", marginTop: 12, overflow: "hidden" }}>
-                      <span style={{ display: "block", height: 6, borderRadius: "var(--radius-pill)", background: "var(--color-accent)", width: `${bk.pct}%` }} />
-                    </div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 14px" }}>Your Categories</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 230px), 1fr))", gap: 14 }}>
+              {CATEGORY_CARDS.map((c) => (
+                <div key={c.name} style={{ background: "var(--color-surface)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", padding: "20px 22px", boxShadow: "var(--shadow-md)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ width: 12, height: 12, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>{c.name}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)" }}>{c.pct}</span>
                   </div>
-                ))}
-              </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 16 }}>
+                    <span style={{ fontSize: 14, color: "#574A68" }}>Balance</span>
+                    <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", fontFamily: "var(--font-mono)" }}>{c.balance}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 6 }}>
+                    <span style={{ fontSize: 13.5, color: "#574A68" }}>Contributed this month</span>
+                    <span style={{ fontSize: 14.5, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--color-accent-700)" }}>{c.contributed}</span>
+                  </div>
+                  <div style={{ height: 1, background: "var(--color-divider)", margin: "14px 0 12px" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13.5 }}>
+                    <span style={{ fontWeight: 700, color: "var(--color-accent-700)" }}>Withdrawals</span>
+                    <span style={{ color: "#574A68" }}>{c.withdrawals} ›</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </Reveal>
         </div>
@@ -806,7 +817,7 @@ export default function Homepage() {
             </p>
             <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
               PrioritySave&apos;s Month Close-Out walks you through confirming each transaction once, then uses it
-              to keep your records clean. Sole proprietors also get a tax set-aside estimate; LLC and corporation
+              to keep your records clean. Sole proprietors also get a tax set-aside estimate. LLC and corporation
               owners should base taxes on their business profit with their CPA. Have W2 income? No problem,
               we&apos;ll separate it out for you.
             </p>
