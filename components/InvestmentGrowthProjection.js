@@ -363,7 +363,6 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
             }}
           >
             <div className="flex items-center gap-1.5">
-              <span style={{ fontSize: 16 }} aria-hidden="true">🚀</span>
               <span style={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: 600 }}>
                 {solveFor === "goal" && "Keep it up! With these numbers you could have"}
                 {solveFor === "years" && "At this pace, you'd reach your goal in"}
