@@ -32,9 +32,13 @@ const NAV_ITEMS = [
   { href: "/withdrawals", label: "Withdrawals" },
   { href: "/closeout", label: "Close Out" },
   { href: "/projections", label: "Investment Projections" },
-  { href: "/advisor", label: "Tax Savings Quiz" },
+  // Hidden for now (quiz not finished): { href: "/advisor", label: "Tax Savings Quiz" },
   { href: "/settings", label: "Settings" },
 ];
+
+// Business tab hidden for now (Business plan is paused). Flip to true to
+// bring the nav item back for users on the Business plan.
+const SHOW_BUSINESS_NAV = false;
 
 const TITLES = {
   "/dashboard": "Dashboard",
@@ -169,7 +173,7 @@ export default function AppShell({ children, isSandbox = false }) {
         // upgrade CTA from Settings instead, so the nav item stays hidden
         // until their plan flips (via the Stripe webhook). Inserted just
         // before Settings so it reads as the last product area.
-        if (d.profile?.billing?.isBusiness) {
+        if (SHOW_BUSINESS_NAV && d.profile?.billing?.isBusiness) {
           const settingsIdx = items.findIndex((n) => n.href === "/settings");
           const at = settingsIdx === -1 ? items.length : settingsIdx;
           items = [...items.slice(0, at), { href: "/business", label: "Business" }, ...items.slice(at)];
