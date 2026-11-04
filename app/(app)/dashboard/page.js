@@ -81,6 +81,10 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState(null);
   const [email, setEmail] = useState(null);
   const [displayName, setDisplayName] = useState(null);
+  const bizPreview =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("bizpreview") === "1" &&
+    ["megan@ignitemysite.com", "megan+onboarding@ignitemysite.com"].includes(String(email || "").toLowerCase());
   const [businessInfo, setBusinessInfo] = useState({ entityType: null, businessName: null });
 
   // Owns the This Month/This Year toggle (and the year stepper) up here
@@ -376,6 +380,17 @@ export default function DashboardPage() {
           separate business, and only once their first deposit has been split. */}
       {!isNative && billing && !billing.isBusiness && !billing.readOnly && allTimeTotal > 0 && showsBusinessPitch(businessInfo.entityType) && (
         <BusinessUpgradeCard entityType={businessInfo.entityType} businessName={businessInfo.businessName} accounts={accounts} />
+      )}
+      {/* Testing only: add ?bizpreview=1 to the dashboard URL to see the card
+          without a deposit (sample businesses if none on the profile).
+          Restricted to Megan's own accounts. */}
+      {bizPreview && !billing?.isBusiness && (
+        <BusinessUpgradeCard
+          forceShow
+          entityType={showsBusinessPitch(businessInfo.entityType) ? businessInfo.entityType : "Sole proprietor / freelancer; Single-member LLC"}
+          businessName={showsBusinessPitch(businessInfo.entityType) ? businessInfo.businessName : "Ignite My Site, PriorityPay"}
+          accounts={accounts}
+        />
       )}
 
       {/* CloseoutNudge ("You've started but haven't finished closing out

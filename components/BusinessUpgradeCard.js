@@ -46,11 +46,11 @@ function Tag({ children }) {
   );
 }
 
-export default function BusinessUpgradeCard({ entityType, businessName, accounts = [] }) {
+export default function BusinessUpgradeCard({ entityType, businessName, accounts = [], forceShow = false }) {
   const [hidden, setHidden] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  useEffect(() => { setHidden(wasDismissedRecently()); }, []);
+  useEffect(() => { setHidden(forceShow ? false : wasDismissedRecently()); }, [forceShow]);
   if (hidden) return null;
 
   const businesses = businessesFromOnboarding(entityType, businessName);
