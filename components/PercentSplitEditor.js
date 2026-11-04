@@ -169,6 +169,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // rather than lifted to the parent, since nothing outside this row ever
   // needs to know whether its caps panel happens to be open.
   const [showLimits, setShowLimits] = useState(false);
+  const [showLimitsHelp, setShowLimitsHelp] = useState(false);
   // Collapsed by default, same reasoning as showLimits above -- most
   // people creating a category are starting from $0, so this stays out
   // of the way until someone clicks "$X saved already" / "Already have
@@ -371,7 +372,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           </div>
         </div>
         )}
-        {!isGrouped && !readOnly && (
+        {!readOnly && (!isGrouped || !hideStartingBalance) && (
           <div style={{ marginTop: 4 }}>
             <button
               type="button"
@@ -387,9 +388,48 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 cursor: "pointer",
               }}
             >
-              {showLimits ? "Hide limits" : "Add monthly or total limits"}
+              {showLimits
+                ? "Hide"
+                : !isGrouped && !hideStartingBalance
+                ? "Add monthly or total limits and starting balance"
+                : !isGrouped
+                ? "Add monthly or total limits"
+                : "Add a starting balance"}
             </button>
-            {showLimits && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowLimitsHelp((v) => !v)}
+                style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", background: "transparent", border: 0, padding: "6px 0 0", cursor: "pointer", textDecoration: "underline" }}
+              >
+                What&apos;s this?
+              </button>
+            </div>
+            {showLimitsHelp && (
+              <div style={{ marginTop: 8, background: "#FAF7FD", borderRadius: "var(--radius-sm)", padding: "12px 14px", fontSize: 13.5, lineHeight: 1.65, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", display: "grid", gap: 8 }}>
+                {!isGrouped && (
+                  <p style={{ margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>Monthly cap:</strong> the most this category can
+                    receive in a calendar month. Once it&apos;s hit, it drops to 0% until the 1st, and the extra goes
+                    to your other categories.
+                  </p>
+                )}
+                {!isGrouped && (
+                  <p style={{ margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>Account total cap:</strong> stops sending money here
+                    once the connected account&apos;s balance reaches this amount, and starts again if the balance
+                    falls below it.
+                  </p>
+                )}
+                {!hideStartingBalance && (
+                  <p style={{ margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>Starting balance:</strong> money you already have set
+                    aside for this category in its account, so it starts at the right amount instead of $0.
+                  </p>
+                )}
+              </div>
+            )}
+            {showLimits && !isGrouped && (
               <div style={{ marginTop: 8, background: "#FAF7FD", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
                 <CapField
                   label="Monthly Cap $"
@@ -409,9 +449,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             )}
           </div>
         )}
-        {!hideStartingBalance && (
+        {!hideStartingBalance && !readOnly && (showLimits || showStartingBalance) && (
         <div style={{ marginTop: 4 }}>
-          {showStartingBalance ? (
+          {true ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
                 {forceShowStartingBalance
@@ -471,7 +511,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               that route's own comment on refreshing the live balance
               first), just computed locally so it shows up the moment
               someone types a number instead of only after they hit Save. */}
-          {showStartingBalance && startingBalanceRoomInfo?.isOver && (
+          {startingBalanceRoomInfo?.isOver && (
             <div className="text-xs mt-2 p-3 space-y-2" style={bloomWarningCardStyle({ padding: "10px 12px" })}>
               <p className="font-semibold">
                 That's more than {startingBalanceRoomInfo.accountLabel || "this account"} actually has
