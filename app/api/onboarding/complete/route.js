@@ -96,6 +96,7 @@ export async function POST(request) {
       group_name: r.group || null,
       pct: Number(r.pct) || 0,
       cap: r.max === null || r.max === undefined || r.max === "" ? null : Number(r.max),
+      category_cap: r.categoryCap === null || r.categoryCap === undefined || r.categoryCap === "" ? null : Number(r.categoryCap),
       balance_cap: r.balanceCap === null || r.balanceCap === undefined || r.balanceCap === "" ? null : Number(r.balanceCap),
       color: r.color,
       account_id: r.accountId || null,
