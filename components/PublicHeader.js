@@ -36,8 +36,6 @@ const CALCULATORS = [
 const BLOG_HUBS = [
   { hub: "All posts", href: "/blog" },
   { hub: "Self Employed", href: "/self-employed" },
-  { hub: "Business Owner", href: "/business-owner" },
-  { hub: "W2", href: "/w2" },
 ];
 
 // The top-level links every nav surface (desktop row + mobile drawer)

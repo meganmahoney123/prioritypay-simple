@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
@@ -10,6 +11,8 @@ export const metadata = {
 };
 
 export default function W2HubPage() {
+  // Hidden for now: only the Self Employed content is live. Delete the next line to bring this hub back.
+  notFound();
   return (
     <div style={BLOOM_TOKENS}>
       <PublicHeader />

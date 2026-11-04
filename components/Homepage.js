@@ -207,6 +207,10 @@ const FAQS = [
     a: "Any US bank, credit union, or investment/retirement account through Plaid, including all the major banks and roughly 10,000 smaller banks and credit unions across the US and Canada.",
   },
   {
+    q: "Where is my money held?",
+    a: "In your own bank and investment accounts, exactly where it is today. PrioritySave never holds, touches or moves your money. We connect through Plaid with read-only access, so we only see balances and transactions, and you make every transfer yourself with your own bank.",
+  },
+  {
     q: "Does PrioritySave manage or invest my money?",
     a: "No. PrioritySave allows you to set percentage rules to send a portion of each deposit to specific accounts. For example, you can set rules to send 10% of each deposit to a tax reserve account, 15% of each deposit to savings, and 15% of each deposit to retirement. However, PrioritySave does not actually touch your money or move it for you. You complete every transfer yourself. PrioritySave is not a bank, broker-dealer, or investment adviser, and never holds, invests, or moves your funds. You stay in control of every account.",
   },

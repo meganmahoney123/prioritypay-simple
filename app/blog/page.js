@@ -23,8 +23,6 @@ export const metadata = {
 
 const HUBS = [
   { href: "/self-employed", label: "Self Employed" },
-  { href: "/business-owner", label: "Business Owner" },
-  { href: "/w2", label: "W2" },
 ];
 
 export default function BlogIndexPage() {

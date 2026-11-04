@@ -18,8 +18,6 @@ export default function sitemap() {
     { path: "/calculators/compoundinterest", priority: 0.8, changeFrequency: "monthly" },
     { path: "/calculators/advisoryfeecalculator", priority: 0.8, changeFrequency: "monthly" },
     { path: "/self-employed", priority: 0.7, changeFrequency: "weekly" },
-    { path: "/business-owner", priority: 0.6, changeFrequency: "weekly" },
-    { path: "/w2", priority: 0.6, changeFrequency: "weekly" },
     { path: "/self-employed/sole-proprietor-vs-llc-vs-s-corp", priority: 0.8, changeFrequency: "monthly" },
     { path: "/self-employed/self-employed-tax-guide", priority: 0.85, changeFrequency: "monthly" },
     { path: "/self-employed/tax-optimization", priority: 0.8, changeFrequency: "monthly" },
