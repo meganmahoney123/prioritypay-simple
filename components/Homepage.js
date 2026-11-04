@@ -546,7 +546,7 @@ export default function Homepage() {
           <Reveal>
             <Eyebrow>The dashboard</Eyebrow>
             <h2 style={{ fontSize: "clamp(30px, 4.4vw, 46px)", lineHeight: 1.06, letterSpacing: "-0.03em", fontWeight: 800, margin: "14px 0 18px" }}>
-              The only app you&apos;ll actually enjoy opening
+              The only personal finance platform you enjoy opening
             </h2>
             <p style={{ fontSize: 17, lineHeight: 1.6, color: "#574A68", margin: "0 0 14px" }}>
               Most platforms show what you owe, overspend, and should have done.
