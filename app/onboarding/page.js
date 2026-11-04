@@ -1102,9 +1102,9 @@ function OnboardingPageInner() {
               {howOpen && (
                 <div style={{ padding: "0 20px 20px", display: "grid", gap: 12 }}>
                   <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly cap
+                    <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly category cap
                     stops routing to a bucket once it has received that much in a month (it resets
-                    automatically). An account total cap stops routing once the connected account&apos;s balance
+                    automatically). An account balance cap stops routing once the connected account&apos;s balance
                     reaches that amount.
                   </p>
                 </div>

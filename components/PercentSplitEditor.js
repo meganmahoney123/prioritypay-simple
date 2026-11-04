@@ -409,14 +409,14 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               <div style={{ marginTop: 8, background: "#FAF7FD", borderRadius: "var(--radius-sm)", padding: "12px 14px", fontSize: 13.5, lineHeight: 1.65, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", display: "grid", gap: 8 }}>
                 {!isGrouped && (
                   <p style={{ margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>Monthly cap:</strong> the most this category can
+                    <strong style={{ color: "var(--color-text)" }}>Monthly Category Cap:</strong> the most this category can
                     receive in a calendar month. Once it&apos;s hit, it drops to 0% until the 1st, and the extra goes
                     to your other categories.
                   </p>
                 )}
                 {!isGrouped && (
                   <p style={{ margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>Account total cap:</strong> stops sending money here
+                    <strong style={{ color: "var(--color-text)" }}>Account Balance Cap:</strong> stops sending money here
                     once the connected account&apos;s balance reaches this amount, and starts again if the balance
                     falls below it.
                   </p>
@@ -432,14 +432,14 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             {showLimits && !isGrouped && (
               <div style={{ marginTop: 8, background: "#FAF7FD", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
                 <CapField
-                  label="Monthly Cap $"
+                  label="Monthly Category Cap $"
                   hint="resets automatically each month"
                   value={rule.max}
                   onChange={(v) => onUpdate(rule.id, { max: v })}
                   theme="ledger"
                 />
                 <CapField
-                  label="Account Total Cap $"
+                  label="Account Balance Cap $"
                   hint="based on the connected account's balance"
                   value={rule.balanceCap}
                   onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
@@ -712,13 +712,13 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       {!isGrouped && (
         <>
           <CapField
-            label="Monthly Cap $"
+            label="Monthly Category Cap $"
             hint="resets automatically each month"
             value={rule.max}
             onChange={(v) => onUpdate(rule.id, { max: v })}
           />
           <CapField
-            label="Account Total Cap $"
+            label="Account Balance Cap $"
             hint="based on the connected account's balance"
             value={rule.balanceCap}
             onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
@@ -971,9 +971,9 @@ export default function PercentSplitEditor({
           </summary>
           <p style={{ fontSize: 16, lineHeight: 1.7, margin: "12px 0 0" }}>
             Any category below other than Investments or Retirement can have up to two optional caps. A{" "}
-            <strong>Monthly Cap</strong> limits how many dollars a category can receive from your deposits in a
+            <strong>Monthly Category Cap</strong> limits how many dollars a category can receive from your deposits in a
             given calendar month. Once it&apos;s hit, that category drops to 0% for the rest of the month and
-            resets automatically on the 1st. An <strong>Account Total Cap</strong> instead watches the
+            resets automatically on the 1st. An <strong>Account Balance Cap</strong> instead watches the
             connected account&apos;s own balance. Once that balance reaches the cap, the category drops to 0%
             and stays there until the balance falls back below it (say, from a withdrawal), with no automatic
             monthly reset. Either way, whatever a capped category doesn&apos;t take rises proportionally
@@ -1164,7 +1164,7 @@ export default function PercentSplitEditor({
           Any category below other than Investments or Retirement can have up to two optional caps. A Monthly
           Cap limits how many dollars a category can receive from your deposits in a given calendar month. Once
           it&apos;s hit, that category drops to 0% for the rest of the month and resets automatically on the
-          1st. An Account Total Cap instead watches the connected account&apos;s own balance. Once that balance
+          1st. An Account Balance Cap instead watches the connected account&apos;s own balance. Once that balance
           reaches the cap, the category drops to 0% and stays there until the balance falls back below it, with
           no automatic monthly reset. Either way, whatever a capped category doesn&apos;t take rises
           proportionally across your other categories instead of going unused.
