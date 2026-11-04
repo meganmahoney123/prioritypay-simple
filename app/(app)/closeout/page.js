@@ -13,6 +13,7 @@ import WithdrawalAllocator from "@/components/WithdrawalAllocator";
 import TaxSummarySection from "@/components/TaxSummarySection";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
+import { paysByDraw } from "@/lib/entityCopy";
 import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, pickUniqueColor, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 
 function defaultPeriod() {
@@ -90,6 +91,13 @@ export default function CloseoutPage() {
   const [hasW2Income, setHasW2Income] = useState(true);
   const [editingConfirmed, setEditingConfirmed] = useState(false);
   const [persona, setPersona] = useState(null);
+  // How the business is set up. The tax set-aside and retirement steps are
+  // worked out from net income, which only means something for sole
+  // proprietors. LLC, partnership and corporation owners (anyone paid by
+  // draw, distribution or salary) should base taxes on their business's
+  // profit with their CPA, so those steps are replaced by a short note.
+  const [entityType, setEntityType] = useState(null);
+  const showTaxGuidance = !paysByDraw(entityType);
   const [defaultEmployeePayroll, setDefaultEmployeePayroll] = useState(null);
   const isBusinessOwnerWithEmployees = persona === "Business Owner (With Employees)";
   // No self-employment income for this persona, so Solo 401k/SEP IRA
@@ -156,6 +164,7 @@ export default function CloseoutPage() {
         .then((r) => r.json())
         .then((d) => {
           setPersona(d.profile?.persona || null);
+          setEntityType(d.profile?.entityType || null);
           const est = d.profile?.retirementProfile?.estimatedEmployeePayroll;
           if (est !== null && est !== undefined) setDefaultEmployeePayroll(est);
         })
@@ -982,7 +991,7 @@ export default function CloseoutPage() {
         {!isConfirmed && (
           <PrimaryButton onClick={handleConfirm} disabled={confirming} className="w-full mt-4">
             {confirming ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-            {confirming ? "Confirming…" : isW2NoSideHustlePersona ? "Save this month" : "Confirm and see recommendations"}
+            {confirming ? "Confirming…" : isW2NoSideHustlePersona || !showTaxGuidance ? "Save this month" : "Confirm and see recommendations"}
           </PrimaryButton>
         )}
       </Card>
@@ -991,6 +1000,19 @@ export default function CloseoutPage() {
 
       {recommendations && !isW2NoSideHustlePersona && (
         <>
+          {!showTaxGuidance && (
+            <Card className="p-6">
+              <h2 className="text-sm font-semibold mb-1">Taxes and retirement</h2>
+              <p className="text-xs text-[var(--color-neutral-700)]" style={{ lineHeight: 1.6 }}>
+                Tax set-aside and retirement suggestions are only calculated for sole proprietors. As an LLC or
+                corporation owner, your taxes depend on your business&apos;s profit, not just what you pay yourself, so
+                work out your tax set-aside and retirement contributions with your CPA. Everything else in Close-Out
+                still works.
+              </p>
+            </Card>
+          )}
+          {showTaxGuidance && (
+          <>
           <Card className="p-6">
             <h2 className="text-sm font-semibold mb-1">Step 2: Contribute to Retirement</h2>
             <p className="text-xs text-[var(--color-neutral-700)] mb-4">
@@ -1290,6 +1312,8 @@ export default function CloseoutPage() {
               </div>
             )}
           </Card>
+          </>
+          )}
 
           {isBusinessOwnerWithEmployees && (
             <Card className="p-6">

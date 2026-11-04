@@ -20,6 +20,11 @@ const nextConfig = {
         destination: "/blog/business-tax-deductions",
         permanent: true,
       },
+      // Hidden for now (quiz not finished, Business plan paused). Temporary
+      // redirects: delete these three blocks to bring the pages back.
+      { source: "/advisor", destination: "/dashboard", permanent: false },
+      { source: "/business", destination: "/dashboard", permanent: false },
+      { source: "/tax-savings-quiz", destination: "/", permanent: false },
     ];
   },
   // `eslint.ignoreDuringBuilds` was removed in Next.js 16 (next.config.js
