@@ -999,6 +999,15 @@ export default function PercentSplitEditor({
                       Which of these do you have open right now? Select all that apply. If none, set a percentage anyway. The money builds up until you open one.
                     </p>
                     <ChipCheckboxes options={retirementPicker.options} selected={retirementPicker.selected} onToggle={retirementPicker.onToggle} />
+                    {retirementPicker.selected.includes("other") && (
+                      <button
+                        type="button"
+                        onClick={() => retirementPicker.onToggle("add-other")}
+                        style={{ marginTop: 12, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 14, color: "#4E22B8" }}
+                      >
+                        + Add another account
+                      </button>
+                    )}
                   </div>
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 14 }}>
