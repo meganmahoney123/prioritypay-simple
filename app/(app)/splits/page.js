@@ -205,6 +205,21 @@ function SplitRulesPageInner() {
   );
 
   const handleSave = async () => {
+    // A category that gets a share of every deposit has to be connected to
+    // a bank account, otherwise there's nowhere to send that money. Block
+    // the save (rather than just warning) and name the categories to fix.
+    const unconnected = percent.filter((r) => Number(r.pct) > 0 && !r.accountId);
+    if (unconnected.length > 0) {
+      const names = unconnected.map((r) => r.label).join(", ");
+      setSaved(false);
+      setSaveError(
+        `Connect a bank account to ${names} before saving. Every category with a percentage needs an account to send money to.`
+      );
+      // The Save button in the sticky bar can be clicked from anywhere on
+      // the page, so bring the message into view.
+      setTimeout(() => document.getElementById("split-save-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+      return;
+    }
     await saveNow(percent);
   };
 
@@ -403,6 +418,7 @@ function SplitRulesPageInner() {
 
       {saveError && (
         <div
+          id="split-save-error"
           className="text-sm"
           style={{
             color: "#9C3B22",
