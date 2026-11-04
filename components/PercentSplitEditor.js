@@ -142,7 +142,7 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, lockLabel, persona, startingBalanceRoomInfo }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, lockLabel, persona, startingBalanceRoomInfo }) {
   const locked = isCoreRow(rule, persona) || !!lockLabel;
   // A starting balance only ever counts as money already sitting in THIS
   // row's own connected account (see the PUT /api/split-rules validation
@@ -360,7 +360,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               value={rule.accountId}
               onChange={(v) => onUpdate(rule.id, { accountId: v })}
               accounts={accounts}
-              onCreateNew={isEmployerRetirementRow(rule) ? undefined : () => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
+              onCreateNew={isEmployerRetirementRow(rule) || hideCreateNew ? undefined : () => setCreating((prev) => ({ ...prev, [rule.id]: true }))}
               onConnectAnother={() => setConnecting((prev) => ({ ...prev, [rule.id]: true }))}
               recommendCreate={false}
               excludeSubtypes={rule.group === "Investments" ? ["checking"] : undefined}
@@ -839,6 +839,8 @@ export default function PercentSplitEditor({
   // Hides each row's "route my money to this account" picker, so a step can be
   // about percentages only (onboarding sets accounts later).
   hideAccountPicker = false,
+  // Hides the "create a new savings account" choice in each account picker.
+  hideCreateNew = false,
   // { options: [{value,label}], selected: [value], onToggle(value) } -- onboarding's
   // "which retirement accounts do you have" picker; replaces the per-group
   // notes and the add button for Retirement.
@@ -1025,7 +1027,7 @@ export default function PercentSplitEditor({
                       onAccountLinked={onAccountLinked}
                       showRowWarnings={showRowWarnings}
                       forceShowStartingBalance={forceShowStartingBalance}
-                      hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
+                      hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
                       lockLabel={!!retirementPicker && !!(rule.retirementType || rule.id === "retirement_savings")}
                       overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
@@ -1073,7 +1075,7 @@ export default function PercentSplitEditor({
               onAccountLinked={onAccountLinked}
               showRowWarnings={showRowWarnings}
               forceShowStartingBalance={forceShowStartingBalance}
-              hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
+              hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
               overflowMessage={overflowMessageFor(section.row.id)}
               theme="ledger"
               dotColor={dotColorFor(section.row.id)}
@@ -1150,7 +1152,7 @@ export default function PercentSplitEditor({
                   onAccountLinked={onAccountLinked}
                   showRowWarnings={showRowWarnings}
                   forceShowStartingBalance={forceShowStartingBalance}
-                  hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
+                  hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
                   overflowMessage={overflowMessageFor(rule.id)}
                   persona={persona}
                 />
@@ -1177,7 +1179,7 @@ export default function PercentSplitEditor({
             onAccountLinked={onAccountLinked}
             showRowWarnings={showRowWarnings}
             forceShowStartingBalance={forceShowStartingBalance}
-            hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
+            hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
             overflowMessage={overflowMessageFor(section.row.id)}
             persona={persona}
           />
