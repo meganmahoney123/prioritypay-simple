@@ -25,6 +25,7 @@ export default function sitemap() {
     { path: "/self-employed/tax-optimization", priority: 0.8, changeFrequency: "monthly" },
     { path: "/blog/how-to-save-on-taxes", priority: 0.8, changeFrequency: "monthly" },
     { path: "/blog", priority: 0.7, changeFrequency: "weekly" },
+    { path: "/blog/how-to-budget-irregular-income", priority: 0.8, changeFrequency: "monthly" },
     { path: "/blog/business-tax-deductions", priority: 0.8, changeFrequency: "monthly" },
     { path: "/self-employed/solo-401k", priority: 0.8, changeFrequency: "monthly" },
   ];
