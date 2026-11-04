@@ -68,7 +68,7 @@ const FAQ = [
 ];
 
 const RELATED = [
-  { href: "/self-employed/how-to-save-on-taxes", title: "How to Save on Taxes When You're Self-Employed (2026)" },
+  { href: "/blog/how-to-save-on-taxes", title: "How to Save on Taxes as an Entrepreneur (2026)" },
   { href: "/self-employed/solo-401k", title: "What Is a Solo 401(k)? 2026 Limits and Examples" },
   { href: "/self-employed/self-employed-tax-guide", title: "Taxes for Self Employed: The Complete Guide" },
   { href: "/self-employed/sole-proprietor-vs-llc-vs-s-corp", title: "Sole Proprietor vs. LLC vs. S Corp (free calculator)" },

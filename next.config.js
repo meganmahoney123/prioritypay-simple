@@ -11,6 +11,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: "/self-employed/how-to-save-on-taxes",
+        destination: "/blog/how-to-save-on-taxes",
+        permanent: true,
+      },
+      {
         source: "/business-owner/business-tax-deductions",
         destination: "/blog/business-tax-deductions",
         permanent: true,

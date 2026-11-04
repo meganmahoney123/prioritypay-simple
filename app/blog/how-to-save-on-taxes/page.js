@@ -3,9 +3,12 @@ import BlogArticle from "@/components/BlogArticle";
 
 // Blog post adapted from the "6 Ways Entrepreneurs Save THOUSANDS on Taxes"
 // YouTube video (youtube.com/watch?v=yVs1S7KrWyY) and its recorded script
-// ("Biggest Tax-Saving Moves for Entrepreneurs & Self-Employed"). Target
-// searches: "how to save on taxes self employed", "tax saving strategies
-// for small business owners", "how to reduce taxes as a business owner".
+// ("Biggest Tax-Saving Moves for Entrepreneurs & Self-Employed"). Written
+// for entrepreneurs broadly (self-employed people, solopreneurs, and small
+// business owners), so it lives in the general blog and is cross-listed on
+// both hubs. Target searches: "how to save on taxes as an entrepreneur",
+// "how to save on taxes self employed", "tax saving strategies for small
+// business owners", "how to reduce taxes as a business owner".
 // Includes the two corrections shown on screen in the video: (1) with a
 // reasonable S corp salary at $300K profit, the QBI deduction comes back
 // to roughly $40,000 (max about $42,000), not $53,700, because the salary
@@ -13,20 +16,20 @@ import BlogArticle from "@/components/BlogArticle";
 // separate taxpayer (S corp, C corp, partnership), so it doesn't work for a
 // sole proprietor or single-member LLC. 2026 brackets/standard deduction
 // checked against Kiplinger's summary of the IRS release.
-const PATH = "/self-employed/how-to-save-on-taxes";
-const TITLE = "How to Save on Taxes When You're Self-Employed: 4 Strategies + 2 Bonuses (2026)";
+const PATH = "/blog/how-to-save-on-taxes";
+const TITLE = "How to Save on Taxes as an Entrepreneur: 4 Strategies + 2 Bonuses (2026)";
 const DEK =
-  "Simple, high-impact ways entrepreneurs and self-employed people lower their tax bill: maxing out retirement, deducting health insurance, timing income and expenses, and the S corp election, plus the Augusta rule and hiring your kids.";
+  "Simple, high-impact ways entrepreneurs lower their tax bill, whether you're self-employed or run a small business: maxing out retirement, deducting health insurance, timing income and expenses, and the S corp election, plus the Augusta rule and hiring your kids.";
 
 export const metadata = {
-  title: "How to Save on Taxes When You're Self-Employed: 6 Strategies for 2026 | PrioritySave",
+  title: "How to Save on Taxes as an Entrepreneur: 6 Strategies for 2026 | PrioritySave",
   description:
-    "Six tax-saving strategies for self-employed people and business owners in 2026, with real numbers: retirement contributions, the health insurance deduction, year-end timing, the S corp election and QBI, the Augusta rule, and hiring your kids.",
+    "Six tax-saving strategies for entrepreneurs in 2026, from solopreneurs to small business owners, with real numbers: retirement contributions, the health insurance deduction, year-end timing, the S corp election and QBI, the Augusta rule, and hiring your kids.",
   alternates: { canonical: `https://www.prioritysave.com${PATH}` },
   robots: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large" },
   openGraph: {
     type: "article",
-    title: "How to Save on Taxes When You're Self-Employed (2026)",
+    title: "How to Save on Taxes as an Entrepreneur (2026)",
     description:
       "Four high-impact strategies and two bonuses, with worked examples using 2026 numbers.",
     url: `https://www.prioritysave.com${PATH}`,
@@ -47,8 +50,8 @@ const TOC = [
 
 const FAQ = [
   {
-    q: "What is the best way to lower taxes when you're self-employed?",
-    a: "For many self-employed people, retirement contributions are the biggest lever. Every dollar in a pre-tax retirement account comes off your taxable income, and a Solo 401(k) allows up to $72,000 in 2026 if you're under 50. At a 22% rate, a $20,000 pre-tax contribution saves about $4,400 in federal income tax.",
+    q: "What is the best way for an entrepreneur to lower taxes?",
+    a: "For many entrepreneurs, retirement contributions are the biggest lever. Every dollar in a pre-tax retirement account comes off your taxable income. A Solo 401(k) allows up to $72,000 in 2026 if you're under 50, and owners with employees can use a SEP IRA or a safe harbor 401(k). At a 22% rate, a $20,000 pre-tax contribution saves about $4,400 in federal income tax.",
   },
   {
     q: "At what profit does an S corp election start to make sense?",
@@ -79,6 +82,7 @@ export default function HowToSaveOnTaxesPage() {
   return (
     <BlogArticle
       path={PATH}
+      hub={null}
       title={TITLE}
       dek={DEK}
       updated="November 2026"
@@ -91,7 +95,8 @@ export default function HowToSaveOnTaxesPage() {
       datePublished="2026-11-03"
     >
       <p>
-        A lot of business owners and self-employed people overpay on taxes simply because they didn't plan ahead.
+        A lot of entrepreneurs overpay on taxes simply because they didn't plan ahead. That's true whether you're
+        self-employed, a solopreneur, or a business owner with a team.
         This isn't about moving to Puerto Rico or anything extreme. These are simple, boring, high-impact strategies
         worth knowing about before tax season, picked because they have the biggest payoff for the least effort.
       </p>
