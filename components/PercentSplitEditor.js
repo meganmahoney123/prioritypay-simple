@@ -142,6 +142,70 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
+// Small worked example for the cap help panels: same $5,000 cap, two
+// different things being measured. Total Category Cap counts PrioritySave's
+// own tally (starting balance + what it has seen you send here - logged
+// withdrawals); Account Balance Cap reads the real balance of the connected
+// account. Inline styles only so it renders the same in both editor themes.
+function CapCompareIllustration() {
+  const seg = (w, bg, color, text, extra) => (
+    <div
+      style={{
+        width: `${w}%`,
+        background: bg,
+        color,
+        fontSize: 11.5,
+        fontWeight: 600,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        ...extra,
+      }}
+    >
+      {text}
+    </div>
+  );
+  const bar = { display: "flex", height: 28, borderRadius: 8, overflow: "hidden", border: "1px solid #E4DAF7", background: "#fff" };
+  const room = { background: "repeating-linear-gradient(135deg, #fff, #fff 5px, #F1EAFC 5px, #F1EAFC 10px)", color: "#6B5A8E", fontWeight: 500 };
+  const head = { fontSize: 12.5, fontWeight: 700, color: "var(--color-text)", display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 5, flexWrap: "wrap" };
+  const note = { fontSize: 12, lineHeight: 1.5, marginTop: 5, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" };
+  return (
+    <div role="img" aria-label="Example: a Wedding category with a $5,000 cap. The Total Category Cap counts PrioritySave's tally of $3,500, leaving $1,500 of room. The Account Balance Cap reads the real account balance of $4,200, leaving $800 of room." style={{ background: "#fff", border: "1px solid #E4DAF7", borderRadius: 12, padding: "12px 12px 14px", display: "grid", gap: 14 }}>
+      <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700, color: "#6B5A8E" }}>
+        Example: a Wedding category with a $5,000 cap
+      </div>
+      <div>
+        <div style={head}>
+          <span>Total Category Cap</span>
+          <span style={{ fontWeight: 500, color: "#6B5A8E" }}>PrioritySave&apos;s tally</span>
+        </div>
+        <div style={bar}>
+          {seg(40, "#C4A9FA", "#2A1550", "$2,000 start")}
+          {seg(30, "#6D3BE0", "#fff", "$1,500 sent")}
+          {seg(30, "transparent", "#6B5A8E", "$1,500 room", room)}
+        </div>
+        <div style={note}>Starting balance + everything PrioritySave has seen you send here = $3,500.</div>
+      </div>
+      <div>
+        <div style={head}>
+          <span>Account Balance Cap</span>
+          <span style={{ fontWeight: 500, color: "#6B5A8E" }}>the real account</span>
+        </div>
+        <div style={bar}>
+          {seg(84, "#0F766E", "#fff", "$4,200 in the account")}
+          {seg(16, "transparent", "#6B5A8E", "$800", room)}
+        </div>
+        <div style={note}>
+          What your bank says is in the account right now. It also counts interest and money that didn&apos;t come
+          through PrioritySave, so it can be higher or lower than the tally.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, readOnly, lockLabel, persona, startingBalanceRoomInfo }) {
   const locked = isCoreRow(rule, persona) || !!lockLabel || !!readOnly;
   // A starting balance only ever counts as money already sitting in THIS
@@ -417,18 +481,26 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 {!isGrouped && (
                   <p style={{ margin: 0 }}>
                     <strong style={{ color: "var(--color-text)" }}>Total Category Cap:</strong> the most you want saved
-                    toward this category overall: your starting balance plus everything PrioritySave has sent here, minus
-                    anything you&apos;ve withdrawn. It stops sending money here once it hits this amount, and starts again
-                    if withdrawals bring it back below.
+                    toward this category overall. It goes by PrioritySave&apos;s own tally: your starting balance plus
+                    everything PrioritySave has seen you send here, minus withdrawals you log. It stops sending money
+                    here once the tally hits this amount, and starts again if withdrawals bring it back below.
                   </p>
                 )}
                 {!isGrouped && (
                   <p style={{ margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>Account Balance Cap:</strong> stops sending money here
-                    once the connected account&apos;s balance reaches this amount, and starts again if the balance
-                    falls below it.
+                    <strong style={{ color: "var(--color-text)" }}>Account Balance Cap:</strong> goes by the actual
+                    balance of the connected account, as your bank reports it, not our tally. It stops sending money
+                    here once that balance reaches this amount, and starts again if the balance falls below it.
                   </p>
                 )}
+                {!isGrouped && (
+                  <p style={{ margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>The key difference:</strong> the Total Category Cap
+                    counts what PrioritySave has tracked (starting balance + what it has seen you send), while the
+                    Account Balance Cap checks what&apos;s really in the account.
+                  </p>
+                )}
+                {!isGrouped && <CapCompareIllustration />}
                 {!hideStartingBalance && (
                   <p style={{ margin: 0 }}>
                     <strong style={{ color: "var(--color-text)" }}>Starting balance:</strong> money you already have set
@@ -448,14 +520,14 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 />
                 <CapField
                   label="Total Category Cap $"
-                  hint="everything saved toward this category, starting balance included"
+                  hint="PrioritySave's tally: starting balance + everything it has seen you send here"
                   value={rule.categoryCap}
                   onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
                   theme="ledger"
                 />
                 <CapField
                   label="Account Balance Cap $"
-                  hint="based on the connected account's balance"
+                  hint="the connected account's actual balance"
                   value={rule.balanceCap}
                   onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
                   theme="ledger"
@@ -734,13 +806,13 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           />
           <CapField
             label="Total Category Cap $"
-            hint="everything saved toward this category, starting balance included"
+            hint="PrioritySave's tally: starting balance + everything it has seen you send here"
             value={rule.categoryCap}
             onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
           />
           <CapField
             label="Account Balance Cap $"
-            hint="based on the connected account's balance"
+            hint="the connected account's actual balance"
             value={rule.balanceCap}
             onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
           />
@@ -991,15 +1063,18 @@ export default function PercentSplitEditor({
             </span>
           </summary>
           <p style={{ fontSize: 16, lineHeight: 1.7, margin: "12px 0 0" }}>
-            Any category below other than Investments or Retirement can have up to two optional caps. A{" "}
+            Any category below other than Investments or Retirement can have up to three optional caps. A{" "}
             <strong>Monthly Category Cap</strong> limits how many dollars a category can receive from your deposits in a
             given calendar month. Once it&apos;s hit, that category drops to 0% for the rest of the month and
-            resets automatically on the 1st. An <strong>Account Balance Cap</strong> instead watches the
-            connected account&apos;s own balance. Once that balance reaches the cap, the category drops to 0%
-            and stays there until the balance falls back below it (say, from a withdrawal), with no automatic
-            monthly reset. Either way, whatever a capped category doesn&apos;t take rises proportionally
-            across your other categories instead of going unused.
+            resets automatically on the 1st. A <strong>Total Category Cap</strong> goes by PrioritySave&apos;s own
+            tally: your starting balance plus everything PrioritySave has seen you send to that category, minus
+            withdrawals you log. An <strong>Account Balance Cap</strong> instead watches the connected account&apos;s
+            actual balance, as your bank reports it. Once either one is reached, the category drops to 0% and stays
+            there until the tally or balance falls back below it (say, from a withdrawal). Either way, whatever a
+            capped category doesn&apos;t take rises proportionally across your other categories instead of going
+            unused.
           </p>
+          <div style={{ marginTop: 12 }}><CapCompareIllustration /></div>
         </details>
         )}
         {typeof totalPct === "number" && (
@@ -1182,14 +1257,17 @@ export default function PercentSplitEditor({
       <details className="text-xs text-neutral-500 leading-relaxed">
         <summary className="cursor-pointer font-medium text-neutral-600">What&apos;s a cap?</summary>
         <p className="mt-2">
-          Any category below other than Investments or Retirement can have up to two optional caps. A Monthly
-          Cap limits how many dollars a category can receive from your deposits in a given calendar month. Once
-          it&apos;s hit, that category drops to 0% for the rest of the month and resets automatically on the
-          1st. An Account Balance Cap instead watches the connected account&apos;s own balance. Once that balance
-          reaches the cap, the category drops to 0% and stays there until the balance falls back below it, with
-          no automatic monthly reset. Either way, whatever a capped category doesn&apos;t take rises
-          proportionally across your other categories instead of going unused.
+          Any category below other than Investments or Retirement can have up to three optional caps. A Monthly
+          Category Cap limits how many dollars a category can receive from your deposits in a given calendar
+          month. Once it&apos;s hit, that category drops to 0% for the rest of the month and resets automatically
+          on the 1st. A Total Category Cap goes by PrioritySave&apos;s own tally: your starting balance plus
+          everything PrioritySave has seen you send to that category, minus withdrawals you log. An Account
+          Balance Cap instead watches the connected account&apos;s actual balance, as your bank reports it. Once
+          either one is reached, the category drops to 0% and stays there until the tally or balance falls back
+          below it. Either way, whatever a capped category doesn&apos;t take rises proportionally across your
+          other categories instead of going unused.
         </p>
+        <div className="mt-3"><CapCompareIllustration /></div>
       </details>
       {typeof totalPct === "number" && (
         <div className="flex items-baseline justify-between">
