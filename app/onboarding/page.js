@@ -1,5 +1,8 @@
 "use client";
 
+import { SOLE_PROP, shortDrawNote, splitUnit } from "@/lib/entityCopy";
+import EntityPicker from "@/components/EntityPicker";
+import ChipCheckboxes from "@/components/ChipCheckboxes";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
@@ -64,6 +67,27 @@ const BUSINESS_TYPES = [
   PERSONA_W2_NO_SIDE_HUSTLE,
 ];
 const HAS_EMPLOYEES_TYPE = "Business Owner (With Employees)";
+const WORK_OPTIONS = [
+  { value: "self_employed", label: "Freelance or 1099 work" },
+  { value: "owns_business", label: "I own or co-own a business" },
+  { value: "w2", label: "I have a W-2 job" },
+  { value: "retired", label: "Retired" },
+  { value: "between", label: "Between jobs or starting something new" },
+];
+// One persona drives split defaults, so combine the picks: a business with
+// employees wins, then any self-employment or business ownership (with a W-2
+// job on top it is the side-hustle persona), then a W-2 job alone.
+function personaFromWork(picks, hasEmployees) {
+  if ((picks.includes("owns_business") || picks.includes("self_employed")) && hasEmployees) return HAS_EMPLOYEES_TYPE;
+  if (picks.includes("self_employed") || picks.includes("owns_business")) {
+    return picks.includes("w2") ? PERSONA_W2_WITH_SIDE_HUSTLE : BUSINESS_TYPES[0];
+  }
+  // A W-2 job, retirement, or time between jobs with no business: no
+  // self-employment income, so the plain 401k / IRA / HSA rows fit. They can
+  // still edit every row on the Split Rules page.
+  if (picks.length) return PERSONA_W2_NO_SIDE_HUSTLE;
+  return BUSINESS_TYPES[0];
+}
 // Friendlier wording shown in the dropdown, matching the first question of
 // the Tax Savings Quiz. The stored value stays the exact persona string.
 const BUSINESS_TYPE_LABELS = {
@@ -112,8 +136,26 @@ function OnboardingPageInner() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [businessName, setBusinessName] = useState("");
-  const [entityType] = useState("Sole proprietor / freelancer");
+  const [entityType, setEntityType] = useState(SOLE_PROP);
   const [businessType, setBusinessType] = useState(BUSINESS_TYPES[0]);
+  // Work is select-all-that-apply (a freelancer can also co-own a business, or
+  // have a W-2 job), and the single persona that drives split defaults is
+  // worked out from those picks. The follow-up questions only appear once they
+  // have picked something.
+  const [workPicks, setWorkPicks] = useState([]);
+  const [hasEmployees, setHasEmployees] = useState(null);
+  // Freelancing or owning a business is what unlocks the business questions.
+  const ownsBusiness = workPicks.includes("self_employed") || workPicks.includes("owns_business");
+  const typeChosen = workPicks.length > 0;
+  const applyWork = (picks, emp) => {
+    const nextType = personaFromWork(picks, Boolean(emp));
+    setBusinessType(nextType);
+    if (!picks.length || isW2NoSideHustle(nextType)) setEntityType(SOLE_PROP);
+    // Retirement's default sub-account(s) depend on persona (see
+    // getDefaultSplitRules in lib/allocations.js). Safe to reset here since
+    // this is Step 1, before anyone has customized their split on Step 3.
+    setPercent(getDefaultSplitRules(nextType).percent);
+  };
   // Only asked/used for "Business Owner (With Employees)" -- a rough
   // self-reported number (no payroll integration exists) that feeds the
   // SEP IRA employer-parity cost shown later on Close-Out, and whether
@@ -525,7 +567,7 @@ function OnboardingPageInner() {
           // the under-50 IRS limit tier. Adjustable later from Split Rules
           // if that's ever wrong for someone.
           ageBracket: "under50",
-          estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
+          estimatedEmployeePayroll: isBusinessOwnerWithEmployees && Number(employeePayroll) > 0 ? Number(employeePayroll) : null,
         },
         splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
@@ -564,7 +606,7 @@ function OnboardingPageInner() {
           hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,
           w2ElectiveDeferralYTD: 0,
           ageBracket: "under50",
-          estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
+          estimatedEmployeePayroll: isBusinessOwnerWithEmployees && Number(employeePayroll) > 0 ? Number(employeePayroll) : null,
         },
         splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
@@ -648,7 +690,7 @@ function OnboardingPageInner() {
           hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,
           w2ElectiveDeferralYTD: 0,
           ageBracket: "under50",
-          estimatedEmployeePayroll: isBusinessOwnerWithEmployees ? Number(employeePayroll) || 0 : null,
+          estimatedEmployeePayroll: isBusinessOwnerWithEmployees && Number(employeePayroll) > 0 ? Number(employeePayroll) : null,
         },
         splitRules: { percent: settleCaps(percent) },
         minDepositThreshold,
@@ -804,89 +846,76 @@ function OnboardingPageInner() {
             <div style={{ display: "grid", gap: 26 }}>
               <div>
                 <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                  Select one
+                  Which of the following describes your work? Select all that apply.
                 </label>
-                <select
-                  value={businessType}
-                  onChange={(e) => {
-                    const nextType = e.target.value;
-                    setBusinessType(nextType);
-                    // Retirement's default sub-account(s) depend on
-                    // persona -- Solo 401k doesn't apply without
-                    // self-employment income, so switching to/from W2 (No
-                    // Side Hustle/Business) swaps the Retirement row(s) to
-                    // match (see getDefaultSplitRules in
-                    // lib/allocations.js). Safe to always reset here since
-                    // this is Step 1, before anyone's had a chance to
-                    // customize their split on Step 3.
-                    setPercent(getDefaultSplitRules(nextType).percent);
+                <ChipCheckboxes
+                  options={WORK_OPTIONS}
+                  selected={workPicks}
+                  onToggle={(v) => {
+                    const next = workPicks.includes(v) ? workPicks.filter((x) => x !== v) : [...workPicks, v];
+                    setWorkPicks(next);
+                    const runs = next.includes("self_employed") || next.includes("owns_business");
+                    if (!runs) setHasEmployees(null);
+                    applyWork(next, runs ? hasEmployees : null);
                   }}
-                  style={bloomInputStyle({ fontSize: 16 })}
-                >
-                  {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{BUSINESS_TYPE_LABELS[t] || t}</option>)}
-                </select>
+                />
               </div>
 
-              {isBusinessOwnerWithEmployees && (
-                <>
-                  <div>
-                    <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                      Rough total employee payroll this year
-                    </label>
-                    <input
-                      type="number"
-                      onFocus={(e) => e.target.select()}
-                      min={0}
-                      value={employeePayroll}
-                      onChange={(e) => setEmployeePayroll(e.target.value)}
-                      placeholder="e.g. 120000"
-                      style={bloomInputStyle({ fontSize: 16 })}
-                    />
-                    <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
-                      A ballpark is fine. This only shapes what an employer retirement plan would cost you once your team&apos;s
-                      required share is included. Adjustable anytime.
-                    </p>
+              {ownsBusiness && (
+                <div>
+                  <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                    Do you have employees?
+                  </label>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    {[{ value: true, label: "Yes" }, { value: false, label: "No" }].map((opt) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => {
+                          setHasEmployees(opt.value);
+                          applyWork(workPicks, opt.value);
+                        }}
+                        style={{
+                          flex: 1,
+                          textAlign: "left",
+                          fontFamily: "var(--font-body)",
+                          fontSize: 14.5,
+                          padding: "12px 14px",
+                          borderRadius: "var(--radius-md)",
+                          border: `1px solid ${hasEmployees === opt.value ? "var(--color-accent)" : "var(--color-divider)"}`,
+                          background: hasEmployees === opt.value ? "color-mix(in srgb, var(--color-accent) 7%, transparent)" : "transparent",
+                          color: hasEmployees === opt.value ? "var(--color-accent-700)" : "var(--color-text)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
-                  <div>
-                    <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                      Do you keep business and personal money separate?
-                    </label>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      {[
-                        { value: "separate", label: "Yes, separate accounts" },
-                        { value: "commingled", label: "No, it's mostly one pot" },
-                      ].map((opt) => (
-                        <button
-                          key={opt.value}
-                          onClick={() => setIncomeHandling(opt.value)}
-                          style={{
-                            flex: 1,
-                            textAlign: "left",
-                            fontFamily: "var(--font-body)",
-                            fontSize: 14.5,
-                            padding: "12px 14px",
-                            borderRadius: "var(--radius-md)",
-                            border: `1px solid ${incomeHandling === opt.value ? "var(--color-accent)" : "var(--color-divider)"}`,
-                            background: incomeHandling === opt.value ? "color-mix(in srgb, var(--color-accent) 7%, transparent)" : "transparent",
-                            color: incomeHandling === opt.value ? "var(--color-accent-700)" : "var(--color-text)",
-                            cursor: "pointer",
-                          }}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                    <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
-                      Either way, every transaction stays individually correctable later. This just sets a
-                      sensible starting default.
-                    </p>
-                  </div>
-                </>
+                  <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "8px 0 0" }}>
+                    If you have more than one business, answer Yes if any of them do.
+                  </p>
+                </div>
               )}
+
+              {ownsBusiness && (
+                <div>
+                  <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                    How is your business set up? Select all that apply.
+                  </label>
+                  <EntityPicker value={entityType} onChange={setEntityType} />
+                  {shortDrawNote(entityType) && (
+                    <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "10px 0 0" }}>
+                      {shortDrawNote(entityType)}
+                    </p>
+                  )}
+                </div>
+              )}
+
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} disabled={!isDevTester && isBusinessOwnerWithEmployees && !incomeHandling} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={next} disabled={!isDevTester && (!typeChosen || (ownsBusiness && hasEmployees === null))} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}
@@ -1006,7 +1035,7 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              Decide what share of each deposit goes where. Set savings to 10% and a $100 deposit tells you to
+              Decide what share of each {splitUnit(entityType)} goes where. Set savings to 10% and a $100 {splitUnit(entityType)} tells you to
               send $10 to savings.
             </p>
 
