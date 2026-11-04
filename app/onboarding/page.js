@@ -1438,7 +1438,7 @@ function OnboardingPageInner() {
               pctOverflow={pctOverflow}
               hideCapDetails
               theme="ledger"
-              hideStartingBalance
+              hideStartingBalance={!editSplits}
               hideCreateNew
               flattenInvestments
               hideGroupSubtext
