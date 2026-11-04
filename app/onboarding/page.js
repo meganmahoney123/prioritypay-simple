@@ -1,6 +1,6 @@
 "use client";
 
-import { SOLE_PROP, shortDrawNote, splitUnit, paysByDraw, mixedOrDrawConnectNote } from "@/lib/entityCopy";
+import { SOLE_PROP, dropsOpex, shortDrawNote, splitUnit, paysByDraw, mixedOrDrawConnectNote } from "@/lib/entityCopy";
 import EntityPicker from "@/components/EntityPicker";
 import ChipCheckboxes from "@/components/ChipCheckboxes";
 import { useEffect, useState, Suspense } from "react";
@@ -154,6 +154,22 @@ function OnboardingPageInner() {
   // Freelancing or owning a business is what unlocks the business questions.
   const ownsBusiness = workPicks.includes("self_employed") || workPicks.includes("owns_business");
   const typeChosen = workPicks.length > 0;
+  // Starting split for a persona and business structure. Draw-only owners start
+  // without the OPEX row (their business pays its own expenses first); its
+  // share moves to Savings so the starting total stays the same.
+  const defaultsFor = (persona, entity) => {
+    const rows = getDefaultSplitRules(persona).percent;
+    if (!dropsOpex(entity)) return rows;
+    const opex = rows.find((r) => r.id === "opex");
+    if (!opex) return rows;
+    return rows
+      .filter((r) => r.id !== "opex")
+      .map((r) => (r.id === "savings" ? { ...r, pct: (Number(r.pct) || 0) + (Number(opex.pct) || 0) } : r));
+  };
+  const changeEntity = (value) => {
+    setEntityType(value);
+    setPercent(defaultsFor(businessType, value));
+  };
   const applyWork = (picks, emp) => {
     const nextType = personaFromWork(picks, Boolean(emp));
     setBusinessType(nextType);
@@ -161,7 +177,7 @@ function OnboardingPageInner() {
     // Retirement's default sub-account(s) depend on persona (see
     // getDefaultSplitRules in lib/allocations.js). Safe to reset here since
     // this is Step 1, before anyone has customized their split on Step 3.
-    setPercent(getDefaultSplitRules(nextType).percent);
+    setPercent(defaultsFor(nextType, isW2NoSideHustle(nextType) || !picks.length ? SOLE_PROP : entityType));
   };
   // Only asked/used for "Business Owner (With Employees)" -- a rough
   // self-reported number (no payroll integration exists) that feeds the
@@ -899,8 +915,8 @@ function OnboardingPageInner() {
               Know your split<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
-              Set a percentage of every deposit for investments, savings, and other accounts. PrioritySave
-              calculates it the moment a deposit lands (BEFORE you spend it).
+              Set a percentage of every deposit or owner’s draw for investments, savings, and other accounts. PrioritySave
+              calculates it the moment the money lands (BEFORE you spend it).
             </p>
             <button onClick={next} className="pp-btn pp-btn-primary" style={{ fontSize: 15, padding: "15px 34px" }}>
               Get started &nbsp;→
@@ -974,7 +990,7 @@ function OnboardingPageInner() {
                   <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
                     How is your business set up? Select all that apply.
                   </label>
-                  <EntityPicker value={entityType} onChange={setEntityType} />
+                  <EntityPicker value={entityType} onChange={changeEntity} />
                   {shortDrawNote(entityType) && (
                     <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "10px 0 0" }}>
                       {shortDrawNote(entityType)}
@@ -997,6 +1013,11 @@ function OnboardingPageInner() {
               Set your percentage splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            {dropsOpex(entityType) && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "-8px 0 22px" }}>
+                There is no Business Expenses (OPEX) row because your business pays its own expenses before your draw. You can add one if you want it.
+              </p>
+            )}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
               Decide what share of each {splitUnit(entityType)} goes where. Set savings to 10% and a $100 {splitUnit(entityType)} tells you to
               send $10 to savings.
