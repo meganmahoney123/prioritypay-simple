@@ -9,7 +9,7 @@ import { Plus } from "lucide-react";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // isValidUSPhone no longer used here -- the phone-number step is
@@ -159,9 +159,16 @@ function OnboardingPageInner() {
   // share moves to Savings so the starting total stays the same.
   const defaultsFor = (persona, entity) => {
     let rows = getDefaultSplitRules(persona).percent;
-    // A Solo 401k only works with no employees, so owners with employees start with a SEP IRA.
-    if (persona === HAS_EMPLOYEES_TYPE) {
-      rows = rows.map((r) => (r.id === "solo_401k" ? { ...r, id: "sep_ira", label: "SEP IRA", retirementType: "sep_ira" } : r));
+    // Retirement starts as one generic bucket with the usual total. People then
+    // tick the accounts they have open right now (see toggleRetirement).
+    const isRet = (r) => (r.group || "").startsWith("Retirement");
+    const retTotal = rows.filter(isRet).reduce((n, r) => n + (Number(r.pct) || 0), 0);
+    const firstRet = rows.findIndex(isRet);
+    if (firstRet >= 0) {
+      const rest = rows.filter((r) => !isRet(r));
+      const at = rows.slice(0, firstRet).filter((r) => !isRet(r)).length;
+      rest.splice(at, 0, buildGenericRetirementRow(retTotal || 15, rows.map((r) => r.color)));
+      rows = rest;
     }
     if (!dropsOpex(entity)) return rows;
     const opex = rows.find((r) => r.id === "opex");
@@ -180,11 +187,13 @@ function OnboardingPageInner() {
       const defaultTotal = getDefaultSplitRules(businessType).percent.filter(isRetRow).reduce((n, r) => n + (Number(r.pct) || 0), 0);
       const currentTotal = existing.reduce((n, r) => n + (Number(r.pct) || 0), 0);
       const total = currentTotal > 0 ? currentTotal : defaultTotal || 15;
+      const picked = existing.filter((r) => r.retirementType);
       let rows = has
-        ? existing.filter((r) => r.retirementType !== type)
-        : [...existing, buildRetirementRow(type, businessType, prev.map((r) => r.color))];
-      const order = retirementPickerOptions(businessType).map((o) => o.value);
+        ? picked.filter((r) => r.retirementType !== type)
+        : [...picked, buildRetirementRow(type, businessType, prev.map((r) => r.color))];
+      const order = retirementPickerOptions().map((o) => o.value);
       rows = [...rows].sort((x, y) => order.indexOf(x.retirementType) - order.indexOf(y.retirementType));
+      if (!rows.length) rows = [buildGenericRetirementRow(total, prev.map((r) => r.color))];
       const share = rows.length ? Math.floor((total / rows.length) * 100) / 100 : 0;
       rows = rows.map((r, i) => ({ ...r, pct: i === 0 ? roundPct(total - share * (rows.length - 1)) : share }));
       const firstIdx = prev.findIndex(isRetRow);
@@ -225,9 +234,14 @@ function OnboardingPageInner() {
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
+  // Anyone with earned income should put at least 1% toward retirement. Retired
+  // people and people between jobs may have no earned income, so they can skip it.
+  const earnsIncome = workPicks.some((v) => ["self_employed", "owns_business", "w2"].includes(v));
+  const retirementPct = percent.filter((r) => (r.group || "").startsWith("Retirement")).reduce((n, r) => n + (Number(r.pct) || 0), 0);
+  const needsRetirement = earnsIncome && retirementPct < 1;
   const retirementPicker = {
-    options: retirementPickerOptions(businessType),
-    selected: percent.filter(isRetRow).map((r) => r.retirementType),
+    options: retirementPickerOptions(),
+    selected: percent.filter((r) => isRetRow(r) && r.retirementType).map((r) => r.retirementType),
     onToggle: toggleRetirement,
   };
   // $50 is a hard floor (see PHASE N, supabase/schema.sql) -- enforced
@@ -1643,9 +1657,12 @@ function OnboardingPageInner() {
                 {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
               </span>
             </div>
+            {step === 2 && needsRetirement && (
+              <p style={{ fontSize: 14, color: "#b3261e", margin: "0 0 12px" }}>Put at least 1% toward retirement to continue.</p>
+            )}
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={step === 2 ? next : handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={step === 2 ? next : handleStep4Continue} disabled={step === 2 && needsRetirement} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         </div>
