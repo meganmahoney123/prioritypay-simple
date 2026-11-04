@@ -9,6 +9,17 @@ export async function POST(request) {
   const { persona, businessName, entityType, retirementProfile, splitRules, minDepositThreshold, notifications, finalize } =
     await request.json();
   const admin = supabaseAdmin();
+  // Finishing onboarding (finalize not false) requires a paid plan, so the
+  // payment step can't be skipped by calling this route directly. The two demo
+  // accounts are exempt so the wizard can be walked without Stripe.
+  if (finalize !== false) {
+    const DEMO_EMAILS = ["megan@ignitemysite.com", "megan+onboarding@ignitemysite.com"];
+    const { data: billing } = await admin.from("simple_profiles").select("subscription_status").eq("id", user.id).single();
+    const exempt = DEMO_EMAILS.includes((user.email || "").toLowerCase());
+    if (!exempt && billing?.subscription_status !== "active") {
+      return Response.json({ error: "Start your plan first, then you can finish setting up." }, { status: 402 });
+    }
+  }
   const rp = retirementProfile || {};
   const notif = notifications || {};
   // New signups now pay for their subscription before onboarding finishes
