@@ -881,6 +881,13 @@ export default function PercentSplitEditor({
       rest.splice(at, 0, merged);
       sections = rest;
     }
+    // Percentage-only step: Investments is one plain row (extra accounts can be
+    // added later as their own categories), not a group with an add button.
+    if (hideAccountPicker) {
+      sections = sections.flatMap((x) =>
+        x.type === "group" && x.group === "Investments" ? x.rows.map((row) => ({ type: "row", row })) : [x]
+      );
+    }
     return (
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 18 }}>
         {!hideCapDetails && (
