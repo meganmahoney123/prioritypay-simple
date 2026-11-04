@@ -188,7 +188,7 @@ const FAQS = [
   },
   {
     q: "Who is PrioritySave for?",
-    a: "PrioritySave is built primarily for self-employed people, W2 employees with side income, and entrepreneurs to manage their spend more efficiently. You can set rules to route a percentage of each deposit to specific accounts, like savings, tax reserve, investments, retirement, and specific savings like a wedding, a down payment on a house, or college.",
+    a: "PrioritySave is designed for irregular income: sole proprietors (freelancers, solopreneurs and more) and small business owners who get paid in uneven amounts at uneven times. If you own an LLC, it splits the draws you pay yourself. It also works for W2 employees with side income. You can set rules to route a percentage of each deposit to specific accounts, like savings, tax reserve, investments, retirement, and specific savings like a wedding, a down payment on a house, or college.",
   },
   {
     q: "What accounts can I connect?",
@@ -312,6 +312,7 @@ export default function Homepage() {
         }}
       >
         <Reveal>
+          <Eyebrow>Designed for irregular income</Eyebrow>
           <h1
             style={{
               fontSize: "clamp(36px, 5.2vw, 60px)",
@@ -325,9 +326,9 @@ export default function Homepage() {
             <span style={{ color: "var(--color-accent)" }}>Before you spend it.</span>
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.6, color: "#574A68", margin: "22px 0 0", maxWidth: "30em" }}>
-            PrioritySave lets you set rules to split each deposit and send it to retirement, savings, investments,
-            a tax reserve, or any other goal, like a wedding or college fund. Works for client payments and for
-            the draws you pay yourself from an LLC.{" "}
+            Built for sole proprietors (freelancers, solopreneurs and more) and small business owners. Set rules
+            once, and every client payment is split the moment it lands: retirement, savings, investments, a tax
+            reserve, or any other goal, like a wedding or college fund. Own an LLC? We split your draws.{" "}
             <em style={{ color: "var(--color-text)", fontStyle: "italic" }}>Spend the rest, guilt free.</em>
           </p>
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 30 }}>
