@@ -57,11 +57,13 @@ const ONBOARDING_LIVE = true;
 // Order (Nov 2026): the fun part first (percentages), then connect banks, then
 // the plan step, and only after paying are accounts matched to each split.
 // Payment no longer finishes onboarding -- the last step does.
-const STEPS = ["Welcome", "Business", "Percentage Splits", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts"];
+const STEPS = ["Welcome", "Business", "Percentage Splits", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts", "Credit Cards"];
 const STEP_CONNECT = 3;
 const STEP_PLAN = 4;
 const STEP_MATCH = 5;
 const STEP_BALANCES = 6;
+const STEP_ALERTS = 7;
+const STEP_CARDS = 8;
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -1421,27 +1423,6 @@ function OnboardingPageInner() {
               retirementPicker={editSplits ? retirementPicker : null}
               persona={businessType}
             />
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 30, paddingTop: 24 }}>
-              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 14px" }}>
-                Optional: connect your credit cards to track expenses and keep balances accurate. They&apos;re only
-                used for close-out expense tracking, never for splits or transfers.
-              </p>
-                <PlaidLinkButton
-                  label="Add a credit card"
-                  creditCard
-                  onLinked={(account) => onAccountLinked(account)}
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontWeight: 600,
-                    fontSize: 13.5,
-                    color: "color-mix(in srgb, var(--color-text) 65%, transparent)",
-                    background: "transparent",
-                    border: "1px solid var(--color-divider)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "13px 22px",
-                  }}
-                />
-            </div>
             {editSplits ? (
               <>
                 <button
@@ -1605,7 +1586,7 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === STEPS.length - 1 && (
+        {step === STEP_ALERTS && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Get notified the moment a deposit lands
@@ -1692,7 +1673,58 @@ function OnboardingPageInner() {
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={completeOnboarding} disabled={submitting || !isValidUSPhone(phoneNumber)} flex>
+              <PrimaryBtn onClick={next} disabled={!isValidUSPhone(phoneNumber)} flex>
+                Continue &nbsp;→
+              </PrimaryBtn>
+            </div>
+          </div>
+        )}
+
+        {step === STEP_CARDS && (
+          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Connect your credit cards
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 12px" }}>
+              Optional, and the last step. Connecting your credit cards helps you track expenses, which keeps your
+              balances accurate.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", margin: "0 0 24px" }}>
+              Credit cards are for close-out expense tracking only. They&apos;re never used for splits or transfers.
+            </p>
+            <div style={{ marginBottom: 20 }}>
+              <PlaidLinkButton
+                label="Add a credit card"
+                creditCard
+                onLinked={(account) => onAccountLinked(account)}
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 600,
+                  color: "var(--color-accent)",
+                  background: "transparent",
+                  border: "1px solid var(--color-accent)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "13px 26px",
+                }}
+              />
+            </div>
+            {accounts.filter((a) => a.account_type === "credit").length > 0 && (
+              <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", padding: "4px 22px", marginBottom: 20 }}>
+                {accounts.filter((a) => a.account_type === "credit").map((a) => (
+                  <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", fontFamily: "var(--font-heading)", fontSize: 16 }}>
+                    <span style={{ flex: 1, minWidth: 0 }}>{a.institution_name}, {a.account_name} •••• {a.mask}</span>
+                    <span style={{ fontSize: 11.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>Linked</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {paymentError && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "0 0 16px" }}>{paymentError}</p>
+            )}
+            <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+              <BackBtn onClick={back} />
+              <PrimaryBtn onClick={completeOnboarding} disabled={submitting} flex>
                 {submitting ? "Finishing…" : "Finish and go to my dashboard"} &nbsp;→
               </PrimaryBtn>
             </div>
