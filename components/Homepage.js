@@ -159,6 +159,11 @@ const PERCENTAGES = [
   { name: "Savings", pct: "10%", width: "50%" },
 ];
 
+const WHO_FOR = [
+  "Freelancers", "Coaches", "Consultants", "Solopreneurs", "Small Business Owners",
+  "Creators", "Contractors", "Designers", "Photographers", "Real Estate Agents", "Trainers",
+];
+
 const BANK_NAMES = [
   "Chase", "Bank of America", "Wells Fargo",
   "Capital One", "Citibank", "U.S. Bank", "PNC Bank", "Truist", "Ally Bank",
@@ -711,6 +716,31 @@ export default function Homepage() {
               <div style={{ fontSize: 15, opacity: 0.75 }}>already split &amp; saved this month</div>
             </div>
           </Reveal>
+        </div>
+      </section>
+
+      {/* WHO THIS IS FOR */}
+      <section style={{ padding: "20px 0 clamp(36px, 5vw, 48px)", overflow: "hidden" }}>
+        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6B5E7A", marginBottom: 26 }}>
+          Who this is for
+        </div>
+        <div className="pp-marquee-track" style={{ display: "flex", width: "max-content", gap: 12 }}>
+          {[...WHO_FOR, ...WHO_FOR, ...WHO_FOR, ...WHO_FOR].map((w, idx) => (
+            <span
+              key={idx}
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "var(--color-accent-700)",
+                background: "var(--color-accent-200)",
+                borderRadius: "var(--radius-pill)",
+                padding: "13px 24px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {w}
+            </span>
+          ))}
         </div>
       </section>
 
