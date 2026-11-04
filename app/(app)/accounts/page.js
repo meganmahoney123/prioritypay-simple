@@ -5,6 +5,8 @@ import { Landmark, CreditCard, Briefcase } from "lucide-react";
 import { Card, Badge, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import AccountCategoryBreakdown from "@/components/AccountCategoryBreakdown";
+
+const SHOW_ACCOUNT_BREAKDOWN = false;
 import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 
 // Identity verification used to gate this whole page -- see the removed
@@ -238,7 +240,11 @@ export default function AccountsPage() {
           {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
         </button>
       </div>
-      <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} allCategories={allCategories} onChanged={load} />
+      {/* Hidden for launch: the per-account category breakdown (donut, category
+          balances, mismatch notice). Set to true to bring it back. */}
+      {SHOW_ACCOUNT_BREAKDOWN && (
+        <AccountCategoryBreakdown accountId={acc.id} data={categoryBalances[acc.id]} allCategories={allCategories} onChanged={load} />
+      )}
     </Card>
   );
 
