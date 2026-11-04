@@ -7,7 +7,7 @@ import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import { PrimaryButton, currency } from "@/components/ui";
 import { BLOOM_TOKENS, bloomSelectStyle } from "@/lib/bloomTheme";
-import { calculateSepIra, calculateSolo401k, AGE_BRACKETS, BUSINESS_TYPES } from "@/lib/retirementCalculator";
+import { calculateSolo401k, AGE_BRACKETS, BUSINESS_TYPES } from "@/lib/retirementCalculator";
 
 // No persona toggle here (Megan's Aug 2026 note): the "How you're taxed"
 // select (BUSINESS_TYPES) already captures the one distinction that
@@ -20,23 +20,15 @@ import { calculateSepIra, calculateSolo401k, AGE_BRACKETS, BUSINESS_TYPES } from
 // hardcoded to 0 (full deferral room assumed) since this tool is scoped
 // to a single self-employment/business plan, not multi-plan coordination.
 //
-// Renamed from "vs" to "+" and split "already contributed" into two
-// separate fields per Megan's Aug 2026 note: this isn't an either-or
-// choice (SEP IRA and Solo 401k are two different plans someone could
-// hold at once, especially mid-year after switching from one to the
-// other), and a single shared "already contributed" figure silently
-// assumed whichever plan they ended up using got 100% of what they'd
-// already put aside -- wrong if they'd split contributions, or funded
-// one plan earlier in the year before considering the other.
+// Solo 401k only for now. The SEP IRA side-by-side comparison was removed in
+// Nov 2026 (the math is still in lib/retirementCalculator.js).
 export default function RetirementCalculatorPublicClient() {
   const router = useRouter();
   const [businessType, setBusinessType] = useState(BUSINESS_TYPES[0].value);
   const [netIncome, setNetIncome] = useState(90000);
   const [ageBracket, setAgeBracket] = useState("under50");
-  const [sepContributed, setSepContributed] = useState(0);
   const [solo401kContributed, setSolo401kContributed] = useState(0);
 
-  const sep = useMemo(() => calculateSepIra({ netIncome, businessType }), [netIncome, businessType]);
   const solo401k = useMemo(
     () => calculateSolo401k({ netIncome, businessType, ageBracket, otherPlanDeferralYTD: 0 }),
     [netIncome, businessType, ageBracket]
@@ -59,33 +51,14 @@ export default function RetirementCalculatorPublicClient() {
       monthlyToHitTarget: remaining > 0 ? remaining / monthsRemaining : 0,
     };
   };
-  const sepProgress = planProgress(sep.contribution, sepContributed);
   const solo401kProgress = planProgress(solo401k.total, solo401kContributed);
-  const soloBigger = solo401k.total > sep.contribution;
 
   const plans = [
-    {
-      key: "sep",
-      name: "SEP IRA",
-      total: sep.contribution,
-      isBigger: !soloBigger && sep.contribution > 0,
-      lines: [
-        { label: "Structure", value: "Employer only" },
-        { label: "Compensation base", value: currency(sep.compensation) },
-        { label: "Annual dollar cap", value: currency(sep.cap) },
-      ],
-      capped: sep.cappedByAnnualLimit,
-      cappedNote: `Capped by the annual dollar limit, the uncapped 20-25% formula would allow ${currency(sep.uncappedContribution)}.`,
-      contributedLabel: "Already contributed to this SEP IRA",
-      contributed: sepContributed,
-      onContributed: (e) => setSepContributed(Math.max(0, Number(e.target.value) || 0)),
-      progress: sepProgress,
-    },
     {
       key: "solo401k",
       name: "Solo 401k",
       total: solo401k.total,
-      isBigger: soloBigger,
+      isBigger: false,
       lines: [
         { label: "Employee deferral", value: currency(solo401k.employeeDeferral) },
         { label: "Employer/profit-share", value: currency(solo401k.employerContribution) },
@@ -114,11 +87,11 @@ export default function RetirementCalculatorPublicClient() {
             margin: "0 0 16px",
           }}
         >
-          Solo 401k + SEP IRA Calculator
+          Solo 401k Calculator
         </h1>
         <p style={{ fontSize: 19, lineHeight: 1.6, color: "var(--color-neutral-800)", margin: "0 0 36px", maxWidth: "42em" }}>
-          See how much room you actually have in each for 2026, side by side. Free, no account needed, for
-          self-employed people and business owners only, since W2 employees don't have access to either plan.
+          See how much room you actually have in a Solo 401k for 2026. Free, no account needed, for
+          self-employed people and business owners only, since W2 employees don't have access to this plan.
         </p>
 
         {/* Inputs card */}
@@ -212,7 +185,7 @@ export default function RetirementCalculatorPublicClient() {
         </div>
 
         {/* Plan cards */}
-        <div className="grid gap-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", marginTop: 20 }}>
+        <div className="grid gap-5" style={{ gridTemplateColumns: "minmax(0, 560px)", marginTop: 20 }}>
           {plans.map((p) => (
             <div
               key={p.key}
@@ -365,24 +338,6 @@ export default function RetirementCalculatorPublicClient() {
 
         <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--color-neutral-700)", margin: "16px 0 0" }}>
           The monthly amounts above are a general estimate to help you plan, not financial or tax advice.
-        </p>
-
-        <p
-          style={{
-            fontSize: 18,
-            lineHeight: 1.6,
-            color: "var(--color-text)",
-            fontWeight: 600,
-            background: "var(--color-surface)",
-            border: "1px solid var(--color-divider)",
-            borderRadius: 22,
-            padding: "22px 24px",
-            margin: "20px 0 0",
-          }}
-        >
-          {soloBigger
-            ? `A Solo 401k gives you ${currency(solo401k.total - sep.contribution)} more room here, mainly because of the separate employee deferral on top of the employer share.`
-            : `These come out close to even at this income, a SEP IRA is simpler to administer if you'd rather skip the extra paperwork a Solo 401k needs.`}
         </p>
 
         {/* CTA banner */}
