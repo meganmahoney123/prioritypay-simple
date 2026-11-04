@@ -361,16 +361,9 @@ function SettingsPageInner() {
           </>
         )}
 
-        {/* Business plan: no longer offered to new customers. Existing
-            Business subscribers still get a pointer to their hub. */}
-        {billing.isBusiness && (
-          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--color-divider)" }}>
-            <p style={{ fontSize: 14, margin: 0 }}>
-              You&apos;re on the <strong>Business</strong> plan. Manage businesses and QuickBooks from the{" "}
-              <a href="/business" style={{ color: "var(--color-accent-700)" }}>Business</a> page.
-            </p>
-          </div>
-        )}
+        {/* The Business hub page is hidden for now (/business redirects to the
+            dashboard), so the pointer to it is hidden too. Existing Business
+            subscribers still see their plan line above. */}
       </Card>
 
       <MfaSettings />
