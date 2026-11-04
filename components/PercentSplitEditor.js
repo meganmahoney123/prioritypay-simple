@@ -996,7 +996,7 @@ export default function PercentSplitEditor({
                 {retirementPicker && section.group === "Retirement" && (
                   <div style={{ margin: "0 0 18px" }}>
                     <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 12px", maxWidth: "40em" }}>
-                      Which of these do you have or plan to open? Select all that apply.
+                      Which of these do you have open right now? Select all that apply. If none, set a percentage anyway. The money builds up until you open one.
                     </p>
                     <ChipCheckboxes options={retirementPicker.options} selected={retirementPicker.selected} onToggle={retirementPicker.onToggle} />
                   </div>
