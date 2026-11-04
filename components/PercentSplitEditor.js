@@ -142,8 +142,8 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, lockLabel, persona, startingBalanceRoomInfo }) {
-  const locked = isCoreRow(rule, persona) || !!lockLabel;
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, readOnly, lockLabel, persona, startingBalanceRoomInfo }) {
+  const locked = isCoreRow(rule, persona) || !!lockLabel || !!readOnly;
   // A starting balance only ever counts as money already sitting in THIS
   // row's own connected account (see the PUT /api/split-rules validation
   // that enforces this) -- two categories named the same thing on two
@@ -251,6 +251,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 max={100}
                 value={rule.pct}
                 disabled={isEmployerRetirementRow(rule) && rule.employerHandles}
+                readOnly={!!readOnly}
+                tabIndex={readOnly ? -1 : undefined}
                 onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
                 style={{
                   width: 40,
@@ -297,7 +299,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         {!hideAccountPicker && (rule.retirementType || (rule.group || "").startsWith("Retirement")) && (
           <RetirementNote label={rule.label} theme="ledger" isEmployer={isEmployerRetirementRow(rule)} />
         )}
-        {!hideAccountPicker && isEmployerRetirementRow(rule) && (
+        {!hideAccountPicker && !readOnly && isEmployerRetirementRow(rule) && (
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)", cursor: "pointer" }}>
             <input
               type="checkbox"
@@ -311,7 +313,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             My employer already pulls money from my paycheck for this
           </label>
         )}
-        {!hideAccountPicker && isEmployerRetirementRow(rule) && (
+        {!hideAccountPicker && !readOnly && isEmployerRetirementRow(rule) && (
           <button
             type="button"
             onClick={() => setShowEmployerCheckModal(true)}
@@ -369,7 +371,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           </div>
         </div>
         )}
-        {!isGrouped && (
+        {!isGrouped && !readOnly && (
           <div style={{ marginTop: 4 }}>
             <button
               type="button"
@@ -841,6 +843,13 @@ export default function PercentSplitEditor({
   hideAccountPicker = false,
   // Hides the "create a new savings account" choice in each account picker.
   hideCreateNew = false,
+  // Rows show their percentage and account picker only (no renaming, deleting,
+  // percentage edits, limits or add buttons).
+  readOnly = false,
+  // Investments is one plain row instead of a group with an add button.
+  flattenInvestments = false,
+  // Drops the explainer line under the Retirement heading.
+  hideGroupSubtext = false,
   // { options: [{value,label}], selected: [value], onToggle(value) } -- onboarding's
   // "which retirement accounts do you have" picker; replaces the per-group
   // notes and the add button for Retirement.
@@ -885,7 +894,7 @@ export default function PercentSplitEditor({
     }
     // Percentage-only step: Investments is one plain row (extra accounts can be
     // added later as their own categories), not a group with an add button.
-    if (hideAccountPicker) {
+    if (hideAccountPicker || flattenInvestments) {
       sections = sections.flatMap((x) =>
         x.type === "group" && x.group === "Investments" ? x.rows.map((row) => ({ type: "row", row })) : [x]
       );
@@ -990,7 +999,7 @@ export default function PercentSplitEditor({
                 </span>
               </div>
               <div style={{ padding: "18px 22px 22px" }}>
-                {section.group.startsWith("Retirement") && !retirementPicker && (
+                {section.group.startsWith("Retirement") && !retirementPicker && !hideGroupSubtext && (
                   <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 18px", maxWidth: "40em" }}>
                     {retirementGroupSubtext(persona, section.group)}
                   </p>
@@ -1027,7 +1036,7 @@ export default function PercentSplitEditor({
                       onAccountLinked={onAccountLinked}
                       showRowWarnings={showRowWarnings}
                       forceShowStartingBalance={forceShowStartingBalance}
-                      hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
+                      hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew} readOnly={readOnly}
                       lockLabel={!!retirementPicker && !!(rule.retirementType || rule.id === "retirement_savings")}
                       overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
@@ -1037,7 +1046,7 @@ export default function PercentSplitEditor({
                     />
                   ))}
                 </div>
-                {!hideAccountPicker && !(retirementPicker && section.group.startsWith("Retirement")) && (
+                {!hideAccountPicker && !readOnly && !(retirementPicker && section.group.startsWith("Retirement")) && (
                 <button
                   onClick={() => onAddSubAccount(section.group)}
                   className="pp-ledger-add"
@@ -1075,7 +1084,7 @@ export default function PercentSplitEditor({
               onAccountLinked={onAccountLinked}
               showRowWarnings={showRowWarnings}
               forceShowStartingBalance={forceShowStartingBalance}
-              hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
+              hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew} readOnly={readOnly}
               overflowMessage={overflowMessageFor(section.row.id)}
               theme="ledger"
               dotColor={dotColorFor(section.row.id)}
@@ -1152,7 +1161,7 @@ export default function PercentSplitEditor({
                   onAccountLinked={onAccountLinked}
                   showRowWarnings={showRowWarnings}
                   forceShowStartingBalance={forceShowStartingBalance}
-                  hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
+                  hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew} readOnly={readOnly}
                   overflowMessage={overflowMessageFor(rule.id)}
                   persona={persona}
                 />
@@ -1179,7 +1188,7 @@ export default function PercentSplitEditor({
             onAccountLinked={onAccountLinked}
             showRowWarnings={showRowWarnings}
             forceShowStartingBalance={forceShowStartingBalance}
-            hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew}
+            hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker} hideCreateNew={hideCreateNew} readOnly={readOnly}
             overflowMessage={overflowMessageFor(section.row.id)}
             persona={persona}
           />

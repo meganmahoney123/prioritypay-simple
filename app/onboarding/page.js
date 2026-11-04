@@ -244,6 +244,8 @@ function OnboardingPageInner() {
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
+  // On the match step, splits are read-only until someone asks to edit them.
+  const [editSplits, setEditSplits] = useState(false);
   // Anyone with earned income should put at least 1% toward retirement. Retired
   // people and people between jobs may have no earned income, so they can skip it.
   const earnsIncome = workPicks.some((v) => ["self_employed", "owns_business", "w2"].includes(v));
@@ -1419,7 +1421,7 @@ function OnboardingPageInner() {
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
               Your plan is active. Last setup step: choose which account each split should go to, so your checklist
-              knows where to send it. You can connect or create accounts right on each row.
+              knows where to send it. You can connect accounts right on each row.
             </p>
             <PercentSplitEditor
               percent={percent}
@@ -1438,8 +1440,69 @@ function OnboardingPageInner() {
               theme="ledger"
               hideStartingBalance
               hideCreateNew
+              flattenInvestments
+              hideGroupSubtext
+              readOnly={!editSplits}
+              retirementPicker={editSplits ? retirementPicker : null}
               persona={businessType}
             />
+            {editSplits ? (
+              <>
+                <button
+                  onClick={addPercent}
+                  className="pp-ledger-dashed"
+                  style={{
+                    width: "100%",
+                    marginTop: 20,
+                    background: "transparent",
+                    border: "1px dashed var(--color-accent-300)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "14px 16px",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-heading)",
+                    fontSize: 15,
+                    letterSpacing: "0.04em",
+                    color: "var(--color-accent-700)",
+                  }}
+                >
+                  + &nbsp;Add your own category
+                </button>
+                {availableSuggestions.length > 0 && (
+                  <div style={{ marginTop: 30 }}>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
+                      Suggestions: click to add, starts at 0%
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                      {availableSuggestions.map((sg) => (
+                        <button
+                          key={sg.label}
+                          onClick={() => addSuggested(sg)}
+                          className="pp-ledger-pill"
+                          style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", background: "transparent", border: "1px solid var(--color-divider)", borderRadius: 999, padding: "8px 16px", cursor: "pointer", whiteSpace: "nowrap" }}
+                        >
+                          + &nbsp;{sg.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEditSplits(false)}
+                  style={{ display: "block", margin: "26px auto 0", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 15, color: "var(--color-accent-700)", textDecoration: "underline" }}
+                >
+                  Done editing splits
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditSplits(true)}
+                style={{ display: "block", margin: "26px auto 0", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 15, color: "var(--color-accent-700)", textDecoration: "underline" }}
+              >
+                Want to edit your splits?
+              </button>
+            )}
           </div>
         )}
 
