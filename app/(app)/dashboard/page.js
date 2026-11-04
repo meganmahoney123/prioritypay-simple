@@ -384,7 +384,7 @@ export default function DashboardPage() {
       {/* Testing only: add ?bizpreview=1 to the dashboard URL to see the card
           without a deposit (sample businesses if none on the profile).
           Restricted to Megan's own accounts. */}
-      {bizPreview && !billing?.isBusiness && (
+      {bizPreview && (
         <BusinessUpgradeCard
           forceShow
           entityType={showsBusinessPitch(businessInfo.entityType) ? businessInfo.entityType : "Sole proprietor / freelancer; Single-member LLC"}
