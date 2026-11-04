@@ -68,7 +68,7 @@ const FAQ = [
 ];
 
 const RELATED = [
-  { href: "/self-employed/how-to-save-on-taxes", title: "How to Save on Taxes When You're Self-Employed (2026)" },
+  { href: "/blog/how-to-save-on-taxes", title: "How to Save on Taxes as an Entrepreneur (2026)" },
   { href: "/blog/business-tax-deductions", title: "10 Tax Deductions Business Owners Should Know About" },
   { href: "/self-employed/tax-optimization", title: "Tax Optimization for Self Employed: The Complete Guide" },
   { href: "/calculators/retirementcalculator", title: "Retirement calculator" },
@@ -338,7 +338,7 @@ export default function Solo401kPage() {
       </ol>
       <p>
         A Solo 401(k) is one way to save on taxes. For more, read{" "}
-        <Link href="/self-employed/how-to-save-on-taxes">How to Save on Taxes When You're Self-Employed</Link>.
+        <Link href="/blog/how-to-save-on-taxes">How to Save on Taxes as an Entrepreneur</Link>.
       </p>
     </BlogArticle>
   );
