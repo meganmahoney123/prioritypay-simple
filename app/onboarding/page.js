@@ -16,7 +16,7 @@ import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // temporarily out of onboarding (see the step === 4 note below) -- still
 // imported/used server-side and would come back with that step, so
 // lib/phone.js itself is untouched.
-import { normalizeUSPhone } from "@/lib/phone";
+import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
 
@@ -1608,7 +1608,7 @@ function OnboardingPageInner() {
         {step === STEPS.length - 1 && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Get emailed the moment a deposit lands
+              Get notified the moment a deposit lands
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             {/* Text alerts are temporarily on hold (see the same note in
@@ -1618,10 +1618,44 @@ function OnboardingPageInner() {
                 that step back later is a quick revert rather than a
                 rebuild. */}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              PrioritySave emails you the moment a qualifying deposit lands, with a link straight to your split
-              checklist. That&apos;s how you actually confirm and send each transfer. We&apos;ll send it to your
-              account email{emailAddress ? `, ${emailAddress}` : ""}.
+              PrioritySave notifies you the moment a qualifying deposit lands, with a link straight to your split
+              checklist. That&apos;s how you actually confirm and send each transfer.
             </p>
+            <div style={{ marginBottom: 32 }}>
+              <label
+                style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
+              >
+                Mobile number (required)
+              </label>
+              <div style={{ maxWidth: 340 }}>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  style={bloomInputStyle({ fontSize: 16 })}
+                />
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 16 }}>
+                <input
+                  type="checkbox"
+                  checked={smsEnabled}
+                  onChange={(e) => setSmsEnabled(e.target.checked)}
+                  style={{ width: 16, height: 16 }}
+                />
+                <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
+                  Text me when a deposit crosses my threshold
+                </span>
+              </label>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0", maxWidth: "30em" }}>
+                By opting in you agree to receive deposit-alert texts from PrioritySave. Message &amp; data rates may
+                apply; frequency varies with your deposit activity. Reply STOP to cancel or HELP for help. See our{" "}
+                <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                  Terms
+                </a>
+                .
+              </p>
+            </div>
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 16 }}>
               <input
                 type="checkbox"
@@ -1630,7 +1664,7 @@ function OnboardingPageInner() {
                 style={{ width: 16, height: 16 }}
               />
               <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                Email me when a deposit crosses my threshold
+                Also email me when a deposit crosses my threshold
               </span>
             </label>
             {emailAlertsEnabled && (
@@ -1653,50 +1687,12 @@ function OnboardingPageInner() {
                 </p>
               </div>
             )}
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={smsEnabled}
-                  onChange={(e) => setSmsEnabled(e.target.checked)}
-                  style={{ width: 16, height: 16 }}
-                />
-                <span style={{ fontSize: 14.5, color: "color-mix(in srgb, var(--color-text) 76%, transparent)" }}>
-                  Also text me when a deposit crosses my threshold
-                </span>
-              </label>
-              {smsEnabled && (
-                <div style={{ marginTop: 20, maxWidth: 340 }}>
-                  <label
-                    style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-                  >
-                    Mobile number
-                  </label>
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="(555) 123-4567"
-                    style={bloomInputStyle({ fontSize: 16 })}
-                  />
-                  <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
-                    By opting in you agree to receive deposit-alert texts from PrioritySave. Message &amp; data rates may
-                    apply; frequency varies with your deposit activity. Reply STOP to cancel or HELP for help. See our{" "}
-                    <a href="/terms" target="_blank" rel="noreferrer" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                      Terms
-                    </a>
-                    .
-                  </p>
-                </div>
-              )}
-            </div>
-
             {paymentError && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "20px 0 0" }}>{paymentError}</p>
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={completeOnboarding} disabled={submitting} flex>
+              <PrimaryBtn onClick={completeOnboarding} disabled={submitting || !isValidUSPhone(phoneNumber)} flex>
                 {submitting ? "Finishing…" : "Finish and go to my dashboard"} &nbsp;→
               </PrimaryBtn>
             </div>
