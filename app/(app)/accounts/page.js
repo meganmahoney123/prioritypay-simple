@@ -179,6 +179,17 @@ export default function AccountsPage() {
         </div>
         <Badge>{acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}</Badge>
       </div>
+      {acc.account_type !== "credit" && (() => {
+        // Total balance for the bank account itself (no category splits).
+        const bal = categoryBalances[acc.id]?.accountBalance ?? acc.current_balance;
+        if (bal === null || bal === undefined) return null;
+        return (
+          <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "1px solid var(--color-divider)" }}>
+            <span className="text-xs font-semibold" style={{ color: "var(--color-neutral-700)" }}>Account balance</span>
+            <span className="font-mono font-bold" style={{ fontSize: 18 }}>{currency(Number(bal))}</span>
+          </div>
+        );
+      })()}
       {acc.account_type === "credit" ? (
         creditCardBalances[acc.id] ? (
           <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
