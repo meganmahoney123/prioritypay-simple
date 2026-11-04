@@ -1,5 +1,6 @@
 "use client";
 
+import { drawNote, splitUnit } from "@/lib/entityCopy";
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Plus, Save } from "lucide-react";
@@ -22,6 +23,7 @@ function SplitRulesPageInner() {
   const [percent, setPercent] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [saved, setSaved] = useState(false);
+  const [entityType, setEntityType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
@@ -45,6 +47,7 @@ function SplitRulesPageInner() {
       ]);
       const userPersona = profileRes?.profile?.persona || null;
       setPersona(userPersona);
+      setEntityType(profileRes?.profile?.entityType || null);
       // A person arriving from the Money Simulator (dashboard tab or the
       // public one under Resources -> via signup+onboarding first) via
       // "Update my real split rules" carries their simulated split in
@@ -281,21 +284,24 @@ function SplitRulesPageInner() {
 
       <div>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px, 3.4vw, 36px)", fontWeight: 800, margin: "0 0 8px" }}>
-          Split every deposit by percentage
+          Split every {splitUnit(entityType)} by percentage
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
-          Each deposit you receive will be split by percentage into the following accounts, and you&apos;ll get a
+          Each {splitUnit(entityType)} you receive will be split by percentage into the following accounts, and you&apos;ll get a
           checklist to confirm and send each transfer yourself. Here, set the percentages you want sent to each
           account.
         </p>
+        {drawNote(entityType) && (
+          <p style={{ fontSize: 15, lineHeight: 1.7, color: "#574A68", margin: "12px 0 0" }}>{drawNote(entityType)}</p>
+        )}
       </div>
 
       <SplitPercentPieChart percent={percent} remainingPct={remainingPct} />
 
       <div>
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
-          For example, if you select &quot;10%&quot; for savings, and PrioritySave detects a $100 deposit, it&apos;ll
+          For example, if you select &quot;10%&quot; for savings, and PrioritySave detects a $100 {splitUnit(entityType)}, it&apos;ll
           tell you to send $10 to the savings account connected.
         </p>
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
