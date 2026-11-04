@@ -141,7 +141,7 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, persona, startingBalanceRoomInfo }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, persona, startingBalanceRoomInfo }) {
   const locked = isCoreRow(rule, persona);
   // A starting balance only ever counts as money already sitting in THIS
   // row's own connected account (see the PUT /api/split-rules validation
@@ -349,6 +349,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             checklist.
           </p>
         )}
+        {!hideAccountPicker && (
         <div style={{ marginTop: 12, minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 12.5, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 6 }}>
             I want to route my money to this account:
@@ -366,6 +367,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             />
           </div>
         </div>
+        )}
         {!isGrouped && (
           <div style={{ marginTop: 4 }}>
             <button
@@ -833,6 +835,9 @@ export default function PercentSplitEditor({
   // instead of being asked per-category here. Defaults to false so Split
   // Rules and the old onboarding behavior are unaffected.
   hideStartingBalance = false,
+  // Hides each row's "route my money to this account" picker, so a step can be
+  // about percentages only (onboarding sets accounts later).
+  hideAccountPicker = false,
 }) {
   const overflowMessageFor = (id) => (pctOverflow && pctOverflow.id === id ? pctOverflow.message : null);
 
@@ -974,7 +979,7 @@ export default function PercentSplitEditor({
                       onAccountLinked={onAccountLinked}
                       showRowWarnings={showRowWarnings}
                       forceShowStartingBalance={forceShowStartingBalance}
-                      hideStartingBalance={hideStartingBalance}
+                      hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
                       overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
                       dotColor={dotColorFor(rule.id)}
@@ -1019,7 +1024,7 @@ export default function PercentSplitEditor({
               onAccountLinked={onAccountLinked}
               showRowWarnings={showRowWarnings}
               forceShowStartingBalance={forceShowStartingBalance}
-              hideStartingBalance={hideStartingBalance}
+              hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
               overflowMessage={overflowMessageFor(section.row.id)}
               theme="ledger"
               dotColor={dotColorFor(section.row.id)}
@@ -1096,7 +1101,7 @@ export default function PercentSplitEditor({
                   onAccountLinked={onAccountLinked}
                   showRowWarnings={showRowWarnings}
                   forceShowStartingBalance={forceShowStartingBalance}
-                  hideStartingBalance={hideStartingBalance}
+                  hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
                   overflowMessage={overflowMessageFor(rule.id)}
                   persona={persona}
                 />
@@ -1123,7 +1128,7 @@ export default function PercentSplitEditor({
             onAccountLinked={onAccountLinked}
             showRowWarnings={showRowWarnings}
             forceShowStartingBalance={forceShowStartingBalance}
-            hideStartingBalance={hideStartingBalance}
+            hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
             overflowMessage={overflowMessageFor(section.row.id)}
             persona={persona}
           />

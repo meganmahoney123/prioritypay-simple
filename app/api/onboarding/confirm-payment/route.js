@@ -4,7 +4,7 @@ import { stripeClient } from "@/lib/stripe";
 
 // Called once, right after Stripe Checkout redirects back to onboarding
 // with ?paid=1&session_id=... -- confirms the payment actually succeeded
-// and finalizes onboarding (onboarded: true) server-side, rather than
+// and activates the subscription server-side, rather than
 // waiting on the checkout.session.completed webhook (app/api/stripe/webhook)
 // to eventually flip subscription_status, which can lag by several
 // seconds and would otherwise leave someone staring at a blocked
@@ -45,7 +45,8 @@ export async function POST(request) {
       stripe_customer_id: session.customer,
       stripe_subscription_id: session.subscription,
       subscription_status: "active",
-      onboarded: true,
+      // Payment no longer finishes onboarding: matching accounts to splits comes
+      // next, and the last onboarding step is what sets onboarded.
     })
     .eq("id", user.id);
   if (error) return Response.json({ error: error.message }, { status: 500 });

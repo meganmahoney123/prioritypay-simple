@@ -1,6 +1,6 @@
 "use client";
 
-import { SOLE_PROP, shortDrawNote, splitUnit } from "@/lib/entityCopy";
+import { SOLE_PROP, shortDrawNote, splitUnit, paysByDraw, mixedOrDrawConnectNote } from "@/lib/entityCopy";
 import EntityPicker from "@/components/EntityPicker";
 import ChipCheckboxes from "@/components/ChipCheckboxes";
 import { useEffect, useState, Suspense } from "react";
@@ -54,7 +54,14 @@ const ONBOARDING_LIVE = true;
 // Balances" is new, inserted right after Percentage Splits -- see the
 // step === 4 block below for why it needed its own dedicated step rather
 // than staying folded into each category row on Percentage Splits.
-const STEPS = ["Welcome", "Business", "Connect Accounts", "Percentage Splits", "Starting Balances", "Deposit Alerts"];
+// Order (Nov 2026): the fun part first (percentages), then connect banks, then
+// the plan step, and only after paying are accounts matched to each split.
+// Payment no longer finishes onboarding -- the last step does.
+const STEPS = ["Welcome", "Business", "Percentage Splits", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts"];
+const STEP_CONNECT = 3;
+const STEP_PLAN = 4;
+const STEP_MATCH = 5;
+const STEP_BALANCES = 6;
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -223,7 +230,7 @@ function OnboardingPageInner() {
   // validation gate (only the two `disabled` Continue buttons below do, and
   // those are bypassed for this account too). Never rendered for anyone
   // else, so nobody can skip ahead of onboarding's real required steps.
-  const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com"]);
+  const DEV_TESTING_EMAILS = new Set(["megan@ignitemysite.com", "megan+onboarding@ignitemysite.com"]);
   const [isDevTester, setIsDevTester] = useState(false);
   useEffect(() => {
     supabaseBrowser()
@@ -272,13 +279,65 @@ function OnboardingPageInner() {
   // Review step needs to jump straight to confirming the payment instead
   // of starting over from Welcome. See finish() below for the send-off
   // half of this round trip.
+  const [isPaid, setIsPaid] = useState(false);
+  // After Stripe (a full page reload) or a return visit by someone who already
+  // paid, everything they entered is saved server-side. Load it back so the
+  // matching step, starting balances and the final save all start from it.
+  const loadSavedProgress = async () => {
+    const [profileRes, accountsRes, rulesRes] = await Promise.all([
+      fetch("/api/profile").then((r) => r.json()).catch(() => null),
+      fetch("/api/accounts").then((r) => r.json()).catch(() => null),
+      fetch("/api/split-rules").then((r) => r.json()).catch(() => null),
+    ]);
+    const pr = profileRes?.profile;
+    if (pr) {
+      const persona = pr.persona || BUSINESS_TYPES[0];
+      setBusinessType(persona);
+      setEntityType(pr.entityType || SOLE_PROP);
+      if (pr.minDepositThreshold) setMinDepositThreshold(pr.minDepositThreshold);
+      const payroll = pr.retirementProfile?.estimatedEmployeePayroll;
+      if (payroll) setEmployeePayroll(String(payroll));
+      // Rebuild the step 1 picks from the saved persona so Back still looks right.
+      if (persona === HAS_EMPLOYEES_TYPE) {
+        setWorkPicks(["owns_business"]);
+        setHasEmployees(true);
+      } else if (persona === PERSONA_W2_WITH_SIDE_HUSTLE) {
+        setWorkPicks(["self_employed", "w2"]);
+        setHasEmployees(false);
+      } else if (persona === PERSONA_W2_NO_SIDE_HUSTLE) {
+        setWorkPicks(["w2"]);
+      } else {
+        setWorkPicks(["self_employed"]);
+        setHasEmployees(false);
+      }
+    }
+    if (accountsRes?.accounts) setAccounts(accountsRes.accounts);
+    const saved = rulesRes?.splitRules?.percent;
+    if (saved && saved.length) setPercent(saved);
+    return pr;
+  };
+  // Someone who paid and left before finishing comes back to the matching step.
+  useEffect(() => {
+    if (searchParams.get("paid")) return;
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then(async (d) => {
+        const pr = d?.profile;
+        if (pr && !pr.onboarded && pr.billing?.subscriptionStatus === "active") {
+          await loadSavedProgress();
+          setIsPaid(true);
+          setStep(STEP_MATCH);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   useEffect(() => {
     const paid = searchParams.get("paid");
     if (paid === "1") {
       const sessionId = searchParams.get("session_id");
-      setStep(STEPS.length - 1);
       setConfirmingPayment(true);
       fetch("/api/onboarding/confirm-payment", {
         method: "POST",
@@ -288,19 +347,26 @@ function OnboardingPageInner() {
         .then((r) => r.json())
         .then((data) => {
           if (data.ok) {
-            router.push("/dashboard");
-            router.refresh();
-            return;
+            // Paid. Reload what they entered, then on to matching accounts.
+            return loadSavedProgress().then(() => {
+              setIsPaid(true);
+              setConfirmingPayment(false);
+              setStep(STEP_MATCH);
+              router.replace("/onboarding");
+            });
           }
           setConfirmingPayment(false);
+          setStep(STEP_PLAN);
           setPaymentError(data.error || "Could not confirm your payment. Please try again.");
         })
         .catch(() => {
           setConfirmingPayment(false);
+          setStep(STEP_PLAN);
           setPaymentError("Could not confirm your payment. Please try again.");
         });
     } else if (paid === "cancelled") {
-      setStep(STEPS.length - 1);
+      loadSavedProgress();
+      setStep(STEP_PLAN);
       setPaymentError("Checkout was cancelled. No charge was made. Try again when you're ready.");
     }
     // Only ever meant to run once, against whatever ?paid= was on the URL
@@ -331,7 +397,8 @@ function OnboardingPageInner() {
     window.scrollTo(0, 0);
   };
   const back = () => {
-    setStep((s) => Math.max(s - 1, 0));
+    // Once the plan is active there is no reason to land on the payment screen again.
+    setStep((s) => (s === STEP_MATCH && isPaid ? STEP_CONNECT : Math.max(s - 1, 0)));
     window.scrollTo(0, 0);
   };
 
@@ -434,7 +501,7 @@ function OnboardingPageInner() {
   const [accountBalances, setAccountBalances] = useState([]);
   const [balancesLoading, setBalancesLoading] = useState(false);
   useEffect(() => {
-    if (step !== 4) return;
+    if (step !== STEP_BALANCES) return;
     setBalancesLoading(true);
     // An account linked earlier THIS SAME onboarding session has never had
     // its current_balance seeded -- app/api/plaid/exchange-public-token
@@ -629,7 +696,7 @@ function OnboardingPageInner() {
     const res = await fetch("/api/billing/iap/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ onboarding: true }),
+      body: JSON.stringify({ onboarding: false }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
@@ -637,8 +704,10 @@ function OnboardingPageInner() {
       setPaymentError(data.error || "Your purchase went through, but we couldn't confirm it yet. Please try again.");
       return;
     }
-    router.push("/dashboard");
-    router.refresh();
+    setNativePurchasing(false);
+    setIsPaid(true);
+    setStep(STEP_MATCH);
+    window.scrollTo(0, 0);
   };
   // Required by Apple Guideline 3.1.1 -- lets someone who already has an
   // active PrioritySave subscription under this Apple ID (reinstalled the
@@ -659,7 +728,7 @@ function OnboardingPageInner() {
     const res = await fetch("/api/billing/iap/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ onboarding: true }),
+      body: JSON.stringify({ onboarding: false }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
@@ -667,15 +736,17 @@ function OnboardingPageInner() {
       setPaymentError(data.error || "We found a purchase but couldn't confirm it yet. Please try again.");
       return;
     }
-    router.push("/dashboard");
-    router.refresh();
+    setNativePurchasing(false);
+    setIsPaid(true);
+    setStep(STEP_MATCH);
+    window.scrollTo(0, 0);
   };
   // Dev-only counterpart to finish() -- same /api/onboarding/complete call,
   // but with finalize: true right away instead of routing through Stripe
   // Checkout, so testing the onboarding flow end-to-end doesn't require a
   // real card charge. Restricted to isDevTester, same as the jump-to-step
   // panel above.
-  const devFinishSkipPayment = async () => {
+  const completeOnboarding = async () => {
     setSubmitting(true);
     setPaymentError(null);
     const res = await fetch("/api/onboarding/complete", {
@@ -921,14 +992,148 @@ function OnboardingPageInner() {
         )}
 
         {step === 2 && (
+          <div style={{ maxWidth: "40em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Set your percentage splits
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
+              Decide what share of each {splitUnit(entityType)} goes where. Set savings to 10% and a $100 {splitUnit(entityType)} tells you to
+              send $10 to savings.
+            </p>
+
+            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-surface, #fff)", overflow: "hidden", marginBottom: 30 }}>
+              <button
+                type="button"
+                onClick={() => setHowOpen((v) => !v)}
+                className="pp-how-toggle"
+                style={{ width: "100%", textAlign: "left", background: "none", border: 0, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", color: "var(--color-text)" }}
+              >
+                <span style={{ flex: 1, fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
+                  How splits work (and what a cap is)
+                </span>
+                <span style={{ fontSize: 18, color: "var(--color-accent)" }}>{howOpen ? "−" : "+"}</span>
+              </button>
+              {howOpen && (
+                <div style={{ padding: "0 20px 20px", display: "grid", gap: 12 }}>
+                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                    <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly cap
+                    stops routing to a bucket once it has received that much in a month (it resets
+                    automatically). An account total cap stops routing once the connected account&apos;s balance
+                    reaches that amount.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <PercentSplitEditor
+              percent={percent}
+              accounts={accounts}
+              onUpdatePercent={updatePercent}
+              onAddSubAccount={addSubAccount}
+              onRemoveRow={removeRow}
+              onAccountLinked={onAccountLinked}
+              creating={creating}
+              setCreating={setCreating}
+              connecting={connecting}
+              setConnecting={setConnecting}
+              showRowWarnings={false}
+              pctOverflow={pctOverflow}
+              hideCapDetails
+              theme="ledger"
+              hideStartingBalance
+              hideAccountPicker
+              persona={businessType}
+            />
+
+            <button
+              onClick={addPercent}
+              className="pp-ledger-dashed"
+              style={{
+                width: "100%",
+                marginTop: 20,
+                background: "transparent",
+                border: "1px dashed var(--color-accent-300)",
+                borderRadius: "var(--radius-md)",
+                padding: "14px 16px",
+                cursor: "pointer",
+                fontFamily: "var(--font-heading)",
+                fontSize: 15,
+                letterSpacing: "0.04em",
+                color: "var(--color-accent-700)",
+              }}
+            >
+              + &nbsp;Add your own category
+            </button>
+
+            {availableSuggestions.length > 0 && (
+              <div style={{ marginTop: 30 }}>
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
+                  Suggestions: click to add, starts at 0%
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                  {availableSuggestions.map((s) => (
+                    <button
+                      key={s.label}
+                      onClick={() => addSuggested(s)}
+                      className="pp-ledger-pill"
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: 14,
+                        color: "color-mix(in srgb, var(--color-text) 72%, transparent)",
+                        background: "transparent",
+                        border: "1px solid var(--color-divider)",
+                        borderRadius: 999,
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      + &nbsp;{s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 24 }}>
+              <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
+                Minimum deposit to split
+              </label>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 14px" }}>
+                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a message to initiate
+                split. $50 is the lowest you can set it. Adjustable anytime from Settings.
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 220 }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>$</span>
+                <input
+                  type="number"
+                  onFocus={(e) => e.target.select()}
+                  min={MIN_DEPOSIT_THRESHOLD_FLOOR}
+                  step="1"
+                  value={minDepositThreshold}
+                  onChange={(e) => setMinDepositThreshold(e.target.value)}
+                  onBlur={(e) => {
+                    const v = Math.max(MIN_DEPOSIT_THRESHOLD_FLOOR, Number(e.target.value) || MIN_DEPOSIT_THRESHOLD_FLOOR);
+                    setMinDepositThreshold(v);
+                  }}
+                  style={bloomInputStyle({ fontSize: 16 })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === STEP_CONNECT && (
           <div style={{ maxWidth: "36em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Connect everywhere money reaches you
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 12px" }}>
-              PrioritySave can only tell you to split a deposit it actually sees. Connect every bank account
-              you could receive a payment from. You can always add more inside the dashboard.
+              {paysByDraw(entityType)
+                ? "PrioritySave can only tell you to split money it actually sees. Connect the account where your pay lands. You can always add more inside the dashboard."
+                : "PrioritySave can only tell you to split a deposit it actually sees. Connect every bank account you could receive a payment from. You can always add more inside the dashboard."}
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
               Also connect any credit cards. This will help you track expenses which will help you keep
@@ -1019,50 +1224,119 @@ function OnboardingPageInner() {
               </div>
             )}
 
+            {paysByDraw(entityType) && (
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", margin: "0 0 20px", padding: "14px 16px", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)" }}>
+                {mixedOrDrawConnectNote(entityType)}
+              </p>
+            )}
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
               {accounts.length > 0 && (
                 <PrimaryBtn onClick={() => setShowConfirmAccountsModal(true)} flex>Continue &nbsp;→</PrimaryBtn>
               )}
             </div>
+            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "16px 0 0" }}>
+              Next you&apos;ll start your plan, then match each account to your splits.
+            </p>
           </div>
         )}
 
-        {step === 3 && (
+        {step === STEP_PLAN && (
+          <div style={{ maxWidth: "34em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              {isPaid ? "Your plan is active" : "Start your plan"}
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 26px" }}>
+              {isPaid
+                ? "You're all set. One more quick step: match each account to your splits."
+                : "Your splits are set and your accounts are connected. Start your plan to finish setting up. One more quick step comes after this: matching each account to your splits."}
+            </p>
+            {isPaid ? (
+              <div style={{ display: "flex", gap: 12 }}>
+                <BackBtn onClick={back} />
+                <PrimaryBtn onClick={() => setStep(STEP_MATCH)} flex>Continue &nbsp;→</PrimaryBtn>
+              </div>
+            ) : (
+              <>
+            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
+                {isNative
+                  ? "PrioritySave Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period. Cancel anytime from iOS Settings > Apple ID > Subscriptions."
+                  : "PrioritySave is $12.99/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
+              </p>
+              {isNative && (
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "10px 0 0" }}>
+                  By continuing you agree to our{" "}
+                  <a href="/terms" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                    Terms of Use (EULA)
+                  </a>{" "}
+                  and{" "}
+                  <a href="/privacy" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                    Privacy Policy
+                  </a>
+                  .
+                </p>
+              )}
+            </div>
+            {paymentError && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "20px 0 0" }}>{paymentError}</p>
+            )}
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <BackBtn onClick={back} />
+              {isNative ? (
+                <PrimaryBtn onClick={finishNative} disabled={nativePurchasing} flex>
+                  {nativePurchasing ? "Processing…" : "Continue to payment ($12.99/month)"} &nbsp;→
+                </PrimaryBtn>
+              ) : (
+                <PrimaryBtn onClick={finish} disabled={submitting} flex>
+                  {submitting ? "Redirecting to checkout…" : "Continue to payment ($12.99/month)"} &nbsp;→
+                </PrimaryBtn>
+              )}
+            </div>
+            {isNative && (
+              <button
+                type="button"
+                onClick={restoreNativePurchases}
+                disabled={nativePurchasing}
+                style={{
+                  display: "block",
+                  margin: "16px auto 0",
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-accent-700)",
+                  textDecoration: "underline",
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                Restore Purchases
+              </button>
+            )}
+            {isDevTester && (
+              <button
+                onClick={completeOnboarding}
+                disabled={submitting}
+                style={{ marginTop: 12, width: "100%", padding: "10px 0", fontSize: 13, borderRadius: 8, border: "1px dashed color-mix(in srgb, var(--color-text) 30%, transparent)", background: "transparent", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", cursor: submitting ? "not-allowed" : "pointer" }}
+              >
+                Testing only: finish without Stripe checkout
+              </button>
+            )}
+              </>
+            )}
+          </div>
+        )}
+
+        {step === STEP_MATCH && (
           <div style={{ maxWidth: "40em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Set your percentage splits
+              Match accounts to your splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              Decide what share of each {splitUnit(entityType)} goes where. Set savings to 10% and a $100 {splitUnit(entityType)} tells you to
-              send $10 to savings.
+              Your plan is active. Last setup step: choose which account each split should go to, so your checklist
+              knows where to send it. You can connect or create accounts right on each row.
             </p>
-
-            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-surface, #fff)", overflow: "hidden", marginBottom: 30 }}>
-              <button
-                type="button"
-                onClick={() => setHowOpen((v) => !v)}
-                className="pp-how-toggle"
-                style={{ width: "100%", textAlign: "left", background: "none", border: 0, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", color: "var(--color-text)" }}
-              >
-                <span style={{ flex: 1, fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
-                  How splits work (and what a cap is)
-                </span>
-                <span style={{ fontSize: 18, color: "var(--color-accent)" }}>{howOpen ? "−" : "+"}</span>
-              </button>
-              {howOpen && (
-                <div style={{ padding: "0 20px 20px", display: "grid", gap: 12 }}>
-                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly cap
-                    stops routing to a bucket once it has received that much in a month (it resets
-                    automatically). An account total cap stops routing once the connected account&apos;s balance
-                    reaches that amount.
-                  </p>
-                </div>
-              )}
-            </div>
-
             <PercentSplitEditor
               percent={percent}
               accounts={accounts}
@@ -1081,86 +1355,10 @@ function OnboardingPageInner() {
               hideStartingBalance
               persona={businessType}
             />
-
-            <button
-              onClick={addPercent}
-              className="pp-ledger-dashed"
-              style={{
-                width: "100%",
-                marginTop: 20,
-                background: "transparent",
-                border: "1px dashed var(--color-accent-300)",
-                borderRadius: "var(--radius-md)",
-                padding: "14px 16px",
-                cursor: "pointer",
-                fontFamily: "var(--font-heading)",
-                fontSize: 15,
-                letterSpacing: "0.04em",
-                color: "var(--color-accent-700)",
-              }}
-            >
-              + &nbsp;Add your own category
-            </button>
-
-            {availableSuggestions.length > 0 && (
-              <div style={{ marginTop: 30 }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
-                  Suggestions: click to add, starts at 0%
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-                  {availableSuggestions.map((s) => (
-                    <button
-                      key={s.label}
-                      onClick={() => addSuggested(s)}
-                      className="pp-ledger-pill"
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 14,
-                        color: "color-mix(in srgb, var(--color-text) 72%, transparent)",
-                        background: "transparent",
-                        border: "1px solid var(--color-divider)",
-                        borderRadius: 999,
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      + &nbsp;{s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 24 }}>
-              <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                Minimum deposit to split
-              </label>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 14px" }}>
-                Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a message to initiate
-                split. $50 is the lowest you can set it. Adjustable anytime from Settings.
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 220 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 16 }}>$</span>
-                <input
-                  type="number"
-                  onFocus={(e) => e.target.select()}
-                  min={MIN_DEPOSIT_THRESHOLD_FLOOR}
-                  step="1"
-                  value={minDepositThreshold}
-                  onChange={(e) => setMinDepositThreshold(e.target.value)}
-                  onBlur={(e) => {
-                    const v = Math.max(MIN_DEPOSIT_THRESHOLD_FLOOR, Number(e.target.value) || MIN_DEPOSIT_THRESHOLD_FLOOR);
-                    setMinDepositThreshold(v);
-                  }}
-                  style={bloomInputStyle({ fontSize: 16 })}
-                />
-              </div>
-            </div>
           </div>
         )}
 
-        {step === 4 && (
+        {step === STEP_BALANCES && (
           <div style={{ maxWidth: "40em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Starting balances
@@ -1250,22 +1448,20 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === 5 && confirmingPayment && (
-          <div style={{ maxWidth: "34em", margin: "0 auto", textAlign: "center" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
-              Confirming your payment…
-            </h1>
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-              One moment. You&apos;ll land in your dashboard as soon as this is done.
-            </p>
+        {confirmingPayment && (
+          <div style={{ ...BLOOM_TOKENS, position: "fixed", inset: 0, zIndex: 80, background: "var(--color-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+            <div style={{ maxWidth: "34em" }}>
+              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
+                Confirming your payment…
+              </h1>
+              <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
+                One moment. You&apos;ll move on to matching your accounts as soon as this is done.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Last real step -- "Review and finish" was dropped (Sept 2026,
-            see the STEPS comment above), so this step's own Continue button
-            now IS what kicks off payment (finish()) instead of just
-            advancing to a review page first. */}
-        {step === 5 && !confirmingPayment && (
+        {step === STEPS.length - 1 && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
               Get emailed the moment a deposit lands
@@ -1351,69 +1547,15 @@ function OnboardingPageInner() {
               )}
             </div>
 
-            <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 32, paddingTop: 24 }}>
-              <p style={{ fontSize: 14.5, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: 0 }}>
-                {isNative
-                  ? "PrioritySave Simple is $12.99/month, billed today through your Apple ID. This subscription automatically renews monthly at $12.99 unless cancelled at least 24 hours before the end of the current period. Cancel anytime from iOS Settings > Apple ID > Subscriptions."
-                  : "PrioritySave is $12.99/month, billed today to get started. You’ll enter payment details on Stripe’s secure checkout page next, and can cancel anytime from Settings."}
-              </p>
-              {isNative && (
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "10px 0 0" }}>
-                  By continuing you agree to our{" "}
-                  <a href="/terms" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                    Terms of Use (EULA)
-                  </a>{" "}
-                  and{" "}
-                  <a href="/privacy" style={{ color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                    Privacy Policy
-                  </a>
-                  .
-                </p>
-              )}
-            </div>
             {paymentError && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "20px 0 0" }}>{paymentError}</p>
             )}
-            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+            <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
               <BackBtn onClick={back} />
-              {isNative ? (
-                <PrimaryBtn onClick={finishNative} disabled={nativePurchasing} flex>
-                  {nativePurchasing ? "Processing…" : "Continue to payment ($12.99/month)"} &nbsp;→
-                </PrimaryBtn>
-              ) : (
-                <PrimaryBtn onClick={finish} disabled={submitting} flex>
-                  {submitting ? "Redirecting to checkout…" : "Continue to payment ($12.99/month)"} &nbsp;→
-                </PrimaryBtn>
-              )}
+              <PrimaryBtn onClick={completeOnboarding} disabled={submitting} flex>
+                {submitting ? "Finishing…" : "Finish and go to my dashboard"} &nbsp;→
+              </PrimaryBtn>
             </div>
-            {isNative && (
-              <button
-                type="button"
-                onClick={restoreNativePurchases}
-                disabled={nativePurchasing}
-                style={{
-                  display: "block",
-                  margin: "16px auto 0",
-                  background: "none",
-                  border: "none",
-                  color: "var(--color-accent-700)",
-                  textDecoration: "underline",
-                  fontSize: 14,
-                  cursor: "pointer",
-                }}
-              >
-                Restore Purchases
-              </button>
-            )}
-            {isDevTester && (
-              <button
-                onClick={devFinishSkipPayment}
-                disabled={submitting}
-                style={{ marginTop: 12, width: "100%", padding: "10px 0", fontSize: 13, borderRadius: 8, border: "1px dashed color-mix(in srgb, var(--color-text) 30%, transparent)", background: "transparent", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", cursor: submitting ? "not-allowed" : "pointer" }}
-              >
-                Testing only: finish without Stripe checkout
-              </button>
-            )}
           </div>
         )}
       </main>
@@ -1424,7 +1566,7 @@ function OnboardingPageInner() {
           both visible no matter how far someone has scrolled through the
           bucket list. Sticky to the outer flex column (not main's own
           max-width wrapper) so it can sit flush with the viewport edge. */}
-      {step === 3 && (
+      {(step === 2 || step === STEP_MATCH) && (
         <div
           style={{
             position: "sticky",
@@ -1446,7 +1588,7 @@ function OnboardingPageInner() {
             </div>
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={step === 2 ? next : handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         </div>
