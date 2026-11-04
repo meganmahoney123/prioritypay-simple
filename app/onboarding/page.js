@@ -9,7 +9,7 @@ import { Plus } from "lucide-react";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // isValidUSPhone no longer used here -- the phone-number step is
@@ -158,7 +158,11 @@ function OnboardingPageInner() {
   // without the OPEX row (their business pays its own expenses first); its
   // share moves to Savings so the starting total stays the same.
   const defaultsFor = (persona, entity) => {
-    const rows = getDefaultSplitRules(persona).percent;
+    let rows = getDefaultSplitRules(persona).percent;
+    // A Solo 401k only works with no employees, so owners with employees start with a SEP IRA.
+    if (persona === HAS_EMPLOYEES_TYPE) {
+      rows = rows.map((r) => (r.id === "solo_401k" ? { ...r, id: "sep_ira", label: "SEP IRA", retirementType: "sep_ira" } : r));
+    }
     if (!dropsOpex(entity)) return rows;
     const opex = rows.find((r) => r.id === "opex");
     if (!opex) return rows;
@@ -166,6 +170,30 @@ function OnboardingPageInner() {
       .filter((r) => r.id !== "opex")
       .map((r) => (r.id === "savings" ? { ...r, pct: (Number(r.pct) || 0) + (Number(opex.pct) || 0) } : r));
   };
+  // Retirement picker on the percentage step: one row per account the person
+  // has. The group's total stays the same and is shared evenly between them.
+  const isRetRow = (r) => (r.group || "").startsWith("Retirement");
+  const toggleRetirement = (type) =>
+    setPercent((prev) => {
+      const existing = prev.filter(isRetRow);
+      const has = existing.some((r) => r.retirementType === type);
+      const defaultTotal = getDefaultSplitRules(businessType).percent.filter(isRetRow).reduce((n, r) => n + (Number(r.pct) || 0), 0);
+      const currentTotal = existing.reduce((n, r) => n + (Number(r.pct) || 0), 0);
+      const total = currentTotal > 0 ? currentTotal : defaultTotal || 15;
+      let rows = has
+        ? existing.filter((r) => r.retirementType !== type)
+        : [...existing, buildRetirementRow(type, businessType, prev.map((r) => r.color))];
+      const order = retirementPickerOptions(businessType).map((o) => o.value);
+      rows = [...rows].sort((x, y) => order.indexOf(x.retirementType) - order.indexOf(y.retirementType));
+      const share = rows.length ? Math.floor((total / rows.length) * 100) / 100 : 0;
+      rows = rows.map((r, i) => ({ ...r, pct: i === 0 ? roundPct(total - share * (rows.length - 1)) : share }));
+      const firstIdx = prev.findIndex(isRetRow);
+      const rest = prev.filter((r) => !isRetRow(r));
+      const invIdx = rest.map((r) => r.group).lastIndexOf("Investments");
+      const at = firstIdx >= 0 ? prev.slice(0, firstIdx).filter((r) => !isRetRow(r)).length : invIdx >= 0 ? invIdx + 1 : Math.min(2, rest.length);
+      rest.splice(at, 0, ...rows);
+      return rest;
+    });
   const changeEntity = (value) => {
     setEntityType(value);
     setPercent(defaultsFor(businessType, value));
@@ -197,6 +225,11 @@ function OnboardingPageInner() {
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
   const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
+  const retirementPicker = {
+    options: retirementPickerOptions(businessType),
+    selected: percent.filter(isRetRow).map((r) => r.retirementType),
+    onToggle: toggleRetirement,
+  };
   // $50 is a hard floor (see PHASE N, supabase/schema.sql) -- enforced
   // both here (input can't go below it) and again server-side in
   // app/api/onboarding/complete, so it can't be bypassed by editing the
@@ -1013,9 +1046,11 @@ function OnboardingPageInner() {
               Set your percentage splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            {dropsOpex(entityType) && (
+            {paysByDraw(entityType) && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "-8px 0 22px" }}>
-                There is no Business Expenses (OPEX) row because your business pays its own expenses before your draw. You can add one if you want it.
+                <strong>Keep your LLC or corporation&apos;s money separate from your personal money.</strong> Pay
+                yourself with a draw or distribution from the business account, and don&apos;t pay personal
+                expenses from it. Mixing the two can weaken the legal protection the business gives you.
               </p>
             )}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
@@ -1064,6 +1099,7 @@ function OnboardingPageInner() {
               theme="ledger"
               hideStartingBalance
               hideAccountPicker
+              retirementPicker={retirementPicker}
               persona={businessType}
             />
 

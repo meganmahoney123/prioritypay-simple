@@ -6,6 +6,7 @@ import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
+import ChipCheckboxes from "./ChipCheckboxes";
 import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
 import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom } from "@/lib/allocations";
 import { bloomWarningCardStyle } from "@/lib/bloomTheme";
@@ -293,7 +294,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         {overflowMessage && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "#9C3B22", margin: "8px 0 0" }}>{overflowMessage}</p>
         )}
-        {(rule.retirementType || (rule.group || "").startsWith("Retirement")) && (
+        {!hideAccountPicker && (rule.retirementType || (rule.group || "").startsWith("Retirement")) && (
           <RetirementNote label={rule.label} theme="ledger" isEmployer={isEmployerRetirementRow(rule)} />
         )}
         {isEmployerRetirementRow(rule) && (
@@ -838,6 +839,10 @@ export default function PercentSplitEditor({
   // Hides each row's "route my money to this account" picker, so a step can be
   // about percentages only (onboarding sets accounts later).
   hideAccountPicker = false,
+  // { options: [{value,label}], selected: [value], onToggle(value) } -- onboarding's
+  // "which retirement accounts do you have" picker; replaces the per-group
+  // notes and the add button for Retirement.
+  retirementPicker = null,
 }) {
   const overflowMessageFor = (id) => (pctOverflow && pctOverflow.id === id ? pctOverflow.message : null);
 
@@ -859,6 +864,23 @@ export default function PercentSplitEditor({
     // id so each row can show its own room/warning without needing to
     // know about its siblings directly.
     const { byRuleId: startingBalanceRoomById } = computeStartingBalanceRoom(percent, accounts);
+    // With the retirement picker, every Retirement* group is shown as one
+    // "Retirement" card (even with no rows yet), placed after Investments.
+    let sections = percentSections(percent);
+    if (retirementPicker) {
+      const isRet = (x) => x.type === "group" && x.group.startsWith("Retirement");
+      const retRows = sections.filter(isRet).flatMap((x) => x.rows);
+      const firstIdx = sections.findIndex(isRet);
+      const rest = sections.filter((x) => !isRet(x));
+      const merged = { type: "group", group: "Retirement", rows: retRows };
+      let at = firstIdx;
+      if (at < 0) {
+        const inv = rest.findIndex((x) => x.type === "group" && x.group === "Investments");
+        at = inv >= 0 ? inv + 1 : Math.min(2, rest.length);
+      }
+      rest.splice(at, 0, merged);
+      sections = rest;
+    }
     return (
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 18 }}>
         {!hideCapDetails && (
@@ -911,7 +933,7 @@ export default function PercentSplitEditor({
             </span>
           </div>
         )}
-        {percentSections(percent).map((section) =>
+        {sections.map((section) =>
           section.type === "group" ? (
             <div
               key={section.group}
@@ -959,10 +981,18 @@ export default function PercentSplitEditor({
                 </span>
               </div>
               <div style={{ padding: "18px 22px 22px" }}>
-                {section.group.startsWith("Retirement") && (
+                {section.group.startsWith("Retirement") && !retirementPicker && (
                   <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 18px", maxWidth: "40em" }}>
                     {retirementGroupSubtext(persona, section.group)}
                   </p>
+                )}
+                {retirementPicker && section.group === "Retirement" && (
+                  <div style={{ margin: "0 0 18px" }}>
+                    <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 12px", maxWidth: "40em" }}>
+                      Which of these do you have or plan to open? Select all that apply.
+                    </p>
+                    <ChipCheckboxes options={retirementPicker.options} selected={retirementPicker.selected} onToggle={retirementPicker.onToggle} />
+                  </div>
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 14 }}>
                   {section.rows.map((rule) => (
@@ -988,6 +1018,7 @@ export default function PercentSplitEditor({
                     />
                   ))}
                 </div>
+                {!(retirementPicker && section.group.startsWith("Retirement")) && (
                 <button
                   onClick={() => onAddSubAccount(section.group)}
                   className="pp-ledger-add"
@@ -1008,6 +1039,7 @@ export default function PercentSplitEditor({
                 >
                   + &nbsp;Add {section.group.startsWith("Retirement") ? "a retirement account" : "an investment account"}
                 </button>
+                )}
               </div>
             </div>
           ) : (
