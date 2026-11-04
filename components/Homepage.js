@@ -807,7 +807,7 @@ export default function Homepage() {
           }}
         >
           <div style={{ flex: "1 1 420px", minWidth: 280 }}>
-            <Eyebrow>Month close-out</Eyebrow>
+            <Eyebrow>Month close-out · for sole proprietors</Eyebrow>
             <h2 style={{ fontSize: "clamp(28px, 3.4vw, 42px)", lineHeight: 1.08, letterSpacing: "-0.03em", fontWeight: 800, margin: "14px 0 18px" }}>
               Taxes, almost done before you start them.
             </h2>
@@ -816,10 +816,9 @@ export default function Homepage() {
               from.
             </p>
             <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-              PrioritySave&apos;s Month Close-Out walks you through confirming each transaction once, then uses it
-              to keep your records clean. Sole proprietors also get a tax set-aside estimate. LLC and corporation
-              owners should base taxes on their business profit with their CPA. Have W2 income? No problem,
-              we&apos;ll separate it out for you.
+              PrioritySave&apos;s Month Close-Out walks sole proprietors through confirming each transaction once,
+              then estimates how much to set aside for taxes. Have W2 income? No problem, we&apos;ll separate it
+              out for you. LLC and corporation owners should base taxes on their business profit with their CPA.
             </p>
           </div>
           <div style={{ flex: "1 1 340px", minWidth: 280, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 26 }}>
@@ -923,8 +922,8 @@ export default function Homepage() {
           >
             <h3 style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.01em", margin: "0 0 10px" }}>Month Close-Out</h3>
             <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: 0 }}>
-              Confirm each month&apos;s transactions once, so you always know what actually came in, what was income,
-              and what wasn&apos;t.
+              For sole proprietors: confirm each month&apos;s transactions once, so you always know what actually
+              came in, what was income, and what wasn&apos;t.
             </p>
             <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 16, marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
