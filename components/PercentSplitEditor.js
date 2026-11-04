@@ -142,8 +142,8 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, persona, startingBalanceRoomInfo }) {
-  const locked = isCoreRow(rule, persona);
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, lockLabel, persona, startingBalanceRoomInfo }) {
+  const locked = isCoreRow(rule, persona) || !!lockLabel;
   // A starting balance only ever counts as money already sitting in THIS
   // row's own connected account (see the PUT /api/split-rules validation
   // that enforces this) -- two categories named the same thing on two
@@ -297,7 +297,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         {!hideAccountPicker && (rule.retirementType || (rule.group || "").startsWith("Retirement")) && (
           <RetirementNote label={rule.label} theme="ledger" isEmployer={isEmployerRetirementRow(rule)} />
         )}
-        {isEmployerRetirementRow(rule) && (
+        {!hideAccountPicker && isEmployerRetirementRow(rule) && (
           <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13, color: "color-mix(in srgb, var(--color-text) 65%, transparent)", cursor: "pointer" }}>
             <input
               type="checkbox"
@@ -311,7 +311,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             My employer already pulls money from my paycheck for this
           </label>
         )}
-        {isEmployerRetirementRow(rule) && (
+        {!hideAccountPicker && isEmployerRetirementRow(rule) && (
           <button
             type="button"
             onClick={() => setShowEmployerCheckModal(true)}
@@ -1026,6 +1026,7 @@ export default function PercentSplitEditor({
                       showRowWarnings={showRowWarnings}
                       forceShowStartingBalance={forceShowStartingBalance}
                       hideStartingBalance={hideStartingBalance} hideAccountPicker={hideAccountPicker}
+                      lockLabel={!!retirementPicker && !!(rule.retirementType || rule.id === "retirement_savings")}
                       overflowMessage={overflowMessageFor(rule.id)}
                       theme="ledger"
                       dotColor={dotColorFor(rule.id)}
