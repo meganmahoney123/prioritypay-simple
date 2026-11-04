@@ -11,6 +11,8 @@ import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { isNativeApp } from "@/lib/native";
+import BusinessUpgradeCard from "@/components/BusinessUpgradeCard";
+import { showsBusinessPitch } from "@/lib/entityCopy";
 
 function currentPeriod() {
   const now = new Date();
@@ -79,6 +81,7 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState(null);
   const [email, setEmail] = useState(null);
   const [displayName, setDisplayName] = useState(null);
+  const [businessInfo, setBusinessInfo] = useState({ entityType: null, businessName: null });
 
   // Owns the This Month/This Year toggle (and the year stepper) up here
   // now, instead of inside CategoryDistributionSection, so it can be
@@ -117,6 +120,7 @@ export default function DashboardPage() {
     setNotifications(profileRes.profile?.notifications || null);
     setEmail(profileRes.profile?.email || null);
     setDisplayName(profileRes.profile?.displayName || null);
+    setBusinessInfo({ entityType: profileRes.profile?.entityType || null, businessName: profileRes.profile?.businessName || null });
     setPendingTransfers(pendingRes.allocations || []);
     setLoading(false);
   };
@@ -366,6 +370,12 @@ export default function DashboardPage() {
               ))}
           </div>
         </div>
+      )}
+
+      {/* Business plan pitch: web only, only for people who said they run a
+          separate business, and only once their first deposit has been split. */}
+      {!isNative && billing && !billing.isBusiness && !billing.readOnly && allTimeTotal > 0 && showsBusinessPitch(businessInfo.entityType) && (
+        <BusinessUpgradeCard entityType={businessInfo.entityType} businessName={businessInfo.businessName} accounts={accounts} />
       )}
 
       {/* CloseoutNudge ("You've started but haven't finished closing out

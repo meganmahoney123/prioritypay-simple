@@ -14,6 +14,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
+import { businessesFromOnboarding } from "@/lib/entityCopy";
 import { bloomInputStyle, bloomNoticeCardStyle, bloomWarningCardStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 
 const DEFAULT_SLOT = "__default__"; // stands in for "no entity / the single default pool"
@@ -50,12 +51,22 @@ function BusinessPageInner() {
   const [error, setError] = useState(null);
 
   const [upgradeBusy, setUpgradeBusy] = useState(false);
+  const [onboardingBusinesses, setOnboardingBusinesses] = useState([]);
 
   async function loadAll() {
     // try/finally so a failed fetch or non-JSON error response can't leave
     // the page stuck on "Loading…" forever -- setLoading(false) always runs.
     try {
-      const p = await fetch("/api/profile").then((r) => r.json());
+      let p = await fetch("/api/profile").then((r) => r.json());
+      // Just back from Stripe checkout: the plan flips via webhook a moment
+      // later, so check a few more times before showing the upgrade pitch.
+      if (searchParams.get("welcome") && !p.profile?.billing?.isBusiness) {
+        for (let i = 0; i < 5 && !p.profile?.billing?.isBusiness; i++) {
+          await new Promise((r) => setTimeout(r, 1500));
+          p = await fetch("/api/profile").then((r) => r.json());
+        }
+      }
+      setOnboardingBusinesses(businessesFromOnboarding(p.profile?.entityType, p.profile?.businessName));
       const business = Boolean(p.profile?.billing?.isBusiness);
       setIsBusiness(business);
       if (business) {
@@ -146,11 +157,47 @@ function BusinessPageInner() {
         <div className="text-sm" style={{ ...bloomWarningCardStyle(), padding: 14 }}>{error}</div>
       )}
 
+      {entities.length === 0 && onboardingBusinesses.length > 0 && (
+        <SetupFromOnboardingCard businesses={onboardingBusinesses} onChange={loadAll} setError={setError} />
+      )}
       <EntitiesCard entities={entities} onChange={loadAll} setError={setError} />
       <AccountsEntityCard accounts={accounts} entities={entities} onChange={loadAll} setError={setError} />
       <QuickBooksCard entities={entities} connections={connections} onChange={loadAll} setError={setError} />
       <TrueUpCard entities={entities} connections={connections} setError={setError} />
     </div>
+  );
+}
+
+// ---- One-click setup from onboarding answers ---------------------------
+function SetupFromOnboardingCard({ businesses, onChange, setError }) {
+  const [busy, setBusy] = useState(false);
+  const create = async () => {
+    setBusy(true);
+    for (const b of businesses) {
+      const res = await fetch("/api/entities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: b.name, entity_type: b.typeLabel }),
+      });
+      const data = await res.json();
+      if (!data.entity) { setError(data.error || "Could not create business."); break; }
+    }
+    setBusy(false);
+    onChange();
+  };
+  return (
+    <Card className="p-6" style={bloomAccentCardStyle()}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 400, margin: "0 0 6px" }}>
+        Start with what you told us
+      </h2>
+      <p style={{ fontSize: 14, margin: "0 0 14px" }}>
+        Add {businesses.length > 1 ? "these businesses" : "this business"} in one click, then assign your accounts to {businesses.length > 1 ? "them" : "it"} below. You can rename or delete any of them.
+      </p>
+      <ul style={{ fontSize: 15, lineHeight: 1.7, margin: "0 0 16px", paddingLeft: 20 }}>
+        {businesses.map((b, i) => (<li key={i}><strong>{b.name}</strong> · {b.typeLabel}</li>))}
+      </ul>
+      <PrimaryButton onClick={create} disabled={busy}>{busy ? "Adding…" : "Add my businesses"}</PrimaryButton>
+    </Card>
   );
 }
 

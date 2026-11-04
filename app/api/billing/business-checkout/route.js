@@ -37,7 +37,7 @@ export async function POST(request) {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: businessPriceId(), quantity: 1 }],
-    success_url: `${origin}/settings?billing=success`,
+    success_url: `${origin}/business?welcome=1`,
     cancel_url: `${origin}/settings?billing=cancelled`,
   });
 
