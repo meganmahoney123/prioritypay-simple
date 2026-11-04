@@ -656,9 +656,17 @@ function OnboardingPageInner() {
   // app/(app)/dashboard/page.js) -- a row claiming a real percentage with
   // nowhere to send it yet.
   const unconnectedForStep4 = percent.filter((r) => (Number(r.pct) || 0) > 0 && !r.accountId);
+  // The "choose an account" / "pick a retirement %" messages only appear once
+  // someone actually tries to continue without doing it, not up front.
+  const [showBlockHint, setShowBlockHint] = useState(false);
+  useEffect(() => { setShowBlockHint(false); }, [step]);
   const handleStep4Continue = () => {
     // Every split with a percentage needs an account before moving on.
-    if (unconnectedForStep4.length > 0) return;
+    if (unconnectedForStep4.length > 0) { setShowBlockHint(true); return; }
+    next();
+  };
+  const handleStep2Continue = () => {
+    if (needsRetirement) { setShowBlockHint(true); return; }
     next();
   };
 
@@ -1758,17 +1766,17 @@ function OnboardingPageInner() {
                 {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
               </span>
             </div>
-            {step === STEP_MATCH && unconnectedForStep4.length > 0 && (
+            {step === STEP_MATCH && showBlockHint && unconnectedForStep4.length > 0 && (
               <p style={{ fontSize: 14, lineHeight: 1.5, color: "#b3261e", margin: "0 0 12px" }}>
                 Choose an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} to continue.
               </p>
             )}
-            {step === 2 && needsRetirement && (
+            {step === 2 && showBlockHint && needsRetirement && (
               <p style={{ fontSize: 14, color: "#b3261e", margin: "0 0 12px" }}>Put at least 1% toward retirement to continue.</p>
             )}
             <div style={{ display: "flex", gap: 12 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={step === 2 ? next : handleStep4Continue} disabled={step === 2 ? needsRetirement : unconnectedForStep4.length > 0} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={step === 2 ? handleStep2Continue : handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
             {step === STEP_MATCH && unconnectedForStep4.length > 0 && isDevTester && (
               <button
