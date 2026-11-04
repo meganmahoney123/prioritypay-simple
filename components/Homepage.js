@@ -882,19 +882,44 @@ export default function Homepage() {
             </p>
             <div style={{ background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 16, marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
-                <span style={{ flex: 1, fontWeight: 600 }}>Client payment</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$4,200</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "4px 9px", borderRadius: "var(--radius-pill)" }}>✓ Income</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 600 }}>Bridgeway Studio</span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "#6B5E7A" }}>Invoice 118</span>
+                </span>
+                <span style={{ textAlign: "right" }}>
+                  <span style={{ display: "block", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$4,200</span>
+                  <span style={{ display: "inline-block", marginTop: 3, fontSize: 11.5, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "3px 8px", borderRadius: "var(--radius-pill)" }}>Income</span>
+                </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
-                <span style={{ flex: 1, fontWeight: 600 }}>Bank refund</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$60</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "4px 9px", borderRadius: "var(--radius-pill)" }}>✓ Not income</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 600 }}>Harbor Coffee Co.</span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "#6B5E7A" }}>Website project</span>
+                </span>
+                <span style={{ textAlign: "right" }}>
+                  <span style={{ display: "block", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$1,150</span>
+                  <span style={{ display: "inline-block", marginTop: 3, fontSize: 11.5, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "3px 8px", borderRadius: "var(--radius-pill)" }}>Income</span>
+                </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
-                <span style={{ flex: 1, fontWeight: 600 }}>Payment app</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$850</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#2F7D5B", background: "#E4F5EC", padding: "4px 9px", borderRadius: "var(--radius-pill)" }}>✓ Income</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 600 }}>Adobe Creative Cloud</span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "#6B5E7A" }}>Software</span>
+                </span>
+                <span style={{ textAlign: "right" }}>
+                  <span style={{ display: "block", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>−$55</span>
+                  <span style={{ display: "inline-block", marginTop: 3, fontSize: 11.5, fontWeight: 700, color: "#7A5A12", background: "#FBF1D9", padding: "3px 8px", borderRadius: "var(--radius-pill)" }}>Expense</span>
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFFFFF", borderRadius: "var(--radius-sm)", padding: "10px 12px", fontSize: 14 }}>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 600 }}>Venmo · Jordan</span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "#6B5E7A" }}>Refund from vendor</span>
+                </span>
+                <span style={{ textAlign: "right" }}>
+                  <span style={{ display: "block", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 13 }}>+$60</span>
+                  <span style={{ display: "inline-block", marginTop: 3, fontSize: 11.5, fontWeight: 700, color: "#7A5A12", background: "#FBF1D9", padding: "3px 8px", borderRadius: "var(--radius-pill)" }}>Not income</span>
+                </span>
               </div>
             </div>
           </Reveal>
