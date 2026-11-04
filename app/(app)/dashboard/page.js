@@ -11,6 +11,7 @@ import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { isNativeApp } from "@/lib/native";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import BusinessUpgradeCard from "@/components/BusinessUpgradeCard";
 import { showsBusinessPitch } from "@/lib/entityCopy";
 
@@ -81,10 +82,16 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState(null);
   const [email, setEmail] = useState(null);
   const [displayName, setDisplayName] = useState(null);
+  // Testing only (see ?bizpreview=1 below): the login email comes from the
+  // auth session, since /api/profile doesn't return one.
+  const [authEmail, setAuthEmail] = useState("");
+  useEffect(() => {
+    supabaseBrowser().auth.getUser().then(({ data }) => setAuthEmail((data?.user?.email || "").toLowerCase())).catch(() => {});
+  }, []);
   const bizPreview =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("bizpreview") === "1" &&
-    ["megan@ignitemysite.com", "megan+onboarding@ignitemysite.com"].includes(String(email || "").toLowerCase());
+    ["megan@ignitemysite.com", "megan+onboarding@ignitemysite.com"].includes(authEmail);
   const [businessInfo, setBusinessInfo] = useState({ entityType: null, businessName: null });
 
   // Owns the This Month/This Year toggle (and the year stepper) up here
