@@ -8,7 +8,7 @@ import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
 import ChipCheckboxes from "./ChipCheckboxes";
 import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
-import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom } from "@/lib/allocations";
+import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, RETIREMENT_GROUP_SUBTEXT, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom } from "@/lib/allocations";
 import { bloomWarningCardStyle } from "@/lib/bloomTheme";
 
 // Purple ramp used for each row's colour dot in the Bloom-styled ("ledger"
@@ -983,6 +983,11 @@ export default function PercentSplitEditor({
   flattenInvestments = false,
   // Drops the explainer line under the Retirement heading.
   hideGroupSubtext = false,
+  // Split Rules only (Nov 2026): hides just the self-employed Solo 401k
+  // explainer (RETIREMENT_GROUP_SUBTEXT, "Solo 401ks are retirement accounts
+  // for self-employed..."), which belongs in onboarding where people first
+  // choose categories. The W2 versions of the note still show.
+  hideSoloRetirementNote = false,
   // { options: [{value,label}], selected: [value], onToggle(value) } -- onboarding's
   // "which retirement accounts do you have" picker; replaces the per-group
   // notes and the add button for Retirement.
@@ -1135,7 +1140,8 @@ export default function PercentSplitEditor({
                 </span>
               </div>
               <div style={{ padding: "18px 22px 22px" }}>
-                {section.group.startsWith("Retirement") && !retirementPicker && !hideGroupSubtext && (
+                {section.group.startsWith("Retirement") && !retirementPicker && !hideGroupSubtext &&
+                  !(hideSoloRetirementNote && retirementGroupSubtext(persona, section.group) === RETIREMENT_GROUP_SUBTEXT) && (
                   <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 18px", maxWidth: "40em" }}>
                     {retirementGroupSubtext(persona, section.group)}
                   </p>
@@ -1282,7 +1288,8 @@ export default function PercentSplitEditor({
               <span className="text-sm font-semibold">{section.group}</span>
               <span className="text-xs font-mono text-neutral-500">{groupPctTotal(section.rows)}% total</span>
             </div>
-            {section.group.startsWith("Retirement") && (
+            {section.group.startsWith("Retirement") &&
+              !(hideSoloRetirementNote && retirementGroupSubtext(persona, section.group) === RETIREMENT_GROUP_SUBTEXT) && (
               <p className="text-[11px] text-neutral-500 leading-snug mb-2 px-0.5">{retirementGroupSubtext(persona, section.group)}</p>
             )}
             <div className="space-y-2">

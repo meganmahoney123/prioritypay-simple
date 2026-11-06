@@ -46,6 +46,12 @@ for the iOS app once Apple approves the current build.
 - `category-summary` now also returns `monthlyByLabel` (additive), so renamed
   or removed categories still count in the cards.
 
+### 3. Solo 401k note removed from Income Split Rules (web, Nov 6 2026)
+- The "Solo 401ks are retirement accounts for self-employed..." note no longer
+  shows on Income Split Rules (`app/(app)/splits/page.js` passes the new
+  `hideSoloRetirementNote` option to `components/PercentSplitEditor.js`).
+  Onboarding still shows it. The W2 versions of the note are unchanged.
+
 ## Follow-ups (not built yet)
 
 - **Skipped "Not business income" deposits and Month Close-Out.** Skipping a
