@@ -274,7 +274,7 @@ export default function DashboardPage() {
         actionsSlot
       )}
 
-      <PendingTransfers allocations={pendingTransfers} accounts={accounts} onConfirmed={loadAll} />
+      <PendingTransfers accounts={accounts} refreshKey={pendingTransfers} onChanged={loadAll} />
 
       {billing?.readOnly && (
         <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>

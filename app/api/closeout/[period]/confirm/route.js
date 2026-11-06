@@ -97,6 +97,7 @@ export async function POST(request, { params }) {
     .eq("simple_transfers.user_id", user.id)
     .gte("simple_transfers.created_at", yearStartIso(period))
     .neq("status", "failed")
+    .neq("status", "skipped")
     .not("retirement_type", "is", null);
   const ytdByType = {};
   (ytdRows || []).forEach((r) => {
@@ -176,7 +177,8 @@ export async function POST(request, { params }) {
     .eq("label", "Tax Reserve")
     .gte("simple_transfers.created_at", periodStartIso(period))
     .lt("simple_transfers.created_at", periodEndIso(period))
-    .neq("status", "failed");
+    .neq("status", "failed")
+    .neq("status", "skipped");
   const taxSetAsideThisMonth = (taxAllocationRows || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
 
   return Response.json({
