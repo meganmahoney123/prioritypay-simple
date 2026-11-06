@@ -6,14 +6,17 @@ for the iOS app once Apple approves the current build.
 
 ## To merge into main
 
-### 1. Transfer checklist grouped by deposit (web, Nov 6 2026)
-- Checklist (`components/PendingTransfers.js`, Dashboard) is one card per deposit:
-  client payment name, date, amount, one line per category with % and $, plus
-  Guilt-Free Spending. "Go to [bank]" links, "No transfer needed (stays in
-  [account])", per-line "Mark as transferred", per-deposit "Approve split",
-  "Skip this deposit" with Undo, and a multi-deposit summary (2+ waiting) that
-  keeps every deposit's own breakdown below it.
-- New routes: `GET /api/transfers/deposits`, `POST /api/transfers/[id]/approve`,
+### 1. Transfer checklist: one grand-totals card (web, Nov 6 2026)
+- Checklist (`components/PendingTransfers.js`, Dashboard) is a single card with
+  one row per category: the total across pending deposits, each deposit's own
+  amount under it (hidden when only one deposit is pending), where it goes,
+  "Go to [bank]" and "Mark all transferred", or "No transfer needed (stays in
+  [account])". Guilt-Free Spending is its own row. A "Covers:" line lists the
+  pending deposits with Skip, plus recently skipped ones with Undo.
+  "Approve all splits" at the bottom. "On the way (N)" (collapsed) lists lines
+  marked as transferred that haven't landed yet. Per-line Remove was dropped.
+- New routes: `GET /api/transfers/deposits`, `POST /api/transfers/approve-all`,
+  `POST /api/transfers/[id]/approve` (currently unused),
   `POST /api/transfers/[id]/skip`, `POST /api/transfers/[id]/unskip`,
   `POST /api/transfer-allocations/confirm-batch`. Helpers in `lib/depositChecklist.js`.
 - Deposit name recorded from the Plaid transaction (`lib/runSplit.js`,

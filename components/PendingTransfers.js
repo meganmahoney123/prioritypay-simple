@@ -4,30 +4,30 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { resolveBankLoginUrl } from "@/lib/bankLinks";
-import { ExternalLink, Clock, Check } from "lucide-react";
+import { ExternalLink, Clock, ChevronDown, ChevronRight } from "lucide-react";
 
-// The "Transfers to make" checklist, grouped by DEPOSIT (Nov 2026 redesign;
-// it used to group by account pair, which hid each deposit's own split).
+// The "Transfers to make" checklist on the Dashboard: ONE grand-totals card
+// (Nov 2026). PrioritySave never moves money; every row is a transfer the
+// user makes in their own bank, then marks as transferred.
 //
-// PrioritySave never moves money. Every line here is a transfer the user
-// makes themselves in their own bank, then marks as transferred:
-//  - one card per deposit: name, date, amount, then one line per category
-//    ("Solo 401k (15%): $720") plus Guilt-Free Spending (the part of the
-//    deposit not assigned to any category);
-//  - a line whose category account is the account the deposit landed in
-//    needs no transfer and says so, with no link or button;
-//  - "Go to [bank]" opens the bank the deposit landed in (where the
-//    transfer starts), via lib/bankLinks.js;
-//  - "Approve split" marks every remaining line on one deposit;
-//  - "Skip this deposit" removes it from every total and can be undone;
-//  - with 2+ deposits waiting, a summary on top totals each category across
-//    them, with every deposit's own card still listed below. Marking a
-//    summary line confirms each underlying line (one shared batch id), so
-//    each deposit keeps its own record.
+//  - One row per category (label + from/to accounts), combining that
+//    category's pending lines across every pending deposit: the total, each
+//    deposit's own amount under it (hidden when only one deposit is
+//    pending), where it goes, "Go to [bank]" (the bank the deposits landed
+//    in, where the transfer starts) and "Mark all transferred".
+//  - Categories that stay in the account the deposit landed in, and
+//    Guilt-Free Spending (the part of each deposit not assigned to any
+//    category), say "No transfer needed (stays in [account])".
+//  - "Covers:" lists the pending deposits, each with Skip (removes it from
+//    every total), plus recently skipped ones with Undo.
+//  - "Approve all splits" marks every pending line, one category at a time.
+//  - "On the way (N)", collapsed by default: lines marked as transferred but
+//    not seen landing yet, with "It already landed" and the near-miss
+//    "Is this your transfer?" prompt.
 //
 // Data: GET /api/transfers/deposits. Actions: /api/transfer-allocations/
-// [id]/(confirm|skip|settle|amount|candidate/*), /api/transfer-allocations/
-// confirm-batch, /api/transfers/[id]/(approve|skip|unskip).
+// confirm-batch, /api/transfer-allocations/[id]/(settle|amount|candidate/*),
+// /api/transfers/approve-all, /api/transfers/[id]/(skip|unskip).
 
 export const GUILT_FREE_LABEL = "Guilt-Free Spending";
 const SKIP_REASONS = ["Not business income", "Refund or reimbursement", "Transfer between my accounts", "Other"];
@@ -44,14 +44,13 @@ function money(n) {
   });
 }
 
-function pctLabel(part, whole) {
-  if (!whole) return "0%";
-  return `${Math.round((part / whole) * 1000) / 10}%`;
+function pctOf(part, whole) {
+  return whole ? Math.round((part / whole) * 1000) / 10 : 0;
 }
 
-function formatDate(iso) {
+function formatDate(iso, withYear = false) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}) });
 }
 
 function accountLabel(acc, fallbackLabel) {
@@ -75,9 +74,10 @@ function depositTitle(d) {
   return "Deposit";
 }
 
+const needsTransfer = (l) => !l.reserved_only && l.status !== "reserved";
+
 // Kept for components/AppShell.js (browser-tab reminder), which still reads
-// GET /api/transfers/pending: combines lines that share a category label
-// and source/destination account across every open deposit.
+// GET /api/transfers/pending.
 export function groupByCategory(rows) {
   const map = new Map();
   rows.forEach((a) => {
@@ -93,52 +93,83 @@ export function groupByCategory(rows) {
         amount: 0,
         calculatedAmount: 0,
         ids: [],
-        rows: [],
       });
     }
     const g = map.get(key);
     g.amount += Number(a.amount) || 0;
     g.calculatedAmount += Number(a.calculated_amount ?? a.amount) || 0;
     g.ids.push(a.id);
-    g.rows.push(a);
     if (!g.dest_account_label && a.dest_account_label) g.dest_account_label = a.dest_account_label;
     if (!g.source_account_label && a.source_account_label) g.source_account_label = a.source_account_label;
   });
   return Array.from(map.values());
 }
 
-// Per-deposit view model: lines that need a transfer, lines that stay put,
-// and the Guilt-Free Spending remainder.
+// Per-deposit view model.
 function buildDeposit(d) {
-  const lines = d.lines || [];
-  const counted = lines.filter((l) => l.status !== "failed");
-  const calculatedSum = counted.reduce((s, l) => s + (Number(l.calculated_amount ?? l.amount) || 0), 0);
-  const guiltFree = Math.max(0, Math.round((d.sourceAmount - calculatedSum) * 100) / 100);
+  const lines = (d.lines || []).filter((l) => l.status !== "failed");
+  const calculatedSum = lines.reduce((s, l) => s + (Number(l.calculated_amount ?? l.amount) || 0), 0);
   const sourceLine = lines.find((l) => l.source_account_id || l.source_account_label) || {};
-  const needsTransfer = (l) => !l.reserved_only && l.status !== "reserved";
-  const transferLines = counted.filter((l) => needsTransfer(l) && l.status !== "skipped");
-  const waiting = transferLines.filter((l) => l.status === "needs_approval");
   return {
     ...d,
     title: depositTitle(d),
-    lines: counted,
-    guiltFree,
+    lines,
+    guiltFree: Math.max(0, Math.round((d.sourceAmount - calculatedSum) * 100) / 100),
     sourceAccountId: sourceLine.source_account_id || null,
     sourceAccountLabel: sourceLine.source_account_label || null,
-    transferCount: transferLines.length,
-    waitingCount: waiting.length,
-    needsTransfer,
+    waitingCount: lines.filter((l) => needsTransfer(l) && l.status === "needs_approval").length,
   };
 }
 
-const sectionLabelStyle = {
-  fontFamily: "var(--font-heading)",
-  fontSize: 12,
-  fontWeight: 700,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: "var(--color-neutral-700)",
-};
+// Category rows across every pending deposit.
+function buildRows(pendingDeposits) {
+  const map = new Map();
+  const add = (key, base, part) => {
+    if (!map.has(key)) map.set(key, { key, ...base, total: 0, parts: [], ids: [] });
+    const row = map.get(key);
+    row.total += part.amount;
+    row.parts.push(part);
+    if (part.line && row.kind === "transfer") row.ids.push(part.line.id);
+    if (!row.dest_account_label && part.line?.dest_account_label) row.dest_account_label = part.line.dest_account_label;
+    if (!row.source_account_label && part.sourceLabel) row.source_account_label = part.sourceLabel;
+  };
+
+  pendingDeposits.forEach((d) => {
+    d.lines.forEach((l) => {
+      const transfer = needsTransfer(l);
+      if (transfer && l.status !== "needs_approval") return; // marked, landed or removed: not pending
+      if (!transfer && l.status !== "reserved") return;
+      const kind = transfer ? "transfer" : "stay";
+      const key = `${kind}::${l.label}::${l.dest_account_id || ""}::${l.source_account_id || ""}`;
+      add(
+        key,
+        { kind, label: l.label, dest_account_id: l.dest_account_id, source_account_id: l.source_account_id, dest_account_label: null, source_account_label: null },
+        {
+          deposit: d,
+          line: l,
+          amount: Number(l.amount) || 0,
+          pct: pctOf(Number(l.calculated_amount ?? l.amount) || 0, d.sourceAmount),
+          sourceLabel: l.source_account_label,
+        }
+      );
+    });
+    if (d.guiltFree > 0) {
+      add(
+        `guiltfree::${d.sourceAccountId || d.sourceAccountLabel || ""}`,
+        { kind: "stay", guiltFree: true, label: GUILT_FREE_LABEL, dest_account_id: null, source_account_id: d.sourceAccountId, dest_account_label: null, source_account_label: null },
+        { deposit: d, line: null, amount: d.guiltFree, pct: pctOf(d.guiltFree, d.sourceAmount), sourceLabel: d.sourceAccountLabel }
+      );
+    }
+  });
+
+  const rows = Array.from(map.values()).map((r) => {
+    const pcts = new Set(r.parts.map((p) => p.pct));
+    return { ...r, total: Math.round(r.total * 100) / 100, sharedPct: pcts.size === 1 ? r.parts[0].pct : null };
+  });
+  // Guilt-Free Spending last; everything else in first-seen order.
+  return [...rows.filter((r) => !r.guiltFree), ...rows.filter((r) => r.guiltFree)];
+}
+
 const mutedText = { fontSize: 13, color: "var(--color-neutral-700)", lineHeight: 1.5 };
 const linkButtonStyle = {
   background: "none",
@@ -150,6 +181,7 @@ const linkButtonStyle = {
   textDecoration: "underline",
 };
 const smallPrimary = { padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999 };
+const rowDivider = { padding: "12px 0", borderTop: "1px solid var(--color-divider)" };
 
 function BankLink({ institution }) {
   if (!institution) return null;
@@ -178,7 +210,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
   const [skipReason, setSkipReason] = useState(SKIP_REASONS[0]);
   const [editing, setEditing] = useState(null); // allocation id
   const [draft, setDraft] = useState("");
-  const [amountError, setAmountError] = useState(null);
+  const [onTheWayOpen, setOnTheWayOpen] = useState(false);
 
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
@@ -197,41 +229,20 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
   }, [load, refreshKey]);
 
   const deposits = useMemo(() => data.deposits.map(buildDeposit), [data.deposits]);
-  const waitingDeposits = deposits.filter((d) => d.waitingCount > 0);
+  const pendingDeposits = useMemo(() => deposits.filter((d) => d.waitingCount > 0), [deposits]);
+  const rows = useMemo(() => buildRows(pendingDeposits), [pendingDeposits]);
+  const showParts = pendingDeposits.length > 1;
+  const skipped = useMemo(() => data.skipped.map((s) => ({ ...s, title: depositTitle(s) })), [data.skipped]);
 
-  // Summary groups: lines still waiting, combined by category + accounts
-  // across every waiting deposit.
-  const summary = useMemo(() => {
-    if (waitingDeposits.length < 2) return null;
-    const byLineId = {};
-    const waitingLines = [];
-    waitingDeposits.forEach((d) =>
+  const onTheWay = useMemo(() => {
+    const items = [];
+    deposits.forEach((d) =>
       d.lines.forEach((l) => {
-        if (l.status === "needs_approval") {
-          byLineId[l.id] = d;
-          waitingLines.push(l);
-        }
+        if (needsTransfer(l) && l.status === "in_transit") items.push({ deposit: d, line: l });
       })
     );
-    const groups = groupByCategory(waitingLines).map((g) => ({
-      ...g,
-      covers: g.rows.map((r) => ({ id: r.id, deposit: byLineId[r.id], amount: Number(r.amount) || 0 })),
-    }));
-    const stays = {};
-    waitingDeposits.forEach((d) => {
-      d.lines.filter((l) => !d.needsTransfer(l)).forEach((l) => {
-        stays[l.label] = (stays[l.label] || 0) + (Number(l.amount) || 0);
-      });
-      if (d.guiltFree > 0) stays[GUILT_FREE_LABEL] = (stays[GUILT_FREE_LABEL] || 0) + d.guiltFree;
-    });
-    const sourceIds = new Set(waitingDeposits.map((d) => d.sourceAccountId || d.sourceAccountLabel));
-    const first = waitingDeposits[0];
-    const staysWhere =
-      sourceIds.size === 1
-        ? `stays in ${accountLabel(accountsById[first.sourceAccountId], first.sourceAccountLabel)}`
-        : "stays in the account each deposit landed in";
-    return { groups, stays, staysWhere };
-  }, [waitingDeposits, accountsById]);
+    return items;
+  }, [deposits]);
 
   const run = async (key, fn) => {
     setBusyKey(key);
@@ -256,11 +267,10 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-  const markLine = (id) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/confirm`));
-  const removeLine = (id) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/skip`));
+  const markRow = (row) => run(`row:${row.key}`, () => post("/api/transfer-allocations/confirm-batch", { allocationIds: row.ids }));
+  const approveAll = () => run("all", () => post("/api/transfers/approve-all"));
   const settleLine = (id) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/settle`));
   const candidate = (id, action) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/candidate/${action}`));
-  const approveDeposit = (id) => run(`dep:${id}`, () => post(`/api/transfers/${id}/approve`));
   const skipDeposit = (id) =>
     run(`dep:${id}`, async () => {
       const res = await post(`/api/transfers/${id}/skip`, { reason: skipReason });
@@ -268,15 +278,13 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
       return res;
     });
   const undoSkip = (id) => run(`dep:${id}`, () => post(`/api/transfers/${id}/unskip`));
-  const markGroup = (g) => run(`grp:${g.key}`, () => post("/api/transfer-allocations/confirm-batch", { allocationIds: g.ids }));
 
   const saveAmount = async (line) => {
     const parsed = Number(draft);
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      setAmountError("Enter an amount greater than $0.");
+      setError("Enter an amount greater than $0.");
       return;
     }
-    setAmountError(null);
     await run(`line:${line.id}`, () =>
       fetch(`/api/transfer-allocations/${line.id}/amount`, {
         method: "PATCH",
@@ -287,11 +295,12 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
     setEditing(null);
   };
 
-  if (!loaded || (!deposits.length && !data.skipped.length)) return null;
+  if (!loaded || (!pendingDeposits.length && !onTheWay.length && !skipped.length)) return null;
 
-  const renderAmount = (line) => {
-    const overridden = line.calculated_amount != null && Math.abs(line.calculated_amount - line.amount) > 0.005;
-    if (line.status !== "needs_approval") return <span style={{ fontFamily: "var(--font-mono)" }}>{money(line.amount)}</span>;
+  // Click-to-edit amount for one pending line; plain text otherwise.
+  const amountFor = (line, amount, { bold = false } = {}) => {
+    const style = { fontFamily: "var(--font-mono)", fontWeight: bold ? 700 : 500 };
+    if (!line || line.status !== "needs_approval" || !needsTransfer(line)) return <span style={style}>{money(amount)}</span>;
     if (editing === line.id) {
       return (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -321,6 +330,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
         </span>
       );
     }
+    const overridden = line.calculated_amount != null && Math.abs(line.calculated_amount - line.amount) > 0.005;
     return (
       <button
         type="button"
@@ -328,264 +338,215 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
         onClick={() => {
           setEditing(line.id);
           setDraft(Number(line.amount).toFixed(2));
-          setAmountError(null);
         }}
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          background: "none",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-          color: "inherit",
-          textDecoration: "underline dotted",
-          textUnderlineOffset: 3,
-        }}
+        style={{ ...style, background: "none", border: "none", padding: 0, cursor: "pointer", color: "inherit", textDecoration: "underline dotted", textUnderlineOffset: 3 }}
       >
-        {money(line.amount)}
+        {money(amount)}
         {overridden && <span style={{ fontWeight: 500, fontSize: 11, marginLeft: 6 }}>(calculated {money(line.calculated_amount)})</span>}
       </button>
     );
   };
 
-  const renderLine = (d, line) => {
-    const pct = pctLabel(Number(line.calculated_amount ?? line.amount) || 0, d.sourceAmount);
-    const busy = busyKey === `line:${line.id}`;
-    const sourceAccount = accountsById[line.source_account_id];
-    const destAccount = accountsById[line.dest_account_id];
-    const header = (
-      <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>
-        {line.label} ({pct}): {renderAmount(line)}
-      </div>
-    );
-
-    if (!d.needsTransfer(line)) {
-      return (
-        <div key={line.id} style={{ padding: "10px 0", borderTop: "1px solid var(--color-divider)" }}>
-          {header}
-          <div style={mutedText}>No transfer needed (stays in {accountLabel(sourceAccount, line.source_account_label)})</div>
-        </div>
-      );
-    }
-
-    if (line.status === "skipped") {
-      return (
-        <div key={line.id} style={{ padding: "10px 0", borderTop: "1px solid var(--color-divider)", opacity: 0.6 }}>
-          {header}
-          <div style={mutedText}>Removed. Not counted in your totals.</div>
-        </div>
-      );
-    }
-
-    const destText = `To ${accountLabel(destAccount, line.dest_account_label)}`;
+  const renderRow = (row) => {
+    const busy = busyKey === `row:${row.key}`;
+    const sourceAccount = accountsById[row.source_account_id];
+    const singleLine = row.parts.length === 1 ? row.parts[0].line : null;
+    const title = `${row.label}${row.sharedPct != null ? ` (${row.sharedPct}%)` : ""}`;
     return (
-      <div key={line.id} style={{ padding: "10px 0", borderTop: "1px solid var(--color-divider)" }}>
-        {header}
-        <div style={mutedText}>{destText}</div>
+      <div key={row.key} style={rowDivider}>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{title}</div>
+          <div style={{ fontSize: 16 }}>{amountFor(singleLine, row.total, { bold: true })}</div>
+        </div>
 
-        {line.status === "needs_approval" && (
-          <div className="flex items-center gap-3 flex-wrap" style={{ marginTop: 8 }}>
-            <BankLink institution={institutionFor(sourceAccount, line.source_account_label)} />
-            <PrimaryButton onClick={() => markLine(line.id)} disabled={busy} style={smallPrimary}>
-              {busy ? "Saving..." : "Mark as transferred"}
-            </PrimaryButton>
-            <button onClick={() => removeLine(line.id)} disabled={busy} style={linkButtonStyle} title="Leave this category out of this deposit">
-              Remove
-            </button>
+        {showParts && (
+          <div style={{ margin: "4px 0 2px 12px" }}>
+            {row.parts.map((p) => (
+              <div key={`${row.key}:${p.deposit.id}`} className="flex items-baseline justify-between gap-3" style={mutedText}>
+                <span style={{ minWidth: 0 }}>
+                  {p.deposit.title} ({formatDate(p.deposit.createdAt)}){row.sharedPct == null ? ` · ${p.pct}%` : ""}
+                </span>
+                <span>{amountFor(p.line, p.amount)}</span>
+              </div>
+            ))}
           </div>
         )}
 
-        {line.status === "in_transit" && (
-          <div style={{ marginTop: 6 }}>
-            <div className="inline-flex items-center gap-1" style={mutedText}>
-              <Clock size={13} /> Marked as transferred {formatDate(line.confirmed_at)}. Waiting for it to land.
-              <button onClick={() => settleLine(line.id)} disabled={busy} style={{ ...linkButtonStyle, marginLeft: 6 }}>
-                It already landed
-              </button>
+        {row.kind === "transfer" ? (
+          <>
+            <div style={mutedText}>To {accountLabel(accountsById[row.dest_account_id], row.dest_account_label)}</div>
+            <div className="flex items-center justify-between gap-3 flex-wrap" style={{ marginTop: 8 }}>
+              <BankLink institution={institutionFor(sourceAccount, row.source_account_label)} />
+              <PrimaryButton onClick={() => markRow(row)} disabled={busy || busyKey === "all"} style={smallPrimary}>
+                {busy ? "Saving..." : "Mark all transferred"}
+              </PrimaryButton>
             </div>
-            {line.candidate_transaction_id && line.candidate_amount != null && (
-              <div style={{ ...mutedText, marginTop: 6 }}>
-                We saw {money(line.candidate_amount)} land in {accountLabel(destAccount, line.dest_account_label)}
-                {line.candidate_date ? ` on ${line.candidate_date}` : ""}. Is this your {line.label} transfer?{" "}
-                <button onClick={() => candidate(line.id, "confirm")} disabled={busy} style={linkButtonStyle}>
-                  Yes, that&apos;s it
-                </button>{" "}
-                <button onClick={() => candidate(line.id, "dismiss")} disabled={busy} style={linkButtonStyle}>
-                  No, that&apos;s not it
+          </>
+        ) : (
+          <div style={mutedText}>No transfer needed (stays in {accountLabel(sourceAccount, row.source_account_label)})</div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCovers = () => (
+    <div style={{ ...rowDivider, borderTop: "2px solid var(--color-divider)" }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", marginBottom: 4 }}>Covers:</div>
+      {pendingDeposits.map((d) => {
+        const busy = busyKey === `dep:${d.id}`;
+        return (
+          <div key={d.id} style={{ padding: "4px 0" }}>
+            <div className="flex items-baseline justify-between gap-3 flex-wrap" style={mutedText}>
+              <span style={{ minWidth: 0 }}>
+                {d.title} · {formatDate(d.createdAt)} · {money(d.sourceAmount)}
+              </span>
+              {skipOpenFor !== d.id && (
+                <button
+                  onClick={() => {
+                    setSkipOpenFor(d.id);
+                    setSkipReason(SKIP_REASONS[0]);
+                  }}
+                  style={linkButtonStyle}
+                >
+                  Skip
+                </button>
+              )}
+            </div>
+            {skipOpenFor === d.id && (
+              <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 4 }}>
+                <label style={mutedText} htmlFor={`skip-${d.id}`}>
+                  Reason
+                </label>
+                <select
+                  id={`skip-${d.id}`}
+                  value={skipReason}
+                  onChange={(e) => setSkipReason(e.target.value)}
+                  style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "1px solid var(--color-divider)", background: "var(--color-surface)", color: "var(--color-text)" }}
+                >
+                  {SKIP_REASONS.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </select>
+                <button onClick={() => skipDeposit(d.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-text)" }}>
+                  {busy ? "Skipping..." : "Skip deposit"}
+                </button>
+                <button onClick={() => setSkipOpenFor(null)} style={linkButtonStyle}>
+                  Cancel
                 </button>
               </div>
             )}
           </div>
-        )}
-
-        {line.status === "completed" && (
-          <div className="inline-flex items-center gap-1" style={{ ...mutedText, marginTop: 6 }}>
-            <Check size={13} /> Landed
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderDeposit = (d) => {
-    const busy = busyKey === `dep:${d.id}`;
-    const status =
-      d.waitingCount > 0
-        ? `Needs approval · ${d.transferCount - d.waitingCount} of ${d.transferCount} transfers marked as transferred`
-        : "Approved · waiting for transfers to land";
-    return (
-      <Card key={d.id} className="p-5" style={{ borderRadius: 24 }}>
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>{d.title}</div>
-            <div style={mutedText}>
-              {formatDate(d.createdAt)} · landed in {accountLabel(accountsById[d.sourceAccountId], d.sourceAccountLabel)}
-            </div>
-          </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700 }}>{money(d.sourceAmount)}</div>
-        </div>
-        <div style={{ ...mutedText, margin: "8px 0 4px", fontWeight: 600 }}>{status}</div>
-
-        <div>
-          {d.lines.map((l) => renderLine(d, l))}
-          {d.guiltFree > 0 && (
-            <div style={{ padding: "10px 0", borderTop: "1px solid var(--color-divider)" }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>
-                {GUILT_FREE_LABEL} ({pctLabel(d.guiltFree, d.sourceAmount)}): <span style={{ fontFamily: "var(--font-mono)" }}>{money(d.guiltFree)}</span>
-              </div>
-              <div style={mutedText}>
-                No transfer needed (stays in {accountLabel(accountsById[d.sourceAccountId], d.sourceAccountLabel)})
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between gap-3 flex-wrap" style={{ marginTop: 12 }}>
-          {skipOpenFor === d.id ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <label style={mutedText} htmlFor={`skip-${d.id}`}>
-                Reason
-              </label>
-              <select
-                id={`skip-${d.id}`}
-                value={skipReason}
-                onChange={(e) => setSkipReason(e.target.value)}
-                style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "1px solid var(--color-divider)", background: "var(--color-surface)", color: "var(--color-text)" }}
-              >
-                {SKIP_REASONS.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </select>
-              <button onClick={() => skipDeposit(d.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-text)" }}>
-                {busy ? "Skipping..." : "Skip deposit"}
-              </button>
-              <button onClick={() => setSkipOpenFor(null)} style={linkButtonStyle}>
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                setSkipOpenFor(d.id);
-                setSkipReason(SKIP_REASONS[0]);
-              }}
-              style={linkButtonStyle}
-            >
-              Skip this deposit
+        );
+      })}
+      {skipped.map((s) => {
+        const busy = busyKey === `dep:${s.id}`;
+        return (
+          <div key={s.id} className="flex items-baseline justify-between gap-3 flex-wrap" style={{ ...mutedText, padding: "4px 0", opacity: 0.75 }}>
+            <span style={{ minWidth: 0 }}>
+              {s.title} · {formatDate(s.createdAt)} · {money(s.sourceAmount)} · Skipped ({s.skipReason || "Other"}), not counted in any totals
+            </span>
+            <button onClick={() => undoSkip(s.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-accent-700)" }}>
+              {busy ? "Restoring..." : "Undo"}
             </button>
-          )}
-          {d.waitingCount > 0 && (
-            <PrimaryButton onClick={() => approveDeposit(d.id)} disabled={busy} style={{ ...smallPrimary, padding: "10px 20px", fontSize: 14 }}>
-              {busy ? "Saving..." : "Approve split"}
-            </PrimaryButton>
-          )}
-        </div>
-        {d.waitingCount > 0 && (
-          <p style={{ ...mutedText, fontSize: 12, margin: "8px 0 0" }}>
-            Approve split marks every remaining line on this deposit as transferred. Use it after you&apos;ve made those transfers in your bank.
-          </p>
-        )}
-      </Card>
-    );
-  };
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderOnTheWay = () => (
+    <Card className="p-5" style={{ borderRadius: 24 }}>
+      <button
+        onClick={() => setOnTheWayOpen((v) => !v)}
+        aria-expanded={onTheWayOpen}
+        className="inline-flex items-center gap-1"
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}
+      >
+        {onTheWayOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        On the way ({onTheWay.length})
+      </button>
+      {onTheWayOpen &&
+        onTheWay.map(({ deposit, line }) => {
+          const busy = busyKey === `line:${line.id}`;
+          const destAccount = accountsById[line.dest_account_id];
+          return (
+            <div key={line.id} style={rowDivider}>
+              <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  {line.label} · {deposit.title}
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{money(line.amount)}</div>
+              </div>
+              <div style={mutedText}>To {accountLabel(destAccount, line.dest_account_label)}</div>
+              <div className="inline-flex items-center gap-1 flex-wrap" style={mutedText}>
+                <Clock size={13} /> Marked as transferred {formatDate(line.confirmed_at)}. Waiting for it to land.
+                <button onClick={() => settleLine(line.id)} disabled={busy} style={{ ...linkButtonStyle, marginLeft: 6 }}>
+                  It already landed
+                </button>
+              </div>
+              {line.candidate_transaction_id && line.candidate_amount != null && (
+                <div style={{ ...mutedText, marginTop: 4 }}>
+                  We saw {money(line.candidate_amount)} land in {accountLabel(destAccount, line.dest_account_label)}
+                  {line.candidate_date ? ` on ${line.candidate_date}` : ""}. Is this your {line.label} transfer?{" "}
+                  <button onClick={() => candidate(line.id, "confirm")} disabled={busy} style={linkButtonStyle}>
+                    Yes, that&apos;s it
+                  </button>{" "}
+                  <button onClick={() => candidate(line.id, "dismiss")} disabled={busy} style={linkButtonStyle}>
+                    No, that&apos;s not it
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+    </Card>
+  );
+
+  const showMainCard = pendingDeposits.length > 0 || skipped.length > 0;
 
   return (
     <div className="space-y-4">
-      <Card style={bloomAccentCardStyle({ padding: "20px 24px", borderRadius: 24, background: "var(--color-accent-200)", border: "none" })}>
-        <div style={{ ...sectionLabelStyle, fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "var(--color-accent-700)", marginBottom: 6 }}>
-          Transfers to make
-        </div>
-        <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: "var(--color-accent-800)" }}>
-          {waitingDeposits.length
-            ? `${waitingDeposits.length} ${waitingDeposits.length === 1 ? "deposit needs" : "deposits need"} approval. PrioritySave never moves your money: make each transfer in your bank, then mark it as transferred so your category balances stay accurate.`
-            : "Everything is approved. These transfers are on their way."}
-        </p>
-        {error && <p style={{ margin: "8px 0 0", fontSize: 14, color: "#b42318" }}>{error}</p>}
-        {amountError && <p style={{ margin: "8px 0 0", fontSize: 14, color: "#b42318" }}>{amountError}</p>}
-      </Card>
-
-      {summary && (
-        <Card className="p-5" style={{ borderRadius: 24 }}>
-          <div style={sectionLabelStyle}>Totals across {waitingDeposits.length} deposits</div>
-          <p style={{ ...mutedText, margin: "4px 0 8px" }}>
-            Make one transfer per category for the combined amount. Each deposit&apos;s own breakdown is listed below.
+      {showMainCard && (
+        <Card style={bloomAccentCardStyle({ padding: "20px 24px", borderRadius: 24, background: "var(--color-surface)" })}>
+          <div
+            style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: 13,
+              fontWeight: 800,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "var(--color-accent-700)",
+              marginBottom: 6,
+            }}
+          >
+            Transfers to make
+          </div>
+          <p style={{ margin: "0 0 4px", fontSize: 15, lineHeight: 1.6, color: "var(--color-text)" }}>
+            {pendingDeposits.length
+              ? `${pendingDeposits.length} ${pendingDeposits.length === 1 ? "deposit needs" : "deposits need"} approval. PrioritySave never moves your money: make each transfer in your bank, then mark it as transferred so your category balances stay accurate.`
+              : "Nothing needs approval right now."}
           </p>
-          {summary.groups.map((g) => {
-            const busy = busyKey === `grp:${g.key}`;
-            const sourceAccount = accountsById[g.source_account_id];
-            return (
-              <div key={g.key} style={{ padding: "10px 0", borderTop: "1px solid var(--color-divider)" }}>
-                <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>{g.label}</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{money(g.amount)}</div>
-                </div>
-                <div style={mutedText}>To {accountLabel(accountsById[g.dest_account_id], g.dest_account_label)}</div>
-                <div style={mutedText}>Covers: {g.covers.map((c) => `${c.deposit.title} ${money(c.amount)}`).join(", ")}</div>
-                <div className="flex items-center gap-3 flex-wrap" style={{ marginTop: 8 }}>
-                  <BankLink institution={institutionFor(sourceAccount, g.source_account_label)} />
-                  <PrimaryButton onClick={() => markGroup(g)} disabled={busy} style={smallPrimary}>
-                    {busy ? "Saving..." : "Mark as transferred"}
-                  </PrimaryButton>
-                </div>
-              </div>
-            );
-          })}
-          {Object.keys(summary.stays).length > 0 && (
-            <div style={{ padding: "10px 0 0", borderTop: "1px solid var(--color-divider)", ...mutedText }}>
-              No transfer needed ({summary.staysWhere}):{" "}
-              {Object.entries(summary.stays)
-                .map(([label, amt]) => `${label} ${money(amt)}`)
-                .join(", ")}
+          {error && <p style={{ margin: "4px 0", fontSize: 14, color: "#b42318" }}>{error}</p>}
+
+          {rows.map(renderRow)}
+          {renderCovers()}
+
+          {pendingDeposits.length > 0 && (
+            <div className="flex justify-end" style={{ marginTop: 12 }}>
+              <PrimaryButton onClick={approveAll} disabled={busyKey === "all"} style={{ ...smallPrimary, padding: "11px 22px", fontSize: 14 }}>
+                {busyKey === "all" ? "Saving..." : "Approve all splits"}
+              </PrimaryButton>
             </div>
+          )}
+          {pendingDeposits.length > 0 && (
+            <p style={{ ...mutedText, fontSize: 12, margin: "8px 0 0", textAlign: "right" }}>
+              Approve all splits marks every transfer above as transferred. Use it after you&apos;ve made them in your bank.
+            </p>
           )}
         </Card>
       )}
 
-      {deposits.map(renderDeposit)}
-
-      {data.skipped.length > 0 && (
-        <Card className="p-5" style={{ borderRadius: 24 }}>
-          <div style={sectionLabelStyle}>Skipped deposits (not counted in any totals)</div>
-          {data.skipped.map((s) => {
-            const busy = busyKey === `dep:${s.id}`;
-            return (
-              <div key={s.id} className="flex items-center justify-between gap-3 flex-wrap" style={{ padding: "10px 0", borderTop: "1px solid var(--color-divider)" }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>
-                    {depositTitle(s)} · {money(s.sourceAmount)}
-                  </div>
-                  <div style={mutedText}>
-                    {formatDate(s.createdAt)} · {s.skipReason || "Skipped"}
-                  </div>
-                </div>
-                <button onClick={() => undoSkip(s.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-accent-700)" }}>
-                  {busy ? "Restoring..." : "Undo"}
-                </button>
-              </div>
-            );
-          })}
-        </Card>
-      )}
+      {onTheWay.length > 0 && renderOnTheWay()}
     </div>
   );
 }
