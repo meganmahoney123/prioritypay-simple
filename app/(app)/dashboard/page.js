@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import AccountBalances from "@/components/AccountBalances";
 import PendingTransfers from "@/components/PendingTransfers";
+import IncomeSummaryCards from "@/components/IncomeSummaryCards";
 import { useDashboardHeaderSlots } from "@/components/AppShell";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
@@ -96,6 +97,35 @@ export default function DashboardPage() {
   const [earliestPeriod, setEarliestPeriod] = useState(null);
   const handleEarliestPeriod = useCallback((p) => setEarliestPeriod(p), []);
   const period = mode === "year" ? String(year) : monthPeriod;
+
+  // GET /api/allocations/category-summary, fetched once here and shared by
+  // the summary cards at the top of the page (IncomeSummaryCards) and the
+  // category section further down (AccountBalances ->
+  // CategoryDistributionSection). It's a heavy call (Close-Out sync per
+  // month), so it isn't fetched twice.
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const loadSummary = useCallback(() => {
+    setSummaryLoading(true);
+    return fetch(`/api/allocations/category-summary?period=${period}`)
+      .then((r) => r.json())
+      .then((res) => {
+        setSummary(res);
+        if (res?.earliestPeriod) handleEarliestPeriod(res.earliestPeriod);
+      })
+      .catch(() => {})
+      .finally(() => setSummaryLoading(false));
+  }, [period, handleEarliestPeriod]);
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+  const now = new Date();
+  const summaryRangeLabel =
+    mode === "year"
+      ? Number(period) === now.getFullYear()
+        ? `Jan to ${now.toLocaleDateString("en-US", { month: "long" })} ${period} so far`
+        : String(period)
+      : periodLabel(monthPeriod);
 
   const loadAll = async () => {
     const [rulesRes, accountsRes, mtdRes, ytdRes, allTimeRes, profileRes, pendingRes] = await Promise.all([
@@ -274,7 +304,18 @@ export default function DashboardPage() {
         actionsSlot
       )}
 
-      <PendingTransfers accounts={accounts} refreshKey={pendingTransfers} onChanged={loadAll} />
+      {/* Very top of the page content: Total income, Saved (and set aside for
+          business expenses), Guilt-Free Spending available. */}
+      <IncomeSummaryCards summary={summary} loading={summaryLoading} mode={mode} rangeLabel={summaryRangeLabel} />
+
+      <PendingTransfers
+        accounts={accounts}
+        refreshKey={pendingTransfers}
+        onChanged={() => {
+          loadAll();
+          loadSummary();
+        }}
+      />
 
       {billing?.readOnly && (
         <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>
@@ -332,7 +373,9 @@ export default function DashboardPage() {
         hasPendingTransfers={pendingTransfers.length > 0}
         mode={mode}
         period={period}
-        onEarliestPeriod={handleEarliestPeriod}
+        summary={summary}
+        summaryLoading={summaryLoading}
+        reloadSummary={loadSummary}
       />
 
       {/* "Your Accounts" quick-links -- matches the approved

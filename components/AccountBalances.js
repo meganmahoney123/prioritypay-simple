@@ -121,7 +121,7 @@ function OtherAccountsBox({ accounts, flatRows, ytdByLabel, mtdByLabel }) {
 // `mtdByLabel`/`ytdByLabel`/`allTimeTotal` are fetched by the Dashboard
 // page (see app/(app)/dashboard/page.js) from the allocations history API
 // and passed down -- this component stays purely presentational.
-export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0, rules = [], belowDistribution = null, hasPendingTransfers = false, mode = "month", period, onEarliestPeriod }) {
+export default function AccountBalances({ accounts, splitRules, mtdByLabel = {}, ytdByLabel = {}, allTimeTotal = 0, rules = [], belowDistribution = null, hasPendingTransfers = false, mode = "month", period, summary = null, summaryLoading = true, reloadSummary }) {
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   const sections = useMemo(() => percentSections(splitRules?.percent || []), [splitRules]);
@@ -165,7 +165,7 @@ export default function AccountBalances({ accounts, splitRules, mtdByLabel = {},
           before it's confirmed, and CategoryDistributionSection's own
           "No deposits found for <period>" state covers the brand-new-user
           case. */}
-      <CategoryDistributionSection mode={mode} period={period} onEarliestPeriod={onEarliestPeriod} />
+      <CategoryDistributionSection mode={mode} period={period} summary={summary} loading={summaryLoading} reloadSummary={reloadSummary} />
 
       {/* The "How all your money is allocated right now" card (the old
           TotalAllocationSection -- a live-balance pie across every

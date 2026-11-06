@@ -199,26 +199,13 @@ function CategoryCard({ category, color, onSavePct, savingPct }) {
   );
 }
 
-export default function CategoryDistributionSection({ mode = "month", period, onEarliestPeriod }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+// `summary`/`loading`/`reloadSummary` come from app/(app)/dashboard/page.js,
+// which fetches /api/allocations/category-summary once and shares it with
+// components/IncomeSummaryCards.js (the three cards at the top of the page).
+export default function CategoryDistributionSection({ mode = "month", period, summary: data = null, loading = true, reloadSummary }) {
   const [savingPct, setSavingPct] = useState(null);
   const [pctError, setPctError] = useState(null);
-
-  const loadSummary = useCallback(() => {
-    setLoading(true);
-    return fetch(`/api/allocations/category-summary?period=${period}`)
-      .then((r) => r.json())
-      .then((res) => {
-        setData(res);
-        if (res.earliestPeriod && onEarliestPeriod) onEarliestPeriod(res.earliestPeriod);
-      })
-      .finally(() => setLoading(false));
-  }, [period, onEarliestPeriod]);
-
-  useEffect(() => {
-    loadSummary();
-  }, [loadSummary]);
+  const loadSummary = useCallback(() => (reloadSummary ? reloadSummary() : Promise.resolve()), [reloadSummary]);
 
   // Lets a category's % be edited right from its card here on the
   // Dashboard instead of requiring a trip to the Splits page -- reads the
@@ -303,15 +290,6 @@ export default function CategoryDistributionSection({ mode = "month", period, on
     return slices.map((c) => ({ ...c, pct: total > 0 ? Math.round((c.value / total) * 100) : 0 }));
   }, [categories, guiltFree, cardCharges, colorByLabel]);
 
-  const savedBreakdown = useMemo(
-    () => categories.filter((c) => c.monthlyContribution > 0).map((c) => ({
-      label: c.label,
-      color: colorByLabel[c.label],
-      amount: c.monthlyContribution,
-    })),
-    [categories, colorByLabel]
-  );
-
   const periodModeLabel = mode === "year" ? "This Year" : "This Month";
   // What shows under each "How your income was distributed" heading -- a
   // real date range for month mode, the plain year (or "so far" when it's
@@ -342,90 +320,8 @@ export default function CategoryDistributionSection({ mode = "month", period, on
         <p className="text-sm text-neutral-400">No deposits found for {rangeLabel}.</p>
       ) : (
         <>
-          {/* Total Income strip -- matches the approved MainDesktop.dc.html
-              mockup's neutral full-width bar above the two hero boxes.
-              totalDeposited is exactly "all deposits" here, minimum-
-              threshold ones included -- see the source_amount comment on
-              the periodTransfers query in category-summary/route.js. */}
-          <div
-            style={{
-              border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-surface)",
-              padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: "6px 16px",
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-neutral-700)" }}>
-                Total Income {periodModeLabel}
-              </div>
-              <div style={{ fontSize: 11.5, color: "var(--color-neutral-700)", marginTop: 2 }}>
-                All deposits, including those that didn&apos;t meet the minimum split trigger threshold
-              </div>
-            </div>
-            <span className="font-mono" style={{ fontSize: 21, fontWeight: 700, color: "var(--color-text)" }}>{currency(totalDeposited)}</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
-              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Saved {periodModeLabel} via PrioritySave
-              </div>
-              <div className="font-mono" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
-                {currency(totalAllocated)}
-              </div>
-              {savedBreakdown.length > 0 && (
-                <>
-                  <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)", marginBottom: 8 }}>
-                    How Your Savings Was Distributed
-                  </div>
-                  <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1">
-                    {savedBreakdown.map((c) => (
-                      <div key={c.label} className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: c.color }} />
-                          <span className="truncate">{c.label}</span>
-                        </span>
-                        <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>{currency(c.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div style={{ border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)", background: "var(--color-accent-200)", color: "var(--color-accent-800)", padding: "22px 24px" }}>
-              <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Guilt-Free Spending Available
-              </div>
-              <div className="font-mono" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" }}>
-                {currency(guiltFree)}
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--color-accent-700)", marginTop: 2 }}>{rangeLabel}</div>
-              <div style={{ height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" }} />
-              <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 12.5 }}>
-                <div className="flex justify-between" style={{ color: "var(--color-accent-800)" }}>
-                  <span className="font-sans font-semibold">Total income</span>
-                  <span>{currency(totalDeposited)}</span>
-                </div>
-                {cardCharges > 0 && (
-                  <div className="flex justify-between" style={{ color: "#9C3B22" }}>
-                    <span className="font-sans font-semibold">− Credit card payments</span>
-                    <span>{currency(cardCharges)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between" style={{ color: "#9C3B22" }}>
-                  <span className="font-sans font-semibold">− Saved {mode === "year" ? "this year" : "this month"}</span>
-                  <span>{currency(totalAllocated)}</span>
-                </div>
-              </div>
-              {cardChargesExcluded > 0 && (
-                <div style={{ fontSize: 11, color: "var(--color-accent-700)", marginTop: 10, lineHeight: 1.4 }}>
-                  Excludes the {currency(cardChargesExcluded)} already covered by category withdrawals. E.g. a charge allocated to a category reduces that category, so it isn&apos;t included in &quot;Credit card payments&quot; here.
-                </div>
-              )}
-            </div>
-          </div>
-
+          {/* The Total Income strip and the Saved / Guilt-Free hero boxes moved
+              to the top of the Dashboard (components/IncomeSummaryCards.js). */}
           {/* End-of-month nudge toward putting unused Guilt-Free money to
               work, per the approved mockup -- deliberately just a link to
               the existing One-Time Transfer page (/transfers) rather than a

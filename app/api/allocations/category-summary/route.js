@@ -319,6 +319,11 @@ export async function GET(request) {
     excludedByWithdrawal,
     netCardCharges,
     unallocated: Math.max(0, totalDeposited - totalAllocated - netCardCharges),
+    // Every label's contribution this period, including labels no longer in
+    // the current split rules (renamed/removed categories), so a breakdown
+    // built from this always sums to totalAllocated. See
+    // components/IncomeSummaryCards.js.
+    monthlyByLabel,
     categories,
   });
 }

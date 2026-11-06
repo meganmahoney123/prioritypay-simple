@@ -33,6 +33,19 @@ for the iOS app once Apple approves the current build.
   home indicator, and its bank links should open outside the app's web view
   (Safari or the bank's own app), not inside it.
 
+### 2. Dashboard summary cards moved to the top (web, Nov 6 2026)
+- `components/IncomeSummaryCards.js`: Total income, Saved via PrioritySave,
+  and Guilt-Free Spending available, as the first thing on the Dashboard
+  (above "Transfers to make"). Side by side on desktop, stacked on mobile.
+- Business Expenses (OPEX) is no longer called savings: the middle card is
+  "Saved" (every other category) plus "Set aside for business expenses", and
+  the guilt-free math subtracts both, so it still adds up to total income.
+- The Dashboard fetches `/api/allocations/category-summary` once and shares it
+  (`app/(app)/dashboard/page.js` -> `AccountBalances` ->
+  `CategoryDistributionSection`); the cards refresh after checklist actions.
+- `category-summary` now also returns `monthlyByLabel` (additive), so renamed
+  or removed categories still count in the cards.
+
 ## Follow-ups (not built yet)
 
 - **Skipped "Not business income" deposits and Month Close-Out.** Skipping a
