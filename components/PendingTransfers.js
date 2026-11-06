@@ -10,16 +10,20 @@ import { ExternalLink, Clock, ChevronDown, ChevronRight } from "lucide-react";
 // (Nov 2026). PrioritySave never moves money; every row is a transfer the
 // user makes in their own bank, then marks as transferred.
 //
+//  - Header: where the money came from. Each pending deposit's name, date
+//    and amount with Skip (removes it from every total), the combined total
+//    when there's more than one, and recently skipped deposits with Undo.
 //  - One row per category (label + from/to accounts), combining that
 //    category's pending lines across every pending deposit: the total, each
 //    deposit's own amount under it (hidden when only one deposit is
-//    pending), where it goes, "Go to [bank]" (the bank the deposits landed
-//    in, where the transfer starts) and "Mark all transferred".
+//    pending), where it goes, and two identical buttons, "Transfer $X Now"
+//    and "Mark as Transferred" (50/50 full width on phones).
+//  - "Transfer $X Now" opens a sheet asking which bank to open: where the
+//    money currently is (the account the deposit landed in) or where it's
+//    going (the destination). It only opens the bank.
 //  - Categories that stay in the account the deposit landed in, and
 //    Guilt-Free Spending (the part of each deposit not assigned to any
 //    category), say "No transfer needed (stays in [account])".
-//  - "Covers:" lists the pending deposits, each with Skip (removes it from
-//    every total), plus recently skipped ones with Undo.
 //  - "Approve all splits" marks every pending line, one category at a time.
 //  - "On the way (N)", collapsed by default: lines marked as transferred but
 //    not seen landing yet, with "It already landed" and the near-miss
@@ -42,6 +46,11 @@ function money(n) {
     minimumFractionDigits: whole ? 0 : 2,
     maximumFractionDigits: whole ? 0 : 2,
   });
+}
+
+// Always with cents, for the sheet's reminder line ("Transfer $1,296.00 to Tax Reserve").
+function fullMoney(n) {
+  return (Number(n) || 0).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function pctOf(part, whole) {
@@ -182,24 +191,8 @@ const linkButtonStyle = {
 };
 const smallPrimary = { padding: "8px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999 };
 const rowDivider = { padding: "12px 0", borderTop: "1px solid var(--color-divider)" };
-
-function BankLink({ institution }) {
-  if (!institution) return null;
-  const url = resolveBankLoginUrl(institution);
-  if (!url) return null;
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-1"
-      style={{ fontSize: 13, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "none" }}
-    >
-      Go to {institution}
-      <ExternalLink size={12} style={{ opacity: 0.6 }} />
-    </a>
-  );
-}
+// "Transfer $X Now" and "Mark as Transferred": identical size and style.
+const pairButton = { padding: "11px 12px", fontSize: 14, fontWeight: 700, borderRadius: 999, minHeight: 48, lineHeight: 1.25, textAlign: "center" };
 
 export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
   const [data, setData] = useState({ deposits: [], skipped: [] });
@@ -211,6 +204,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
   const [editing, setEditing] = useState(null); // allocation id
   const [draft, setDraft] = useState("");
   const [onTheWayOpen, setOnTheWayOpen] = useState(false);
+  const [sheetRow, setSheetRow] = useState(null); // category row whose "Transfer $X Now" sheet is open
 
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
@@ -228,10 +222,20 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
     load();
   }, [load, refreshKey]);
 
+  useEffect(() => {
+    if (!sheetRow) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setSheetRow(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheetRow]);
+
   const deposits = useMemo(() => data.deposits.map(buildDeposit), [data.deposits]);
   const pendingDeposits = useMemo(() => deposits.filter((d) => d.waitingCount > 0), [deposits]);
   const rows = useMemo(() => buildRows(pendingDeposits), [pendingDeposits]);
   const showParts = pendingDeposits.length > 1;
+  const pendingTotal = useMemo(() => pendingDeposits.reduce((s, d) => s + d.sourceAmount, 0), [pendingDeposits]);
   const skipped = useMemo(() => data.skipped.map((s) => ({ ...s, title: depositTitle(s) })), [data.skipped]);
 
   const onTheWay = useMemo(() => {
@@ -375,10 +379,13 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
         {row.kind === "transfer" ? (
           <>
             <div style={mutedText}>To {accountLabel(accountsById[row.dest_account_id], row.dest_account_label)}</div>
-            <div className="flex items-center justify-between gap-3 flex-wrap" style={{ marginTop: 8 }}>
-              <BankLink institution={institutionFor(sourceAccount, row.source_account_label)} />
-              <PrimaryButton onClick={() => markRow(row)} disabled={busy || busyKey === "all"} style={smallPrimary}>
-                {busy ? "Saving..." : "Mark all transferred"}
+            {/* Same style and size for both; 50/50 full width on phones, an equal-width pair on the right on wider screens. */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end" style={{ marginTop: 10 }}>
+              <PrimaryButton onClick={() => setSheetRow(row)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
+                Transfer {money(row.total)} Now
+              </PrimaryButton>
+              <PrimaryButton onClick={() => markRow(row)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
+                {busy ? "Saving..." : "Mark as Transferred"}
               </PrimaryButton>
             </div>
           </>
@@ -389,17 +396,24 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
     );
   };
 
-  const renderCovers = () => (
-    <div style={{ ...rowDivider, borderTop: "2px solid var(--color-divider)" }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", marginBottom: 4 }}>Covers:</div>
+  // Top of the card: where the money came from. Each pending deposit's name,
+  // date and amount with Skip, the combined total when there's more than
+  // one, and recently skipped deposits with Undo.
+  const renderHeader = () => (
+    <div style={{ padding: "8px 0 12px" }}>
+      {pendingDeposits.length > 0 && (
+        <div style={{ ...mutedText, fontWeight: 600, marginBottom: 2 }}>{pendingDeposits.length > 1 ? "From these deposits" : "From this deposit"}</div>
+      )}
       {pendingDeposits.map((d) => {
         const busy = busyKey === `dep:${d.id}`;
         return (
           <div key={d.id} style={{ padding: "4px 0" }}>
-            <div className="flex items-baseline justify-between gap-3 flex-wrap" style={mutedText}>
-              <span style={{ minWidth: 0 }}>
-                {d.title} · {formatDate(d.createdAt)} · {money(d.sourceAmount)}
-              </span>
+            <div className="flex items-baseline justify-between gap-3">
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", minWidth: 0 }}>{d.title}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700 }}>{money(d.sourceAmount)}</span>
+            </div>
+            <div className="flex items-baseline justify-between gap-3" style={mutedText}>
+              <span>{formatDate(d.createdAt, true)}</span>
               {skipOpenFor !== d.id && (
                 <button
                   onClick={() => {
@@ -438,10 +452,16 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
           </div>
         );
       })}
+      {pendingDeposits.length > 1 && (
+        <div className="flex items-baseline justify-between gap-3" style={{ borderTop: "1px solid var(--color-divider)", marginTop: 6, paddingTop: 8 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>Total deposits</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 800 }}>{money(pendingTotal)}</span>
+        </div>
+      )}
       {skipped.map((s) => {
         const busy = busyKey === `dep:${s.id}`;
         return (
-          <div key={s.id} className="flex items-baseline justify-between gap-3 flex-wrap" style={{ ...mutedText, padding: "4px 0", opacity: 0.75 }}>
+          <div key={s.id} className="flex items-baseline justify-between gap-3" style={{ ...mutedText, padding: "6px 0 0", opacity: 0.75 }}>
             <span style={{ minWidth: 0 }}>
               {s.title} · {formatDate(s.createdAt)} · {money(s.sourceAmount)} · Skipped ({s.skipReason || "Other"}), not counted in any totals
             </span>
@@ -453,6 +473,102 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
       })}
     </div>
   );
+
+  // "Transfer $X Now" sheet: pick which bank to open. PrioritySave only
+  // opens the bank; the user makes the transfer there.
+  const renderSheet = () => {
+    if (!sheetRow) return null;
+    const fromAccount = accountsById[sheetRow.source_account_id];
+    const toAccount = accountsById[sheetRow.dest_account_id];
+    const options = [
+      { heading: "Where Your Money Currently Is", acc: fromAccount, fallback: sheetRow.source_account_label },
+      { heading: "Where Your Money Is Going", acc: toAccount, fallback: sheetRow.dest_account_label },
+    ];
+    return (
+      <div
+        className="fixed inset-0 flex items-end sm:items-center justify-center"
+        style={{ zIndex: 60, background: "rgba(20, 12, 32, 0.45)" }}
+        onClick={() => setSheetRow(null)}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="transfer-sheet-title"
+          onClick={(e) => e.stopPropagation()}
+          className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl"
+          style={{
+            background: "var(--color-surface)",
+            color: "var(--color-text)",
+            padding: "22px 20px calc(20px + env(safe-area-inset-bottom, 0px))",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          <h2 id="transfer-sheet-title" style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 700, margin: 0 }}>
+            Which bank account would you like to open?
+          </h2>
+          <p style={{ fontSize: 15, fontWeight: 600, margin: "8px 0 2px" }}>
+            Transfer {fullMoney(sheetRow.total)} to {sheetRow.label}
+          </p>
+          <p style={{ ...mutedText, margin: "0 0 14px" }}>Opens your bank. PrioritySave doesn&apos;t move the money.</p>
+
+          {options.map((o) => {
+            const institution = institutionFor(o.acc, o.fallback);
+            const url = institution ? resolveBankLoginUrl(institution) : null;
+            const name = o.acc ? `${o.acc.institution_name} · ${o.acc.account_name} ••${o.acc.mask}` : `${o.fallback || "Unknown account"} (disconnected)`;
+            return (
+              <div key={o.heading} style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--color-neutral-700)", marginBottom: 6 }}>
+                  {o.heading}
+                </div>
+                {url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setSheetRow(null)}
+                    className="flex items-center justify-between gap-3"
+                    style={{
+                      border: "1px solid var(--color-divider)",
+                      borderRadius: 16,
+                      padding: "14px 16px",
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: "var(--color-text)",
+                      textDecoration: "none",
+                      background: "var(--color-neutral-100)",
+                    }}
+                  >
+                    <span style={{ minWidth: 0 }}>{name}</span>
+                    <ExternalLink size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
+                  </a>
+                ) : (
+                  <div style={{ ...mutedText, border: "1px solid var(--color-divider)", borderRadius: 16, padding: "14px 16px" }}>{name}</div>
+                )}
+              </div>
+            );
+          })}
+
+          <button
+            onClick={() => setSheetRow(null)}
+            className="w-full"
+            style={{
+              marginTop: 4,
+              padding: "12px 16px",
+              borderRadius: 999,
+              border: "1px solid var(--color-divider)",
+              background: "transparent",
+              color: "var(--color-text)",
+              fontSize: 15,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const renderOnTheWay = () => (
     <Card className="p-5" style={{ borderRadius: 24 }}>
@@ -526,14 +642,14 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
               ? `${pendingDeposits.length} ${pendingDeposits.length === 1 ? "deposit needs" : "deposits need"} approval. PrioritySave never moves your money: make each transfer in your bank, then mark it as transferred so your category balances stay accurate.`
               : "Nothing needs approval right now."}
           </p>
+          {renderHeader()}
           {error && <p style={{ margin: "4px 0", fontSize: 14, color: "#b42318" }}>{error}</p>}
 
           {rows.map(renderRow)}
-          {renderCovers()}
 
           {pendingDeposits.length > 0 && (
-            <div className="flex justify-end" style={{ marginTop: 12 }}>
-              <PrimaryButton onClick={approveAll} disabled={busyKey === "all"} style={{ ...smallPrimary, padding: "11px 22px", fontSize: 14 }}>
+            <div className="flex sm:justify-end" style={{ marginTop: 12 }}>
+              <PrimaryButton onClick={approveAll} disabled={busyKey === "all"} className="w-full sm:w-auto" style={{ ...smallPrimary, padding: "12px 22px", fontSize: 14 }}>
                 {busyKey === "all" ? "Saving..." : "Approve all splits"}
               </PrimaryButton>
             </div>
@@ -547,6 +663,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
       )}
 
       {onTheWay.length > 0 && renderOnTheWay()}
+      {renderSheet()}
     </div>
   );
 }
