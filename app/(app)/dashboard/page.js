@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import AccountBalances from "@/components/AccountBalances";
-import PendingTransfers from "@/components/PendingTransfers";
+import DepositsBanner from "@/components/DepositsBanner";
 import IncomeSummaryCards from "@/components/IncomeSummaryCards";
 import { useDashboardHeaderSlots } from "@/components/AppShell";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
@@ -304,14 +304,7 @@ export default function DashboardPage() {
           business expenses), Guilt-Free Spending available. */}
       <IncomeSummaryCards summary={summary} loading={summaryLoading} mode={mode} rangeLabel={summaryRangeLabel} />
 
-      <PendingTransfers
-        accounts={accounts}
-        refreshKey={pendingTransfers}
-        onChanged={() => {
-          loadAll();
-          loadSummary();
-        }}
-      />
+      <DepositsBanner refreshKey={pendingTransfers} />
 
       {billing?.readOnly && (
         <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>

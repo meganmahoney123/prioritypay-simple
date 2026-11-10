@@ -11,7 +11,7 @@ import PriorityPayLogo from "@/components/PriorityPayLogo";
 import AppLockGate from "@/components/AppLockGate";
 import { isNativeApp } from "@/lib/native";
 import { isW2NoSideHustle } from "@/lib/allocations";
-import { groupByCategory } from "@/components/PendingTransfers";
+import { groupByCategory, buildDeposit } from "@/components/PendingTransfers";
 
 // Payments tab removed -- every deposit splits automatically the moment
 // Plaid's webhook detects it (see app/api/plaid/webhook), so there's no
@@ -25,6 +25,7 @@ import { groupByCategory } from "@/components/PendingTransfers";
 // longer linked from anywhere in the nav.
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/deposits", label: "Split My Deposits" },
   { href: "/accounts", label: "Accounts" },
   { href: "/splits", label: "Income Split Rules" },
   { href: "/simulator", label: "Savings Planner" },
@@ -42,6 +43,7 @@ const SHOW_BUSINESS_NAV = false;
 
 const TITLES = {
   "/dashboard": "Dashboard",
+  "/deposits": "Split My Deposits",
   "/projections": "Investment & Retirement Projections",
   "/accounts": "Linked Accounts",
   "/splits": "Income Split Rules",
@@ -77,7 +79,7 @@ export function useDashboardHeaderSlots() {
   return useContext(DashboardHeaderSlotsContext);
 }
 
-function NavLink({ href, label, active, onClick }) {
+function NavLink({ href, label, active, onClick, badge }) {
   return (
     <a
       href={href}
@@ -113,6 +115,27 @@ function NavLink({ href, label, active, onClick }) {
         }}
       />
       {label}
+      {badge > 0 && (
+        <span
+          aria-label={`${badge} waiting`}
+          style={{
+            marginLeft: "auto",
+            minWidth: 22,
+            height: 22,
+            padding: "0 6px",
+            borderRadius: 11,
+            background: "var(--color-accent)",
+            color: "#fff",
+            fontSize: 12,
+            fontWeight: 700,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {badge}
+        </span>
+      )}
     </a>
   );
 }
@@ -156,6 +179,8 @@ export default function AppShell({ children, isSandbox = false }) {
   // flow at all, so they can never show up here.
   const [pendingAllocations, setPendingAllocations] = useState([]);
   const [pendingAccounts, setPendingAccounts] = useState([]);
+  // Number of deposits waiting to be split: the count badge on "Split My Deposits".
+  const [waitingDeposits, setWaitingDeposits] = useState(0);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -191,6 +216,12 @@ export default function AppShell({ children, isSandbox = false }) {
       ]);
       setPendingAllocations(pendingRes.allocations || []);
       setPendingAccounts(accountsRes.accounts || []);
+      try {
+        const dep = await fetch("/api/transfers/deposits").then((r) => r.json());
+        setWaitingDeposits((dep.deposits || []).map(buildDeposit).filter((d) => d.waitingCount > 0).length);
+      } catch {
+        // badge is best-effort
+      }
     } catch {
       // Best-effort -- a failed fetch here just means the banner/title
       // reminder stay as they were; it never blocks the rest of the app.
@@ -288,7 +319,7 @@ export default function AppShell({ children, isSandbox = false }) {
             </div>
             <nav style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "0 12px", flexDirection: "column" }}>
               {navItems.map((n) => (
-                <NavLink key={n.href} href={n.href} label={n.label} active={pathname === n.href || pathname.startsWith(`${n.href}/`)} />
+                <NavLink key={n.href} href={n.href} label={n.label} badge={n.href === "/deposits" ? waitingDeposits : 0} active={pathname === n.href || pathname.startsWith(`${n.href}/`)} />
               ))}
             </nav>
             <div style={{ padding: "20px 22px 0" }}>
@@ -416,9 +447,9 @@ export default function AppShell({ children, isSandbox = false }) {
             (components/PendingTransfers.js) and one thin pointer to it.
             Suppressed on /dashboard itself since that page already shows
             the real thing directly. */}
-        {pendingGroups.length > 0 && pathname !== "/dashboard" && (
+        {pendingGroups.length > 0 && pathname !== "/dashboard" && pathname !== "/deposits" && (
           <Link
-            href="/dashboard"
+            href="/deposits"
             style={{
               display: "flex",
               alignItems: "center",
@@ -484,6 +515,7 @@ export default function AppShell({ children, isSandbox = false }) {
                   key={n.href}
                   href={n.href}
                   label={n.label}
+                  badge={n.href === "/deposits" ? waitingDeposits : 0}
                   active={pathname === n.href || pathname.startsWith(`${n.href}/`)}
                   onClick={() => setMenuOpen(false)}
                 />

@@ -37,7 +37,7 @@ export const GUILT_FREE_LABEL = "Guilt-Free Spending";
 const SKIP_REASONS = ["Not business income", "Refund or reimbursement", "Transfer between my accounts", "Other"];
 
 // "$720" for whole dollars, "$175.50" otherwise.
-function money(n) {
+export function money(n) {
   const v = Number(n) || 0;
   const whole = Math.abs(v - Math.round(v)) < 0.005;
   return v.toLocaleString("en-US", {
@@ -83,7 +83,7 @@ function depositTitle(d) {
   return "Deposit";
 }
 
-const needsTransfer = (l) => !l.reserved_only && l.status !== "reserved";
+export const needsTransfer = (l) => !l.reserved_only && l.status !== "reserved";
 
 // Kept for components/AppShell.js (browser-tab reminder), which still reads
 // GET /api/transfers/pending.
@@ -114,8 +114,38 @@ export function groupByCategory(rows) {
   return Array.from(map.values());
 }
 
+// Transfer rows grouped by destination account: one transfer per account.
+export function groupByDestination(rows) {
+  const map = new Map();
+  rows
+    .filter((r) => r.kind === "transfer")
+    .forEach((r) => {
+      const key = `to::${r.dest_account_id || r.dest_account_label || ""}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          dest_account_id: r.dest_account_id,
+          dest_account_label: r.dest_account_label,
+          source_account_id: r.source_account_id,
+          source_account_label: r.source_account_label,
+          rows: [],
+          ids: [],
+          total: 0,
+        });
+      }
+      const g = map.get(key);
+      g.rows.push(r);
+      g.ids.push(...r.ids);
+      g.total = Math.round((g.total + r.total) * 100) / 100;
+      if (!g.dest_account_label && r.dest_account_label) g.dest_account_label = r.dest_account_label;
+      if (!g.source_account_id && r.source_account_id) g.source_account_id = r.source_account_id;
+      if (!g.source_account_label && r.source_account_label) g.source_account_label = r.source_account_label;
+    });
+  return Array.from(map.values());
+}
+
 // Per-deposit view model.
-function buildDeposit(d) {
+export function buildDeposit(d) {
   const lines = (d.lines || []).filter((l) => l.status !== "failed");
   const calculatedSum = lines.reduce((s, l) => s + (Number(l.calculated_amount ?? l.amount) || 0), 0);
   const sourceLine = lines.find((l) => l.source_account_id || l.source_account_label) || {};
@@ -131,7 +161,7 @@ function buildDeposit(d) {
 }
 
 // Category rows across every pending deposit.
-function buildRows(pendingDeposits) {
+export function buildRows(pendingDeposits) {
   const map = new Map();
   const add = (key, base, part) => {
     if (!map.has(key)) map.set(key, { key, ...base, total: 0, parts: [], ids: [] });
@@ -194,7 +224,7 @@ const rowDivider = { padding: "12px 0", borderTop: "1px solid var(--color-divide
 // "Transfer $X Now" and "Mark as Transferred": identical size and style.
 const pairButton = { padding: "11px 12px", fontSize: 14, fontWeight: 700, borderRadius: 999, minHeight: 48, lineHeight: 1.25, textAlign: "center" };
 
-export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
+export default function PendingTransfers({ accounts, refreshKey, onChanged, showEmpty = false }) {
   const [data, setData] = useState({ deposits: [], skipped: [] });
   const [loaded, setLoaded] = useState(false);
   const [busyKey, setBusyKey] = useState(null);
@@ -235,6 +265,9 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
   const pendingDeposits = useMemo(() => deposits.filter((d) => d.waitingCount > 0), [deposits]);
   const rows = useMemo(() => buildRows(pendingDeposits), [pendingDeposits]);
   const showParts = pendingDeposits.length > 1;
+  // One group per destination account: the category rows going there, one grand total.
+  const groups = useMemo(() => groupByDestination(rows), [rows]);
+  const stayRows = useMemo(() => rows.filter((r) => r.kind === "stay"), [rows]);
   const pendingTotal = useMemo(() => pendingDeposits.reduce((s, d) => s + d.sourceAmount, 0), [pendingDeposits]);
   const skipped = useMemo(() => data.skipped.map((s) => ({ ...s, title: depositTitle(s) })), [data.skipped]);
 
@@ -271,7 +304,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-  const markRow = (row) => run(`row:${row.key}`, () => post("/api/transfer-allocations/confirm-batch", { allocationIds: row.ids }));
+  const markGroup = (g) => run(`row:${g.key}`, () => post("/api/transfer-allocations/confirm-batch", { allocationIds: g.ids }));
   const approveAll = () => run("all", () => post("/api/transfers/approve-all"));
   const settleLine = (id) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/settle`));
   const candidate = (id, action) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/candidate/${action}`));
@@ -299,7 +332,18 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
     setEditing(null);
   };
 
-  if (!loaded || (!pendingDeposits.length && !onTheWay.length && !skipped.length)) return null;
+  if (!loaded) return null;
+  if (!pendingDeposits.length && !onTheWay.length && !skipped.length) {
+    if (!showEmpty) return null;
+    return (
+      <Card style={bloomAccentCardStyle({ padding: "28px 24px", borderRadius: 24, background: "var(--color-surface)" })}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text)", marginBottom: 4 }}>You&apos;re all caught up</div>
+        <p style={{ ...mutedText, margin: 0, fontSize: 15 }}>
+          When a new deposit comes in, it shows up here with the transfers to make, and a notification appears on your Dashboard.
+        </p>
+      </Card>
+    );
+  }
 
   // Click-to-edit amount for one pending line; plain text otherwise.
   const amountFor = (line, amount, { bold = false } = {}) => {
@@ -351,18 +395,18 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
     );
   };
 
-  const renderRow = (row) => {
-    const busy = busyKey === `row:${row.key}`;
-    const sourceAccount = accountsById[row.source_account_id];
+  // One category line inside a destination-account group: label, shared %,
+  // editable amount, and each deposit's own part when several are combined.
+  // No buttons here: they live once, at the bottom of the group.
+  const renderLine = (row) => {
     const singleLine = row.parts.length === 1 ? row.parts[0].line : null;
     const title = `${row.label}${row.sharedPct != null ? ` (${row.sharedPct}%)` : ""}`;
     return (
       <div key={row.key} style={rowDivider}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{title}</div>
-          <div style={{ fontSize: 16 }}>{amountFor(singleLine, row.total, { bold: true })}</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>{title}</div>
+          <div style={{ fontSize: 15 }}>{amountFor(singleLine, row.total)}</div>
         </div>
-
         {showParts && (
           <div style={{ margin: "4px 0 2px 12px" }}>
             {row.parts.map((p) => (
@@ -375,23 +419,67 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
             ))}
           </div>
         )}
+      </div>
+    );
+  };
 
-        {row.kind === "transfer" ? (
-          <>
-            <div style={mutedText}>To {accountLabel(accountsById[row.dest_account_id], row.dest_account_label)}</div>
-            {/* Same style and size for both; 50/50 full width on phones, an equal-width pair on the right on wider screens. */}
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end" style={{ marginTop: 10 }}>
-              <PrimaryButton onClick={() => setSheetRow(row)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
-                Transfer {money(row.total)} Now
-              </PrimaryButton>
-              <PrimaryButton onClick={() => markRow(row)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
-                {busy ? "Saving..." : "Mark as Transferred"}
-              </PrimaryButton>
-            </div>
-          </>
-        ) : (
-          <div style={mutedText}>No transfer needed (stays in {accountLabel(sourceAccount, row.source_account_label)})</div>
-        )}
+  // One "Send to <account>" group: its category lines, then ONE grand total
+  // with ONE "Transfer $X Now" and ONE "Mark as Transferred".
+  const renderGroup = (g) => {
+    const busy = busyKey === `row:${g.key}`;
+    const destName = accountLabel(accountsById[g.dest_account_id], g.dest_account_label);
+    const sheetTarget = {
+      key: g.key,
+      total: g.total,
+      label: destName,
+      dest_account_id: g.dest_account_id,
+      dest_account_label: g.dest_account_label,
+      source_account_id: g.source_account_id,
+      source_account_label: g.source_account_label,
+    };
+    return (
+      <div key={g.key} style={{ padding: "16px 0 8px", borderTop: "1px solid var(--color-divider)" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>Send to</div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)", marginBottom: 4 }}>{destName}</div>
+        {g.rows.map(renderLine)}
+        <div className="flex items-baseline justify-between gap-3" style={{ borderTop: "2px solid var(--color-divider)", paddingTop: 12, marginTop: 4 }}>
+          <span style={{ ...mutedText, fontWeight: 600 }}>Total to send</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700 }}>{money(g.total)}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end" style={{ marginTop: 10 }}>
+          <PrimaryButton onClick={() => setSheetRow(sheetTarget)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
+            Transfer {money(g.total)} Now
+          </PrimaryButton>
+          <PrimaryButton onClick={() => markGroup(g)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
+            {busy ? "Saving..." : "Mark as Transferred"}
+          </PrimaryButton>
+        </div>
+      </div>
+    );
+  };
+
+  // Bottom tie-out: transfers + what stays = total deposits.
+  const renderTieOut = () => {
+    const transfersTotal = groups.reduce((t, g) => t + g.total, 0);
+    return (
+      <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 8, paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className="flex justify-between gap-3" style={mutedText}>
+          <span>Transfers above ({groups.length})</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{money(transfersTotal)}</span>
+        </div>
+        {stayRows.map((r) => (
+          <div key={r.key} className="flex justify-between gap-3" style={mutedText}>
+            <span style={{ minWidth: 0 }}>
+              {r.label}
+              {r.sharedPct != null ? ` (${r.sharedPct}%)` : ""}, stays in {accountLabel(accountsById[r.source_account_id], r.source_account_label)}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{money(r.total)}</span>
+          </div>
+        ))}
+        <div className="flex justify-between gap-3" style={{ fontWeight: 700, color: "var(--color-text)", borderTop: "1px solid var(--color-divider)", paddingTop: 6 }}>
+          <span>Total deposits</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 16 }}>{money(pendingTotal)}</span>
+        </div>
       </div>
     );
   };
@@ -402,7 +490,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
   const renderHeader = () => (
     <div style={{ padding: "8px 0 12px" }}>
       {pendingDeposits.length > 0 && (
-        <div style={{ ...mutedText, fontWeight: 600, marginBottom: 2 }}>{pendingDeposits.length > 1 ? "From these deposits" : "From this deposit"}</div>
+        <div style={{ ...mutedText, fontWeight: 600, marginBottom: 2 }}>{pendingDeposits.length > 1 ? "Deposits included" : "Deposit included"}</div>
       )}
       {pendingDeposits.map((d) => {
         const busy = busyKey === `dep:${d.id}`;
@@ -422,7 +510,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
                   }}
                   style={linkButtonStyle}
                 >
-                  Skip
+                  Remove
                 </button>
               )}
             </div>
@@ -442,7 +530,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
                   ))}
                 </select>
                 <button onClick={() => skipDeposit(d.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-text)" }}>
-                  {busy ? "Skipping..." : "Skip deposit"}
+                  {busy ? "Removing..." : "Remove deposit"}
                 </button>
                 <button onClick={() => setSkipOpenFor(null)} style={linkButtonStyle}>
                   Cancel
@@ -463,10 +551,10 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
         return (
           <div key={s.id} className="flex items-baseline justify-between gap-3" style={{ ...mutedText, padding: "6px 0 0", opacity: 0.75 }}>
             <span style={{ minWidth: 0 }}>
-              {s.title} · {formatDate(s.createdAt)} · {money(s.sourceAmount)} · Skipped ({s.skipReason || "Other"}), not counted in any totals
+              {s.title} · {formatDate(s.createdAt)} · {money(s.sourceAmount)} · Removed ({s.skipReason || "Other"}), not counted in any totals
             </span>
             <button onClick={() => undoSkip(s.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-accent-700)" }}>
-              {busy ? "Restoring..." : "Undo"}
+              {busy ? "Restoring..." : "Add back"}
             </button>
           </div>
         );
@@ -635,17 +723,38 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged }) {
               marginBottom: 6,
             }}
           >
-            Transfers to make
+            Split My Deposits
           </div>
           <p style={{ margin: "0 0 4px", fontSize: 15, lineHeight: 1.6, color: "var(--color-text)" }}>
             {pendingDeposits.length
-              ? `${pendingDeposits.length} ${pendingDeposits.length === 1 ? "deposit needs" : "deposits need"} approval. PrioritySave never moves your money: make each transfer in your bank, then mark it as transferred so your category balances stay accurate.`
+              ? `${pendingDeposits.length} ${pendingDeposits.length === 1 ? "deposit is" : "deposits are"} ready to split. PrioritySave never moves your money: make each transfer in your bank, then mark it as transferred so your category balances stay accurate.`
               : "Nothing needs approval right now."}
           </p>
           {renderHeader()}
           {error && <p style={{ margin: "4px 0", fontSize: 14, color: "#b42318" }}>{error}</p>}
 
-          {rows.map(renderRow)}
+          {pendingDeposits.length > 0 && (
+            <p style={{ ...mutedText, margin: "0 0 6px" }}>
+              Remove a deposit to leave it out of these transfers (like a refund or a personal transfer). You can add it back any time.
+            </p>
+          )}
+          {pendingDeposits.length > 1 && (
+            <p style={{ margin: "10px 0 4px", fontSize: 14, color: "var(--color-accent-800)" }}>
+              <b>Split as one: </b>all deposits are combined, so you make just one transfer per account.
+            </p>
+          )}
+          {pendingDeposits.length > 0 && (
+            <div className="flex items-baseline justify-between gap-3" style={{ marginTop: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+                Your {money(pendingTotal)} split
+              </span>
+              <span style={mutedText}>
+                {groups.length} {groups.length === 1 ? "transfer" : "transfers"} to make
+              </span>
+            </div>
+          )}
+          {groups.map(renderGroup)}
+          {pendingDeposits.length > 0 && renderTieOut()}
 
           {pendingDeposits.length > 0 && (
             <div className="flex sm:justify-end" style={{ marginTop: 12 }}>
