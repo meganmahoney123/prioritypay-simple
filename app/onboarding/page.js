@@ -1122,6 +1122,7 @@ function OnboardingPageInner() {
             </div>
 
             <PercentSplitEditor
+              samplePie
               percent={percent}
               accounts={accounts}
               onUpdatePercent={updatePercent}

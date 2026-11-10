@@ -8,6 +8,7 @@ import CreateSubAccountFlow from "./CreateSubAccountFlow";
 import RetirementNote from "./RetirementNote";
 import ChipCheckboxes from "./ChipCheckboxes";
 import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
+import SplitPreviewPie from "./SplitPreviewPie";
 import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, RETIREMENT_GROUP_SUBTEXT, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom } from "@/lib/allocations";
 import { bloomWarningCardStyle } from "@/lib/bloomTheme";
 
@@ -992,6 +993,8 @@ export default function PercentSplitEditor({
   // "which retirement accounts do you have" picker; replaces the per-group
   // notes and the add button for Retirement.
   retirementPicker = null,
+  // Shows the live "Sample: $10,000 deposit" donut + dollar list above the rows.
+  samplePie = false,
 }) {
   const overflowMessageFor = (id) => (pctOverflow && pctOverflow.id === id ? pctOverflow.message : null);
 
@@ -1081,6 +1084,12 @@ export default function PercentSplitEditor({
           </p>
           <div style={{ marginTop: 12 }}><CapCompareIllustration /></div>
         </details>
+        )}
+        {samplePie && (
+          <SplitPreviewPie
+            rows={percentSections(percent).flatMap((x) => (x.type === "group" ? x.rows : [x.row]))}
+            colorFor={dotColorFor}
+          />
         )}
         {typeof totalPct === "number" && (
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20 }}>
@@ -1275,6 +1284,15 @@ export default function PercentSplitEditor({
         </p>
         <div className="mt-3"><CapCompareIllustration /></div>
       </details>
+      {samplePie && (
+        <SplitPreviewPie
+          rows={percentSections(percent).flatMap((x) => (x.type === "group" ? x.rows : [x.row]))}
+          colorFor={(id) => {
+            const ids = percentSections(percent).flatMap((x) => (x.type === "group" ? x.rows.map((r) => r.id) : [x.row.id]));
+            return BLOOM_DOT_COLORS[Math.max(0, ids.indexOf(id)) % BLOOM_DOT_COLORS.length];
+          }}
+        />
+      )}
       {typeof totalPct === "number" && (
         <div className="flex items-baseline justify-between">
           <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Allocated</span>

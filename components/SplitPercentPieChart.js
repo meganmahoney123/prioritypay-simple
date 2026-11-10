@@ -22,6 +22,8 @@ import { CATEGORY_COLORS, colorForIndex } from "@/lib/allocations";
 // purple palette (darkest first) rather than read from each row's stored
 // `color`, which for older rows is still the pre-rebrand grey/teal/orange/
 // red defaults. Guilt-Free Spending always gets the lightest shade.
+const SAMPLE_DEPOSIT = 10000; // the dollar column shows what a deposit this size would do
+const sampleMoney = (pct) => "$" + Math.round((pct / 100) * SAMPLE_DEPOSIT).toLocaleString("en-US");
 const GUILT_FREE_LABEL = "Guilt-Free Spending";
 const GUILT_FREE_COLOR = CATEGORY_COLORS[0]; // #D9C9FF, lightest palette purple
 const CATEGORY_SHADES = CATEGORY_COLORS.slice(1).reverse(); // #3B1C7A -> #C4A9FA
@@ -50,7 +52,7 @@ export default function SplitPercentPieChart({ percent = [], remainingPct = 0 })
       <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", margin: "0 0 4px" }}>
         What your split looks like
       </h2>
-      <p className="text-xs text-neutral-500 mb-4">Updates live as you adjust percentages below.</p>
+      <p className="text-xs text-neutral-500 mb-4">Sample: $10,000 deposit. Updates live as you adjust percentages below.</p>
 
       {!hasData ? (
         <p className="text-sm text-neutral-400">Set a percentage on a category below to see it here.</p>
@@ -64,7 +66,7 @@ export default function SplitPercentPieChart({ percent = [], remainingPct = 0 })
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => `${v}%`} />
+                <Tooltip formatter={(v) => `${v}% (${sampleMoney(v)})`} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -77,7 +79,10 @@ export default function SplitPercentPieChart({ percent = [], remainingPct = 0 })
                     {c.name}
                   </span>
                 </div>
-                <span className="font-semibold shrink-0 font-mono">{c.value}%</span>
+                <span className="shrink-0 font-mono flex items-baseline gap-3">
+                  <span className="text-neutral-500">{Math.round(c.value * 10) / 10}%</span>
+                  <span className="font-semibold text-right" style={{ minWidth: 64 }}>{sampleMoney(c.value)}</span>
+                </span>
               </div>
             ))}
           </div>
