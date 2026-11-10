@@ -25,7 +25,14 @@ export default function ChipCheckboxes({ options, selected, onToggle }) {
             }}
           >
             <input type="checkbox" checked={on} onChange={() => onToggle(o.value)} style={{ width: 18, height: 18, accentColor: "var(--color-accent)" }} />
-            {o.label}
+            {o.hint ? (
+              <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {o.label}
+                <span style={{ fontSize: 12.5, opacity: 0.7 }}>{o.hint}</span>
+              </span>
+            ) : (
+              o.label
+            )}
           </label>
         );
       })}

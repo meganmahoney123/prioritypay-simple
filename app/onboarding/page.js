@@ -80,8 +80,8 @@ const BUSINESS_TYPES = [
 ];
 const HAS_EMPLOYEES_TYPE = "Business Owner (With Employees)";
 const WORK_OPTIONS = [
-  { value: "self_employed", label: "Freelance or 1099 work" },
-  { value: "owns_business", label: "I own or co-own a business" },
+  { value: "self_employed", label: "Sole Proprietor", hint: "(Often applicable to freelance, coaching, consulting, or other 1099 work)" },
+  { value: "owns_business", label: "LLC, S-Corp, C-Corp, etc.", hint: "(If you own or co-own a business)" },
   { value: "w2", label: "I have a W-2 job" },
   { value: "retired", label: "Retired" },
   { value: "between", label: "Between jobs or starting something new" },
