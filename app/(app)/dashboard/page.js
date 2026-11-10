@@ -6,7 +6,7 @@ import AccountBalances from "@/components/AccountBalances";
 import PendingTransfers from "@/components/PendingTransfers";
 import IncomeSummaryCards from "@/components/IncomeSummaryCards";
 import { useDashboardHeaderSlots } from "@/components/AppShell";
-import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, INVESTMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
+import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
 import { bloomNoticeCardStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
@@ -187,10 +187,6 @@ export default function DashboardPage() {
     // GROUPED_BUCKETS, lib/allocations.js), and this warning should only
     // fire if BOTH are at 0%, not just the workplace one.
     () => groupPctTotal((splitRules?.percent || []).filter((r) => r.group === "Retirement" || r.group === "Retirement (Side Income)")),
-    [splitRules]
-  );
-  const investmentsPct = useMemo(
-    () => groupPctTotal((splitRules?.percent || []).filter((r) => r.group === "Investments")),
     [splitRules]
   );
 
@@ -448,25 +444,6 @@ export default function DashboardPage() {
               : " Consider setting up a Solo 401k to start contributing to retirement."}{" "}
             <a
               href={isW2NoSideHustle(persona) || isW2WithSideHustle(persona) ? RETIREMENT_SETUP_LINKS.traditional_401k : RETIREMENT_SETUP_LINKS.solo_401k}
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontWeight: 600, textDecoration: "underline" }}
-            >
-              Need help?
-            </a>
-          </span>
-        </Card>
-      )}
-
-      {investmentsPct === 0 && (
-        <Card className="p-4 text-sm flex items-start gap-2" style={bloomWarningCardStyle()}>
-          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-          <span>
-            <span style={{ fontWeight: 600 }}>Warning:</span> You currently aren&apos;t investing any money. This
-            means you&apos;re missing out on compounding growth. Consider setting up investment
-            accounts.{" "}
-            <a
-              href={INVESTMENT_SETUP_LINKS.brokerage}
               target="_blank"
               rel="noreferrer"
               style={{ fontWeight: 600, textDecoration: "underline" }}

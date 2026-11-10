@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { colorForLabel } from "@/lib/allocations";
 
 // The three summary cards at the very top of the Dashboard (above the
@@ -8,13 +8,14 @@ import { colorForLabel } from "@/lib/allocations";
 // Guilt-Free Spending available. Side by side on desktop, stacked on
 // mobile. Moved here (Nov 2026) from inside CategoryDistributionSection.
 //
-// Business Expenses (OPEX) isn't savings, so the middle card has two
-// sections: "Saved" (every other category) and "Set aside for business
-// expenses". The guilt-free card's math subtracts both, so it still adds
-// up to total income:
-//   guilt-free = total income - credit card payments - saved - set aside
-// (category-summary's `unallocated` is already exactly that, since
-// totalAllocated = saved + set aside.)
+// Business Expenses (OPEX) isn't savings, so the middle card lists only the
+// saved categories (Nov 2026: the separate "Set aside for business expenses"
+// total was removed from both this card and the guilt-free card's math
+// lines). The guilt-free number itself still comes from category-summary's
+// `unallocated`, which already accounts for every allocated dollar.
+//
+// The Total Income card also shows the most recent deposits and who they
+// were from; clicking it opens a popup with the full list for the period.
 //
 // Data: the same GET /api/allocations/category-summary response the rest of
 // the Dashboard uses, fetched once in app/(app)/dashboard/page.js.
@@ -63,11 +64,96 @@ function Breakdown({ items }) {
   );
 }
 
+function shortDate(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function DepositRow({ d }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs">
+      <span className="min-w-0 truncate">
+        <span className="font-semibold">{d.name || "Deposit"}</span>
+        <span style={{ color: "var(--color-accent-700)" }}> · {shortDate(d.date)}</span>
+      </span>
+      <span className="font-mono shrink-0" style={{ color: "var(--color-accent-800)" }}>
+        {currency(d.amount)}
+      </span>
+    </div>
+  );
+}
+
+// Latest few deposits; the whole block is one button that opens the popup.
+function RecentDeposits({ deposits, periodTitle, rangeLabel }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+  if (!deposits || deposits.length === 0) return null;
+  const recent = deposits.slice(0, 3);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        className="w-full text-left"
+        style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", color: "inherit" }}
+      >
+        <div style={{ ...eyebrow, fontSize: 11, marginBottom: 6 }}>Recent deposits</div>
+        <div className="flex flex-col gap-1.5">
+          {recent.map((d) => (
+            <DepositRow key={d.id} d={d} />
+          ))}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "underline", marginTop: 8 }}>
+          View all {deposits.length} {deposits.length === 1 ? "deposit" : "deposits"}
+        </div>
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="All deposits"
+          onClick={() => setOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(36,19,55,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: "100%", maxWidth: 520, maxHeight: "80vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-accent-300)", color: "var(--color-accent-800)" }}
+          >
+            <div className="flex items-start justify-between gap-3" style={{ padding: "18px 20px 12px" }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "var(--color-accent-900)" }}>All deposits</div>
+                <div style={{ fontSize: 12.5, color: "var(--color-accent-700)" }}>
+                  {rangeLabel || periodTitle} · {deposits.length} {deposits.length === 1 ? "deposit" : "deposits"}
+                </div>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" style={{ fontSize: 22, lineHeight: 1, border: 0, background: "transparent", cursor: "pointer", color: "var(--color-accent-700)" }}>
+                ×
+              </button>
+            </div>
+            <div className="flex flex-col gap-3" style={{ padding: "4px 20px 20px", overflowY: "auto" }}>
+              {deposits.map((d) => (
+                <DepositRow key={d.id} d={d} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function IncomeSummaryCards({ summary, loading, mode = "month", rangeLabel }) {
   const periodWord = mode === "year" ? "this year" : "this month";
   const periodTitle = mode === "year" ? "This Year" : "This Month";
 
-  const { saved, business, savedTotal, businessTotal } = useMemo(() => {
+  const { saved, savedTotal } = useMemo(() => {
     // Every label's amount this period (monthlyByLabel includes renamed or
     // removed categories, so saved + set aside always equals totalAllocated),
     // in the current split-rule order first.
@@ -76,9 +162,8 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
     const labels = [...order.filter((l) => l in byLabel), ...Object.keys(byLabel).filter((l) => !order.includes(l))];
     const contributing = labels.map((label) => ({ label, amount: Number(byLabel[label]) || 0 })).filter((c) => c.amount > 0);
     const s = contributing.filter((c) => !isBusinessExpenseLabel(c.label));
-    const b = contributing.filter((c) => isBusinessExpenseLabel(c.label));
     const sum = (rows) => rows.reduce((t, r) => t + r.amount, 0);
-    return { saved: s, business: b, savedTotal: sum(s), businessTotal: sum(b) };
+    return { saved: s, savedTotal: sum(s) };
   }, [summary]);
 
   if (loading && !summary) {
@@ -101,12 +186,17 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
         </div>
         {rangeLabel && <div style={{ fontSize: 12.5, color: "var(--color-accent-700)", marginTop: 2 }}>{rangeLabel}</div>}
         <div style={divider} />
+        {summary.deposits?.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <RecentDeposits deposits={summary.deposits} periodTitle={periodTitle} rangeLabel={rangeLabel} />
+          </div>
+        )}
         <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--color-accent-700)" }}>
           All deposits, including those that didn&apos;t meet the minimum split trigger threshold.
         </div>
       </div>
 
-      {/* Saved, plus set aside for business expenses */}
+      {/* Saved via PrioritySave */}
       <div style={cardStyle}>
         <div style={eyebrow}>Saved {periodTitle} via PrioritySave</div>
         <div className="font-mono" style={bigNumber}>
@@ -116,22 +206,6 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
           <>
             <div style={divider} />
             <Breakdown items={saved} />
-          </>
-        )}
-        {business.length > 0 && (
-          <>
-            <div style={divider} />
-            <div className="flex items-baseline justify-between gap-3">
-              <span style={eyebrow}>Set aside for business expenses</span>
-              <span className="font-mono" style={{ fontSize: 16, fontWeight: 700, color: "var(--color-accent-900)" }}>
-                {currency(businessTotal)}
-              </span>
-            </div>
-            {business.length > 1 && (
-              <div style={{ marginTop: 8 }}>
-                <Breakdown items={business} />
-              </div>
-            )}
           </>
         )}
       </div>
@@ -159,12 +233,6 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
             <span className="font-sans font-semibold">− Saved {periodWord}</span>
             <span>{currency(savedTotal)}</span>
           </div>
-          {businessTotal > 0 && (
-            <div className="flex justify-between gap-3" style={minus}>
-              <span className="font-sans font-semibold">− Set aside for business expenses</span>
-              <span>{currency(businessTotal)}</span>
-            </div>
-          )}
         </div>
         {cardChargesExcluded > 0 && (
           <div style={{ fontSize: 11, color: "var(--color-accent-700)", marginTop: 10, lineHeight: 1.4 }}>

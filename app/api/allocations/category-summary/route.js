@@ -81,7 +81,7 @@ export async function GET(request) {
     // against: source_amount minus whatever actually landed in a category.
     admin
       .from("simple_transfers")
-      .select("source_amount, status, plaid_transaction_id")
+      .select("id, source_amount, status, plaid_transaction_id, created_at, deposit_name")
       .eq("user_id", user.id)
       .neq("status", "failed")
       .neq("status", "needs_approval")
@@ -170,6 +170,35 @@ export async function GET(request) {
     if (t.plaid_transaction_id && selfTransferPlaidIds.has(t.plaid_transaction_id)) return s;
     return s + (Number(t.source_amount) || 0);
   }, 0);
+  // Every counted deposit this period, newest first, with who it came from --
+  // powers the "Recent deposits" list and its full-list popup on the Total
+  // Income card (components/IncomeSummaryCards.js). Same self-transfer
+  // exclusion as totalDeposited, so the list adds up to the big number. The
+  // name falls back to the imported bank transaction for older deposits
+  // recorded before deposit_name existed.
+  const countedTransfers = (periodTransfers || []).filter(
+    (t) => !(t.plaid_transaction_id && selfTransferPlaidIds.has(t.plaid_transaction_id))
+  );
+  const missingNameIds = countedTransfers.filter((t) => !t.deposit_name && t.plaid_transaction_id).map((t) => t.plaid_transaction_id);
+  let nameByPlaidId = {};
+  if (missingNameIds.length) {
+    const { data: named } = await admin
+      .from("simple_closeout_transactions")
+      .select("plaid_transaction_id, name")
+      .eq("user_id", user.id)
+      .in("plaid_transaction_id", missingNameIds);
+    nameByPlaidId = Object.fromEntries((named || []).filter((n) => n.name).map((n) => [n.plaid_transaction_id, n.name]));
+  }
+  const deposits = countedTransfers
+    .map((t) => ({
+      id: t.id,
+      date: t.created_at,
+      amount: Number(t.source_amount) || 0,
+      name: t.deposit_name || nameByPlaidId[t.plaid_transaction_id] || null,
+    }))
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .slice(0, 300);
+
   const excludedSelfTransfers = (periodTransfers || []).reduce((s, t) => {
     if (t.plaid_transaction_id && selfTransferPlaidIds.has(t.plaid_transaction_id)) return s + (Number(t.source_amount) || 0);
     return s;
@@ -308,6 +337,7 @@ export async function GET(request) {
     period,
     earliestPeriod,
     totalDeposited,
+    deposits,
     // Surfaced (not just netted silently into totalDeposited) so the UI can
     // eventually tell someone why their deposits total looks lower than
     // their bank activity, the same way excludedByWithdrawal/
