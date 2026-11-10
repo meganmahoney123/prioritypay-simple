@@ -8,6 +8,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
+import SimpleSplitCard from "@/components/SimpleSplitCard";
+import OnboardingLimits from "@/components/OnboardingLimits";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
@@ -57,13 +59,14 @@ const ONBOARDING_LIVE = true;
 // Order (Nov 2026): the fun part first (percentages), then connect banks, then
 // the plan step, and only after paying are accounts matched to each split.
 // Payment no longer finishes onboarding -- the last step does.
-const STEPS = ["Welcome", "Business", "Percentage Splits", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts", "Credit Cards"];
-const STEP_CONNECT = 3;
-const STEP_PLAN = 4;
-const STEP_MATCH = 5;
-const STEP_BALANCES = 6;
-const STEP_ALERTS = 7;
-const STEP_CARDS = 8;
+const STEPS = ["Welcome", "Business", "Percentage Splits", "Limits", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts", "Credit Cards"];
+const STEP_LIMITS = 3;
+const STEP_CONNECT = 4;
+const STEP_PLAN = 5;
+const STEP_MATCH = 6;
+const STEP_BALANCES = 7;
+const STEP_ALERTS = 8;
+const STEP_CARDS = 9;
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -565,6 +568,27 @@ function OnboardingPageInner() {
     setLastDeleted(null);
   };
   const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
+  // Step 2: categories removed with the x. Kept here (with their old position)
+  // so one tap puts them back at 0%, which leaves every other split unchanged.
+  const [removedRows, setRemovedRows] = useState([]);
+  const removeFromStep2 = (id) => {
+    const index = percent.findIndex((r) => r.id === id);
+    if (index === -1) return;
+    setRemovedRows((prev) => [...prev, { row: percent[index], index }]);
+    removeRow(id);
+  };
+  const addBackRemoved = (id) => {
+    const item = removedRows.find((x) => x.row.id === id);
+    if (!item) return;
+    setPercent((prev) => {
+      if (prev.some((r) => r.id === id)) return prev;
+      const copy = [...prev];
+      copy.splice(Math.min(item.index, copy.length), 0, { ...item.row, pct: 0, max: null, categoryCap: null, balanceCap: null });
+      return copy;
+    });
+    setRemovedRows((prev) => prev.filter((x) => x.row.id !== id));
+  };
+  const clearAllLimits = () => setPercent((prev) => prev.map((r) => ({ ...r, max: null, categoryCap: null, balanceCap: null })));
 
   // Step 4 (Starting Balances) -- live balance + market-based flag per
   // connected account, fetched from the same route the Accounts page's
@@ -667,8 +691,9 @@ function OnboardingPageInner() {
     if (unconnectedForStep4.length > 0) { setShowBlockHint(true); return; }
     next();
   };
+  // Every category can be removed now, so "at least 1% to retirement" is a
+  // gentle note on the screen (see needsRetirement) rather than a block.
   const handleStep2Continue = () => {
-    if (needsRetirement) { setShowBlockHint(true); return; }
     next();
   };
 
@@ -1093,86 +1118,76 @@ function OnboardingPageInner() {
               </p>
             )}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              Decide what share of each {splitUnit(entityType)} goes where. Set savings to 10% and a $100 {splitUnit(entityType)} tells you to
-              send $10 to savings.
+              Decide what share of each {splitUnit(entityType)} goes where. Change a number and the chart updates. Remove anything you
+              don&apos;t need, or add your own below.
             </p>
 
-            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-surface, #fff)", overflow: "hidden", marginBottom: 30 }}>
-              <button
-                type="button"
-                onClick={() => setHowOpen((v) => !v)}
-                className="pp-how-toggle"
-                style={{ width: "100%", textAlign: "left", background: "none", border: 0, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", color: "var(--color-text)" }}
-              >
-                <span style={{ flex: 1, fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
-                  How splits work (and what a cap is)
-                </span>
-                <span style={{ fontSize: 18, color: "var(--color-accent)" }}>{howOpen ? "−" : "+"}</span>
-              </button>
-              {howOpen && (
-                <div style={{ padding: "0 20px 20px", display: "grid", gap: 12 }}>
-                  <p style={{ fontSize: 15, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>What&apos;s a cap?</strong> A monthly category cap
-                    stops routing to a bucket once it has received that much in a month (it resets
-                    automatically). An account balance cap stops routing once the connected account&apos;s balance
-                    reaches that amount.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <PercentSplitEditor
-              samplePie
-              percent={percent}
-              accounts={accounts}
-              onUpdatePercent={updatePercent}
-              onAddSubAccount={addSubAccount}
-              onRemoveRow={removeRow}
-              onAccountLinked={onAccountLinked}
-              creating={creating}
-              setCreating={setCreating}
-              connecting={connecting}
-              setConnecting={setConnecting}
-              showRowWarnings={false}
-              pctOverflow={pctOverflow}
-              hideCapDetails
-              theme="ledger"
-              hideStartingBalance
-              hideAccountPicker
-              retirementPicker={retirementPicker}
+            <SimpleSplitCard
+              rows={percent}
+              onUpdate={updatePercent}
+              onRemove={removeFromStep2}
+              overflow={pctOverflow}
               persona={businessType}
             />
 
-            <button
-              onClick={addPercent}
-              className="pp-ledger-dashed"
-              style={{
-                width: "100%",
-                marginTop: 20,
-                background: "transparent",
-                border: "1px dashed var(--color-accent-300)",
-                borderRadius: "var(--radius-md)",
-                padding: "14px 16px",
-                cursor: "pointer",
-                fontFamily: "var(--font-heading)",
-                fontSize: 15,
-                letterSpacing: "0.04em",
-                color: "var(--color-accent-700)",
-              }}
-            >
-              + &nbsp;Add your own category
-            </button>
+            {needsRetirement && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "16px 0 0" }}>
+                Most people with earned income put at least 1% toward retirement. You can add it back below if you removed it.
+              </p>
+            )}
+
+            {percent.some(isRetRow) && (
+              <div style={{ marginTop: 18, border: "1px solid #D9C9FF", borderRadius: 18, background: "#fff", padding: "16px 18px" }}>
+                <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 600, marginBottom: 8 }}>
+                  Retirement accounts
+                </div>
+                <p style={{ fontSize: 14, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", margin: "0 0 12px", maxWidth: "40em" }}>
+                  Which of these do you have open right now? Select all that apply. If none, set a percentage anyway. The money builds up until you open one.
+                </p>
+                <ChipCheckboxes options={retirementPicker.options} selected={retirementPicker.selected} onToggle={retirementPicker.onToggle} />
+                {retirementPicker.selected.includes("other") && (
+                  <button
+                    type="button"
+                    onClick={() => retirementPicker.onToggle("add-other")}
+                    style={{ marginTop: 12, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 14, color: "#4E22B8" }}
+                  >
+                    + Add another account
+                  </button>
+                )}
+              </div>
+            )}
+
+            {removedRows.length > 0 && (
+              <div style={{ marginTop: 22, display: "grid", gap: 8, padding: "14px 16px", border: "1px solid #D9C9FF", borderRadius: 18, background: "#F7F3FF" }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 600 }}>
+                  Removed by you: tap to add back
+                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                  {removedRows.map((x) => (
+                    <button
+                      key={x.row.id}
+                      type="button"
+                      onClick={() => addBackRemoved(x.row.id)}
+                      style={{ height: 36, padding: "0 16px", border: "1px solid #B79CF5", borderRadius: 18, background: "#EDE6FF", color: "#4E22B8", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      + {x.row.label}
+                    </button>
+                  ))}
+                  <span style={{ fontSize: 13, color: "#4B4160" }}>It comes back at 0%, so your other splits don&apos;t change.</span>
+                </div>
+              </div>
+            )}
 
             {availableSuggestions.length > 0 && (
-              <div style={{ marginTop: 30 }}>
+              <div style={{ marginTop: 26 }}>
                 <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
                   Suggestions: click to add, starts at 0%
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-                  {availableSuggestions.map((s) => (
+                  {availableSuggestions.map((sg) => (
                     <button
-                      key={s.label}
-                      onClick={() => addSuggested(s)}
+                      key={sg.label}
+                      onClick={() => addSuggested(sg)}
                       className="pp-ledger-pill"
                       style={{
                         fontFamily: "var(--font-body)",
@@ -1186,12 +1201,32 @@ function OnboardingPageInner() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      + &nbsp;{s.label}
+                      + &nbsp;{sg.label}
                     </button>
                   ))}
                 </div>
               </div>
             )}
+
+            <button
+              onClick={addPercent}
+              className="pp-ledger-dashed"
+              style={{
+                width: "100%",
+                marginTop: 22,
+                background: "transparent",
+                border: "1px dashed var(--color-accent-300)",
+                borderRadius: "var(--radius-md)",
+                padding: "14px 16px",
+                cursor: "pointer",
+                fontFamily: "var(--font-heading)",
+                fontSize: 15,
+                letterSpacing: "0.04em",
+                color: "var(--color-accent-700)",
+              }}
+            >
+              + &nbsp;Add your own category
+            </button>
 
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 24 }}>
               <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
@@ -1218,6 +1253,16 @@ function OnboardingPageInner() {
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {step === STEP_LIMITS && (
+          <div style={{ maxWidth: "46em", margin: "0 auto" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+              Add limits, if you want them
+            </h1>
+            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
+            <OnboardingLimits rows={percent} onUpdate={updatePercent} />
           </div>
         )}
 
@@ -1767,7 +1812,7 @@ function OnboardingPageInner() {
           both visible no matter how far someone has scrolled through the
           bucket list. Sticky to the outer flex column (not main's own
           max-width wrapper) so it can sit flush with the viewport edge. */}
-      {(step === 2 || step === STEP_MATCH) && (
+      {(step === 2 || step === STEP_LIMITS || step === STEP_MATCH) && (
         <div
           style={{
             position: "sticky",
@@ -1792,12 +1837,12 @@ function OnboardingPageInner() {
                 Choose an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} to continue.
               </p>
             )}
-            {step === 2 && showBlockHint && needsRetirement && (
-              <p style={{ fontSize: 14, color: "#b3261e", margin: "0 0 12px" }}>Put at least 1% toward retirement to continue.</p>
-            )}
-            <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={step === 2 ? handleStep2Continue : handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
+              {step === STEP_LIMITS && (
+                <GhostBtn onClick={() => { clearAllLimits(); next(); }}>Skip, no limits</GhostBtn>
+              )}
+              <PrimaryBtn onClick={step === 2 || step === STEP_LIMITS ? handleStep2Continue : handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
             {step === STEP_MATCH && unconnectedForStep4.length > 0 && isDevTester && (
               <button
