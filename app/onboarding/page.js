@@ -1564,9 +1564,7 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              For each account you connected, tell us how much of its current balance is already set aside
-              for each category below (enter 0 if none). This keeps every category&apos;s balance accurate
-              from day one, instead of starting everything at $0 when there&apos;s really money already there.
+              Already have money saved towards a category? Add that balance here.
             </p>
             {balancesLoading && (
               <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
