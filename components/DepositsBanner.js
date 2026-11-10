@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { buildDeposit, buildRows, groupByDestination, money } from "./PendingTransfers";
+import { buildDeposit, money } from "./PendingTransfers";
 
 // Dashboard notification: deposits waiting to be split. A snapshot only (how
 // many, how much was deposited, how much needs transferring); clicking it
@@ -26,12 +26,9 @@ export default function DepositsBanner({ refreshKey }) {
   const info = useMemo(() => {
     const pending = (deposits || []).map(buildDeposit).filter((d) => d.waitingCount > 0);
     if (!pending.length) return null;
-    const groups = groupByDestination(buildRows(pending));
     return {
       count: pending.length,
       deposited: pending.reduce((s, d) => s + d.sourceAmount, 0),
-      toTransfer: groups.reduce((s, g) => s + g.total, 0),
-      accounts: groups.length,
     };
   }, [deposits]);
 
@@ -73,8 +70,7 @@ export default function DepositsBanner({ refreshKey }) {
             {info.count} {info.count === 1 ? "deposit is" : "deposits are"} ready to split
           </div>
           <div style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>
-            {money(info.deposited)} deposited · <b style={{ color: "var(--color-text)" }}>{money(info.toTransfer)} to transfer</b> across {info.accounts}{" "}
-            {info.accounts === 1 ? "account" : "accounts"}
+            <b style={{ color: "var(--color-text)" }}>{money(info.deposited)}</b> ready to transfer
           </div>
         </div>
       </div>
