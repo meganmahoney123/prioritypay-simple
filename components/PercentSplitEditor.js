@@ -9,6 +9,7 @@ import RetirementNote from "./RetirementNote";
 import ChipCheckboxes from "./ChipCheckboxes";
 import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
 import SplitPreviewPie from "./SplitPreviewPie";
+import { CapExplainer } from "@/components/OnboardingLimits";
 import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, RETIREMENT_GROUP_SUBTEXT, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom } from "@/lib/allocations";
 import { bloomWarningCardStyle } from "@/lib/bloomTheme";
 
@@ -143,70 +144,6 @@ function CapField({ label, hint, value, onChange, theme }) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-// Small worked example for the cap help panels: same $5,000 cap, two
-// different things being measured. Total Category Cap counts PrioritySave's
-// own tally (starting balance + what it has seen you send here - logged
-// withdrawals); Account Balance Cap reads the real balance of the connected
-// account. Inline styles only so it renders the same in both editor themes.
-function CapCompareIllustration() {
-  const seg = (w, bg, color, text, extra) => (
-    <div
-      style={{
-        width: `${w}%`,
-        background: bg,
-        color,
-        fontSize: 11.5,
-        fontWeight: 600,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        ...extra,
-      }}
-    >
-      {text}
-    </div>
-  );
-  const bar = { display: "flex", height: 28, borderRadius: 8, overflow: "hidden", border: "1px solid #E4DAF7", background: "#fff" };
-  const room = { background: "repeating-linear-gradient(135deg, #fff, #fff 5px, #F1EAFC 5px, #F1EAFC 10px)", color: "#6B5A8E", fontWeight: 500 };
-  const head = { fontSize: 12.5, fontWeight: 700, color: "var(--color-text)", display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 5, flexWrap: "wrap" };
-  const note = { fontSize: 12, lineHeight: 1.5, marginTop: 5, color: "color-mix(in srgb, var(--color-text) 65%, transparent)" };
-  return (
-    <div role="img" aria-label="Example: a Wedding category with a $5,000 cap. The Total Category Cap counts PrioritySave's tally of $3,500, leaving $1,500 of room. The Account Balance Cap reads the real account balance of $4,200, leaving $800 of room." style={{ background: "#fff", border: "1px solid #E4DAF7", borderRadius: 12, padding: "12px 12px 14px", display: "grid", gap: 14 }}>
-      <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700, color: "#6B5A8E" }}>
-        Example: a Wedding category with a $5,000 cap
-      </div>
-      <div>
-        <div style={head}>
-          <span>Total Category Cap</span>
-          <span style={{ fontWeight: 500, color: "#6B5A8E" }}>PrioritySave&apos;s tally</span>
-        </div>
-        <div style={bar}>
-          {seg(40, "#C4A9FA", "#2A1550", "$2,000 start")}
-          {seg(30, "#6D3BE0", "#fff", "$1,500 sent")}
-          {seg(30, "transparent", "#6B5A8E", "$1,500 room", room)}
-        </div>
-        <div style={note}>Starting balance + everything PrioritySave has seen you send here = $3,500.</div>
-      </div>
-      <div>
-        <div style={head}>
-          <span>Account Balance Cap</span>
-          <span style={{ fontWeight: 500, color: "#6B5A8E" }}>the real account</span>
-        </div>
-        <div style={bar}>
-          {seg(84, "#0F766E", "#fff", "$4,200 in the account")}
-          {seg(16, "transparent", "#6B5A8E", "$800", room)}
-        </div>
-        <div style={note}>
-          What your bank says is in the account right now. It also counts interest and money that didn&apos;t come
-          through PrioritySave, so it can be higher or lower than the tally.
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, readOnly, lockLabel, persona, startingBalanceRoomInfo }) {
   const locked = isCoreRow(rule, persona) || !!lockLabel || !!readOnly;
   // A starting balance only ever counts as money already sitting in THIS
@@ -234,6 +171,12 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // rather than lifted to the parent, since nothing outside this row ever
   // needs to know whether its caps panel happens to be open.
   const [showLimits, setShowLimits] = useState(false);
+  // Every row shows its name the same way once added (like "Savings"); a
+  // brand-new unnamed row starts in edit mode, and the pencil renames any
+  // custom row later.
+  const [editingName, setEditingName] = useState(!rule.label || rule.label === "New category");
+  const canRename = !isCoreRow(rule, persona) && !lockLabel && !readOnly;
+  const canDelete = !lockLabel && !readOnly;
   const [showLimitsHelp, setShowLimitsHelp] = useState(false);
   // Collapsed by default, same reasoning as showLimits above -- most
   // people creating a category are starting from $0, so this stays out
@@ -262,7 +205,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
     return (
       <div style={{ border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px 20px" }}>
-          {locked ? (
+          {!(canRename && editingName) ? (
             <span
               style={{
                 display: "flex",
@@ -277,6 +220,16 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             >
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor || "var(--color-accent)", flexShrink: 0 }} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rule.label}</span>
+              {canRename && (
+                <button
+                  type="button"
+                  onClick={() => setEditingName(true)}
+                  title="Rename category"
+                  style={{ background: "transparent", border: 0, cursor: "pointer", color: "color-mix(in srgb, var(--color-text) 45%, transparent)", padding: 4, flexShrink: 0 }}
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
             </span>
           ) : (
             <span style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
@@ -284,6 +237,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               <input
                 value={rule.label}
                 onChange={(e) => onUpdate(rule.id, { label: e.target.value })}
+                onBlur={() => { if (rule.label && rule.label.trim()) setEditingName(false); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && rule.label && rule.label.trim()) setEditingName(false); }}
+                autoFocus={editingName && !!rule.label}
                 placeholder="Name this category"
                 style={{
                   flex: 1,
@@ -335,7 +291,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "#4E22B8" }}>%</span>
             </span>
-            {!locked && (
+            {canDelete && (
               <button
                 onClick={() => onRemove(rule.id)}
                 title="Delete category"
@@ -487,21 +443,6 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                     here once the tally hits this amount, and starts again if withdrawals bring it back below.
                   </p>
                 )}
-                {!isGrouped && (
-                  <p style={{ margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>Account Balance Cap:</strong> goes by the actual
-                    balance of the connected account, as your bank reports it, not our tally. It stops sending money
-                    here once that balance reaches this amount, and starts again if the balance falls below it.
-                  </p>
-                )}
-                {!isGrouped && (
-                  <p style={{ margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>The key difference:</strong> the Total Category Cap
-                    counts what PrioritySave has tracked (starting balance + what it has seen you send), while the
-                    Account Balance Cap checks what&apos;s really in the account.
-                  </p>
-                )}
-                {!isGrouped && <CapCompareIllustration />}
                 {!hideStartingBalance && (
                   <p style={{ margin: 0 }}>
                     <strong style={{ color: "var(--color-text)" }}>Starting balance:</strong> money you already have set
@@ -526,13 +467,6 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                   onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
                   theme="ledger"
                 />
-                <CapField
-                  label="Account Balance Cap $"
-                  hint="the connected account's actual balance"
-                  value={rule.balanceCap}
-                  onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
-                  theme="ledger"
-                />
               </div>
             )}
           </div>
@@ -542,11 +476,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           {true ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                {forceShowStartingBalance
-                  ? "Starting balance for this category (enter 0 if none):"
-                  : startingBalanceAccountLabel
-                  ? `Already have money saved in ${startingBalanceAccountLabel} for this? Add a Starting Balance:`
-                  : "Already have money saved for this? Add a Starting Balance (connect an account below first):"}
+                {forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Starting Balance:"}
               </span>
               <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
@@ -811,12 +741,6 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             value={rule.categoryCap}
             onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
           />
-          <CapField
-            label="Account Balance Cap $"
-            hint="the connected account's actual balance"
-            value={rule.balanceCap}
-            onChange={(v) => onUpdate(rule.id, { balanceCap: v })}
-          />
         </>
       )}
       {!hideStartingBalance && (
@@ -825,7 +749,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           <label className="flex items-center gap-1.5 text-xs text-neutral-500">
             {forceShowStartingBalance
               ? "Starting balance for this category (enter 0 if none):"
-              : "Already have money saved for this? Add a Starting Balance:"}
+              : "Starting Balance:"}
             <span className="flex items-center gap-0.5">
               $
               <input
@@ -1070,19 +994,13 @@ export default function PercentSplitEditor({
               +
             </span>
           </summary>
-          <p style={{ fontSize: 16, lineHeight: 1.7, margin: "12px 0 0" }}>
-            Any category below other than Investments or Retirement can have up to three optional caps. A{" "}
-            <strong>Monthly Category Cap</strong> limits how many dollars a category can receive from your deposits in a
-            given calendar month. Once it&apos;s hit, that category drops to 0% for the rest of the month and
-            resets automatically on the 1st. A <strong>Total Category Cap</strong> goes by PrioritySave&apos;s own
-            tally: your starting balance plus everything PrioritySave has seen you send to that category, minus
-            withdrawals you log. An <strong>Account Balance Cap</strong> instead watches the connected account&apos;s
-            actual balance, as your bank reports it. Once either one is reached, the category drops to 0% and stays
-            there until the tally or balance falls back below it (say, from a withdrawal). Either way, whatever a
-            capped category doesn&apos;t take rises proportionally across your other categories instead of going
-            unused.
+          <p style={{ fontSize: 16, lineHeight: 1.7, margin: "12px 0 16px" }}>
+            Once you reach your savings goal for a particular category, it might not make sense to continue adding money to that category.
+            That&apos;s why you can set limits. Once a category reaches a limit, PrioritySave resets that category to 0%. For a Monthly
+            Category Cap, it resets each month. For a Total Category Cap, the split only turns back on if a withdrawal causes the category
+            to dip below its cap. Whatever a capped category doesn&apos;t take is shared across your other categories instead of going unused.
           </p>
-          <div style={{ marginTop: 12 }}><CapCompareIllustration /></div>
+          <CapExplainer />
         </details>
         )}
         {samplePie && (
@@ -1271,18 +1189,11 @@ export default function PercentSplitEditor({
     <div className="space-y-3">
       <details className="text-xs text-neutral-500 leading-relaxed">
         <summary className="cursor-pointer font-medium text-neutral-600">What&apos;s a cap?</summary>
-        <p className="mt-2">
-          Any category below other than Investments or Retirement can have up to three optional caps. A Monthly
-          Category Cap limits how many dollars a category can receive from your deposits in a given calendar
-          month. Once it&apos;s hit, that category drops to 0% for the rest of the month and resets automatically
-          on the 1st. A Total Category Cap goes by PrioritySave&apos;s own tally: your starting balance plus
-          everything PrioritySave has seen you send to that category, minus withdrawals you log. An Account
-          Balance Cap instead watches the connected account&apos;s actual balance, as your bank reports it. Once
-          either one is reached, the category drops to 0% and stays there until the tally or balance falls back
-          below it. Either way, whatever a capped category doesn&apos;t take rises proportionally across your
-          other categories instead of going unused.
+        <p className="mt-2 mb-3">
+          Once a category reaches a limit, PrioritySave resets that category to 0%. A Monthly Category Cap resets each month. A Total
+          Category Cap only turns the split back on if a withdrawal brings the category below its cap.
         </p>
-        <div className="mt-3"><CapCompareIllustration /></div>
+        <CapExplainer />
       </details>
       {samplePie && (
         <SplitPreviewPie

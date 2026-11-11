@@ -108,6 +108,44 @@ function CapCard({ kind, title, subtitle, graph, text, examples }) {
   );
 }
 
+// Shared "two kinds of limits" explainer (same cards as onboarding), also used
+// by the "What's a cap?" panel on the Income Split Rules page.
+export function CapExplainer() {
+  return (
+    <div>
+      <style>{`
+        .pp-lim-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+        .pp-lim-card{border:1px solid #D9C9FF;border-radius:22px;background:#fff;padding:20px}
+        .pp-lim-card>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px}
+        .pp-lim-card>summary::-webkit-details-marker{display:none}
+        .pp-lim-card[open] .pp-lim-chev{transform:rotate(180deg)}
+        @media (max-width:720px){ .pp-lim-pair{grid-template-columns:1fr} }
+      `}</style>
+      <div style={{ fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 600, marginBottom: 12 }}>
+        Two kinds of limits. Tap one to see how it works.
+      </div>
+      <div className="pp-lim-pair">
+        <CapCard
+          kind="Type 1"
+          title="Total Category Cap"
+          subtitle="A major savings goal"
+          graph={<TotalGraph />}
+          text="Set the amount you're saving up for. Once the balance gets there, this category's split drops to 0%."
+          examples={["Wedding", "New car", "Down payment"]}
+        />
+        <CapCard
+          kind="Type 2"
+          title="Monthly Category Cap"
+          subtitle="A recurring expense"
+          graph={<MonthlyGraph />}
+          text="Set the most this category needs each month. Once it gets that much, its split drops to 0% until the 1st."
+          examples={["Rent", "Car payment", "Insurance"]}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function OnboardingLimits({ rows, onUpdate }) {
   const live = rows.filter((r) => Number(r.pct) > 0);
   const [types, setTypes] = useState(() => {
