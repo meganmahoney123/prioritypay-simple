@@ -1,5 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { DEPOSIT_TYPES, typeOptionsFor, guessDepositType, effectLine } from "@/lib/depositTypes";
 
 // Deposit-grouped transfer checklist (components/PendingTransfers.js).
 // Returns:
@@ -63,17 +64,22 @@ export async function GET() {
     });
   }
 
-  // Stored Business/Other choice (simple_transfers.source_kind). Read in its
-  // own query so everything keeps working until that column exists.
-  const kindById = {};
+  // Stored deposit type (simple_transfers.deposit_type). Read in its own
+  // query so everything keeps working until that column exists.
+  const typeById = {};
   if (all.length) {
-    const { data: kinds, error: kindError } = await admin
+    const { data: types, error: typeError } = await admin
       .from("simple_transfers")
-      .select("id, source_kind")
+      .select("id, deposit_type")
       .eq("user_id", user.id)
       .in("id", all.map((t) => t.id));
-    if (!kindError) (kinds || []).forEach((k) => { kindById[k.id] = k.source_kind; });
+    if (!typeError) (types || []).forEach((k) => { typeById[k.id] = k.deposit_type; });
   }
+  const { data: profile } = await admin.from("simple_profiles").select("*").eq("id", user.id).single();
+  const typeOptions = typeOptionsFor(profile);
+  const { data: ruleRows } = await admin.from("simple_split_rules_percent").select("label, pct, retirement_type").eq("user_id", user.id);
+  const rules = (ruleRows || []).map((r) => ({ label: r.label, pct: r.pct, retirementType: r.retirement_type || null }));
+  const effects = Object.fromEntries(Object.keys(DEPOSIT_TYPES).map((k) => [k, effectLine(k, rules)]));
 
   const shape = (t) => ({
     id: t.id,
@@ -82,9 +88,10 @@ export async function GET() {
     trigger: t.trigger,
     createdAt: t.created_at,
     name: t.deposit_name || null,
-    // The saved choice if there is one; otherwise a guess: deposits that came
-    // from a bank transaction are Business, everything else is Other.
-    sourceKind: kindById[t.id] || (t.plaid_transaction_id ? "business" : "other"),
+    // The saved type if there is one; otherwise a guess from the deposit's
+    // name and the person's onboarding answers.
+    depositType: typeById[t.id] || guessDepositType({ profile, name: t.deposit_name }),
+    typeSaved: Boolean(typeById[t.id]),
     skippedAt: t.skipped_at,
     skipReason: t.skip_reason,
     lines: (t.simple_transfer_allocations || []).map((a) => ({
@@ -96,6 +103,8 @@ export async function GET() {
 
   const byNewest = (a, b) => (a.createdAt < b.createdAt ? 1 : -1);
   return Response.json({
+    typeOptions: typeOptions.map((v) => ({ value: v, label: DEPOSIT_TYPES[v], effect: effects[v] })),
+    typeLabels: DEPOSIT_TYPES,
     deposits: all.filter((t) => !t.skipped_at).map(shape).sort(byNewest),
     skipped: all
       .filter((t) => t.skipped_at)

@@ -745,6 +745,7 @@ function OnboardingPageInner() {
         persona: businessType,
         businessName,
         entityType,
+        workPicks,
         retirementProfile: {
           incomeHandling: isBusinessOwnerWithEmployees ? incomeHandling || "separate" : "n/a",
           hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,
@@ -787,6 +788,7 @@ function OnboardingPageInner() {
         persona: businessType,
         businessName,
         entityType,
+        workPicks,
         retirementProfile: {
           incomeHandling: isBusinessOwnerWithEmployees ? incomeHandling || "separate" : "n/a",
           hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,
@@ -875,6 +877,7 @@ function OnboardingPageInner() {
         persona: businessType,
         businessName,
         entityType,
+        workPicks,
         retirementProfile: {
           incomeHandling: isBusinessOwnerWithEmployees ? incomeHandling || "separate" : "n/a",
           hasW2Plan: businessType === PERSONA_W2_WITH_SIDE_HUSTLE || businessType === PERSONA_W2_NO_SIDE_HUSTLE,

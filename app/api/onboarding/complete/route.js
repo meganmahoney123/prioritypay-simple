@@ -6,7 +6,7 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const { persona, businessName, entityType, retirementProfile, splitRules, minDepositThreshold, notifications, finalize } =
+  const { persona, businessName, entityType, workPicks, retirementProfile, splitRules, minDepositThreshold, notifications, finalize } =
     await request.json();
   const admin = supabaseAdmin();
   // Finishing onboarding (finalize not false) requires a paid plan, so the
@@ -74,6 +74,16 @@ export async function POST(request) {
     })
     .eq("id", user.id);
   if (profileError) return Response.json({ error: profileError.message }, { status: 500 });
+
+  // The exact work answers (self-employed, business owner, W-2, retired...)
+  // decide which deposit types are offered. Saved on its own and ignored if
+  // the column isn't there yet, so onboarding never fails over it.
+  if (Array.isArray(workPicks)) {
+    const picks = workPicks.filter((v) => typeof v === "string" && /^[a-z_]{1,24}$/.test(v)).join(",");
+    try {
+      await admin.from("simple_profiles").update({ work_picks: picks || null }).eq("id", user.id);
+    } catch {}
+  }
 
   // Insert-then-delete-old-ids, not delete-then-insert -- same reasoning
   // as PUT /api/split-rules: a failed insert should never leave someone

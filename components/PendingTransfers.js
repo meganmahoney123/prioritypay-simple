@@ -226,7 +226,7 @@ const rowDivider = { padding: "12px 0", borderTop: "1px solid var(--color-divide
 const pairButton = { padding: "11px 12px", fontSize: 14, fontWeight: 700, borderRadius: 999, minHeight: 48, lineHeight: 1.25, textAlign: "center" };
 
 export default function PendingTransfers({ accounts, refreshKey, onChanged, showEmpty = false }) {
-  const [data, setData] = useState({ deposits: [], skipped: [] });
+  const [data, setData] = useState({ deposits: [], skipped: [], typeOptions: [], typeLabels: {} });
   const [loaded, setLoaded] = useState(false);
   const [busyKey, setBusyKey] = useState(null);
   const [error, setError] = useState(null);
@@ -242,6 +242,9 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   const [linkChoice, setLinkChoice] = useState({}); // ruleId -> chosen account id
   const [linkingId, setLinkingId] = useState(null);
   const [linkedNote, setLinkedNote] = useState(null);
+  const [w401kChoice, setW401kChoice] = useState("");
+  const [w401kDismissed, setW401kDismissed] = useState(false);
+  const [w401kBusy, setW401kBusy] = useState(false);
 
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
@@ -249,7 +252,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     try {
       const [res, rulesRes] = await Promise.all([fetch("/api/transfers/deposits"), fetch("/api/split-rules").catch(() => null)]);
       const body = await res.json();
-      if (res.ok) setData({ deposits: body.deposits || [], skipped: body.skipped || [] });
+      if (res.ok) setData({ deposits: body.deposits || [], skipped: body.skipped || [], typeOptions: body.typeOptions || [], typeLabels: body.typeLabels || {} });
       if (rulesRes?.ok) {
         const rb = await rulesRes.json().catch(() => ({}));
         setRules(rb?.splitRules?.percent || []);
@@ -359,6 +362,66 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     } finally {
       setLinkingId(null);
     }
+  };
+  // First time a deposit is a W-2 paycheck and there's no workplace 401k/IRA/HSA
+  // row yet: ask once, add the row, then re-split that deposit.
+  const w2Deposit = pendingDeposits.find((d) => d.depositType === "w2" && (d.lines || []).every((l) => ["needs_approval", "reserved"].includes(l.status)));
+  const hasWorkplaceRow = rules.some((r) => ["traditional_401k", "traditional_ira", "hsa"].includes(r.retirementType));
+  const showW401k = Boolean(w2Deposit) && !hasWorkplaceRow && !w401kDismissed;
+  const add401k = async (deposit) => {
+    setW401kBusy(true);
+    setError(null);
+    try {
+      const res = await post("/api/split-rules/add-workplace-401k", { accountId: w401kChoice || null });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.error || "Could not add your 401k. Please try again.");
+        return;
+      }
+      await post(`/api/transfers/${deposit.id}/deposit-type`, { depositType: "w2" });
+      setLinkedNote("Your 401k was added to your splits. W-2 paychecks send a share to it, and nothing else touches it.");
+      setTimeout(() => setLinkedNote(null), 12000);
+      await load();
+      onChanged?.();
+    } finally {
+      setW401kBusy(false);
+    }
+  };
+  const renderW401k = () => {
+    const options = accounts || [];
+    return (
+      <Card style={bloomAccentCardStyle({ padding: "16px 22px 18px", borderRadius: 24, background: "var(--color-surface)" })}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>One quick question</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--color-text)", marginTop: 2 }}>Do you have a 401k through this job?</div>
+        <p style={{ ...mutedText, margin: "6px 0 10px" }}>
+          We will add it to your splits so each paycheck can send a share to it. It never mixes with a Solo 401k or SEP IRA.
+        </p>
+        <label style={mutedText} htmlFor="w401k-account">Pick the account it lives in, if it&apos;s connected</label>
+        <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 4 }}>
+          <select
+            id="w401k-account"
+            value={w401kChoice}
+            onChange={(e) => setW401kChoice(e.target.value)}
+            style={{ fontSize: 14, padding: "8px 10px", borderRadius: 10, border: "1px solid var(--color-accent-500, #9A72F0)", maxWidth: "100%" }}
+          >
+            <option value="">Not connected yet</option>
+            {options.map((a) => (
+              <option key={a.id} value={a.id}>{accountLabel(a, null)}</option>
+            ))}
+          </select>
+          <a href="/accounts" style={{ color: "var(--color-accent-700)", fontWeight: 700, fontSize: 14, textDecoration: "underline" }}>+ Connect a different account</a>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 12 }}>
+          <PrimaryButton onClick={() => add401k(w2Deposit)} disabled={w401kBusy} style={{ padding: "11px 24px", minHeight: 48 }}>
+            {w401kBusy ? "Adding..." : "Yes, add my 401k"}
+          </PrimaryButton>
+          <button type="button" onClick={() => setW401kDismissed(true)} disabled={w401kBusy} style={{ ...linkButtonStyle, fontSize: 15, fontWeight: 700, minHeight: 48, padding: "0 16px" }}>
+            No 401k
+          </button>
+        </div>
+        <p style={{ ...mutedText, margin: "10px 0 0", fontSize: 12 }}>New row: 401k · 5% · W-2 paychecks only</p>
+      </Card>
+    );
   };
   const undoSkip = (id) => run(`dep:${id}`, () => post(`/api/transfers/${id}/unskip`));
 
@@ -537,28 +600,58 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   // one grand total. Each deposit is a row (name, date, Business/Other tag,
   // amount) that can be removed from the split, and removed deposits stay
   // listed, greyed out, with "Add back".
+  // Deposit type: a dropdown while the deposit's lines can still change, a
+  // plain tag otherwise. The effect line says what the chosen type does.
+  const typeLabel = (v) => data.typeLabels?.[v] || "Miscellaneous";
   const sourceTag = (d, editable) => {
-    const biz = d.sourceKind === "business";
-    const style = {
+    const tagStyle = {
       fontSize: 12,
       fontWeight: 800,
       borderRadius: 999,
       padding: "1px 9px",
-      background: biz ? "var(--color-accent-100, #EDE6FF)" : "var(--color-neutral-100)",
-      color: biz ? "var(--color-accent-700)" : "var(--color-neutral-700)",
+      background: "var(--color-accent-100, #EDE6FF)",
+      color: "var(--color-accent-700)",
     };
-    if (!editable) return <span style={style}>{biz ? "Business" : "Other"}</span>;
-    // Tap to switch Business <-> Other; saved on the deposit.
+    const canEdit = editable && (d.lines || []).every((l) => ["needs_approval", "reserved"].includes(l.status));
+    if (!canEdit) return <span style={tagStyle}>{typeLabel(d.depositType)}</span>;
+    const options = [...(data.typeOptions || [])];
+    if (!options.some((o) => o.value === d.depositType)) options.push({ value: d.depositType, label: typeLabel(d.depositType) });
+    const busyType = busyKey === `type:${d.id}`;
     return (
-      <button
-        type="button"
-        onClick={() => run(`kind:${d.id}`, () => post(`/api/transfers/${d.id}/source-kind`, { sourceKind: biz ? "other" : "business" }))}
-        disabled={busyKey === `kind:${d.id}`}
-        title="Tap to switch between Business and Other"
-        style={{ ...style, border: "1px dashed currentColor", cursor: busyKey === `kind:${d.id}` ? "not-allowed" : "pointer" }}
+      <select
+        aria-label={`Deposit type for ${d.title}`}
+        value={d.depositType}
+        disabled={busyType}
+        onChange={(e) => run(`type:${d.id}`, () => post(`/api/transfers/${d.id}/deposit-type`, { depositType: e.target.value }))}
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: "var(--color-accent-700)",
+          background: "var(--color-accent-100, #EDE6FF)",
+          border: "1px solid var(--color-accent-500, #9A72F0)",
+          borderRadius: 8,
+          padding: "3px 6px",
+          maxWidth: "100%",
+          cursor: busyType ? "not-allowed" : "pointer",
+        }}
       >
-        {biz ? "Business" : "Other"} ⇄
-      </button>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    );
+  };
+  const renderEffect = (d) => {
+    const e = (data.typeOptions || []).find((o) => o.value === d.depositType)?.effect;
+    if (!e) return null;
+    return (
+      <div style={{ ...mutedText, marginTop: 4, fontSize: 13 }}>
+        <b style={{ color: e.tone === "green" ? "#0F6B4F" : "var(--color-accent-700)" }}>{e.lead}</b>
+        {e.rest}
+        {d.typeSaved ? "" : " (suggested)"}
+      </div>
     );
   };
   const checkBox = (on, onClick, label, disabled) => (
@@ -671,6 +764,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
             <div style={{ fontSize: 21, fontWeight: 800, color: "var(--color-text)", marginTop: 4 }}>
               {n > 1 ? `${n} deposits · grand total` : n === 1 ? "1 deposit" : "No deposits in this split"}
             </div>
+            {n > 0 && <div style={{ ...mutedText, marginTop: 4 }}>Each deposit has a type. The type decides which splits apply to it.</div>}
           </div>
           {n > 0 && <div style={{ fontFamily: "var(--font-mono)", fontSize: 30, fontWeight: 700, color: "var(--color-accent-700)" }}>{money(pendingTotal)}</div>}
         </div>
@@ -682,11 +776,10 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
                 {checkBox(true, () => openSkip(d.id), `Remove ${d.title} from this split`, busy)}
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)", overflowWrap: "anywhere" }}>{d.title}</div>
-                  <div className="flex items-center gap-2 flex-wrap" style={{ ...mutedText, marginTop: 2 }}>
-                    <span>{formatDate(d.createdAt, true)}</span>
-                    {sourceTag(d, true)}
-                  </div>
+                  <div style={{ ...mutedText, marginTop: 2 }}>{formatDate(d.createdAt, true)}</div>
+                  {renderEffect(d)}
                 </div>
+                {sourceTag(d, true)}
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700 }}>{money(d.sourceAmount)}</div>
                 {skipOpenFor !== d.id && (
                   <button onClick={() => openSkip(d.id)} style={{ ...linkButtonStyle, fontSize: 14 }}>
@@ -1017,6 +1110,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
             </div>
           )}
           {pendingDeposits.length > 0 && unlinked.length > 0 && renderUnlinked()}
+          {showW401k && renderW401k()}
           {error && <p style={{ margin: 0, fontSize: 14, color: "#b42318" }}>{error}</p>}
           {pendingDeposits.length > 0 && (
             <p style={{ ...mutedText, margin: 0 }}>

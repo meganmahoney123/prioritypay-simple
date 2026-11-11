@@ -218,6 +218,7 @@ export async function POST(request) {
             trigger: "auto_deposit",
             plaidTransactionId: txn.transaction_id,
             depositName: txn.merchant_name || txn.name || null,
+            pfcDetailed: txn.personal_finance_category?.detailed || null,
           });
           if (result.error) {
             console.error("Auto-split failed for transaction", txn.transaction_id, result.error);
