@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, PrimaryButton, currency } from "@/components/ui";
+import { Card, PrimaryButton } from "@/components/ui";
 import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
 import { FREQUENCIES, frequencyLabel, occurrencesBetween, upcoming, toIso, parseIso } from "@/lib/bills";
 
@@ -10,6 +10,11 @@ const h2 = { fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, m
 const eyebrow = { fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: muted };
 const num = { fontFamily: "var(--font-mono, ui-monospace, monospace)", fontWeight: 700 };
 
+const currency = (n) => {
+  const v = Number(n) || 0;
+  const whole = Math.abs(v - Math.round(v)) < 0.005;
+  return v.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 });
+};
 const todayIso = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -341,6 +346,39 @@ export default function BillsPage() {
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 6px" }}>We found {pending.length} recurring payment{pending.length === 1 ? "" : "s"}</h1>
             <p style={{ color: muted, margin: 0, fontSize: 14.5 }}>Keep the ones that are real bills. You can change this any time.</p>
           </div>
+          <div>
+            <div style={{ ...eyebrow, marginBottom: 6 }}>Once you save, this fills in</div>
+            <Panel>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+                {[
+                  ["Next 30 days", "what will leave your accounts"],
+                  ["Next up", "your next bill and its date"],
+                  ["By account", "which account each one pulls from"],
+                  ["Not on autopay", "the bills you pay by hand"],
+                ].map(([label, sub]) => (
+                  <div key={label} style={{ flex: "1 1 170px" }}>
+                    <div style={eyebrow}>{label}</div>
+                    <div style={{ ...mono, fontSize: 24, margin: "2px 0", color: muted }}>-</div>
+                    <div style={{ color: muted, fontSize: 13 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          </div>
+          <Panel style={{ padding: "14px 22px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 260px" }}>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Add a Recurring Payment</div>
+                <div style={{ fontSize: 14, color: muted, marginTop: 2 }}>Add a bill we missed, like rent paid with Zelle, a check or a card, with its due date and the account it comes from.</div>
+              </div>
+              <OutlineButton small onClick={() => setShowAdd((v) => !v)}>{showAdd ? "Close" : "+ Add a bill"}</OutlineButton>
+            </div>
+            {showAdd && (
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1.5px solid var(--color-divider)" }}>
+                <AddForm accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) setShowAdd(false); return ok; }} busy={busy} />
+              </div>
+            )}
+          </Panel>
           <Panel style={{ padding: "6px 22px" }}>
             {pending.map((b, i) => {
               const on = isKept(b);
@@ -357,22 +395,8 @@ export default function BillsPage() {
               );
             })}
           </Panel>
-          <Panel style={{ padding: "14px 22px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 260px" }}>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>Don&apos;t see something?</div>
-                <div style={{ fontSize: 14, color: muted, marginTop: 2 }}>Rent paid with Zelle, a check or a card can be added by hand with its due date and the account it comes from.</div>
-              </div>
-              <OutlineButton small onClick={() => setShowAdd((v) => !v)}>{showAdd ? "Close" : "+ Add a bill"}</OutlineButton>
-            </div>
-            {showAdd && (
-              <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1.5px solid var(--color-divider)" }}>
-                <AddForm accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) setShowAdd(false); return ok; }} busy={busy} />
-              </div>
-            )}
-          </Panel>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <PrimaryButton onClick={saveFound} disabled={busy}>Save these {keptCount}</PrimaryButton>
+            <PrimaryButton onClick={saveFound} disabled={busy}>Save These Auto Payments</PrimaryButton>
             <OutlineButton onClick={() => setSkipped(true)}>Skip for now</OutlineButton>
           </div>
         </>
