@@ -2,7 +2,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { syncNewTransactions } from "@/lib/plaidSync";
 import { runSplit } from "@/lib/runSplit";
 import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
-import { matchInTransitAllocation, markAllocationCompleted, maybeRecordNearMissCandidate } from "@/lib/reconcileTransfers";
+import { matchInTransitAllocation, findBatchMatch, markAllocationCompleted, maybeRecordNearMissCandidate } from "@/lib/reconcileTransfers";
 
 // This is what makes PrioritySave actually live up to "splits the moment it
 // hits your account," instead of requiring someone to open Payments and
@@ -134,7 +134,7 @@ export async function POST(request) {
         if (deposits.length) {
           const { data } = await admin
             .from("simple_transfer_allocations")
-            .select("id, amount, transfer_id, dest_account_id, dest_account_label, confirmed_at, candidate_transaction_id, candidate_last_dismissed_transaction_id")
+            .select("id, amount, transfer_id, dest_account_id, dest_account_label, confirmed_at, confirm_batch_id, candidate_transaction_id, candidate_last_dismissed_transaction_id")
             .eq("dest_account_id", account.id)
             .eq("status", "in_transit");
           inTransitRows = data || [];
@@ -142,6 +142,23 @@ export async function POST(request) {
         const usedTransactionIds = new Set();
 
         for (const txn of deposits) {
+          // One bank transfer covering several category lines lands as one
+          // deposit equal to their sum (see findBatchMatch).
+          const batchGroup = findBatchMatch({
+            amount: txn.amount,
+            date: txn.date,
+            transactionId: txn.transaction_id,
+            rows: inTransitRows,
+            usedTransactionIds,
+          });
+          if (batchGroup) {
+            usedTransactionIds.add(txn.transaction_id);
+            const batchSettledIso = new Date().toISOString();
+            for (const r of batchGroup) await markAllocationCompleted(admin, r, batchSettledIso);
+            inTransitRows = inTransitRows.filter((r) => !batchGroup.includes(r));
+            console.log(`Matched incoming transfer ${txn.transaction_id} to a batch of ${batchGroup.length} in-transit allocations -- marked completed, skipped auto-split.`);
+            continue;
+          }
           const matchedRow = inTransitRows.find((row) =>
             matchInTransitAllocation({
               amount: txn.amount,

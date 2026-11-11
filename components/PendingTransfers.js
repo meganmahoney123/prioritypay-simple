@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { resolveBankLoginUrl } from "@/lib/bankLinks";
-import { ExternalLink, Clock, ChevronDown, ChevronRight } from "lucide-react";
+import { ExternalLink, Clock, ChevronDown, ChevronRight, Pencil, AlertCircle } from "lucide-react";
 
 // The "Transfers to make" checklist on the Dashboard: ONE grand-totals card
 // (Nov 2026). PrioritySave never moves money; every row is a transfer the
@@ -24,7 +24,8 @@ import { ExternalLink, Clock, ChevronDown, ChevronRight } from "lucide-react";
 //  - Categories that stay in the account the deposit landed in, and
 //    Guilt-Free Spending (the part of each deposit not assigned to any
 //    category), say "No transfer needed (stays in [account])".
-//  - "Approve all splits" marks every pending line, one category at a time.
+//  - No "Approve all" shortcut (removed Nov 2026): people mark each transfer
+//    as transferred themselves so balances only change for real transfers.
 //  - "On the way (N)", collapsed by default: lines marked as transferred but
 //    not seen landing yet, with "It already landed" and the near-miss
 //    "Is this your transfer?" prompt.
@@ -234,6 +235,8 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   const [editing, setEditing] = useState(null); // allocation id
   const [draft, setDraft] = useState("");
   const [onTheWayOpen, setOnTheWayOpen] = useState(false);
+  const [confirmGroup, setConfirmGroup] = useState(null); // group being marked as transferred
+  const [confirmDifferent, setConfirmDifferent] = useState(false);
   const [sheetRow, setSheetRow] = useState(null); // category row whose "Transfer $X Now" sheet is open
 
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
@@ -305,7 +308,6 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     });
 
   const markGroup = (g) => run(`row:${g.key}`, () => post("/api/transfer-allocations/confirm-batch", { allocationIds: g.ids }));
-  const approveAll = () => run("all", () => post("/api/transfers/approve-all"));
   const settleLine = (id) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/settle`));
   const candidate = (id, action) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/candidate/${action}`));
   const skipDeposit = (id) =>
@@ -387,9 +389,11 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           setEditing(line.id);
           setDraft(Number(line.amount).toFixed(2));
         }}
-        style={{ ...style, background: "none", border: "none", padding: 0, cursor: "pointer", color: "inherit", textDecoration: "underline dotted", textUnderlineOffset: 3 }}
+        style={{ ...style, background: "none", border: "none", padding: 0, cursor: "pointer", color: "inherit", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}
       >
-        {money(amount)}
+        <span style={{ textDecoration: "underline dotted", textUnderlineOffset: 3 }}>{money(amount)}</span>
+        <Pencil size={13} aria-hidden="true" style={{ marginLeft: 6, verticalAlign: "-1px", opacity: 0.75 }} />
+        <span style={{ position: "absolute", left: -9999 }}> Edit amount</span>
         {overridden && <span style={{ fontWeight: 500, fontSize: 11, marginLeft: 6 }}>(calculated {money(line.calculated_amount)})</span>}
       </button>
     );
@@ -450,7 +454,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           <PrimaryButton onClick={() => setSheetRow(sheetTarget)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
             Transfer {money(g.total)} Now
           </PrimaryButton>
-          <PrimaryButton onClick={() => markGroup(g)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
+          <PrimaryButton onClick={() => { setConfirmDifferent(false); setConfirmGroup(g); }} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
             {busy ? "Saving..." : "Mark as Transferred"}
           </PrimaryButton>
         </div>
@@ -658,6 +662,67 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     );
   };
 
+  // Asked every time "Mark as Transferred" is tapped, so the amount recorded
+  // is the amount actually sent. A different amount means editing the lines
+  // first, so the category balances only ever change by what really moved.
+  const renderConfirm = () => {
+    if (!confirmGroup) return null;
+    const g = confirmGroup;
+    const destName = accountLabel(accountsById[g.dest_account_id], g.dest_account_label);
+    const close = () => setConfirmGroup(null);
+    return (
+      <div className="fixed inset-0 flex items-end sm:items-center justify-center" style={{ zIndex: 60, background: "rgba(20, 12, 32, 0.45)" }} onClick={close}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-sent-title"
+          onClick={(e) => e.stopPropagation()}
+          className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl"
+          style={{ background: "var(--color-surface)", color: "var(--color-text)", padding: "22px 20px calc(20px + env(safe-area-inset-bottom, 0px))", boxShadow: "var(--shadow-lg)" }}
+        >
+          <h2 id="confirm-sent-title" style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 700, margin: 0 }}>
+            Did you send exactly {money(g.total)}?
+          </h2>
+          <p style={{ ...mutedText, margin: "8px 0 14px", fontSize: 15 }}>To {destName}</p>
+          {confirmDifferent ? (
+            <>
+              <p style={{ fontSize: 15, lineHeight: 1.5, margin: "0 0 14px" }}>
+                No problem. Close this, tap the amount of each category you sent to change it so the total matches what you sent, then tap Mark as Transferred again.
+              </p>
+              <PrimaryButton onClick={close} className="w-full" style={pairButton}>
+                Got it, I&apos;ll update the amounts
+              </PrimaryButton>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <PrimaryButton
+                onClick={() => {
+                  close();
+                  markGroup(g);
+                }}
+                className="w-full"
+                style={pairButton}
+              >
+                Yes, I sent {money(g.total)}
+              </PrimaryButton>
+              <button
+                type="button"
+                onClick={() => setConfirmDifferent(true)}
+                className="w-full"
+                style={{ ...pairButton, background: "var(--color-surface)", border: "1.5px solid var(--color-accent)", color: "var(--color-accent-700)", cursor: "pointer" }}
+              >
+                I sent a different amount
+              </button>
+              <button type="button" onClick={close} style={{ ...linkButtonStyle, alignSelf: "center", marginTop: 4 }}>
+                Not yet
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderOnTheWay = () => (
     <Card className="p-5" style={{ borderRadius: 24 }}>
       <button
@@ -683,14 +748,18 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
               </div>
               <div style={mutedText}>To {accountLabel(destAccount, line.dest_account_label)}</div>
               <div className="inline-flex items-center gap-1 flex-wrap" style={mutedText}>
-                <Clock size={13} /> Marked as transferred {formatDate(line.confirmed_at)}. Waiting for it to land.
+                <Clock size={13} /> Marked as transferred {formatDate(line.confirmed_at)}.{" "}
+                {destAccount?.hasPlaidConnection
+                  ? `We're watching ${accountLabel(destAccount, line.dest_account_label)} for ${money(line.amount)} to land.`
+                  : "We can't see this account, so this isn't verified automatically. Mark it as landed once you see it."}
                 <button onClick={() => settleLine(line.id)} disabled={busy} style={{ ...linkButtonStyle, marginLeft: 6 }}>
                   It already landed
                 </button>
               </div>
               {line.candidate_transaction_id && line.candidate_amount != null && (
                 <div style={{ ...mutedText, marginTop: 4 }}>
-                  We saw {money(line.candidate_amount)} land in {accountLabel(destAccount, line.dest_account_label)}
+                  <AlertCircle size={13} style={{ display: "inline", verticalAlign: "-2px", marginRight: 4 }} />
+                  This doesn&apos;t match: we saw {money(line.candidate_amount)} land in {accountLabel(destAccount, line.dest_account_label)}
                   {line.candidate_date ? ` on ${line.candidate_date}` : ""}. Is this your {line.label} transfer?{" "}
                   <button onClick={() => candidate(line.id, "confirm")} disabled={busy} style={linkButtonStyle}>
                     Yes, that&apos;s it
@@ -753,26 +822,19 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
               </span>
             </div>
           )}
-          {groups.map(renderGroup)}
-          {pendingDeposits.length > 0 && renderTieOut()}
-
           {pendingDeposits.length > 0 && (
-            <div className="flex sm:justify-end" style={{ marginTop: 12 }}>
-              <PrimaryButton onClick={approveAll} disabled={busyKey === "all"} className="w-full sm:w-auto" style={{ ...smallPrimary, padding: "12px 22px", fontSize: 14 }}>
-                {busyKey === "all" ? "Saving..." : "Approve all splits"}
-              </PrimaryButton>
-            </div>
-          )}
-          {pendingDeposits.length > 0 && (
-            <p style={{ ...mutedText, fontSize: 12, margin: "8px 0 0", textAlign: "right" }}>
-              Approve all splits marks every transfer above as transferred. Use it after you&apos;ve made them in your bank.
+            <p style={{ ...mutedText, margin: "4px 0 0" }}>
+              These amounts come from your splits. Tap any amount to change what you send. Your total updates.
             </p>
           )}
+          {groups.map(renderGroup)}
+          {pendingDeposits.length > 0 && renderTieOut()}
         </Card>
       )}
 
       {onTheWay.length > 0 && renderOnTheWay()}
       {renderSheet()}
+      {renderConfirm()}
     </div>
   );
 }

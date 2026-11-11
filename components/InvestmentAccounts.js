@@ -32,7 +32,7 @@ function futureValue(principal, annualPct, months, monthly) {
   return principal * g + monthly * ((g - 1) / r);
 }
 
-const compact = (v) => (Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`);
+const compact = (v) => (Math.abs(v) >= 1000000 ? `$${(v / 1000000).toFixed(1).replace(/\.0$/, "")}M` : Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`);
 
 function summarize(acct) {
   const months = acct.months || [];
