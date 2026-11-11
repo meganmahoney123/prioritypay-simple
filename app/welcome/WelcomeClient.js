@@ -30,15 +30,15 @@ export default function WelcomeClient() {
       <h1
         style={{
           fontFamily: "var(--font-heading)",
-          fontSize: "clamp(30px, 8vw, 40px)",
+          fontSize: "clamp(26px, 7vw, 34px)",
           fontWeight: 800,
           lineHeight: 1.08,
           letterSpacing: "-0.035em",
           margin: "0 0 14px",
-          maxWidth: "14em",
+          maxWidth: "16em",
         }}
       >
-        Know your split before you spend it
+        Send money to savings, investments, and retirement. BEFORE you spend it.
       </h1>
       <p
         style={{

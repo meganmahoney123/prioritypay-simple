@@ -1009,12 +1009,12 @@ function OnboardingPageInner() {
       <main style={{ flex: 1, maxWidth: 1180, width: "100%", margin: "0 auto", padding: "clamp(40px, 7vw, 88px) clamp(18px, 4vw, 40px) 90px" }}>
         {step === 0 && (
           <div style={{ maxWidth: "44em", margin: "clamp(10px, 6vw, 60px) auto 0", textAlign: "center" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(38px, 7vw, 66px)", fontWeight: 400, lineHeight: 1.02, letterSpacing: "-0.02em", margin: "0 0 26px" }}>
-              Know your split<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> before you spend it.</span>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(34px, 6vw, 56px)", fontWeight: 400, lineHeight: 1.06, letterSpacing: "-0.02em", margin: "0 0 26px" }}>
+              Send money to savings, investments, and retirement.<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> BEFORE you spend it.</span>
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
               Set a percentage of every deposit or owner’s draw for investments, savings, and other accounts. PrioritySave
-              calculates it the moment the money lands (BEFORE you spend it).
+              calculates it the moment the money lands.
             </p>
             <button onClick={next} className="pp-btn pp-btn-primary" style={{ fontSize: 15, padding: "15px 34px" }}>
               Get started &nbsp;→
