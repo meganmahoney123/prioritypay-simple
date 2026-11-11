@@ -277,23 +277,31 @@ function WithdrawalsPageInner() {
                 />
               </div>
             ) : matchedTxnId ? (
-              <div className="text-xs p-3 flex items-center justify-between gap-2" style={bloomNoticeCardStyle()}>
+              <div
+                className="flex items-center justify-between gap-3 flex-wrap"
+                style={{ padding: "14px 16px", borderRadius: 16, border: "2.5px solid #4E22B8", background: "#EDE6FF" }}
+              >
                 <span>
-                  Matched: <span style={{ fontWeight: 600 }}>{description}</span>, {currency(Number(amount) || 0)} on{" "}
-                  {formatDate(occurredAt)}
+                  <span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: "#4E22B8" }}>SELECTED CHARGE</span>
+                  <span style={{ display: "block", fontSize: 17, fontWeight: 700, color: "#241337" }}>
+                    {description} · {formatDate(occurredAt)}
+                  </span>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMatchedTxnId("");
-                    setAmount("");
-                    setDescription("");
-                  }}
-                  className="underline shrink-0"
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "inherit" }}
-                >
-                  Change
-                </button>
+                <span className="flex items-center gap-4">
+                  <span className="font-mono" style={{ fontSize: 22, fontWeight: 600, color: "#241337" }}>{currency(Number(amount) || 0)}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMatchedTxnId("");
+                      setAmount("");
+                      setDescription("");
+                    }}
+                    className="underline shrink-0"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#4E22B8", fontWeight: 700, minHeight: 44 }}
+                  >
+                    Change
+                  </button>
+                </span>
               </div>
             ) : (
               <>
@@ -303,7 +311,8 @@ function WithdrawalsPageInner() {
                     value={cardSearchQuery}
                     onChange={(e) => setCardSearchQuery(e.target.value)}
                     placeholder="Search by merchant name…"
-                    className="w-full text-xs border border-neutral-200 rounded-lg px-2.5 py-2 mb-2"
+                    className="w-full mb-3"
+                    style={{ minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 16, color: "#241337" }}
                   />
                 )}
                 {Object.keys(groupedCardTxns).length === 0 ? (
@@ -313,27 +322,36 @@ function WithdrawalsPageInner() {
                       : "No unmatched card activity found. It may already be logged, or hasn't synced yet."}
                   </p>
                 ) : (
-              <div className="max-h-64 overflow-y-auto space-y-3 border border-[var(--color-divider)] rounded-xl p-3">
+              <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
                 {Object.entries(groupedCardTxns).map(([group, txns]) => (
                   <div key={group}>
-                    <div className="text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: "var(--color-neutral-700)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3B1C7A", marginBottom: 8 }}>
                       {group}
                     </div>
-                    <div className="space-y-1">
-                      {txns.map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => pickCardTxn(t)}
-                          className="w-full flex items-center justify-between gap-2 text-xs text-left px-2.5 py-2 rounded-lg hover:bg-[var(--color-neutral-100)]"
-                          style={{ border: "1px solid var(--color-divider)" }}
-                        >
-                          <span className="truncate">
-                            {t.name} <span style={{ color: "var(--color-neutral-700)" }}>· {formatDate(t.txnDate)}</span>
-                          </span>
-                          <span className="font-mono shrink-0">{currency(t.amount)}</span>
-                        </button>
-                      ))}
+                    <div className="flex flex-col gap-2.5">
+                      {txns.map((t) => {
+                        const [, mm, dd] = String(t.txnDate).slice(0, 10).split("-");
+                        const mon = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][Number(mm) - 1] || "";
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => pickCardTxn(t)}
+                            className="w-full flex items-center gap-4 text-left"
+                            style={{ minHeight: 64, padding: "8px 16px", borderRadius: 16, border: "1.5px solid #D9C9FF", background: "#fff", color: "#241337" }}
+                          >
+                            <span
+                              className="flex flex-col items-center justify-center shrink-0"
+                              style={{ width: 52, height: 48, borderRadius: 12, background: "#EDE6FF", color: "#3B1C7A" }}
+                            >
+                              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em" }}>{mon}</span>
+                              <span style={{ fontSize: 19, fontWeight: 800, lineHeight: 1 }}>{Number(dd)}</span>
+                            </span>
+                            <span className="flex-1 min-w-0 truncate" style={{ fontSize: 17, fontWeight: 700 }}>{t.name}</span>
+                            <span className="font-mono shrink-0" style={{ fontSize: 18, fontWeight: 600 }}>{currency(t.amount)}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -344,6 +362,8 @@ function WithdrawalsPageInner() {
           </div>
         )}
 
+        {sourceType === "cash" && (
+          <>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <label className="text-xs">
             <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>Amount</span>
@@ -379,6 +399,9 @@ function WithdrawalsPageInner() {
             className="w-full text-sm border border-neutral-200 rounded-lg px-2.5 py-2"
           />
         </label>
+
+          </>
+        )}
 
         <label className="text-xs block mb-2">
           <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>What category did this come out of?</span>
