@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton } from "@/components/ui";
 import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
 import { cancelLinkFor } from "@/lib/cancelLinks";
-import { COMMON_BILLS } from "@/lib/commonBills";
 import { FREQUENCIES, frequencyLabel, occurrencesBetween, upcoming, toIso, parseIso } from "@/lib/bills";
 
 const muted = "color-mix(in srgb, var(--color-text) 68%, transparent)";
@@ -211,56 +210,137 @@ function SuggestionCard({ s, onYes, onNo, busy }) {
   );
 }
 
-function CommonBills({ onPick, suggestions = [], onYes, onNo, busy }) {
+function Suggestions({ suggestions = [], onYes, onNo, busy }) {
+  if (!suggestions.length) return null;
   return (
-    <div style={{ marginTop: 14 }}>
-      {suggestions.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>Found in your past charges</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {suggestions.map((s) => <SuggestionCard key={s.id} s={s} onYes={onYes} onNo={onNo} busy={busy} />)}
-          </div>
-        </div>
-      )}
-      <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>Common bills that are easy to miss</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {COMMON_BILLS.map((c) => (
-          <button
-            key={c.name}
-            type="button"
-            onClick={() => onPick(c)}
-            style={{ fontFamily: "var(--font-body)", fontSize: 13.5, fontWeight: 700, cursor: "pointer", padding: "6px 12px", borderRadius: 999, border: "1.5px solid color-mix(in srgb, var(--color-accent) 40%, white)", background: "#fff", color: "var(--color-text)" }}
-          >
-            + {c.name} · {frequencyLabel(c.frequency).toLowerCase()}
-          </button>
-        ))}
+    <div style={{ marginTop: 14, marginBottom: 4 }}>
+      <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>Found in your past charges</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {suggestions.map((s) => <SuggestionCard key={s.id} s={s} onYes={onYes} onNo={onNo} busy={busy} />)}
       </div>
     </div>
   );
 }
 
-function AddForm({ accounts, onAdd, busy, initial }) {
-  const [f, setF] = useState({ name: initial?.name || "", amount: "", frequency: initial?.frequency || "monthly", nextDue: "", accountId: "", autopay: false });
+const METHODS = ["Zelle", "Venmo", "Cash", "Check", "Other"];
+
+function AddForm({ accounts, onAdd, busy }) {
+  const [mode, setMode] = useState("charge"); // "charge" = shows up on a linked card or bank account
+  const [f, setF] = useState({ name: "", amount: "", frequency: "monthly", nextDue: "", accountId: "", autopay: false, method: "Zelle" });
   const [err, setErr] = useState("");
+  const [merchants, setMerchants] = useState(null); // null = loading
+  const [query, setQuery] = useState("");
+  const [picked, setPicked] = useState(null);
+  const [open, setOpen] = useState(false);
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
-  const field = (label, input) => (
-    <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 150px", minWidth: 0 }}>
+
+  useEffect(() => {
+    if (mode !== "charge" || merchants !== null) return;
+    let live = true;
+    (async () => {
+      try {
+        const r = await fetch("/api/bills/merchants");
+        const d = await r.json().catch(() => ({}));
+        if (live) setMerchants(Array.isArray(d.merchants) ? d.merchants : []);
+      } catch { if (live) setMerchants([]); }
+    })();
+    return () => { live = false; };
+  }, [mode, merchants]);
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = merchants || [];
+    return (q ? list.filter((m) => m.merchant.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)) : list).slice(0, 8);
+  }, [merchants, query]);
+
+  const pick = (m) => {
+    setPicked(m);
+    setQuery(m.merchant);
+    setOpen(false);
+    setF((p) => ({
+      ...p,
+      name: p.name.trim() ? p.name : m.name,
+      amount: String(m.lastAmount),
+      frequency: m.frequency || p.frequency,
+      nextDue: m.nextDue || p.nextDue,
+      accountId: m.accountId || p.accountId,
+    }));
+  };
+
+  const field = (label, input, grow = "1 1 150px") => (
+    <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: grow, minWidth: 0 }}>
       <span style={{ fontSize: 12.5, fontWeight: 700, color: muted }}>{label}</span>
       {input}
     </label>
   );
+  const tab = (value, label) => (
+    <button type="button" onClick={() => setMode(value)} style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 800, cursor: "pointer", padding: "8px 14px", borderRadius: 999, border: "1.5px solid color-mix(in srgb, var(--color-accent) 40%, white)", background: mode === value ? "color-mix(in srgb, var(--color-accent) 14%, white)" : "#fff", color: "var(--color-text)" }}>
+      {label}
+    </button>
+  );
+
   const submit = async () => {
     setErr("");
     if (!f.name.trim()) return setErr("Give this payment a name.");
     if (!(Number(f.amount) > 0)) return setErr("Enter the amount.");
     if (!f.nextDue) return setErr("Choose the next payment date.");
-    const ok = await onAdd({ ...f, amount: Number(f.amount), accountId: f.accountId || null });
-    if (ok) setF({ name: "", amount: "", frequency: "monthly", nextDue: "", accountId: "", autopay: false });
+    const note = mode === "other" ? `Paid by ${f.method}` : picked && picked.merchant !== f.name.trim() ? `Charged as ${picked.merchant}`.slice(0, 120) : null;
+    const ok = await onAdd({ name: f.name, amount: Number(f.amount), frequency: f.frequency, nextDue: f.nextDue, accountId: f.accountId || null, autopay: mode === "other" ? false : f.autopay, note });
+    if (ok) { setF({ name: "", amount: "", frequency: "monthly", nextDue: "", accountId: "", autopay: false, method: "Zelle" }); setPicked(null); setQuery(""); }
   };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {field("What do you call it?", <input value={f.name} onChange={set("name")} placeholder="Renters insurance, rent, trainer" maxLength={80} style={bloomInputStyle({ padding: "10px 12px" })} />, "1 1 100%")}
+      <div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: muted, marginBottom: 6 }}>How is it paid?</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {tab("charge", "Charged to a card or bank account")}
+          {tab("other", "Zelle, Venmo, cash, check or other")}
+        </div>
+      </div>
+
+      {mode === "charge" && (
+        <div style={{ position: "relative" }}>
+          {field("Find the charge (search the company name)", (
+            <input
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setPicked(null); setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              placeholder={merchants === null ? "Loading your charges..." : "Start typing, like Lemonade or GEICO"}
+              style={bloomInputStyle({ padding: "10px 12px" })}
+              aria-label="Search your past charges"
+              autoComplete="off"
+            />
+          ), "1 1 100%")}
+          {open && merchants !== null && (
+            <div style={{ position: "absolute", zIndex: 5, left: 0, right: 0, top: "100%", marginTop: 4, background: "#fff", border: "1.5px solid color-mix(in srgb, var(--color-accent) 40%, white)", borderRadius: 14, maxHeight: 280, overflowY: "auto", boxShadow: "0 8px 24px rgba(40,20,80,0.12)" }}>
+              {matches.length === 0 ? (
+                <div style={{ padding: "12px 14px", fontSize: 13.5, color: muted }}>
+                  {merchants.length === 0 ? "We couldn't find past charges yet. Fill in the details below instead." : "No charge with that name. Fill in the details below instead."}
+                </div>
+              ) : matches.map((m) => (
+                <button key={m.key} type="button" onClick={() => pick(m)} style={{ display: "flex", justifyContent: "space-between", gap: 12, width: "100%", textAlign: "left", fontFamily: "var(--font-body)", cursor: "pointer", padding: "10px 14px", border: "none", borderBottom: "1px solid var(--color-divider)", background: "#fff", color: "var(--color-text)" }}>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ fontWeight: 800, fontSize: 14, display: "block", overflowWrap: "anywhere" }}>{m.merchant}</span>
+                    <span style={{ fontSize: 12.5, color: muted }}>{m.guessed ? `Looks like ${m.name.split(" (")[0].toLowerCase()} · ` : ""}last charged {fmtDate(m.lastDate)}</span>
+                  </span>
+                  <span style={{ ...mono, fontSize: 14, whiteSpace: "nowrap" }}>{currency(m.lastAmount)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {picked && <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>Filled in from your last charge{picked.frequency ? `. It looks like ${frequencyLabel(picked.frequency).toLowerCase()}` : ". We couldn't tell how often, so check below"}.</div>}
+        </div>
+      )}
+
+      {mode === "other" && field("Paid with", (
+        <select value={f.method} onChange={set("method")} style={bloomSelectStyle({ padding: "10px 12px" })}>
+          {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+        </select>
+      ), "1 1 100%")}
+
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-        {field("Name", <input value={f.name} onChange={set("name")} placeholder="Car insurance" maxLength={80} style={bloomInputStyle({ padding: "10px 12px" })} />)}
         {field("Amount ($)", <input value={f.amount} onChange={set("amount")} inputMode="decimal" placeholder="140" style={bloomInputStyle({ padding: "10px 12px" })} />)}
         {field("How often", (
           <select value={f.frequency} onChange={set("frequency")} style={bloomSelectStyle({ padding: "10px 12px" })}>
@@ -268,17 +348,19 @@ function AddForm({ accounts, onAdd, busy, initial }) {
           </select>
         ))}
         {field("Next payment", <input type="date" value={f.nextDue} onChange={set("nextDue")} style={bloomInputStyle({ padding: "10px 12px" })} />)}
-        {field("Paid from", (
+        {field(mode === "other" ? "Money comes from" : "Paid from", (
           <select value={f.accountId} onChange={set("accountId")} style={bloomSelectStyle({ padding: "10px 12px" })}>
             <option value="">Not sure</option>
             {accounts.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
           </select>
         ))}
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
-        <Switch on={f.autopay} onChange={(v) => setF((p) => ({ ...p, autopay: v }))} label="This is on autopay" />
-        This one is on autopay
-      </label>
+      {mode === "charge" && (
+        <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+          <Switch on={f.autopay} onChange={(v) => setF((p) => ({ ...p, autopay: v }))} label="This is on autopay" />
+          This one is on autopay
+        </label>
+      )}
       {err && <div style={{ color: "#B3261E", fontSize: 14 }}>{err}</div>}
       <div><PrimaryButton onClick={submit} disabled={busy}>Add payment</PrimaryButton></div>
     </div>
@@ -297,7 +379,6 @@ export default function BillsPage() {
   const [skipped, setSkipped] = useState(false);
   const [keep, setKeep] = useState({});
   const [showAdd, setShowAdd] = useState(false);
-  const [prefill, setPrefill] = useState(null);
   const [view, setView] = useState("list");
   const [canSeed, setCanSeed] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -485,10 +566,10 @@ export default function BillsPage() {
               </div>
               <OutlineButton small onClick={() => setShowAdd((v) => !v)}>{showAdd ? "Close" : "+ Add a bill"}</OutlineButton>
             </div>
-            <CommonBills suggestions={suggestions} onYes={suggestYes} onNo={suggestNo} busy={busy} onPick={(c) => { setPrefill({ ...c, k: Date.now() }); setShowAdd(true); }} />
+            <Suggestions suggestions={suggestions} onYes={suggestYes} onNo={suggestNo} busy={busy} />
             {showAdd && (
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1.5px solid var(--color-divider)" }}>
-                <AddForm key={prefill?.k || "blank"} initial={prefill} accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) { setShowAdd(false); setPrefill(null); } return ok; }} busy={busy} />
+                <AddForm accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) setShowAdd(false); return ok; }} busy={busy} />
               </div>
             )}
           </Panel>
@@ -526,8 +607,8 @@ export default function BillsPage() {
 
           {showAdd && (
             <Panel>
-              <AddForm key={prefill?.k || "blank"} initial={prefill} accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) { setShowAdd(false); setPrefill(null); } return ok; }} busy={busy} />
-              <CommonBills suggestions={suggestions} onYes={suggestYes} onNo={suggestNo} busy={busy} onPick={(c) => setPrefill({ ...c, k: Date.now() })} />
+              <AddForm accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) setShowAdd(false); return ok; }} busy={busy} />
+              
             </Panel>
           )}
 
