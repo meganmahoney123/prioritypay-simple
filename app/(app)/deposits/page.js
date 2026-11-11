@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import PendingTransfers from "@/components/PendingTransfers";
+import TransferHistory from "@/components/TransferHistory";
 
 // "Split My Deposits": the transfer checklist, on its own tab so it doesn't
 // crowd the Dashboard. The Dashboard shows a notification that links here.
@@ -19,6 +20,7 @@ export default function DepositsPage() {
   return (
     <div className="space-y-4">
       <PendingTransfers showEmpty accounts={accounts} refreshKey={tick} onChanged={() => setTick((t) => t + 1)} />
+      <TransferHistory accounts={accounts} refreshKey={tick} />
     </div>
   );
 }
