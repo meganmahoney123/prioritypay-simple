@@ -82,8 +82,8 @@ const BUSINESS_TYPES = [
 ];
 const HAS_EMPLOYEES_TYPE = "Business Owner (With Employees)";
 const WORK_OPTIONS = [
-  { value: "self_employed", label: "Sole Proprietor", hint: "(Often applicable to freelance, coaching, consulting, or other 1099 work)" },
-  { value: "owns_business", label: "LLC, S-Corp, C-Corp, etc.", hint: "(If you own or co-own a business)" },
+  { value: "self_employed", label: "Self Employed", hint: "(Often applicable to freelance, coaching, consulting, or other 1099 work)" },
+  { value: "owns_business", label: "Business Owner/Partner", hint: "(If you own or co-own a business, such as an LLC, S-corp, C-corp or partnership)" },
   { value: "w2", label: "I have a W-2 job" },
   { value: "retired", label: "Retired" },
   { value: "between", label: "Between jobs or starting something new" },
@@ -158,6 +158,8 @@ function OnboardingPageInner() {
   // have picked something.
   const [workPicks, setWorkPicks] = useState([]);
   const [hasEmployees, setHasEmployees] = useState(null);
+  // Nothing is pre-selected for "How is your business set up?" -- they must pick.
+  const [entityChosen, setEntityChosen] = useState(false);
   // Freelancing or owning a business is what unlocks the business questions.
   const ownsBusiness = workPicks.includes("self_employed") || workPicks.includes("owns_business");
   const typeChosen = workPicks.length > 0;
@@ -221,6 +223,7 @@ function OnboardingPageInner() {
       return rest;
     });
   const changeEntity = (value) => {
+    setEntityChosen(true);
     setEntityType(value);
     setPercent(defaultsFor(businessType, value));
   };
@@ -379,6 +382,7 @@ function OnboardingPageInner() {
       const persona = pr.persona || BUSINESS_TYPES[0];
       setBusinessType(persona);
       setEntityType(pr.entityType || SOLE_PROP);
+      if (pr.entityType) setEntityChosen(true);
       if (pr.minDepositThreshold) setMinDepositThreshold(pr.minDepositThreshold);
       const payroll = pr.retirementProfile?.estimatedEmployeePayroll;
       if (payroll) setEmployeePayroll(String(payroll));
@@ -1050,7 +1054,7 @@ function OnboardingPageInner() {
               {ownsBusiness && (
                 <div>
                   <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
-                    Do you have employees?
+                    Do you have employees? (Other than a spouse or your kids)
                   </label>
                   <div style={{ display: "flex", gap: 10 }}>
                     {[{ value: true, label: "Yes" }, { value: false, label: "No" }].map((opt) => (
@@ -1089,7 +1093,7 @@ function OnboardingPageInner() {
                   <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
                     How is your business set up? Select all that apply.
                   </label>
-                  <EntityPicker value={entityType} onChange={changeEntity} />
+                  <EntityPicker value={entityType} onChange={changeEntity} chosen={entityChosen} />
                   {shortDrawNote(entityType) && (
                     <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "10px 0 0" }}>
                       {shortDrawNote(entityType)}
@@ -1101,7 +1105,7 @@ function OnboardingPageInner() {
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} disabled={!typeChosen || (ownsBusiness && hasEmployees === null)} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={next} disabled={!typeChosen || (ownsBusiness && (hasEmployees === null || !entityChosen))} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}
