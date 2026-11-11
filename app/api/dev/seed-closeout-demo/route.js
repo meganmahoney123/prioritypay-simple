@@ -275,6 +275,8 @@ export async function POST() {
       add("inc-biz1", 3, "Client Payment", 3400, "in", { suggested_category: "income", confirmed_category: "income", business_id: soleProp.id });
       add("inc-biz2", 17, "Client Payment", 2800, "in", { suggested_category: "income", confirmed_category: "income", business_id: soleProp.id });
       if (llc) add("inc-draw", 15, `${llc.name} Owner Draw`, 3000, "in", { suggested_category: "income", confirmed_category: "income", business_id: llc.id });
+      add("inc-w2", 1, "Acme Corp Payroll", 3200, "in", { suggested_category: "w2_income", confirmed_category: "w2_income" });
+      add("inc-misc", 22, "Venmo from Sam", 85, "in", { suggested_category: "misc_income", confirmed_category: "misc_income" });
       [["div1", 6, "Vanguard Dividend", 112], ["int1", 9, "Schwab Interest", 88], ["div2", 14, "Fidelity Dividend", 142], ["int2", 30, "Ally Savings Interest", 70]].forEach(([k, d, n, a]) =>
         add(k, d, n, a, "in", { suggested_category: "investment_income", confirmed_category: "investment_income" })
       );
