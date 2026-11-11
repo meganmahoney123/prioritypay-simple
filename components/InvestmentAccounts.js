@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import Link from "next/link";
 import { Card } from "@/components/ui";
 import { currency } from "@/lib/allocations";
 
@@ -16,7 +16,11 @@ import { currency } from "@/lib/allocations";
 // or they contributed nothing last month, there's no meaningful average to
 // start from, so the sliders start at an example amount instead.
 const PLACEHOLDER = { Retirement: 500, "Retirement (Side Income)": 500, Investments: 300 };
-const COLORS = ["#2A1550", "#6D3BE0", "#A98CF2", "#C4A9FA", "#3B1C7A"];
+const COLORS = ["#2A1550", "#6D3BE0", "#A98CF2", "#C4A9FA", "#3B1C7A", "#8E63EA"];
+const KIND = { Investments: "INVESTMENTS", Retirement: "RETIREMENT", "Retirement (Side Income)": "RETIREMENT · SIDE INCOME" };
+const INK = "#241337";
+const MUTED = "#5D5372";
+const ACCENT = "#4E22B8";
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const monthLabel = (key) => {
@@ -32,7 +36,23 @@ function futureValue(principal, annualPct, months, monthly) {
   return principal * g + monthly * ((g - 1) / r);
 }
 
-const compact = (v) => (Math.abs(v) >= 1000000 ? `$${(v / 1000000).toFixed(1).replace(/\.0$/, "")}M` : Math.abs(v) >= 1000 ? `$${Math.round(v / 1000)}k` : `$${Math.round(v)}`);
+
+// Shown to people who haven't set up any investing accounts yet, so they can
+// see what this page looks like once they have (clearly labeled as sample).
+function sampleData() {
+  const now = new Date();
+  const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const series = (vals) =>
+    vals.map((amount, i) => ({ month: key(new Date(now.getFullYear(), now.getMonth() - (vals.length - 1 - i), 1)), amount }));
+  return {
+    thisMonth: key(now),
+    accounts: [
+      { label: "Solo 401(k)", group: "Retirement", balance: 62400, months: series([1100, 1200, 1200, 1150, 1200, 1250, 1200, 1200, 1300, 1200, 1200, 1200, 650]) },
+      { label: "Brokerage", group: "Investments", balance: 48900, months: series([500, 400, 500, 500, 0, 500, 500, 600, 500, 500, 500, 500, 250]) },
+      { label: "Roth IRA", group: "Retirement", balance: 21300, months: series([500, 500, 0, 500, 500, 500, 500, 500, 500, 500, 500, 500, 250]) },
+    ],
+  };
+}
 
 function summarize(acct) {
   const months = acct.months || [];
@@ -56,14 +76,22 @@ export default function InvestmentAccounts() {
   const [years, setYears] = useState(20);
   const [ret, setRet] = useState(7);
   const [contrib, setContrib] = useState({});
+  const [isSample, setIsSample] = useState(false);
 
   useEffect(() => {
     fetch("/api/allocations/investment-accounts")
       .then((r) => r.json())
       .then((d) => {
-        const list = d.accounts || [];
+        let list = d.accounts || [];
+        let month = d.thisMonth || "";
+        if (!list.length) {
+          const sample = sampleData();
+          list = sample.accounts;
+          month = sample.thisMonth;
+          setIsSample(true);
+        }
         setAccounts(list);
-        setThisMonth(d.thisMonth || "");
+        setThisMonth(month);
         const init = {};
         list.forEach((a) => {
           init[a.label] = summarize(a).start;
@@ -101,107 +129,194 @@ export default function InvestmentAccounts() {
   if (loading) return <Card className="p-5 text-sm">Loading your accounts…</Card>;
   if (!rows.length) return null;
 
-  const totalBalance = chosen.reduce((s, a) => s + Math.max(0, a.balance), 0);
+  const allBalance = rows.reduce((s, a) => s + Math.max(0, a.balance), 0);
   const finalTotal = chartData.length ? chartData[chartData.length - 1].Total : 0;
-  const multi = chosen.length > 1;
-  const tickEvery = Math.max(1, Math.round(years / 8));
+  const multi = sel === "all" && rows.length > 1;
+  const selName = sel === "all" ? "ALL ACCOUNTS" : String(sel).toUpperCase();
+
+  // Chart geometry (same layout as the approved mockup).
+  const rawMax = Math.max(1, ...chartData.map((d) => d.Total));
+  const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
+  const maxV = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].map((m) => m * mag).find((m) => m >= rawMax) || rawMax;
+  const X0 = 104, X1 = 872, Y0 = 310, Y1 = 20;
+  const px = (i) => X0 + (i / years) * (X1 - X0);
+  const py = (v) => Y0 - (v / maxV) * (Y0 - Y1);
+  const pathOf = (key) => chartData.map((d, i) => `${i === 0 ? "M" : "L"}${px(i).toFixed(1)} ${py(d[key]).toFixed(1)}`).join(" ");
+  const step = years <= 10 ? 1 : years <= 20 ? 2 : 5;
+  const tickYears = [];
+  for (let y = 0; y <= years; y += step) tickYears.push(y);
+  if (tickYears[tickYears.length - 1] !== years && years - tickYears[tickYears.length - 1] >= step / 2) tickYears.push(years);
+  const lineDefs = multi
+    ? rows.map((a) => ({ key: a.label, color: a.color, w: 2 })).concat([{ key: "Total", color: INK, w: 4 }])
+    : [{ key: chosen[0].label, color: chosen[0].color, w: 4 }];
+  const legend = multi
+    ? rows.map((a) => ({ color: a.color, label: a.label })).concat([{ color: INK, label: "All accounts combined" }])
+    : [{ color: chosen[0].color, label: chosen[0].label }];
+  const monoStyle = { fontFamily: "var(--font-mono)" };
 
   return (
     <div className="space-y-6">
-      <Card className="p-5 space-y-4">
-        <div>
-          <div className="text-xs font-bold tracking-widest" style={{ color: "var(--color-accent-800)" }}>
-            YOUR ACCOUNTS
-          </div>
-          <div className="text-sm" style={{ color: "var(--color-text-muted, #5D5372)" }}>
-            Pick an account to project it alone, or see everything combined.
-          </div>
+      <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5, color: MUTED, maxWidth: 760 }}>
+        All of your investing accounts in one place. Pick one account, or see them together, and estimate where they could be in the future.
+      </p>
+
+      {isSample && (
+        <div style={{ background: "#EDE6FF", border: "1.5px solid #6D3BE0", borderRadius: 20, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+          <b style={{ fontSize: 16 }}>This is sample data</b>
+          <span style={{ fontSize: 15, lineHeight: 1.5, color: INK }}>
+            You haven&apos;t set up an investing account yet. Connect a Solo 401(k), Roth IRA, brokerage or other account and this page fills in with your real balances,
+            contributions and projections. Your accounts also show up on your Dashboard.
+          </span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {[{ label: "all", name: "All accounts" }]
-            .concat(rows.map((r) => ({ label: r.label, name: r.label })))
-            .map((o) => (
+      )}
+      {!isSample && rows.length === 1 && (
+        <div style={{ fontSize: 14, color: MUTED }}>
+          Only one investing account so far. Add another, such as a Roth IRA or brokerage, to see them side by side.
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16 }}>
+        {[{ label: "all", kind: "ALL ACCOUNTS", name: "Everything combined", balance: allBalance, color: INK, sub: `${rows.length} account${rows.length === 1 ? "" : "s"}` }]
+          .concat(
+            rows.map((r) => ({
+              label: r.label,
+              kind: KIND[r.group] || String(r.group || "").toUpperCase(),
+              name: r.label,
+              balance: Math.max(0, r.balance),
+              color: r.color,
+              sub: isSample ? "Sample" : r.s.allTimeAvg > 0 ? `Avg ${currency(r.s.allTimeAvg)} a month via PrioritySave` : "No PrioritySave contributions yet",
+            }))
+          )
+          .map((c) => {
+            const on = sel === c.label;
+            return (
               <button
-                key={o.label}
+                key={c.label}
                 type="button"
-                onClick={() => setSel(o.label)}
-                aria-pressed={sel === o.label}
-                className="rounded-full px-4 text-sm font-semibold"
+                onClick={() => setSel(c.label)}
+                aria-pressed={on}
                 style={{
-                  minHeight: 44,
-                  border: "1.5px solid var(--color-accent-600, #6D3BE0)",
-                  background: sel === o.label ? "var(--color-accent-600, #6D3BE0)" : "var(--color-surface, #fff)",
-                  color: sel === o.label ? "#fff" : "var(--color-accent-800, #4E22B8)",
+                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, textAlign: "left", padding: 18, borderRadius: 20,
+                  cursor: "pointer", color: INK, minHeight: 44,
+                  border: on ? "2.5px solid #6D3BE0" : "1.5px solid #D9C9FF", background: on ? "#EDE6FF" : "#fff",
                 }}
               >
-                {o.name}
+                <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: ACCENT }}>{c.kind}</span>
+                  <span style={{ width: 12, height: 12, borderRadius: 4, background: c.color, flex: "none" }} />
+                </span>
+                <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.25 }}>{c.name}</span>
+                <span style={{ ...monoStyle, fontSize: 26, fontWeight: 600 }}>{currency(c.balance)}</span>
+                <span style={{ fontSize: 13, color: MUTED }}>{c.sub}</span>
               </button>
-            ))}
-        </div>
-        <div className="text-sm">
-          <span style={{ color: "var(--color-text-muted, #5D5372)" }}>{sel === "all" ? "Combined balance" : "Balance"}: </span>
-          <b style={{ fontFamily: "var(--font-mono)" }}>{currency(totalBalance)}</b>
+            );
+          })}
+      </div>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        {[
+          { href: "/accounts", label: isSample ? "+ Connect your first account" : "+ Connect an account" },
+          { href: "/splits", label: "+ Add an account manually (trust, SEP IRA, other)" },
+        ].map((b) => (
+          <Link
+            key={b.href}
+            href={b.href}
+            style={{ display: "inline-flex", alignItems: "center", minHeight: 46, padding: "0 22px", borderRadius: 999, border: "1.5px dashed #6D3BE0", background: "#fff", color: ACCENT, fontSize: 15, fontWeight: 700 }}
+          >
+            {b.label}
+          </Link>
+        ))}
+      </div>
+
+      <Card className="p-5 space-y-5">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: ACCENT }}>PROJECTION ESTIMATOR · {selName}</div>
+            <div style={{ fontSize: 15, color: MUTED }}>In {years} years at {ret}% a year, this could grow to about</div>
+          </div>
+          <div style={{ ...monoStyle, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{currency(finalTotal)}</div>
         </div>
 
-        <div className="space-y-4">
+        <svg viewBox="0 0 900 380" width="100%" role="img" aria-label="Projected balance growth over time, by year" style={{ display: "block" }}>
+          {tickYears.map((y) => (
+            <line key={`v${y}`} x1={px(y)} y1="20" x2={px(y)} y2="310" stroke="#F0E9FF" strokeWidth="1" />
+          ))}
+          {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+            <g key={`g${f}`}>
+              <line x1="104" y1={py(maxV * f)} x2="880" y2={py(maxV * f)} stroke="#DCCFF7" strokeWidth="1" />
+              <text x="94" y={py(maxV * f) + 5} textAnchor="end" fontSize="14" fontWeight="600" fill="#3B1C7A" fontFamily="IBM Plex Mono, monospace">
+                {currency(maxV * f)}
+              </text>
+            </g>
+          ))}
+          {tickYears.map((y) => (
+            <g key={`t${y}`}>
+              <line x1={px(y)} y1="310" x2={px(y)} y2="316" stroke="#3B1C7A" strokeWidth="1.5" />
+              <text x={px(y)} y="334" textAnchor="middle" fontSize="14" fontWeight="700" fill={INK}>{y === 0 ? "Today" : `Year ${y}`}</text>
+              <text x={px(y)} y="352" textAnchor="middle" fontSize="12" fill={MUTED}>{startYear + y}</text>
+            </g>
+          ))}
+          <line x1="104" y1="310" x2="880" y2="310" stroke="#3B1C7A" strokeWidth="1.5" />
+          <line x1="104" y1="20" x2="104" y2="310" stroke="#3B1C7A" strokeWidth="1.5" />
+          {lineDefs.map((l) => (
+            <path key={l.key} d={pathOf(l.key)} fill="none" stroke={l.color} strokeWidth={l.w} strokeLinejoin="round" strokeLinecap="round" />
+          ))}
+          {lineDefs.map((l) => (
+            <circle key={`e${l.key}`} cx={px(years)} cy={py(chartData[chartData.length - 1][l.key])} r="5" fill={l.color} />
+          ))}
+          <text x="492" y="374" textAnchor="middle" fontSize="13" fontWeight="600" fill={MUTED}>Years from today</text>
+        </svg>
+
+        <div style={{ display: "flex", gap: 22, flexWrap: "wrap", fontSize: 14, color: INK }}>
+          {legend.map((k) => (
+            <span key={k.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 14, height: 4, borderRadius: 2, background: k.color }} />
+              {k.label}
+            </span>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "22px 40px", borderTop: "1px solid #E3D8FA", paddingTop: 22 }}>
           <label className="block text-sm font-semibold">
             <span className="flex justify-between">
-              <span>Years to project</span>
-              <b style={{ fontFamily: "var(--font-mono)" }}>{years}</b>
+              <span>Years to grow</span>
+              <b style={monoStyle}>{years}</b>
             </span>
-            <input type="range" min="5" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full" />
+            <input type="range" min="5" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full" style={{ accentColor: "#6D3BE0" }} />
           </label>
           <label className="block text-sm font-semibold">
             <span className="flex justify-between">
-              <span>Estimated yearly return</span>
-              <b style={{ fontFamily: "var(--font-mono)" }}>{ret}%</b>
+              <span>Average yearly return</span>
+              <b style={monoStyle}>{ret}%</b>
             </span>
-            <input type="range" min="1" max="12" step="0.5" value={ret} onChange={(e) => setRet(Number(e.target.value))} className="w-full" />
+            <input type="range" min="1" max="12" step="0.5" value={ret} onChange={(e) => setRet(Number(e.target.value))} className="w-full" style={{ accentColor: "#6D3BE0" }} />
           </label>
           {chosen.map((a) => (
             <label key={a.label} className="block text-sm font-semibold">
               <span className="flex justify-between gap-3">
                 <span>
                   {a.label}: monthly contribution{" "}
-                  <span className="font-normal" style={{ color: "var(--color-text-muted, #5D5372)" }}>
+                  <span className="font-normal" style={{ color: MUTED, fontSize: 13 }}>
                     ({a.s.hasHistory ? `your PrioritySave average: ${currency(a.s.allTimeAvg)}` : "example amount until you have history"})
                   </span>
                 </span>
-                <b style={{ fontFamily: "var(--font-mono)" }}>{currency(contrib[a.label] || 0)}</b>
+                <b style={monoStyle}>{currency(contrib[a.label] || 0)}</b>
               </span>
               <input
                 type="range"
                 min="0"
-                max={Math.max(3000, (a.s.start || 0) * 3)}
+                max={Math.max(3000, Math.ceil(((a.s.start || 0) * 3) / 50) * 50)}
                 step="50"
                 value={contrib[a.label] || 0}
                 onChange={(e) => setContrib((c) => ({ ...c, [a.label]: Number(e.target.value) }))}
                 className="w-full"
+                style={{ accentColor: "#6D3BE0" }}
               />
             </label>
           ))}
         </div>
-
-        <div className="text-sm">
-          In {years} years, an estimated <b style={{ fontFamily: "var(--font-mono)" }}>{currency(finalTotal)}</b>
-        </div>
-        <div style={{ width: "100%", height: 300 }}>
-          <ResponsiveContainer>
-            <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E3D8FA" />
-              <XAxis dataKey="year" interval={tickEvery - 1} tick={{ fontSize: 12 }} />
-              <YAxis tickFormatter={compact} tick={{ fontSize: 12 }} width={56} />
-              <Tooltip formatter={(v) => currency(v)} />
-              {multi && <Legend />}
-              {chosen.map((a) => (
-                <Line key={a.label} type="monotone" dataKey={a.label} stroke={a.color} strokeWidth={2} dot={false} />
-              ))}
-              {multi && <Line type="monotone" dataKey="Total" stroke="#241337" strokeWidth={3} strokeDasharray="6 4" dot={false} />}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="text-xs" style={{ color: "var(--color-text-muted, #5D5372)" }}>
-          This is an estimate, not a promise. Real returns change from year to year, and taxes and fees are not included.
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: MUTED }}>
+          This is an estimate, not a promise. Real returns change from year to year, and taxes and fees are not included. Roth IRA contributions have income limits and a yearly cap; check the current rules or ask your CPA.
         </div>
       </Card>
 
@@ -260,13 +375,34 @@ export default function InvestmentAccounts() {
                     </>
                   )}
                   <div className="text-xs" style={{ color: "var(--color-text-muted, #5D5372)" }}>
-                    Only contributions made through PrioritySave transfers are counted here.
+                    {isSample ? "Sample numbers. Your real contributions will show here." : "Only contributions made through PrioritySave transfers are counted here."}
                   </div>
                 </div>
               )}
             </div>
           );
         })}
+      </Card>
+
+      <Card className="p-5 space-y-1">
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: ACCENT }}>IN {years} YEARS, BY ACCOUNT</div>
+        {rows.map((a) => (
+          <div key={a.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #EFE8FF", fontSize: 16 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 12, height: 12, borderRadius: 4, background: a.color }} />
+              {a.label}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+              {currency(futureValue(Math.max(0, a.balance), ret, years * 12, contrib[a.label] || 0))}
+            </span>
+          </div>
+        ))}
+        <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, fontSize: 17, fontWeight: 700 }}>
+          <span>Total</span>
+          <span style={{ fontFamily: "var(--font-mono)" }}>
+            {currency(rows.reduce((t, a) => t + futureValue(Math.max(0, a.balance), ret, years * 12, contrib[a.label] || 0), 0))}
+          </span>
+        </div>
       </Card>
     </div>
   );

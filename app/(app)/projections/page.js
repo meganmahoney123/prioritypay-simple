@@ -1,6 +1,5 @@
 "use client";
 
-import InvestmentGrowthProjection from "@/components/InvestmentGrowthProjection";
 import InvestmentAccounts from "@/components/InvestmentAccounts";
 
 // Split out of the Dashboard (components/AccountBalances.js's old
@@ -19,7 +18,6 @@ export default function ProjectionsPage() {
   return (
     <div className="space-y-6" style={{ maxWidth: 900 }}>
       <InvestmentAccounts />
-      <InvestmentGrowthProjection title="Your Investment & Retirement Projections" taxNote />
     </div>
   );
 }
