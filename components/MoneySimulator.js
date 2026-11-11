@@ -40,11 +40,6 @@ export default function MoneySimulator({
   const [income, setIncome] = useState(Math.max(0, Number(initialIncome) || 0));
   const [rows, setRows] = useState(initialRows);
   const [goals, setGoals] = useState(initialGoals);
-  // Each category is set EITHER as a percent OR as a fixed dollar amount (never both at once),
-  // so a fixed dollar amount never has to be entered as "0%".
-  const [modes, setModes] = useState({});
-  const modeOf = (id) => modes[id] || "pct";
-
   const totalPct = useMemo(() => rows.reduce((s, r) => s + (Number(r.pct) || 0), 0), [rows]);
   const remainingPct = Math.round((100 - totalPct) * 10) / 10;
 
@@ -60,14 +55,7 @@ export default function MoneySimulator({
   const updateRowDollar = (id, dollarValue) => {
     const dollar = Math.max(0, Number(dollarValue) || 0);
     const requestedPct = income > 0 ? Math.round((dollar / income) * 10000) / 100 : 0;
-    updateRow(id, { pct: Math.min(requestedPct, maxPctForRow(id)), usd: dollar });
-  };
-  const setMode = (id, mode) => {
-    setModes((m) => ({ ...m, [id]: mode }));
-    if (mode === "usd") {
-      const row = rows.find((r) => r.id === id);
-      updateRow(id, { usd: Math.round(((income * (row?.pct || 0)) / 100) * 100) / 100 });
-    }
+    updateRow(id, { pct: Math.min(requestedPct, maxPctForRow(id)) });
   };
   const removeRow = (id) => setRows((prev) => prev.filter((r) => r.id !== id));
   const addRow = () =>
@@ -142,17 +130,6 @@ export default function MoneySimulator({
               // never show a leading zero.
               e.target.value = String(num);
               setIncome(num);
-              // Rows set in dollars keep their dollar amount when income changes.
-              setRows((prev) => {
-                let used = prev.filter((r) => modes[r.id] !== "usd").reduce((sum, r) => sum + (Number(r.pct) || 0), 0);
-                return prev.map((r) => {
-                  if (modes[r.id] !== "usd" || r.usd == null) return r;
-                  const want = num > 0 ? Math.round((r.usd / num) * 10000) / 100 : 0;
-                  const pct = Math.max(0, Math.min(want, Math.round((100 - used) * 100) / 100));
-                  used += pct;
-                  return { ...r, pct };
-                });
-              });
             }}
             style={bloomInputStyle({ width: 130, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600 })}
           />
@@ -216,56 +193,54 @@ export default function MoneySimulator({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="space-y-2.5">
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0,1fr) 84px 112px 20px",
+                gap: 8,
+                alignItems: "center",
+                padding: "10px 14px",
+                background: "#EDE6FF",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#4E22B8",
+              }}
+            >
+              <span>Category</span>
+              <span style={{ textAlign: "right", paddingRight: 18 }}>Percent</span>
+              <span style={{ textAlign: "right" }}>Per month</span>
+              <span />
+            </div>
             {rows.map((r) => (
-              <Card key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", flexWrap: "wrap" }}>
-                <span style={{ width: 12, height: 12, borderRadius: "50%", background: dotColorFor(r.id), flex: "none" }} />
-                {r.custom ? (
-                  <input
-                    value={r.label}
-                    onChange={(e) => updateRow(r.id, { label: e.target.value })}
-                    style={bloomInputStyle({ flex: "1 1 170px", minWidth: 120, fontSize: 15, fontWeight: 700 })}
-                  />
-                ) : (
-                  <span style={{ flex: "1 1 170px", minWidth: 120, fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{r.label}</span>
-                    {r.fixed && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 800,
-                          letterSpacing: "0.08em",
-                          textTransform: "uppercase",
-                          color: "var(--color-accent-700)",
-                          background: "var(--color-accent-200)",
-                          borderRadius: 999,
-                          padding: "2px 8px",
-                        }}
-                      >
-                        fixed
-                      </span>
-                    )}
-                  </span>
-                )}
-                <div role="group" aria-label={`${r.label} amount type`} style={{ display: "flex", border: "2px solid #6D3BE0", borderRadius: 12, overflow: "hidden", flex: "none" }}>
-                  {[["pct", "%"], ["usd", "$"]].map(([m, sym], i) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setMode(r.id, m)}
-                      aria-pressed={modeOf(r.id) === m}
-                      style={{
-                        width: 44, minHeight: 44, fontSize: 17, fontWeight: 800, cursor: "pointer",
-                        background: modeOf(r.id) === m ? "#4E22B8" : "#fff",
-                        color: modeOf(r.id) === m ? "#fff" : "#4E22B8",
-                        borderLeft: i === 0 ? "none" : "2px solid #6D3BE0",
-                      }}
-                    >
-                      {sym}
-                    </button>
-                  ))}
-                </div>
-                {modeOf(r.id) === "pct" ? (
+              <div
+                key={r.id}
+                style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 84px 112px 20px", gap: 8, alignItems: "center", padding: "10px 14px", borderTop: "1.5px solid #D9C9FF" }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: "50%", background: dotColorFor(r.id), flex: "none" }} />
+                  {r.custom ? (
+                    <input
+                      value={r.label}
+                      onChange={(e) => updateRow(r.id, { label: e.target.value })}
+                      aria-label="Category name"
+                      style={bloomInputStyle({ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700 })}
+                    />
+                  ) : (
+                    <span style={{ minWidth: 0, fontSize: 16, fontWeight: 800, overflowWrap: "anywhere" }}>
+                      {r.label}
+                      {r.fixed && (
+                        <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#4E22B8", background: "#EDE6FF", borderRadius: 999, padding: "2px 7px" }}>
+                          fixed
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </span>
+                {/* Percent and dollars stay linked: change one and the other follows. The symbols sit outside the boxes. */}
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <input
                     type="number"
                     onFocus={(e) => e.target.select()}
@@ -274,37 +249,45 @@ export default function MoneySimulator({
                     step={0.1}
                     value={r.pct}
                     onChange={(e) => updatePct(r.id, e.target.value)}
+                    className="ps-compact"
                     aria-label={`${r.label} percent`}
-                    style={bloomInputStyle({ width: 96, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
+                    style={bloomInputStyle({ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "7px 8px", width: "100%", minWidth: 0 })}
                   />
-                ) : (
+                  <span style={{ fontSize: 18, fontWeight: 700, color: "#4A3F63", fontFamily: "var(--font-mono)" }}>%</span>
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: "#4A3F63", fontFamily: "var(--font-mono)" }}>$</span>
                   <input
                     type="number"
                     onFocus={(e) => e.target.select()}
                     min={0}
                     max={income > 0 ? Math.round(((income * (r.pct + maxPctForRow(r.id))) / 100) * 100) / 100 : undefined}
                     step={0.01}
-                    value={r.usd ?? Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
+                    value={Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
                     onChange={(e) => updateRowDollar(r.id, e.target.value)}
-                    aria-label={`${r.label} dollars`}
-                    style={bloomInputStyle({ width: 120, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
+                    className="ps-compact"
+                    aria-label={`${r.label} dollars per month`}
+                    style={bloomInputStyle({ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "7px 8px", width: "100%", minWidth: 0 })}
                   />
-                )}
-                <span className="text-sm" style={{ color: "#4A3F63", fontWeight: 600, minWidth: 64 }}>
-                  {modeOf(r.id) === "pct"
-                    ? `= ${currency(Math.round(((income * (r.pct || 0)) / 100) * 100) / 100)}`
-                    : `= ${Math.round((r.pct || 0) * 100) / 100}%`}
                 </span>
                 {r.custom ? (
-                  <button onClick={() => removeRow(r.id)} aria-label="Remove category" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
-                    <Trash2 size={15} />
+                  <button onClick={() => removeRow(r.id)} aria-label="Remove category" style={{ background: "transparent", border: 0, color: "#4E22B8", cursor: "pointer", padding: 0 }}>
+                    <Trash2 size={16} />
                   </button>
                 ) : (
-                  <span style={{ width: 15 }} />
+                  <span />
                 )}
-              </Card>
+              </div>
             ))}
-          </div>
+            <div
+              style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 84px 112px 20px", gap: 8, alignItems: "center", padding: "12px 14px", background: "#241337", color: "#fff", fontWeight: 800 }}
+            >
+              <span style={{ fontSize: 16 }}>Total allocated</span>
+              <span style={{ textAlign: "right", paddingRight: 18, fontFamily: "var(--font-mono)", fontSize: 17 }}>{totalPct}%</span>
+              <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 17 }}>{currency(Math.round(((income * totalPct) / 100) * 100) / 100)}</span>
+              <span />
+            </div>
+          </Card>
           <GhostButton onClick={addRow} className="mt-3">
             <Plus size={15} /> Add category
           </GhostButton>

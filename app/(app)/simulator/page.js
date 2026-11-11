@@ -72,7 +72,11 @@ export default function MoneySimulatorDashboardPage() {
           // Fall through to the 0/editable default below.
         }
       }
-      if (!gotConfirmedIncome) setIncomeSource("Enter your typical monthly income. Last month's confirmed net income wasn't available yet.");
+      if (!gotConfirmedIncome) {
+        // Start from an example amount so the dollar column makes sense right away.
+        setIncome(10000);
+        setIncomeSource("Example amount: change it to your typical monthly income. Last month's confirmed net income wasn't available yet.");
+      }
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
