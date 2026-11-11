@@ -125,6 +125,15 @@ function CapCards({ rule, onUpdate }) {
   );
 }
 
+// Self-employed retirement rows (Solo 401k, SEP IRA, custom) are plain
+// categories, not a grouped "Retirement" card. Only groups that contain the W2
+// workplace lineup (payroll-funded 401k/IRA/HSA) stay grouped.
+function flattenSelfEmployedRetirement(sections) {
+  return sections.flatMap((x) =>
+    x.type === "group" && x.group.startsWith("Retirement") && !x.rows.some((r) => isEmployerRetirementRow(r)) ? x.rows.map((row) => ({ type: "row", row })) : [x]
+  );
+}
+
 // One row of the percent-split editor -- a flat category (Tax Reserve,
 // Emergency Fund, OPEX, Savings, anything a person adds) or a sub-account
 // inside a group (Investments, Retirement). `locked` rows are one of the
@@ -158,7 +167,10 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // Investments/Retirement sub-accounts don't get one: those buckets are
   // meant to keep receiving their full percentage indefinitely, not stop
   // once some dollar figure is hit.
-  const isGrouped = rule.group === "Investments" || (rule.group || "").startsWith("Retirement");
+  // Solo 401k, SEP IRA and any other self-employed retirement row are plain
+  // categories now (caps, starting balance, delete, like any other). Only the
+  // W2 workplace lineup (401k/IRA/HSA funded by payroll) stays in its group.
+  const isGrouped = rule.group === "Investments" || ((rule.group || "").startsWith("Retirement") && isEmployerRetirementRow(rule));
   // Collapsed by default (Onboarding Pass 2, Aug 2026 handoff) -- caps are
   // an edge case most people never touch, so hiding them behind a toggle
   // is the main density fix for this step. Local to each row's own render
@@ -316,7 +328,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         {overflowMessage && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "#9C3B22", margin: "8px 0 0" }}>{overflowMessage}</p>
         )}
-        {!hideAccountPicker && (rule.retirementType || (rule.group || "").startsWith("Retirement")) && (
+        {!hideAccountPicker && isEmployerRetirementRow(rule) && (
           <RetirementNote label={rule.label} theme="ledger" isEmployer={isEmployerRetirementRow(rule)} />
         )}
         {!hideAccountPicker && !readOnly && isEmployerRetirementRow(rule) && (
@@ -697,7 +709,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
       </div>
       {overflowMessage && <p className="text-xs text-red-700 mt-1">{overflowMessage}</p>}
-      {rule.retirementType || (rule.group || "").startsWith("Retirement") ? (
+      {isEmployerRetirementRow(rule) ? (
         <RetirementNote label={rule.label} isEmployer={isEmployerRetirementRow(rule)} />
       ) : null}
       {isEmployerRetirementRow(rule) && (
@@ -948,6 +960,11 @@ export default function PercentSplitEditor({
       rest.splice(at, 0, merged);
       sections = rest;
     }
+    // Solo 401k / SEP IRA / other self-employed retirement rows are ordinary
+    // categories, not a "Retirement" box with its own add button and note.
+    // The W2 workplace lineup (payroll-funded 401k/IRA/HSA) and the retirement
+    // picker keep the grouped card.
+    if (!retirementPicker) sections = flattenSelfEmployedRetirement(sections);
     // Percentage-only step: Investments is one plain row (extra accounts can be
     // added later as their own categories), not a group with an add button.
     if (hideAccountPicker || flattenInvestments) {
@@ -1201,7 +1218,7 @@ export default function PercentSplitEditor({
           <span className="text-3xl font-bold text-emerald-700 font-mono">{totalPct}%</span>
         </div>
       )}
-      {percentSections(percent).map((section) =>
+      {flattenSelfEmployedRetirement(percentSections(percent)).map((section) =>
         section.type === "group" ? (
           <div key={section.group} className="border border-neutral-200 rounded-xl p-3 bg-neutral-50">
             <div className="flex items-center justify-between mb-2 px-0.5">
