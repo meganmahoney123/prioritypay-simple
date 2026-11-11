@@ -23,6 +23,9 @@ function SplitRulesPageInner() {
   const [percent, setPercent] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [saved, setSaved] = useState(false);
+  // True from the first edit until a successful save; drives the bottom save bar.
+  const [dirty, setDirty] = useState(false);
+  const markDirty = () => { setSaved(false); setDirty(true); };
   const [entityType, setEntityType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState({});
@@ -65,7 +68,7 @@ function SplitRulesPageInner() {
       // hint what to set up. These aren't saved until the user hits Save
       // or connects an account on a row, exactly like a fresh onboarding.
       setPercent(simmed || (savedPercent && savedPercent.length ? savedPercent : getDefaultSplitRules(userPersona).percent));
-      if (simmed) setSaved(false);
+      if (simmed) markDirty();
       setAccounts(accountsRes.accounts || []);
       setLoading(false);
     })();
@@ -124,14 +127,15 @@ function SplitRulesPageInner() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.error) {
       setSaveError(data.error || "Couldn't save, please try again.");
-      setSaved(false);
+      markDirty();
       return;
     }
     setSaved(true);
+    setDirty(false);
   };
 
   const updatePercent = (id, patch) => {
-    setSaved(false);
+    markDirty();
     setPercent((prev) => {
       if (patch.pct !== undefined) {
         const roomLeft = maxAllowedPct(prev, id);
@@ -156,11 +160,11 @@ function SplitRulesPageInner() {
     });
   };
   const addSubAccount = (group) => {
-    setSaved(false);
+    markDirty();
     setPercent((prev) => [...prev, newSubAccountRow(group, prev.map((r) => r.color))]);
   };
   const removeRow = (id) => {
-    setSaved(false);
+    markDirty();
     setPercent((prev) => {
       const index = prev.findIndex((r) => r.id === id);
       if (index === -1) return prev;
@@ -180,14 +184,14 @@ function SplitRulesPageInner() {
   const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
 
   const addPercent = () => {
-    setSaved(false);
+    markDirty();
     setPercent((prev) => [
       ...prev,
       { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null },
     ]);
   };
   const addSuggested = (suggestion) => {
-    setSaved(false);
+    markDirty();
     // Suggestions carry a static `color` for their own preview swatch, but
     // that color can already be in use by one of this person's other rows
     // (or by a previous suggestion) -- always re-pick a free one at the
@@ -211,7 +215,7 @@ function SplitRulesPageInner() {
     const unconnected = percent.filter((r) => Number(r.pct) > 0 && !r.accountId);
     if (unconnected.length > 0) {
       const names = unconnected.map((r) => r.label).join(", ");
-      setSaved(false);
+      markDirty();
       setSaveError(
         `Connect a bank account to ${names} before saving. Every category with a percentage needs an account to send money to.`
       );
@@ -256,47 +260,6 @@ function SplitRulesPageInner() {
 
   return (
     <div className="space-y-6" style={{ maxWidth: 780 }}>
-      {/* Megan's own feedback after a first real session on this page --
-          the bottom Save button (still there below, unchanged) was easy
-          to miss entirely, and it wasn't obvious that nothing typed above
-          is actually saved until it's clicked. This bar puts the same
-          Save action right at the top AND keeps it pinned in view while
-          scrolling, with that "not saved yet" caveat spelled out, so it's
-          impossible to lose track of. `top` is measured live off
-          AppShell's own sticky header (see the stickyTop effect above)
-          rather than a hardcoded guess, since that header's height
-          actually varies by viewport width. */}
-      <div
-        style={{
-          position: "sticky",
-          top: stickyTop,
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "8px 16px",
-          margin: "0 -4px",
-          padding: "12px 16px",
-          // Solid rather than translucent+blur -- see the matching note
-          // on AppShell's header style for why (WKWebView ghosting
-          // between two stacked blurred sticky elements).
-          background: "#FAF7FD",
-          border: "1px solid var(--color-divider)",
-          borderRadius: "var(--radius-md)",
-        }}
-      >
-        <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-          Nothing below is saved until you hit Save.
-        </span>
-        <span className="flex items-center gap-3 flex-wrap">
-          <PrimaryButton onClick={handleSave} disabled={startingBalanceOverBudget} style={{ borderRadius: "var(--radius-pill)" }}>
-            <Save size={16} /> Save split rules
-          </PrimaryButton>
-          {saved && <span className="text-sm" style={{ color: "#4E22B8", fontFamily: "var(--font-heading)", fontWeight: 700 }}>Saved.</span>}
-        </span>
-      </div>
-
       <div>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px, 3.4vw, 36px)", fontWeight: 800, margin: "0 0 8px" }}>
           Split every {splitUnit(entityType)} by percentage
@@ -405,17 +368,11 @@ function SplitRulesPageInner() {
         </span>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <PrimaryButton onClick={handleSave} disabled={startingBalanceOverBudget} style={{ borderRadius: "var(--radius-pill)" }}>
-          <Save size={16} /> Save split rules
-        </PrimaryButton>
-        {saved && <span className="text-sm" style={{ color: "#4E22B8", fontFamily: "var(--font-heading)", fontWeight: 700 }}>Saved.</span>}
-        {startingBalanceOverBudget && (
-          <span className="text-sm" style={{ color: "#9C3B22", fontFamily: "var(--font-heading)", fontWeight: 600 }}>
-            Fix the over-allocated starting balance above before saving.
-          </span>
-        )}
-      </div>
+      {startingBalanceOverBudget && (
+        <p className="text-sm" style={{ color: "#9C3B22", fontFamily: "var(--font-heading)", fontWeight: 600, margin: 0 }}>
+          Fix the over-allocated starting balance above before saving.
+        </p>
+      )}
 
       {saveError && (
         <div
@@ -436,7 +393,7 @@ function SplitRulesPageInner() {
 
       {lastDeleted && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm pl-4 pr-2 py-2.5 flex items-center gap-3 z-50"
+          className="fixed bottom-32 left-1/2 -translate-x-1/2 text-sm pl-4 pr-2 py-2.5 flex items-center gap-3 z-50"
           style={{ background: "#241634", color: "#FFFFFF", borderRadius: 999, boxShadow: "var(--shadow-lg)" }}
         >
           <span>&quot;{lastDeleted.row.label}&quot; removed.</span>
@@ -445,6 +402,63 @@ function SplitRulesPageInner() {
           </button>
         </div>
       )}
+
+      {/* Save bar: always pinned to the bottom of the screen, so Save is never
+          out of reach. The status line above the button says whether there is
+          anything unsaved. */}
+      <div
+        style={{
+          position: "sticky",
+          bottom: 0,
+          zIndex: 20,
+          margin: 0, borderRadius: "20px 20px 0 0",
+          padding: "12px 16px calc(16px + env(safe-area-inset-bottom, 0px))",
+          background: "#fff",
+          borderTop: "1.5px solid #D9C9FF",
+          boxShadow: "0 -8px 24px rgba(78,34,184,0.10)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
+      >
+        <div
+          role="status"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            fontSize: 14,
+            fontWeight: 700,
+            color: dirty ? "#8A4B00" : saved ? "#4E22B8" : "#4A3F63",
+          }}
+        >
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: dirty ? "#E07A1F" : saved ? "#4E22B8" : "#CBB8F5", display: "inline-block" }} />
+          {dirty ? "Unsaved changes" : saved ? "All changes saved" : "Nothing below is saved until you hit Save."}
+        </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={startingBalanceOverBudget}
+          style={{
+            width: "100%",
+            minHeight: 56,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            background: "#4E22B8",
+            color: "#fff",
+            borderRadius: 16,
+            fontSize: 18,
+            fontWeight: 800,
+            opacity: startingBalanceOverBudget ? 0.45 : 1,
+            cursor: startingBalanceOverBudget ? "not-allowed" : "pointer",
+          }}
+        >
+          <Save size={18} /> Save split rules
+        </button>
+      </div>
     </div>
   );
 }
