@@ -32,6 +32,7 @@ function SplitRulesPageInner() {
   const [undoCount, setUndoCount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [blockedMsg, setBlockedMsg] = useState(null);
+  const [lastError, setLastError] = useState(null);
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const [accounts, setAccounts] = useState([]);
   const [saved, setSaved] = useState(false);
@@ -127,20 +128,27 @@ function SplitRulesPageInner() {
   const saveNow = async (nextPercent) => {
     setSaveError(null);
     setSaving(true);
-    const res = await fetch("/api/split-rules", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ percent: settleCaps(nextPercent) }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setSaving(false);
-    if (!res.ok || data.error) {
-      setSaveError(data.error || "Couldn't save, please try again.");
-      markDirty();
-      return;
+    try {
+      const res = await fetch("/api/split-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ percent: settleCaps(nextPercent) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || "Couldn't save, please try again.");
+      setLastError(null);
+      setSaved(true);
+      setDirty(false);
+    } catch (e) {
+      const msg = e?.message || "Couldn't save, please try again.";
+      setSaveError(msg);
+      // Stays on screen in the bar until a save works, unlike the card above.
+      setLastError(msg);
+      setSaved(false);
+      setDirty(false);
+    } finally {
+      setSaving(false);
     }
-    setSaved(true);
-    setDirty(false);
   };
 
   // Why the current rules can't be saved yet, or null if they can.
@@ -159,25 +167,34 @@ function SplitRulesPageInner() {
     await saveNow(rules);
   };
 
-  // Auto-save: about a second after the last edit, settle it (remember the
+  // Auto-save: about two seconds after the last edit, settle it (remember the
   // version before it for Undo) and save.
   const pendingRef = useRef(null);
   useEffect(() => {
     if (loading || committedRef.current === null) return;
     if (same(percent, committedRef.current)) {
+      // Edited and then changed back to what was already saved: nothing is
+      // waiting any more, so stop showing "Unsaved changes".
       pendingRef.current = null;
+      setDirty(false);
       return;
     }
     markDirty();
     pendingRef.current = percent;
+    // Two seconds after the last keystroke: put the cursor away so the box
+    // shows its new number, then save.
     const t = setTimeout(() => {
+      try {
+        const el = document.activeElement;
+        if (el && el.tagName === "INPUT" && el.closest("[data-rule-id]")) el.blur();
+      } catch {}
       undoStack.current.push(committedRef.current);
       if (undoStack.current.length > 50) undoStack.current.shift();
       committedRef.current = percent;
       pendingRef.current = null;
       setUndoCount(undoStack.current.length);
       trySave(percent);
-    }, 1000);
+    }, 2000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [percent, loading]);
@@ -522,15 +539,20 @@ function SplitRulesPageInner() {
         }}
       >
         {(() => {
-          const problem = blockedMsg || saveError;
-          const state = problem ? "problem" : saving ? "saving" : dirty ? "pending" : saved ? "saved" : "idle";
+          const problem = !saving && !dirty ? blockedMsg || lastError : null;
+          const state = saving ? "saving" : dirty ? "pending" : problem ? "problem" : saved ? "saved" : "idle";
           const color = { problem: "#9C3B22", saving: "#4E22B8", pending: "#8A4B00", saved: "#4E22B8", idle: "#4A3F63" }[state];
           const dot = { problem: "#C2452B", saving: "#9A72F0", pending: "#E07A1F", saved: "#4E22B8", idle: "#CBB8F5" }[state];
-          const text = problem || (saving ? "Saving…" : dirty ? "Saving in a moment…" : saved ? "All changes saved" : "Changes save automatically.");
+          const text = state === "problem" ? problem : saving ? "Saving…" : dirty ? "Unsaved changes" : saved ? "All changes saved" : "Changes save automatically.";
           return (
-            <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 700, color, textAlign: "center" }}>
+            <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, fontSize: 14, fontWeight: 700, color, textAlign: "center" }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: dot, display: "inline-block", flex: "none" }} />
               {text}
+              {state === "problem" && lastError && (
+                <button type="button" onClick={() => trySave(percent)} style={{ textDecoration: "underline", fontWeight: 800, color: "#4E22B8" }}>
+                  Try again
+                </button>
+              )}
             </div>
           );
         })()}
