@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, Bell, ArrowRight } from "lucide-react";
+import { Bell, ArrowRight, ChevronDown, ChevronRight, Home, Download, SlidersHorizontal, LayoutGrid, Target, User, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import { currency } from "@/components/ui";
@@ -23,19 +23,43 @@ import { groupByCategory, buildDeposit } from "@/components/PendingTransfers";
 // Dashboard, and the route itself (app/(app)/history/page.js) is left in
 // place rather than deleted in case it's wanted again later, it's just no
 // longer linked from anywhere in the nav.
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/deposits", label: "Split My Deposits" },
-  { href: "/accounts", label: "Accounts" },
-  { href: "/splits", label: "Income Split Rules" },
-  { href: "/simulator", label: "Savings Planner" },
-  { href: "/transfers", label: "One-Time Transfer" },
-  { href: "/withdrawals", label: "Withdrawals" },
-  { href: "/closeout", label: "Close Out" },
-  { href: "/projections", label: "Investment Projections" },
-  // Hidden for now (quiz not finished): { href: "/advisor", label: "Tax Savings Quiz" },
-  { href: "/settings", label: "Settings" },
-];
+// Menu: three daily pages stand alone, everything else sits in two groups.
+// Manage = things you do. Plan = things you look ahead with. Settings is
+// pinned at the bottom on desktop and lives under the profile circle on
+// phones (bottom tab bar: Home, Deposits, Split rules, Manage, Plan).
+// Bills and Autopays / Savings Goals will be added to these groups when
+// those pages exist.
+const SHOW_TAX_QUIZ_NAV = false; // quiz not finished, same as before
+
+function buildNav({ isW2Only = false, showDebt = false, showBusiness = false } = {}) {
+  const manage = [
+    { href: "/accounts", label: "Accounts" },
+    { href: "/withdrawals", label: "Withdrawals" },
+    { href: "/transfers", label: "One-Time Transfer" },
+    { href: "/closeout", label: isW2Only ? "Month in Review" : "Close Out" },
+  ];
+  if (showBusiness) manage.push({ href: "/business", label: "Business" });
+  const plan = [
+    { href: "/simulator", label: "Savings Calculator" },
+    { href: "/projections", label: "Investment Projections" },
+  ];
+  if (SHOW_TAX_QUIZ_NAV) plan.push({ href: "/advisor", label: "Tax Savings Quiz" });
+  if (showDebt) plan.push({ href: "/debt", label: "Debt Payoff" });
+  return {
+    top: [
+      { href: "/dashboard", label: "Dashboard", tab: "Home", Icon: Home },
+      { href: "/deposits", label: "Split My Deposits", tab: "Deposits", Icon: Download },
+      { href: "/splits", label: "Income Split Rules", tab: "Split rules", Icon: SlidersHorizontal },
+    ],
+    groups: [
+      { key: "manage", label: "Manage", tab: "Manage", Icon: LayoutGrid, items: manage },
+      { key: "plan", label: "Plan", tab: "Plan", Icon: Target, items: plan },
+    ],
+    settings: { href: "/settings", label: "Settings" },
+  };
+}
+
+const isActivePath = (pathname, href) => pathname === href || pathname.startsWith(`${href}/`);
 
 // Business tab hidden for now (Business plan is paused). Flip to true to
 // bring the nav item back for users on the Business plan.
@@ -47,7 +71,8 @@ const TITLES = {
   "/projections": "Investment & Retirement Projections",
   "/accounts": "Linked Accounts",
   "/splits": "Income Split Rules",
-  "/simulator": "Savings Planner",
+  "/simulator": "Savings Calculator",
+  "/debt": "Debt Payoff",
   "/transfers": "One-Time Transfer",
   "/withdrawals": "Withdrawals",
   "/closeout": "Monthly Close-Out",
@@ -140,11 +165,87 @@ function NavLink({ href, label, active, onClick, badge }) {
   );
 }
 
+function GroupHeader({ label, open, hasActive, onToggle, id }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls={id}
+      className="pp-bloom-navlink"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        width: "100%",
+        textAlign: "left",
+        background: "transparent",
+        border: 0,
+        borderRadius: 14,
+        cursor: "pointer",
+        padding: "12px 13px",
+        fontFamily: "var(--font-heading)",
+        fontSize: 16,
+        fontWeight: hasActive ? 800 : 700,
+        letterSpacing: "0.01em",
+        color: hasActive ? "var(--color-accent-700)" : "var(--color-text)",
+      }}
+    >
+      {label}
+      <span style={{ marginLeft: "auto", display: "inline-flex", color: "var(--color-neutral-700)" }}>
+        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+      </span>
+    </button>
+  );
+}
+
+function SubLink({ href, label, active }) {
+  return (
+    <a
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className="pp-bloom-navlink"
+      style={{
+        display: "block",
+        borderRadius: 14,
+        padding: "10px 13px 10px 26px",
+        fontFamily: "var(--font-heading)",
+        fontSize: 15,
+        fontWeight: active ? 700 : 500,
+        background: active ? "var(--color-accent-200)" : "transparent",
+        color: active ? "var(--color-accent-700)" : "var(--color-text)",
+        textDecoration: "none",
+      }}
+    >
+      {label}
+    </a>
+  );
+}
+
+const pathnameIsDebt = (p) => p === "/debt" || p.startsWith("/debt/");
+
 export default function AppShell({ children, isSandbox = false }) {
   const pathname = usePathname();
   const router = useRouter();
   const [narrow, setNarrow] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Phone: which sheet is open ("manage", "plan", "profile") or null.
+  const [sheet, setSheet] = useState(null);
+  // Desktop: groups the person folded (remembered per browser).
+  const [folded, setFolded] = useState({});
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("pp-nav-folded");
+      if (raw) setFolded(JSON.parse(raw) || {});
+    } catch {}
+  }, []);
+  const toggleGroup = (key) =>
+    setFolded((f) => {
+      const next = { ...f, [key]: !f[key] };
+      try {
+        window.localStorage.setItem("pp-nav-folded", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   // The "Sandbox mode" badge is a web/dev aid only. Inside the iOS app it
   // reads as an unfinished build to App Review, so hide it there.
   const [inNativeApp, setInNativeApp] = useState(false);
@@ -164,9 +265,13 @@ export default function AppShell({ children, isSandbox = false }) {
   // nav for that one persona rather than removed outright, since it's
   // still relevant to every other persona (including W2 + side hustle,
   // since side income IS self-employment income).
-  const [navItems, setNavItems] = useState(NAV_ITEMS);
-  // W2-only users see Close Out as "Month in Review" (no tax steps).
   const [isW2Only, setIsW2Only] = useState(false);
+  const [showDebt, setShowDebt] = useState(false);
+  const showBusiness = false;
+  const nav = useMemo(
+    () => buildNav({ isW2Only, showDebt: showDebt || pathnameIsDebt(pathname), showBusiness }),
+    [isW2Only, showDebt, pathname]
+  );
   const pageTitle = (path) => (isW2Only && path === "/closeout" ? "Month in Review" : titleFor(path));
   // Powers both the persistent "transfer pending" banner below and the
   // browser-tab title reminder -- same /api/transfers/pending shape the
@@ -186,25 +291,17 @@ export default function AppShell({ children, isSandbox = false }) {
     fetch("/api/profile")
       .then((r) => r.json())
       .then((d) => {
-        let items = NAV_ITEMS;
-        // Hide the Tax Savings Quiz for a plain W2-no-side-hustle persona
-        // (see the comment on navItems above).
-        if (isW2NoSideHustle(d.profile?.persona)) {
-          setIsW2Only(true);
-          items = items.map((n) => (n.href === "/closeout" ? { ...n, label: "Month in Review" } : n));
-        }
-        // Business tier (PHASE T): the /business hub only appears for a
-        // user actually on the Business plan. Simple-plan users reach the
-        // upgrade CTA from Settings instead, so the nav item stays hidden
-        // until their plan flips (via the Stripe webhook). Inserted just
-        // before Settings so it reads as the last product area.
-        if (SHOW_BUSINESS_NAV && d.profile?.billing?.isBusiness) {
-          const settingsIdx = items.findIndex((n) => n.href === "/settings");
-          const at = settingsIdx === -1 ? items.length : settingsIdx;
-          items = [...items.slice(0, at), { href: "/business", label: "Business" }, ...items.slice(at)];
-        }
-        if (items !== NAV_ITEMS) setNavItems(items);
+        // W2-only users see Close Out as "Month in Review" (no tax steps).
+        if (isW2NoSideHustle(d.profile?.persona)) setIsW2Only(true);
+        // Business tier (PHASE T): kept hidden while SHOW_BUSINESS_NAV is false.
+        void SHOW_BUSINESS_NAV;
       })
+      .catch(() => {});
+    // Debt Payoff only shows for people it applies to: they added a debt or
+    // have the Debt Payoff category.
+    fetch("/api/debts")
+      .then((r) => r.json())
+      .then((d) => setShowDebt((d.debts || []).length > 0 || !!d.hasCategory))
       .catch(() => {});
   }, []);
 
@@ -234,6 +331,7 @@ export default function AppShell({ children, isSandbox = false }) {
   // page without needing a full reload -- same reason
   // components/PendingTransfers.js's onConfirmed callback refetches.
   useEffect(() => {
+    setSheet(null);
     loadPendingTransfers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
@@ -283,7 +381,7 @@ export default function AppShell({ children, isSandbox = false }) {
     const onResize = () => {
       const isNarrow = window.innerWidth < 880;
       setNarrow(isNarrow);
-      if (!isNarrow) setMenuOpen(false);
+      if (!isNarrow) setSheet(null);
     };
     onResize();
     window.addEventListener("resize", onResize, { passive: true });
@@ -318,9 +416,28 @@ export default function AppShell({ children, isSandbox = false }) {
               <PriorityPayLogo size={19} />
             </div>
             <nav style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "0 12px", flexDirection: "column" }}>
-              {navItems.map((n) => (
-                <NavLink key={n.href} href={n.href} label={n.label} badge={n.href === "/deposits" ? waitingDeposits : 0} active={pathname === n.href || pathname.startsWith(`${n.href}/`)} />
+              {nav.top.map((n) => (
+                <NavLink key={n.href} href={n.href} label={n.label} badge={n.href === "/deposits" ? waitingDeposits : 0} active={isActivePath(pathname, n.href)} />
               ))}
+              {nav.groups.map((g) => {
+                const hasActive = g.items.some((i) => isActivePath(pathname, i.href));
+                // The group holding the current page always shows.
+                const open = hasActive || !folded[g.key];
+                return (
+                  <div key={g.key} style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
+                    <GroupHeader label={g.label} open={open} hasActive={hasActive} id={`nav-${g.key}`} onToggle={() => toggleGroup(g.key)} />
+                    {open && (
+                      <div id={`nav-${g.key}`} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        {g.items.map((i) => (
+                          <SubLink key={i.href} href={i.href} label={i.label} active={isActivePath(pathname, i.href)} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div style={{ height: 8 }} />
+              <NavLink href={nav.settings.href} label={nav.settings.label} active={isActivePath(pathname, nav.settings.href)} />
             </nav>
             <div style={{ padding: "20px 22px 0" }}>
               <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
@@ -369,26 +486,6 @@ export default function AppShell({ children, isSandbox = false }) {
           }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, flex: "1 1 auto" }}>
-            <button
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-              className="pp-shell-hamburger"
-              style={{
-                display: "inline-flex",
-                flex: "none",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 40,
-                height: 40,
-                background: "transparent",
-                border: "1px solid var(--color-neutral-300)",
-                borderRadius: "var(--radius-sm)",
-                cursor: "pointer",
-                color: "var(--color-text)",
-              }}
-            >
-              <Menu size={18} />
-            </button>
             {pathname === "/dashboard" ? (
               // Dashboard portals its "Good morning, Megan" greeting in
               // here (see useDashboardHeaderSlots) instead of the plain
@@ -401,6 +498,7 @@ export default function AppShell({ children, isSandbox = false }) {
               </h1>
             )}
           </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flex: "none" }}>
           {pathname === "/dashboard" ? (
             // The Dashboard's This Month/This Year toggle always lives here
             // now, in the same top-right spot the "Sandbox mode" badge used
@@ -430,6 +528,27 @@ export default function AppShell({ children, isSandbox = false }) {
               Sandbox mode
             </span>
           ) : null}
+          <button
+            type="button"
+            onClick={() => setSheet("profile")}
+            aria-label="Account and settings"
+            className="pp-shell-profile"
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 999,
+              border: 0,
+              cursor: "pointer",
+              background: "var(--color-accent-200)",
+              color: "var(--color-accent-700)",
+              fontFamily: "var(--font-heading)",
+              fontWeight: 800,
+              fontSize: 15,
+            }}
+          >
+            <User size={18} />
+          </button>
+          </span>
         </header>
 
         {/* Persistent "transfer pending" reminder -- visible on every
@@ -474,66 +593,152 @@ export default function AppShell({ children, isSandbox = false }) {
           </Link>
         )}
 
-        <main style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>
+        <main className="pp-shell-main" style={{ padding: "clamp(24px, 3.5vw, 40px) clamp(20px, 3.5vw, 44px) 90px", maxWidth: 1140 }}>
           <DashboardHeaderSlotsContext.Provider value={{ titleSlot: titleSlotEl, actionsSlot: actionsSlotEl }}>
             {children}
           </DashboardHeaderSlotsContext.Provider>
         </main>
       </div>
 
-      {narrow && menuOpen && (
+      {narrow && sheet && (
         <div
-          onClick={() => setMenuOpen(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(36,22,52,0.5)", display: "flex" }}
+          onClick={() => setSheet(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(36,22,52,0.5)", display: "flex", alignItems: "flex-end" }}
         >
           <div
+            role="dialog"
+            aria-label={sheet === "profile" ? "Account" : nav.groups.find((g) => g.key === sheet)?.label}
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(84vw, 300px)",
+              width: "100%",
               background: "var(--color-surface)",
-              borderRadius: "0 24px 24px 0",
+              borderRadius: "24px 24px 0 0",
               boxShadow: "var(--shadow-lg)",
-              padding: "20px 0 26px",
-              display: "flex",
-              flexDirection: "column",
+              padding: "12px 20px calc(88px + env(safe-area-inset-bottom, 0px))",
+              maxHeight: "80vh",
+              overflowY: "auto",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0 20px 20px" }}>
-              <PriorityPayLogo size={19} />
-              <button
-                onClick={() => setMenuOpen(false)}
-                aria-label="Close menu"
-                style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "var(--color-neutral-700)", padding: 4 }}
-              >
+            <div style={{ width: 44, height: 5, borderRadius: 99, background: "var(--color-neutral-300)", margin: "0 auto 14px" }} />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 800 }}>
+                {sheet === "profile" ? "Account" : nav.groups.find((g) => g.key === sheet)?.label}
+              </div>
+              <button onClick={() => setSheet(null)} aria-label="Close" style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "var(--color-neutral-700)", padding: 4 }}>
                 <X size={20} />
               </button>
             </div>
-            <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 12 }} />
-            <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px" }}>
-              {navItems.map((n) => (
-                <NavLink
-                  key={n.href}
-                  href={n.href}
-                  label={n.label}
-                  badge={n.href === "/deposits" ? waitingDeposits : 0}
-                  active={pathname === n.href || pathname.startsWith(`${n.href}/`)}
-                  onClick={() => setMenuOpen(false)}
-                />
-              ))}
-            </nav>
-            <div style={{ flex: 1 }} />
-            <div style={{ padding: "20px 22px 0" }}>
-              <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+            {(sheet === "profile"
+              ? [{ href: nav.settings.href, label: "Settings" }]
+              : nav.groups.find((g) => g.key === sheet)?.items || []
+            ).map((i) => (
+              <a
+                key={i.href}
+                href={i.href}
+                aria-current={isActivePath(pathname, i.href) ? "page" : undefined}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "14px 4px",
+                  borderTop: "1px solid var(--color-divider)",
+                  fontFamily: "var(--font-heading)",
+                  fontSize: 16,
+                  fontWeight: isActivePath(pathname, i.href) ? 800 : 600,
+                  color: isActivePath(pathname, i.href) ? "var(--color-accent-700)" : "var(--color-text)",
+                  textDecoration: "none",
+                }}
+              >
+                {i.label}
+                <ChevronRight size={16} />
+              </a>
+            ))}
+            {sheet === "profile" && (
               <button
                 onClick={handleLogout}
-                style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: "var(--color-neutral-700)" }}
+                style={{ display: "block", width: "100%", textAlign: "left", background: "transparent", border: 0, borderTop: "1px solid var(--color-divider)", cursor: "pointer", padding: "14px 4px", fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 600, color: "var(--color-neutral-700)" }}
               >
                 Log out
               </button>
-            </div>
+            )}
           </div>
         </div>
       )}
+
+      <nav
+        aria-label="Main"
+        className="pp-shell-tabbar"
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 80,
+          background: "var(--color-surface)",
+          borderTop: "1px solid var(--color-divider)",
+          padding: "8px 6px calc(8px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
+        {[...nav.top, ...nav.groups].map((t) => {
+          const isGroup = !!t.items;
+          const active = isGroup ? t.items.some((i) => isActivePath(pathname, i.href)) || sheet === t.key : isActivePath(pathname, t.href);
+          const inner = (
+            <>
+              <span
+                style={{
+                  position: "relative",
+                  width: 30,
+                  height: 26,
+                  borderRadius: 10,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: active ? "var(--color-accent-200)" : "transparent",
+                }}
+              >
+                <t.Icon size={18} />
+                {t.href === "/deposits" && waitingDeposits > 0 && (
+                  <span
+                    aria-label={`${waitingDeposits} waiting`}
+                    style={{ position: "absolute", top: -4, right: -2, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8, background: "var(--color-accent)", color: "#fff", fontSize: 10, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    {waitingDeposits}
+                  </span>
+                )}
+              </span>
+              {t.tab}
+            </>
+          );
+          const common = {
+            className: "pp-shell-tab",
+            style: {
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              background: "transparent",
+              border: 0,
+              cursor: "pointer",
+              fontFamily: "var(--font-heading)",
+              fontSize: 11.5,
+              fontWeight: active ? 800 : 600,
+              color: active ? "var(--color-accent-700)" : "var(--color-neutral-700)",
+              textDecoration: "none",
+            },
+          };
+          return isGroup ? (
+            <button key={t.key} type="button" onClick={() => setSheet(sheet === t.key ? null : t.key)} aria-expanded={sheet === t.key} {...common}>
+              {inner}
+            </button>
+          ) : (
+            <a key={t.href} href={t.href} aria-current={active ? "page" : undefined} {...common}>
+              {inner}
+            </a>
+          );
+        })}
+      </nav>
 
       <style jsx global>{`
         /* Sidebar/hamburger split is CSS-driven (not just the JS
@@ -547,15 +752,24 @@ export default function AppShell({ children, isSandbox = false }) {
         .pp-shell-aside {
           display: block;
         }
-        .pp-shell-hamburger {
+        .pp-shell-tabbar,
+        .pp-shell-profile {
           display: none !important;
         }
         @media (max-width: 880px) {
           .pp-shell-aside {
             display: none !important;
           }
-          .pp-shell-hamburger {
+          .pp-shell-tabbar {
+            display: flex !important;
+          }
+          .pp-shell-profile {
             display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+          }
+          .pp-shell-main {
+            padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
           }
         }
         @media (max-width: 420px) {
