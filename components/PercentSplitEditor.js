@@ -21,20 +21,12 @@ import { bloomWarningCardStyle } from "@/lib/bloomTheme";
 // shared data file.
 const BLOOM_DOT_COLORS = ["#D9C9FF", "#C4A9FA", "#9A72F0", "#6D3BE0", "#4E22B8", "#3B1C7A", "#2A1550"];
 
-// A single optional dollar cap control -- rendered twice per flat row (see
-// PercentRow below), once for the monthly cap and once for the account-
-// balance cap (see computeAllocations in lib/allocations.js for how each
-// actually behaves once set). The dropdown is the only way to clear a cap
-// back to "None". Picking "Set a limit" starts the number field EMPTY
-// (rather than pre-filled with a "1" someone has to notice and delete
-// before they can type their own number) -- the field only ever accepts
-// numbers greater than 0 while typing, and settles back to the $1 floor
-// on blur if it's left empty, so whatever actually gets saved is still
-// always either exactly `null` (no cap) or a real positive dollar amount
-// (see settleCaps in lib/allocations.js, which enforces this one more
-// time right before anything is sent to the server, in case a value is
-// still mid-edit at that moment).
-function CapField({ label, hint, value, onChange, theme }) {
+// Monthly and Total category limits: two side-by-side cards, each with an
+// on/off switch, a one-line explanation and a dollar box. Same values as the
+// old "Set a limit" dropdowns: null = no limit, "" = switched on but still
+// empty (settles to the $1 floor on blur, and settleCaps in
+// lib/allocations.js enforces it again before saving).
+function CapCard({ title, sub, value, onChange }) {
   const isSet = value !== null && value !== undefined;
   const clamp = (raw) => {
     if (raw === "") return "";
@@ -42,92 +34,94 @@ function CapField({ label, hint, value, onChange, theme }) {
     return Number.isFinite(n) && n > 0 ? n : 1;
   };
   const settle = (raw) => {
-    if (raw === "") return 1;
     const n = Number(raw);
     return !raw || !Number.isFinite(n) || n <= 0 ? 1 : n;
   };
-
-  if (theme === "ledger") {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-          {label} <span style={{ fontStyle: "italic" }}>({hint})</span>
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <select
-            value={isSet ? "set" : "none"}
-            onChange={(e) => onChange(e.target.value === "none" ? null : "")}
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 13,
-              color: "var(--color-text)",
-              background: "transparent",
-              border: 0,
-              borderBottom: "1px solid var(--color-divider)",
-              borderRadius: 0,
-              padding: "3px 4px",
-            }}
-          >
-            <option value="none">None</option>
-            <option value="set">Set a limit</option>
-          </select>
-          {isSet && (
-            <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-              <input
-                type="number"
-                onFocus={(e) => e.target.select()}
-                min={1}
-                step={1}
-                value={value}
-                onChange={(e) => onChange(clamp(e.target.value))}
-                onBlur={(e) => onChange(settle(e.target.value))}
-                style={{
-                  width: 84,
-                  textAlign: "right",
-                  fontFamily: "var(--font-heading)",
-                  fontSize: 15,
-                  color: "var(--color-text)",
-                  background: "transparent",
-                  border: 0,
-                  borderBottom: "1px solid var(--color-divider)",
-                  padding: "3px 2px",
-                }}
-              />
-            </span>
-          )}
-        </span>
-      </div>
-    );
-  }
-
   return (
-    <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-      <span className="text-xs text-neutral-500">{label} ({hint})</span>
-      <select
-        value={isSet ? "set" : "none"}
-        onChange={(e) => onChange(e.target.value === "none" ? null : "")}
-        className="text-xs border border-neutral-200 rounded-lg px-1.5 py-1 ml-auto"
+    <div
+      style={{
+        flex: "1 1 220px",
+        minWidth: 0,
+        border: `2px solid ${isSet ? "#9A72F0" : "#D9C9FF"}`,
+        borderRadius: 18,
+        padding: "14px 16px",
+        background: isSet ? "var(--color-surface, #fff)" : "#FBF9FF",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "var(--color-text)" }}>{title}</div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isSet}
+          aria-label={`${isSet ? "Turn off" : "Turn on"} ${title.toLowerCase()}`}
+          onClick={() => onChange(isSet ? null : "")}
+          style={{
+            width: 46,
+            height: 26,
+            borderRadius: 999,
+            border: 0,
+            padding: 3,
+            cursor: "pointer",
+            flex: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: isSet ? "flex-end" : "flex-start",
+            background: isSet ? "#6D3BE0" : "#CFC3EA",
+          }}
+        >
+          <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#fff", display: "block" }} />
+        </button>
+      </div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.4, color: "var(--color-text-muted, #4A3F63)", margin: "4px 0 10px", minHeight: 38 }}>{sub}</div>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          border: `2px solid ${isSet ? "#6D3BE0" : "#D9C9FF"}`,
+          borderRadius: 14,
+          padding: "8px 12px",
+          background: "var(--color-surface, #fff)",
+          maxWidth: 190,
+          opacity: isSet ? 1 : 0.55,
+        }}
       >
-        <option value="none">None</option>
-        <option value="set">Set a limit</option>
-      </select>
-      {isSet && (
-        <span className="flex items-center gap-1">
-          <span className="text-xs text-neutral-500">$</span>
-          <input
-            type="number"
-            onFocus={(e) => e.target.select()}
-            min={1}
-            step={1}
-            value={value}
-            onChange={(e) => onChange(clamp(e.target.value))}
-            onBlur={(e) => onChange(settle(e.target.value))}
-            className="w-20 text-sm border border-neutral-200 rounded-lg px-2 py-1 font-mono text-center"
-          />
-        </span>
-      )}
+        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--color-text-muted, #4A3F63)" }}>$</span>
+        <input
+          type="number"
+          aria-label={`${title} amount in dollars`}
+          disabled={!isSet}
+          placeholder={isSet ? "" : "No limit"}
+          onFocus={(e) => e.target.select()}
+          min={1}
+          step={1}
+          value={isSet ? value : ""}
+          onChange={(e) => onChange(clamp(e.target.value))}
+          onBlur={(e) => onChange(settle(e.target.value))}
+          style={{ width: "100%", minWidth: 0, border: 0, outline: "none", background: "transparent", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 17, color: "var(--color-text)" }}
+        />
+      </label>
     </div>
+  );
+}
+
+function CapCards({ rule, onUpdate }) {
+  return (
+    <>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <CapCard title="Monthly limit" sub="Resets on the 1st of every month." value={rule.max} onChange={(v) => onUpdate(rule.id, { max: v })} />
+        <CapCard
+          title="Total limit"
+          sub="Starting balance plus everything PrioritySave has seen you send here."
+          value={rule.categoryCap}
+          onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
+        />
+      </div>
+      <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted, #4A3F63)" }}>
+        Using both? Whichever limit is reached first stops new money for this category.
+      </p>
+    </>
   );
 }
 
@@ -471,23 +465,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             )}
             {showLimits && !isGrouped && (
               <div style={{ marginTop: 8, background: "#FAF7FD", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
-                <CapField
-                  label="Monthly Category Cap $"
-                  hint="resets automatically each month"
-                  value={rule.max}
-                  onChange={(v) => onUpdate(rule.id, { max: v })}
-                  theme="ledger"
-                />
-                <CapField
-                  label="Total Category Cap $"
-                  hint="PrioritySave's tally: starting balance + everything it has seen you send here"
-                  value={rule.categoryCap}
-                  onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
-                  theme="ledger"
-                />
-                <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted, #4A3F63)" }}>
-                  Using both? Whichever limit is reached first stops new money for this category.
-                </p>
+                <CapCards rule={rule} onUpdate={onUpdate} />
               </div>
             )}
           </div>
@@ -750,21 +728,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       )}
       {!isGrouped && (
         <>
-          <CapField
-            label="Monthly Category Cap $"
-            hint="resets automatically each month"
-            value={rule.max}
-            onChange={(v) => onUpdate(rule.id, { max: v })}
-          />
-          <CapField
-            label="Total Category Cap $"
-            hint="PrioritySave's tally: starting balance + everything it has seen you send here"
-            value={rule.categoryCap}
-            onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
-          />
-          <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted, #4A3F63)" }}>
-            Using both? Whichever limit is reached first stops new money for this category.
-          </p>
+          <CapCards rule={rule} onUpdate={onUpdate} />
         </>
       )}
       {!hideStartingBalance && (
