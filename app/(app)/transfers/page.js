@@ -522,7 +522,7 @@ export default function TransfersPage() {
   if (loading) return <p className="text-sm text-[var(--color-neutral-700)]">Loading…</p>;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="ps-page max-w-2xl space-y-6">
       <div>
         <h1 className="text-lg font-semibold mb-1">One-Time Transfer</h1>
         <p className="text-sm text-[var(--color-neutral-700)]">

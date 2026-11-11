@@ -16,6 +16,70 @@ import Link from "next/link";
 import { paysByDraw } from "@/lib/entityCopy";
 import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, pickUniqueColor, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 
+const PS_INK = "#241337";
+const PS_MUTED = "#4A3F63";
+const PS_ACCENT = "#4E22B8";
+const MONTHS_ABBR = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+function psRowCard(highlight) {
+  return {
+    background: highlight ? "#F3EEFF" : "#fff",
+    border: `2px ${highlight ? "dashed" : "solid"} ${highlight ? "#9A72F0" : "#D9C9FF"}`,
+    borderRadius: 18,
+    padding: "14px 16px",
+  };
+}
+
+// Date chip + merchant + account line + amount: the top line of every transaction card.
+function PsRowTop({ t, acc, sign }) {
+  const [, m, d] = String(t.txn_date || "").split("-");
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ width: 52, height: 48, borderRadius: 12, background: "#EDE6FF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: PS_ACCENT, letterSpacing: "0.06em", lineHeight: 1 }}>{MONTHS_ABBR[(Number(m) || 1) - 1]}</span>
+        <span style={{ fontSize: 20, fontWeight: 800, color: PS_INK, lineHeight: 1.1 }}>{Number(d) || ""}</span>
+      </div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: 17, fontWeight: 700, color: PS_INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</div>
+        <div style={{ fontSize: 14, color: PS_MUTED }}>{acc ? `${acc.institution_name} •••• ${acc.mask}` : ""}</div>
+      </div>
+      <span style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 18, fontWeight: 700, color: PS_INK, flexShrink: 0 }}>
+        {sign}{currency(t.amount)}
+      </span>
+    </div>
+  );
+}
+
+// Segmented toggle: the selected option is solid purple with white text.
+function PsSegmented({ options, isSelected, onPick, disabled }) {
+  return (
+    <div style={{ display: "flex", border: "2px solid #CBB8F5", borderRadius: 14, overflow: "hidden", background: "#fff" }}>
+      {options.map((c, i) => {
+        const on = isSelected(c);
+        return (
+          <button
+            key={c.value}
+            onClick={() => onPick(c)}
+            disabled={disabled}
+            className="disabled:opacity-60"
+            style={{
+              flex: 1,
+              minHeight: 44,
+              fontSize: 15,
+              fontWeight: 800,
+              background: on ? PS_ACCENT : "#fff",
+              color: on ? "#fff" : PS_ACCENT,
+              borderLeft: i === 0 ? "none" : "2px solid #CBB8F5",
+            }}
+          >
+            {c.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function defaultPeriod() {
   const now = new Date();
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
@@ -560,40 +624,24 @@ export default function CloseoutPage() {
   const canEditNow = !isConfirmed || editingConfirmed;
   const depositTxns = transactions.filter((t) => t.direction === "in");
   const chargeTxns = transactions.filter((t) => t.direction === "out");
+  const catOf = (t) => t.confirmed_category || t.suggested_category;
+  const moneyInTotal = depositTxns.filter((t) => catOf(t) === "income").reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const moneyOutTotal = chargeTxns.filter((t) => catOf(t) === "expense").reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
   // Shared by both Deposits and Charges: a transaction already recorded
   // from the Withdrawals tab as a matched card charge renders read-only
   // instead of the normal pills/panel, so it never gets a second,
   // conflicting category assigned to it here. Edit it from Withdrawals.
   const renderLinkedRow = (t, acc, linked) => (
-    <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-        <div className="min-w-[110px] flex-1">
-          <div className="text-sm font-medium truncate">{t.name}</div>
-          <div className="text-xs text-[var(--color-neutral-700)]">
-            {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs font-mono text-[var(--color-neutral-700)]">
-            {t.direction === "in" ? "+" : "-"}
-            {currency(t.amount)}
-          </span>
-          <Link
-            href="/withdrawals"
-            className="text-[10px] font-semibold px-2 py-1 rounded-full"
-            style={{
-              fontFamily: "var(--font-heading)",
-              letterSpacing: "0.08em",
-              border: "1px solid var(--color-accent)",
-              color: "var(--color-accent-700)",
-              background: "color-mix(in srgb, var(--color-accent) 8%, transparent)",
-            }}
-          >
-            Logged: {linked.allocations.length ? linked.allocations.map((a) => a.label || "Other").join(" + ") : linked.categoryLabel || "Other"}
-          </Link>
-        </div>
-      </div>
+    <div key={t.id} style={psRowCard(false)}>
+      <PsRowTop t={t} acc={acc} sign={t.direction === "in" ? "+" : "-"} />
+      <Link
+        href="/withdrawals"
+        className="inline-block mt-3"
+        style={{ fontSize: 14, fontWeight: 800, color: PS_ACCENT, background: "#EDE6FF", border: "2px solid #CBB8F5", borderRadius: 999, padding: "6px 14px" }}
+      >
+        Logged: {linked.allocations.length ? linked.allocations.map((a) => a.label || "Other").join(" + ") : linked.categoryLabel || "Other"}
+      </Link>
     </div>
   );
 
@@ -604,39 +652,18 @@ export default function CloseoutPage() {
     const cat = t.confirmed_category || t.suggested_category;
     const [defaultPayer, defaultPurpose] = (t.income_source || "").split(", ");
     return (
-      <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-          <div className="min-w-[110px] flex-1">
-            <div className="text-sm font-medium truncate">{t.name}</div>
-            <div className="text-xs text-[var(--color-neutral-700)]">
-              {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-mono text-[var(--color-neutral-700)]">+{currency(t.amount)}</span>
-            <div className="flex gap-1 flex-wrap justify-end">
-              {depositCats.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => canEditNow && setCategory(t.id, c.value)}
-                  disabled={!canEditNow}
-                  className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    letterSpacing: "0.08em",
-                    border: `1px solid ${cat === c.value ? "var(--color-accent)" : "transparent"}`,
-                    color: cat === c.value ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                    background: cat === c.value ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
-                  }}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div key={t.id} style={psRowCard(cat === "exclude")}>
+        <PsRowTop t={t} acc={acc} sign="+" />
+        <div className="mt-3">
+          <PsSegmented
+            options={depositCats}
+            isSelected={(c) => cat === c.value}
+            onPick={(c) => canEditNow && setCategory(t.id, c.value)}
+            disabled={!canEditNow}
+          />
         </div>
         {(cat === "income" || cat === "w2_income") && (
-          <div className="flex items-center gap-2 flex-wrap mt-1.5">
+          <div className="flex items-center gap-2 flex-wrap mt-3">
             <input
               type="text"
               placeholder="Paid by"
@@ -676,65 +703,40 @@ export default function CloseoutPage() {
     const mileage = panel && isMileageLabel(panel.categoryLabel);
     const meals = panel && isMealsLabel(panel.categoryLabel);
     return (
-      <div key={t.id} className="border-b border-[var(--color-divider)] pb-2">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-          <div className="min-w-[110px] flex-1">
-            <div className="text-sm font-medium truncate">{t.name}</div>
-            <div className="text-xs text-[var(--color-neutral-700)]">
-              {t.txn_date} {acc ? `• ${acc.institution_name} •••• ${acc.mask}` : ""}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-mono text-[var(--color-neutral-700)]">-{currency(t.amount)}</span>
-            <div className="flex gap-1 flex-wrap justify-end">
-              {chargeCats.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => {
-                    if (!canEditNow) return;
-                    if (c.value === "expense") openExpensePanel(t.id);
-                    else {
-                      closeExpensePanel(t.id);
-                      setCategory(t.id, c.value);
-                    }
-                  }}
-                  disabled={!canEditNow}
-                  className="text-[10px] font-semibold px-2 py-1 rounded-full disabled:opacity-60"
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    letterSpacing: "0.08em",
-                    border: `1px solid ${cat === c.value || (c.value === "expense" && panel?.open) ? "var(--color-accent)" : "transparent"}`,
-                    color:
-                      cat === c.value || (c.value === "expense" && panel?.open)
-                        ? "var(--color-accent-700)"
-                        : "color-mix(in srgb, var(--color-text) 45%, transparent)",
-                    background:
-                      cat === c.value || (c.value === "expense" && panel?.open)
-                        ? "color-mix(in srgb, var(--color-accent) 8%, transparent)"
-                        : "transparent",
-                  }}
-                >
-                  {c.label}
-                </button>
+      <div key={t.id} style={psRowCard(cat === "exclude")}>
+        <PsRowTop t={t} acc={acc} sign="-" />
+        <div className="mt-3">
+          <PsSegmented
+            options={chargeCats}
+            isSelected={(c) => cat === c.value || (c.value === "expense" && panel?.open)}
+            onPick={(c) => {
+              if (!canEditNow) return;
+              if (c.value === "expense") openExpensePanel(t.id);
+              else {
+                closeExpensePanel(t.id);
+                setCategory(t.id, c.value);
+              }
+            }}
+            disabled={!canEditNow}
+          />
+        </div>
+        {cat === "expense" && (
+          <div className="flex items-center gap-2 flex-wrap mt-3">
+            <select
+              value={panel?.categoryLabel || ""}
+              onChange={(e) => selectExpenseCategory(t, e.target.value || null)}
+              disabled={!canEditNow}
+              className="text-sm border border-neutral-200 rounded-lg px-2 py-1 disabled:opacity-60"
+            >
+              <option value="">Categorize…</option>
+              {splitRulesPercent.map((r) => (
+                <option key={r.id} value={r.label}>{r.label}</option>
               ))}
-            </div>
-            {cat === "expense" && (
-              <select
-                value={panel?.categoryLabel || ""}
-                onChange={(e) => selectExpenseCategory(t, e.target.value || null)}
-                disabled={!canEditNow}
-                className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 disabled:opacity-60"
-              >
-                <option value="">Categorize…</option>
-                {splitRulesPercent.map((r) => (
-                  <option key={r.id} value={r.label}>{r.label}</option>
-                ))}
-                <option value="Other">Other (not tracked)</option>
-              </select>
-            )}
-            <label className="flex items-center gap-1 text-[11px] cursor-pointer" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
-              <Paperclip size={12} />
-              {panel?.uploading ? "Uploading…" : panel?.receiptUrl ? "Receipt ✓" : "Add receipt"}
+              <option value="Other">Other (not tracked)</option>
+            </select>
+            <label className="flex items-center gap-1.5 cursor-pointer" style={{ color: PS_ACCENT, fontWeight: 800, fontSize: 14, border: "2px solid #CBB8F5", borderRadius: 14, padding: "10px 14px", minHeight: 48 }}>
+              <Paperclip size={15} />
+              {panel?.uploading ? "Uploading…" : panel?.receiptUrl ? "Receipt attached" : "Attach receipt for taxes"}
               <input
                 type="file"
                 accept="image/*,application/pdf"
@@ -743,7 +745,7 @@ export default function CloseoutPage() {
               />
             </label>
           </div>
-        </div>
+        )}
         {/* Only surfaces when the chosen category can't cover the full
             amount -- selectExpenseCategory already auto-saved the common
             case above, so this panel is reserved for the shortfall
@@ -853,13 +855,13 @@ export default function CloseoutPage() {
   const annualTaxEstimate = estimateTaxReserve(annualNetIncomeValue, annualTaxRatePct);
 
   return (
-    <div className="max-w-2xl space-y-6" style={BLOOM_TOKENS}>
+    <div className="ps-page max-w-2xl space-y-6" style={BLOOM_TOKENS}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GhostButton onClick={() => setPeriod((p) => shiftPeriod(p, -1))} className="px-2 py-1.5">
             <ChevronLeft size={16} />
           </GhostButton>
-          <span className="text-sm font-semibold w-40 text-center">{periodLabel(period)}</span>
+          <span style={{ fontSize: 17, fontWeight: 800, background: "#EDE6FF", color: PS_ACCENT, borderRadius: 999, padding: "8px 18px" }} className="text-center">{periodLabel(period)}</span>
           <GhostButton onClick={() => setPeriod((p) => shiftPeriod(p, 1))} className="px-2 py-1.5">
             <ChevronRight size={16} />
           </GhostButton>
@@ -907,7 +909,7 @@ export default function CloseoutPage() {
         </Card>
       )}
       <Card className="p-6">
-        <h2 className="text-sm font-semibold mb-1">{isW2NoSideHustlePersona ? "Your Money In & Out" : "Step 1: Confirm Net Income"}</h2>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: PS_INK }} className="mb-1">{isW2NoSideHustlePersona ? "Your Money In & Out" : "Step 1: Confirm Net Income"}</h2>
         <p className="text-xs text-[var(--color-neutral-700)] mb-4">
           PrioritySave pulled every transaction across your linked accounts for {periodLabel(period)} and made a
           best guess at what&apos;s real income, a real expense, or an internal transfer that shouldn&apos;t count
@@ -947,34 +949,47 @@ export default function CloseoutPage() {
                 aren't split out separately, just shown with their account
                 name/mask like any other row (see `acc` below). */}
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-neutral-700)" }}>
-                Deposits
-              </h3>
+              <div className="flex items-baseline justify-between mb-3">
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: PS_INK }}>Money in</h3>
+                <span style={{ fontSize: 14, color: PS_MUTED }}>
+                  Counted as income: <b style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', color: PS_INK }}>{currency(moneyInTotal)}</b>
+                </span>
+              </div>
               {depositTxns.length === 0 ? (
                 <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>No deposits found.</p>
               ) : (
-                <div className="space-y-2 max-h-72 overflow-y-auto">
+                <div className="space-y-3 max-h-[36rem] overflow-y-auto pr-1">
                   {depositTxns.map((t) => renderDepositRow(t))}
                 </div>
               )}
             </div>
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--color-neutral-700)" }}>
-                Charges
-              </h3>
+              <div className="flex items-baseline justify-between mb-3">
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: PS_INK }}>Money out</h3>
+                <span style={{ fontSize: 14, color: PS_MUTED }}>
+                  Counted as expenses: <b style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', color: PS_INK }}>{currency(moneyOutTotal)}</b>
+                </span>
+              </div>
               {chargeTxns.length === 0 ? (
                 <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>No charges found.</p>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-3 max-h-[44rem] overflow-y-auto pr-1">
                   {chargeTxns.map((t) => renderChargeRow(t))}
                 </div>
               )}
             </div>
           </div>
         )}
-        <div className="pt-4 mt-4 border-t border-[var(--color-divider)] flex items-center justify-between">
-          <span className="text-sm font-semibold">Net income {isConfirmed ? "(confirmed)" : "(preview)"}</span>
-          <span className="text-sm font-mono font-bold">{currency(displayNetIncome)}</span>
+        <div className="mt-6" style={{ background: "#EDE6FF", border: "2px solid #CBB8F5", borderRadius: 20, padding: "18px 20px" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: PS_ACCENT, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Net income {isConfirmed ? "(confirmed)" : "(preview)"}
+          </div>
+          <div style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 38, fontWeight: 700, color: PS_INK, lineHeight: 1.2 }}>
+            {currency(displayNetIncome)}
+          </div>
+          <div style={{ fontSize: 14, color: PS_MUTED }}>
+            Money in {currency(moneyInTotal)} − expenses {currency(moneyOutTotal)}
+          </div>
         </div>
         {displayW2Income > 0 && (
           <div className="flex items-center justify-between text-xs text-[var(--color-neutral-700)] mt-1">
@@ -989,7 +1004,7 @@ export default function CloseoutPage() {
           </div>
         )}
         {!isConfirmed && (
-          <PrimaryButton onClick={handleConfirm} disabled={confirming} className="w-full mt-4">
+          <PrimaryButton onClick={handleConfirm} disabled={confirming} className="w-full mt-4" style={{ minHeight: 56, fontSize: 18 }}>
             {confirming ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
             {confirming ? "Confirming…" : isW2NoSideHustlePersona || !showTaxGuidance ? "Save this month" : "Confirm and see recommendations"}
           </PrimaryButton>

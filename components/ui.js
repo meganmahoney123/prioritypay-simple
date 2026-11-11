@@ -15,7 +15,7 @@ import {
 
 export function Card({ children, className = "", style }) {
   return (
-    <div className={className} style={ledgerCardStyle(style)}>
+    <div data-ps="card" className={className} style={ledgerCardStyle(style)}>
       {children}
     </div>
   );

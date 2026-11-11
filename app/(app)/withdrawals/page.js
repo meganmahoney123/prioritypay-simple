@@ -479,20 +479,28 @@ function WithdrawalsPageInner() {
           </div>
         )}
 
-        {sourceType === "cash" && (
-          <div className="mb-3">
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>
-              <Paperclip size={13} />
-              {uploading ? "Uploading…" : receiptUrl ? "Receipt attached, replace" : "Attach a receipt (optional)"}
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && uploadReceipt(e.target.files[0])}
-              />
-            </label>
-          </div>
-        )}
+        <div
+          className="mb-4"
+          style={{ background: "#F3EEFF", border: "1.5px dashed #9A72F0", borderRadius: 16, padding: "14px 16px" }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#241337" }}>Receipt for your taxes (optional)</div>
+          <p style={{ fontSize: 14, color: "#4A3F63", margin: "2px 0 10px", lineHeight: 1.45 }}>
+            Keep a photo or PDF of the receipt with this expense so it is ready at tax time.
+          </p>
+          <label
+            className="inline-flex items-center gap-2 cursor-pointer"
+            style={{ background: receiptUrl ? "#fff" : "#4E22B8", color: receiptUrl ? "#4E22B8" : "#fff", border: "2px solid #4E22B8", borderRadius: 14, padding: "11px 18px", fontSize: 15, fontWeight: 800, minHeight: 46 }}
+          >
+            <Paperclip size={16} />
+            {uploading ? "Uploading…" : receiptUrl ? `Receipt attached${receiptFile?.name ? `: ${receiptFile.name}` : ""}. Replace` : "Attach receipt"}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && uploadReceipt(e.target.files[0])}
+            />
+          </label>
+        </div>
 
         {error && <p className="text-xs mb-3 p-2" style={bloomWarningCardStyle()}>{error}</p>}
 
@@ -516,7 +524,7 @@ function WithdrawalsPageInner() {
                     {w.allocations.length
                       ? w.allocations.map((a) => `${a.label || "Other"} ${currency(a.amount)}`).join(" + ")
                       : w.categoryLabel || "Other"}
-                    {w.sourceType === "card" ? " · Card" : " · Cash"}
+                    {w.sourceType === "card" ? " · Card" : " · Cash"}{w.receiptUrl ? " · Receipt saved" : ""}
                   </div>
                 </div>
                 <span className="font-mono shrink-0">{currency(w.amount)}</span>
