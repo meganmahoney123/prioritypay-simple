@@ -1100,7 +1100,7 @@ function OnboardingPageInner() {
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 44 }}>
               <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} disabled={!isDevTester && (!typeChosen || (ownsBusiness && hasEmployees === null))} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={next} disabled={!typeChosen || (ownsBusiness && hasEmployees === null)} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
           </div>
         )}
