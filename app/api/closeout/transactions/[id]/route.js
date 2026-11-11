@@ -9,7 +9,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 // Close-Out category buttons and the confirm route's netIncome math,
 // which excludes it from personal income/expenses the same way "exclude"
 // already does for internal transfers.
-const VALID = ["income", "expense", "exclude", "w2_income", "business"];
+const VALID = ["income", "expense", "exclude", "w2_income", "business", "investment_income", "misc_income"];
 
 // Auto-saves as the person taps through the transaction review list on the
 // close-out screen -- one call per toggle, no separate "save" step, same

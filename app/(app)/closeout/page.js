@@ -10,7 +10,7 @@ import AccountSelect from "@/components/AccountSelect";
 import RetirementConnectRow from "@/components/RetirementConnectRow";
 import ContributionCalculatorModal from "@/components/ContributionCalculatorModal";
 import WithdrawalAllocator from "@/components/WithdrawalAllocator";
-import TaxSummarySection from "@/components/TaxSummarySection";
+import TaxExportCard from "@/components/TaxExportCard";
 import { Paperclip } from "lucide-react";
 import Link from "next/link";
 import { paysByDraw } from "@/lib/entityCopy";
@@ -116,8 +116,10 @@ function isLastDayOfCurrentMonthUTC() {
 // but rendered together. Now a transaction only ever sees the set that
 // applies to its own direction.
 const DEPOSIT_CATS = [
-  { value: "income", label: "Biz Income" },
+  { value: "income", label: "Biz Income/Owners Draw" },
   { value: "w2_income", label: "W2 Income" },
+  { value: "investment_income", label: "Investment Income" },
+  { value: "misc_income", label: "Miscellaneous" },
   { value: "exclude", label: "Exclude" },
 ];
 const CHARGE_CATS = [
@@ -704,7 +706,7 @@ export default function CloseoutPage() {
   const attentionCount = attentionDeposits.length + attentionCharges.length;
 
   // Profit by business: income and expenses attributed to each saved business.
-  const profitRows = businesses.map((b) => {
+  const profitRows = businesses.filter((b) => !paysByDraw(b.entityType)).map((b) => {
     const income = depositTxns.filter((t) => catOf(t) === "income" && t.business_id === b.id).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
     const cardExpenses = chargeTxns.filter((t) => catOf(t) === "expense" && t.business_id === b.id).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
     const cashExpenses = cashBizExpenses.filter((w) => w.businessId === b.id).reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
@@ -713,6 +715,139 @@ export default function CloseoutPage() {
   });
   const profitTotals = profitRows.reduce((a, r) => ({ income: a.income + r.income, expenses: a.expenses + r.expenses, profit: a.profit + r.profit }), { income: 0, expenses: 0, profit: 0 });
   const unassignedIncome = depositTxns.filter((t) => catOf(t) === "income" && !t.business_id).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  // Income this month by where it came from. Business income tagged to an
+  // LLC (or any entity that pays by draw) is an owner's draw; the rest of
+  // Biz income is the sole proprietor business. Excluded deposits are not income.
+  const businessById = Object.fromEntries(businesses.map((b) => [b.id, b]));
+  const sumOf = (list) => list.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const isDrawDeposit = (t) => catOf(t) === "income" && t.business_id && paysByDraw(businessById[t.business_id]?.entityType);
+  const bizIncomeDeposits = depositTxns.filter((t) => catOf(t) === "income" && !isDrawDeposit(t));
+  const drawDeposits = depositTxns.filter(isDrawDeposit);
+  const w2Deposits = depositTxns.filter((t) => catOf(t) === "w2_income");
+  const investmentDeposits = depositTxns.filter((t) => catOf(t) === "investment_income");
+  const miscDeposits = depositTxns.filter((t) => catOf(t) === "misc_income");
+  const namesOf = (list) => [...new Set(list.map((t) => businessById[t.business_id]?.name).filter(Boolean))].join(", ");
+  const hasSoleProp = businesses.some((b) => !paysByDraw(b.entityType));
+  const incomeSources = [
+    { key: "biz", label: hasSoleProp || businesses.length === 0 ? "Sole proprietor business" : "Business income", list: bizIncomeDeposits, detail: namesOf(bizIncomeDeposits), color: "#6D3BE0" },
+    { key: "draw", label: "Owner's draw", list: drawDeposits, detail: namesOf(drawDeposits), color: "#9A72F0" },
+    { key: "w2", label: "W-2 paycheck", list: w2Deposits, detail: "", color: "#C9B8F5" },
+    { key: "inv", label: "Investment income", list: investmentDeposits, detail: "", color: "#2A1550" },
+    { key: "misc", label: "Miscellaneous", list: miscDeposits, detail: "", color: "#8B84A0" },
+  ].map((r) => ({ ...r, amount: sumOf(r.list) })).filter((r) => r.list.length > 0);
+  const incomeGrandTotal = incomeSources.reduce((sum, r) => sum + r.amount, 0);
+
+  // Compact rows for what still needs sorting: one line per transaction.
+  const [openDetails, setOpenDetails] = useState({});
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const chargeChoice = (t) => {
+    const c = catOf(t);
+    if (c === "expense") return t.business_id || "__biz";
+    if (c === "exclude" && t.confirmed_category) return "__personal";
+    return "";
+  };
+  const pickChargeChoice = async (t, v) => {
+    if (!canEditNow || !v) return;
+    if (v === "__personal") {
+      closeExpensePanel(t.id);
+      await setCategory(t.id, "exclude");
+      return;
+    }
+    await setCategory(t.id, "expense");
+    if (v !== "__biz") await setBusiness(t.id, v);
+  };
+  const bulkSetCharges = async (v) => {
+    if (!v) return;
+    setBulkBusy(true);
+    for (const t of attentionCharges) await pickChargeChoice(t, v);
+    setBulkBusy(false);
+  };
+  const compactTop = (t, acc, sign, hint) => {
+    const [, m, d] = String(t.txn_date || "").split("-");
+    return (
+      <>
+        <div style={{ textAlign: "center", lineHeight: 1.1 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.08em", color: PS_ACCENT }}>{MONTHS_ABBR[(Number(m) || 1) - 1]}</div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: PS_INK }}>{Number(d) || ""}</div>
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: PS_INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</div>
+          <div style={{ fontSize: 13, color: PS_MUTED }}>{acc ? `${acc.institution_name}${acc.mask ? ` •••• ${acc.mask}` : ""}` : ""}{hint ? ` · ${hint}` : ""}</div>
+        </div>
+        <span style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 16, fontWeight: 600, color: PS_INK, textAlign: "right" }}>{sign}{currency(t.amount)}</span>
+      </>
+    );
+  };
+  const compactSelect = { border: "2px solid #9A72F0", borderRadius: 12, background: "#fff", color: PS_INK, fontWeight: 700, fontSize: 14.5, padding: "9px 12px", width: "100%", minWidth: 0 };
+  const compactRowStyle = (i) => ({ borderTop: i ? "1.5px solid #E7DEFA" : "none", padding: "11px 0" });
+  const compactGrid = { display: "grid", gridTemplateColumns: "54px minmax(0, 1fr) 90px minmax(0, 230px)", gap: 14, alignItems: "center" };
+
+  const renderCompactDeposit = (t, i) => {
+    const acc = accountsById[t.account_id];
+    const cat = t.confirmed_category || "";
+    const [defaultPayer, defaultPurpose] = (t.income_source || "").split(", ");
+    const suggestion = depositCats.find((c) => c.value === t.suggested_category);
+    return (
+      <div key={t.id} style={compactRowStyle(i)}>
+        <div style={compactGrid}>
+          {compactTop(t, acc, "+", !cat && suggestion ? `looks like ${suggestion.label.toLowerCase()}` : "")}
+          <select value={cat} onChange={(e) => canEditNow && e.target.value && setCategory(t.id, e.target.value)} disabled={!canEditNow} aria-label={`Type for ${t.name}`} style={compactSelect}>
+            {!cat && <option value="">Choose a type</option>}
+            {depositCats.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+        {cat === "income" && (
+          <div className="flex items-center gap-3 flex-wrap" style={{ marginTop: 8, paddingLeft: 68 }}>
+            {businesses.length === 0 ? (
+              <span style={{ fontSize: 13, color: PS_MUTED }}>
+                No businesses added yet. <a href="/settings" style={{ color: PS_ACCENT, fontWeight: 800 }}>Add them in Settings</a>
+              </span>
+            ) : (
+              <select value={t.business_id || ""} onChange={(e) => setBusiness(t.id, e.target.value)} disabled={!canEditNow} aria-label="Which business" style={{ ...compactSelect, width: 260, border: `2px solid ${t.business_id ? "#9A72F0" : "#B3261E"}` }}>
+                {!t.business_id && <option value="">Which business?</option>}
+                {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}{b.entityType ? ` · ${entityLabel(b.entityType)}` : ""}</option>)}
+              </select>
+            )}
+            <input
+              type="text"
+              placeholder="Paid by (optional)"
+              defaultValue={defaultPayer || ""}
+              onChange={(e) => setIncomeSourceDrafts((prev) => ({ ...prev, [t.id]: { ...prev[t.id], payer: e.target.value } }))}
+              onBlur={(e) => saveIncomeSource(t.id, e.target.value, defaultPurpose || "")}
+              disabled={!canEditNow}
+              style={{ ...compactSelect, width: 200 }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCompactCharge = (t, i) => {
+    const acc = accountsById[t.account_id];
+    const choice = chargeChoice(t);
+    return (
+      <div key={t.id} style={compactRowStyle(i)}>
+        <div style={compactGrid}>
+          {compactTop(t, acc, "-", "")}
+          <select value={choice} onChange={(e) => pickChargeChoice(t, e.target.value)} disabled={!canEditNow} aria-label={`Business or personal for ${t.name}`} style={compactSelect}>
+            {!choice && <option value="">Business or personal?</option>}
+            {businesses.length === 0 && <option value="__biz">Business expense</option>}
+            {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            <option value="__personal">Personal (leave out)</option>
+          </select>
+        </div>
+        {choice && choice !== "__personal" && (
+          <div style={{ marginTop: 6, paddingLeft: 68 }}>
+            <button type="button" onClick={() => setOpenDetails((p) => ({ ...p, [t.id]: !p[t.id] }))} style={{ background: "none", border: 0, cursor: "pointer", fontSize: 13, fontWeight: 800, color: PS_ACCENT }}>
+              {openDetails[t.id] ? "Hide details" : "Details: category, receipt"}
+            </button>
+          </div>
+        )}
+        {openDetails[t.id] && <div style={{ marginTop: 8 }}>{renderChargeRow(t)}</div>}
+      </div>
+    );
+  };
   const entityLabel = (v) => (v === "Sole proprietor / freelancer" ? "Sole proprietor" : v || "");
 
   // Shared by both Deposits and Charges: a transaction already recorded
@@ -1097,11 +1232,51 @@ export default function CloseoutPage() {
                 synced credit-card charge alongside bank debits -- cards
                 aren't split out separately, just shown with their account
                 name/mask like any other row (see `acc` below). */}
-            {businesses.length > 0 && (
+            {incomeSources.length > 0 && (
               <div style={{ background: "#fff", border: "2px solid #9A72F0", borderRadius: 22, padding: "18px 22px" }}>
                 <div className="flex items-baseline justify-between flex-wrap gap-2">
-                  <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: PS_ACCENT }}>Profit by business, {periodLabel(period)}</div>
-                  <div style={{ fontSize: 13.5, color: PS_MUTED }}>Updates as you attribute income and expenses below</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: PS_ACCENT }}>Income this month, by where it came from</div>
+                  <div style={{ fontSize: 13.5, color: PS_MUTED }}>Updates as you tag deposits</div>
+                </div>
+                <div className="overflow-x-auto">
+                  <div style={{ minWidth: 460, marginTop: 8 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, fontSize: 11.5, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>
+                      <div>SOURCE</div><div>SHARE</div><div style={{ textAlign: "right" }}>AMOUNT</div>
+                    </div>
+                    {incomeSources.map((r) => {
+                      const pct = incomeGrandTotal > 0 ? Math.round((r.amount / incomeGrandTotal) * 100) : 0;
+                      return (
+                        <div key={r.key} style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "13px 0", borderTop: "1.5px solid #E7DEFA" }}>
+                          <div>
+                            <div style={{ fontSize: 16.5, fontWeight: 800, color: PS_INK }}>{r.label}</div>
+                            <div style={{ fontSize: 13, color: PS_MUTED }}>{[r.detail, `${r.list.length} deposit${r.list.length === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{ flex: 1, height: 10, borderRadius: 99, background: "#EDE6FF", overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${pct}%`, background: r.color, borderRadius: 99 }} />
+                            </div>
+                            <div style={{ fontSize: 13, fontWeight: 800, color: PS_MUTED, width: 38, textAlign: "right" }}>{pct}%</div>
+                          </div>
+                          <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 17, fontWeight: 600 }}>{currency(r.amount)}</div>
+                        </div>
+                      );
+                    })}
+                    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "14px 0 2px", borderTop: `2px solid ${PS_INK}` }}>
+                      <div style={{ fontSize: 17, fontWeight: 800, color: PS_INK }}>Total income</div>
+                      <div />
+                      <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 24, fontWeight: 700 }}>{currency(incomeGrandTotal)}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, color: PS_MUTED, marginTop: 6 }}>Tax reserve and retirement only apply to the business lines. Investment income and miscellaneous stay out of them.</div>
+              </div>
+            )}
+
+            {profitRows.length > 0 && (
+              <div style={{ background: "#fff", border: "2px solid #9A72F0", borderRadius: 22, padding: "18px 22px" }}>
+                <div className="flex items-baseline justify-between flex-wrap gap-2">
+                  <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: PS_ACCENT }}>Business income and expenses, {periodLabel(period)}</div>
+                  <div style={{ fontSize: 13.5, color: PS_MUTED }}>Updates as you sort expenses below</div>
                 </div>
                 <div className="overflow-x-auto">
                   <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8, minWidth: 460 }}>
@@ -1176,14 +1351,31 @@ export default function CloseoutPage() {
               </div>
               {attentionDeposits.length > 0 && (
                 <>
-                  <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED, marginBottom: 8 }}>MONEY IN</div>
-                  <div className="space-y-3 mb-5">{attentionDeposits.map((t) => renderDepositRow(t))}</div>
+                  <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>INCOME</div>
+                    <div style={{ fontSize: 13.5, color: PS_MUTED }}>Most of your income is already sorted from Split My Deposits</div>
+                  </div>
+                  <div className="mb-5" style={{ background: "#fff", border: "1.5px solid #D9C9FF", borderRadius: 22, padding: "8px 22px" }}>{attentionDeposits.map((t, i) => renderCompactDeposit(t, i))}</div>
                 </>
               )}
               {attentionCharges.length > 0 && (
                 <>
-                  <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED, marginBottom: 8 }}>EXPENSES</div>
-                  <div className="space-y-3 max-h-[44rem] overflow-y-auto pr-1">{attentionCharges.map((t) => renderChargeRow(t))}</div>
+                  <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>EXPENSES</div>
+                    {attentionCharges.length > 1 && canEditNow && (
+                      <label className="flex items-center gap-2" style={{ fontSize: 13.5, fontWeight: 800, color: PS_ACCENT }}>
+                        Set all to
+                        <select value="" onChange={(e) => bulkSetCharges(e.target.value)} disabled={bulkBusy} aria-label="Set all expenses to" style={{ border: "2px solid #9A72F0", borderRadius: 12, background: "#fff", color: PS_INK, fontWeight: 700, fontSize: 14, padding: "7px 10px" }}>
+                          <option value="">{bulkBusy ? "Saving..." : "Choose"}</option>
+                          {businesses.length === 0 && <option value="__biz">Business expense</option>}
+                          {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                          <option value="__personal">Personal (leave out)</option>
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                  <div className="max-h-[48rem] overflow-y-auto" style={{ background: "#fff", border: "1.5px solid #D9C9FF", borderRadius: 22, padding: "8px 22px" }}>{attentionCharges.map((t, i) => renderCompactCharge(t, i))}</div>
+                  <div style={{ fontSize: 13.5, color: PS_MUTED, marginTop: 8 }}>Expenses marked Personal are left out of your business numbers.</div>
                 </>
               )}
             </div>
@@ -1675,11 +1867,9 @@ export default function CloseoutPage() {
       </>
       )}
 
-      {/* Formerly its own top-level nav tab -- moved to live under Close
-          Out per explicit request. Shown regardless of which month is
-          selected above/whether this month is closeable yet, since it's
-          its own independent year picker (see TaxSummarySection). */}
-      <TaxSummarySection />
+      {/* The full Tax Summary section was removed; the yearly CSV report is
+          still available from this export card. */}
+      <TaxExportCard />
 
       {calculatorPlanType && (
         <ContributionCalculatorModal

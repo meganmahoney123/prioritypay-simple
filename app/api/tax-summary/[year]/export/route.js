@@ -19,6 +19,8 @@ const CATEGORY_LABELS = {
   w2_income: "W2 Income",
   expense: "Expense",
   exclude: "Excluded (transfer)",
+  investment_income: "Investment income (not business)",
+  misc_income: "Miscellaneous (not business)",
   business: "Business (excluded -- see accountant)",
 };
 
