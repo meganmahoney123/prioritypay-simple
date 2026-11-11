@@ -277,7 +277,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 tabIndex={readOnly ? -1 : undefined}
                 onChange={(e) => onUpdate(rule.id, { pct: Number(e.target.value) })}
                 style={{
-                  width: 40,
+                  // Grows with the number so "100" and "13.7" both fit.
+                  width: `calc(${Math.max(3, String(rule.pct ?? "").length) + 1}ch + 4px)`,
+                  minWidth: 40,
                   textAlign: "right",
                   fontFamily: "var(--font-mono)",
                   fontSize: 16,
