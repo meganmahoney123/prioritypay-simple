@@ -396,166 +396,35 @@ function SettingsPageInner() {
           Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all. $100 is the
           lowest you can set it.
         </p>
-        <div style={{ maxWidth: 220 }}>
-          <label
-            style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-          >
-            Minimum deposit to split ($)
-          </label>
-          <input
-            type="number"
-            onFocus={(e) => e.target.select()}
-            min="100"
-            step="1"
-            value={profile.minDepositThreshold ?? 100}
-            onChange={(e) => {
-              setSaved(false);
-              const v = e.target.value === "" ? "" : Number(e.target.value);
-              setProfile((p) => ({ ...p, minDepositThreshold: v }));
-            }}
-            onBlur={(e) => {
-              const v = Math.max(100, Number(e.target.value) || 100);
-              setProfile((p) => ({ ...p, minDepositThreshold: v }));
-            }}
-            style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
-          />
-        </div>
-      </Card>
-
-      {/* PHASE W: restored (see supabase/schema.sql PHASE W) as a genuine
-          opt-in checkbox -- unchecked/off by default, matching the
-          sms_notifications_enabled column default, per the toll-free
-          verification opt-in workflow submitted to Telnyx. This
-          intentionally does NOT restore the old "on by default" copy/
-          behavior from PHASE M -- a carrier requires an affirmative,
-          unchecked-until-clicked opt-in, not a default-on toggle. */}
-      <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit text alerts</h2>
-        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-          PrioritySave texts you the moment a qualifying deposit lands, with a link straight to your split
-          checklist. Off by default. Check the box and add your number below to turn it on. Msg &amp; data
-          rates may apply. Reply STOP to opt out, HELP for help.
-        </p>
-        <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={!!profile.notifications?.smsEnabled}
-            onChange={(e) => {
-              setSaved(false);
-              setProfile((p) => ({ ...p, notifications: { ...p.notifications, smsEnabled: e.target.checked } }));
-            }}
-            style={{ width: 16, height: 16 }}
-          />
-          <span style={{ fontSize: 15 }}>Text me when a deposit crosses my threshold</span>
-        </label>
-        {!!profile.notifications?.smsEnabled && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label
-                style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-              >
-                Phone number
-              </label>
-              <input
-                type="tel"
-                placeholder="+15551234567"
-                value={profile.notifications?.phoneNumber || ""}
-                onChange={(e) => {
-                  setSaved(false);
-                  setProfile((p) => ({ ...p, notifications: { ...p.notifications, phoneNumber: e.target.value } }));
-                }}
-                style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
-              />
-            </div>
-            <div>
-              <label
-                style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-              >
-                Threshold ($)
-              </label>
-              <input
-                type="number"
-                onFocus={(e) => e.target.select()}
-                min="0"
-                step="1"
-                placeholder="500"
-                value={profile.notifications?.smsThreshold ?? ""}
-                onChange={(e) => {
-                  setSaved(false);
-                  const v = e.target.value === "" ? "" : Number(e.target.value);
-                  setProfile((p) => ({ ...p, notifications: { ...p.notifications, smsThreshold: v } }));
-                }}
-                style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
-              />
-            </div>
-          </div>
-        )}
       </Card>
 
       <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit email alerts</h2>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>How often should we notify you?</h2>
         <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
-          PrioritySave emails you the moment a qualifying deposit lands, with a link straight to your split
-          checklist, sent to your account email, on by default, and you can turn it off anytime.
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
+          Applies to text, email and app notifications. Deposits under your minimum deposit above never send a notification.
         </p>
-        <label className="flex items-center gap-2.5" style={{ marginBottom: 20, cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={!!profile.notifications?.emailEnabled}
-            onChange={(e) => {
-              setSaved(false);
-              setProfile((p) => ({ ...p, notifications: { ...p.notifications, emailEnabled: e.target.checked } }));
-            }}
-            style={{ width: 16, height: 16 }}
-          />
-          <span style={{ fontSize: 15 }}>Email me when a deposit crosses my threshold</span>
-        </label>
-        {!!profile.notifications?.emailEnabled && (
-          <div style={{ maxWidth: 340, marginBottom: 20 }}>
-            <label
-              style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-            >
-              Send alerts to
-            </label>
+        {[
+          { value: "instant", label: "Each time a deposit arrives", hint: "The moment it lands, with a link to your split checklist." },
+          { value: "weekly", label: "One summary each week", hint: "A single message every Monday listing the deposits still waiting to be split. Nothing is sent if nothing is waiting." },
+        ].map((o) => (
+          <label key={o.value} className="flex items-start gap-2.5" style={{ marginBottom: 14, cursor: "pointer" }}>
             <input
-              type="email"
-              value={profile.notifications?.alertEmail ?? ""}
-              onChange={(e) => {
+              type="radio"
+              name="notification-frequency"
+              checked={(profile.notifications?.frequency || "instant") === o.value}
+              onChange={() => {
                 setSaved(false);
-                setProfile((p) => ({ ...p, notifications: { ...p.notifications, alertEmail: e.target.value } }));
+                setProfile((p) => ({ ...p, notifications: { ...p.notifications, frequency: o.value } }));
               }}
-              placeholder="you@example.com"
-              style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
+              style={{ width: 16, height: 16, marginTop: 3 }}
             />
-            <p style={{ fontSize: 13, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "8px 0 0" }}>
-              Defaults to your account email. You can change it if you&apos;d rather alerts go somewhere else, like a
-              bookkeeper or assistant&apos;s inbox.
-            </p>
-          </div>
-        )}
-        <div style={{ maxWidth: 220 }}>
-          <label
-            style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}
-          >
-            Threshold ($)
+            <span>
+              <span style={{ fontSize: 15, fontWeight: 600, display: "block" }}>{o.label}</span>
+              <span style={{ fontSize: 13, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{o.hint}</span>
+            </span>
           </label>
-          <input
-            type="number"
-            onFocus={(e) => e.target.select()}
-            min="0"
-            step="1"
-            placeholder="500"
-            value={profile.notifications?.smsThreshold ?? ""}
-            onChange={(e) => {
-              setSaved(false);
-              const v = e.target.value === "" ? "" : Number(e.target.value);
-              setProfile((p) => ({ ...p, notifications: { ...p.notifications, smsThreshold: v } }));
-            }}
-            style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
-          />
-        </div>
+        ))}
       </Card>
 
       <AppLockSettingsCard />

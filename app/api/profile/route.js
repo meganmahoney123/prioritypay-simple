@@ -57,6 +57,8 @@ export async function GET() {
         // means "use my account login email," same as before this existed.
         alertEmail: data.alert_email || null,
         smsThreshold: data.sms_threshold === null ? null : Number(data.sms_threshold),
+        // 'instant' (every deposit) or 'weekly' (one Monday summary).
+        frequency: data.notification_frequency === "weekly" ? "weekly" : "instant",
       },
       minDepositThreshold: Number(data.min_deposit_threshold ?? 50),
     },
@@ -80,9 +82,7 @@ export async function PUT(request) {
   const rp = body.retirementProfile || {};
   const notif = body.notifications || {};
 
-  const { error } = await supabaseAdmin()
-    .from("simple_profiles")
-    .update({
+  const payload = {
       persona: body.persona,
       business_name: body.businessName,
       entity_type: body.entityType,
@@ -98,11 +98,18 @@ export async function PUT(request) {
       // account login email") rather than stored as a blank string.
       alert_email: typeof notif.alertEmail === "string" && notif.alertEmail.trim() ? notif.alertEmail.trim() : null,
       sms_threshold: notif.smsThreshold === "" || notif.smsThreshold === undefined ? null : notif.smsThreshold,
+      ...(notif.frequency === "weekly" || notif.frequency === "instant" ? { notification_frequency: notif.frequency } : {}),
       ...(body.minDepositThreshold === undefined
         ? {}
         : { min_deposit_threshold: clampMinDepositThreshold(body.minDepositThreshold) }),
-    })
-    .eq("id", user.id);
+  };
+  let { error } = await supabaseAdmin().from("simple_profiles").update(payload).eq("id", user.id);
+  // Until supabase/migrations/20261110_notification_frequency.sql has been run,
+  // that column doesn't exist; save everything else instead of failing Settings.
+  if (error && /notification_frequency/.test(error.message || "")) {
+    const { notification_frequency, ...rest } = payload;
+    ({ error } = await supabaseAdmin().from("simple_profiles").update(rest).eq("id", user.id));
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
