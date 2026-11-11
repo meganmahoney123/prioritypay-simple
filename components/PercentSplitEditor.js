@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, AlertTriangle, Pencil, Link2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, Pencil, Link2, X } from "lucide-react";
 import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
 import CreateSubAccountFlow from "./CreateSubAccountFlow";
@@ -178,6 +178,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   const canRename = !isCoreRow(rule, persona) && !lockLabel && !readOnly;
   const canDelete = !lockLabel && !readOnly;
   const [showLimitsHelp, setShowLimitsHelp] = useState(false);
+  // The "No account connected yet" note can be closed; it comes back on reload.
+  const [noAccountDismissed, setNoAccountDismissed] = useState(false);
   // Collapsed by default, same reasoning as showLimits above -- most
   // people creating a category are starting from $0, so this stays out
   // of the way until someone clicks "$X saved already" / "Already have
@@ -359,9 +361,12 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         {showEmployerCheckModal && (
           <EmployerCheckEmailModal label={rule.label} onClose={() => setShowEmployerCheckModal(false)} />
         )}
-        {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
-          <p
+        {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && !noAccountDismissed && (
+          <div
             style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
               fontSize: 13,
               lineHeight: 1.6,
               color: "#9C3B22",
@@ -372,9 +377,20 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               margin: "10px 0 0",
             }}
           >
-            No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
-            checklist.
-          </p>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
+              checklist.
+            </span>
+            <button
+              type="button"
+              onClick={() => setNoAccountDismissed(true)}
+              aria-label="Dismiss this message"
+              title="Dismiss"
+              style={{ flex: "none", width: 28, height: 28, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 999, color: "#9C3B22" }}
+            >
+              <X size={16} />
+            </button>
+          </div>
         )}
         {!hideAccountPicker && (
         <div style={{ marginTop: 12, minWidth: 0 }}>
@@ -829,13 +845,16 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           }}
         />
       )}
-      {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && (
+      {showRowWarnings && Number(rule.pct) > 0 && !rule.accountId && !noAccountDismissed && (
         <div className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-          <span>
+          <span className="flex-1 min-w-0">
             No account connected yet. Until you connect one, there&apos;s nowhere to send this {rule.pct}% on your
             checklist, so it stays wherever the deposit landed.
           </span>
+          <button type="button" onClick={() => setNoAccountDismissed(true)} aria-label="Dismiss this message" title="Dismiss" className="shrink-0">
+            <X size={12} />
+          </button>
         </div>
       )}
     </div>
