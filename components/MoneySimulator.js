@@ -7,7 +7,8 @@ import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { bloomInputStyle, bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { CATEGORY_COLORS, pickUniqueColor } from "@/lib/allocations";
 
-const BLOOM_DOT_COLORS = ["#D9C9FF", "#C4A9FA", "#9A72F0", "#6D3BE0", "#4E22B8", "#3B1C7A", "#2A1550"];
+// Darker palette so slices and labels stay readable against the light page.
+const BLOOM_DOT_COLORS = ["#B79CF5", "#9A72F0", "#6D3BE0", "#4E22B8", "#3B1C7A", "#2A1550", "#8E63EA"];
 
 export function monthsUntil(dateStr) {
   if (!dateStr) return 1;
@@ -39,6 +40,10 @@ export default function MoneySimulator({
   const [income, setIncome] = useState(Math.max(0, Number(initialIncome) || 0));
   const [rows, setRows] = useState(initialRows);
   const [goals, setGoals] = useState(initialGoals);
+  // Each category is set EITHER as a percent OR as a fixed dollar amount (never both at once),
+  // so a fixed dollar amount never has to be entered as "0%".
+  const [modes, setModes] = useState({});
+  const modeOf = (id) => modes[id] || "pct";
 
   const totalPct = useMemo(() => rows.reduce((s, r) => s + (Number(r.pct) || 0), 0), [rows]);
   const remainingPct = Math.round((100 - totalPct) * 10) / 10;
@@ -55,7 +60,14 @@ export default function MoneySimulator({
   const updateRowDollar = (id, dollarValue) => {
     const dollar = Math.max(0, Number(dollarValue) || 0);
     const requestedPct = income > 0 ? Math.round((dollar / income) * 10000) / 100 : 0;
-    updateRow(id, { pct: Math.min(requestedPct, maxPctForRow(id)) });
+    updateRow(id, { pct: Math.min(requestedPct, maxPctForRow(id)), usd: dollar });
+  };
+  const setMode = (id, mode) => {
+    setModes((m) => ({ ...m, [id]: mode }));
+    if (mode === "usd") {
+      const row = rows.find((r) => r.id === id);
+      updateRow(id, { usd: Math.round(((income * (row?.pct || 0)) / 100) * 100) / 100 });
+    }
   };
   const removeRow = (id) => setRows((prev) => prev.filter((r) => r.id !== id));
   const addRow = () =>
@@ -99,7 +111,7 @@ export default function MoneySimulator({
       .filter((r) => r.pct > 0)
       .map((r) => ({ name: r.label, value: r.pct, color: dotColorFor(r.id) }));
     if (remainingPct > 0) {
-      slices.push({ name: "Unallocated", value: remainingPct, color: "#E4DCF9" });
+      slices.push({ name: "Unallocated", value: remainingPct, color: "#B8A8E0" });
     }
     return slices;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -130,6 +142,17 @@ export default function MoneySimulator({
               // never show a leading zero.
               e.target.value = String(num);
               setIncome(num);
+              // Rows set in dollars keep their dollar amount when income changes.
+              setRows((prev) => {
+                let used = prev.filter((r) => modes[r.id] !== "usd").reduce((sum, r) => sum + (Number(r.pct) || 0), 0);
+                return prev.map((r) => {
+                  if (modes[r.id] !== "usd" || r.usd == null) return r;
+                  const want = num > 0 ? Math.round((r.usd / num) * 10000) / 100 : 0;
+                  const pct = Math.max(0, Math.min(want, Math.round((100 - used) * 100) / 100));
+                  used += pct;
+                  return { ...r, pct };
+                });
+              });
             }}
             style={bloomInputStyle({ width: 130, fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600 })}
           />
@@ -224,28 +247,54 @@ export default function MoneySimulator({
                     )}
                   </span>
                 )}
-                <input
-                  type="number"
-                  onFocus={(e) => e.target.select()}
-                  min={0}
-                  max={Math.round((r.pct + maxPctForRow(r.id)) * 100) / 100}
-                  step={0.1}
-                  value={r.pct}
-                  onChange={(e) => updatePct(r.id, e.target.value)}
-                  style={bloomInputStyle({ width: 76, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
-                />
-                <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>%</span>
-                <span className="text-sm" style={{ color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                <input
-                  type="number"
-                  onFocus={(e) => e.target.select()}
-                  min={0}
-                  max={income > 0 ? Math.round(((income * (r.pct + maxPctForRow(r.id))) / 100) * 100) / 100 : undefined}
-                  step={0.01}
-                  value={Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
-                  onChange={(e) => updateRowDollar(r.id, e.target.value)}
-                  style={bloomInputStyle({ width: 110, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "var(--color-neutral-100)", border: "1px solid var(--color-neutral-300)", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
-                />
+                <div role="group" aria-label={`${r.label} amount type`} style={{ display: "flex", border: "2px solid #6D3BE0", borderRadius: 12, overflow: "hidden", flex: "none" }}>
+                  {[["pct", "%"], ["usd", "$"]].map(([m, sym], i) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMode(r.id, m)}
+                      aria-pressed={modeOf(r.id) === m}
+                      style={{
+                        width: 44, minHeight: 44, fontSize: 17, fontWeight: 800, cursor: "pointer",
+                        background: modeOf(r.id) === m ? "#4E22B8" : "#fff",
+                        color: modeOf(r.id) === m ? "#fff" : "#4E22B8",
+                        borderLeft: i === 0 ? "none" : "2px solid #6D3BE0",
+                      }}
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+                {modeOf(r.id) === "pct" ? (
+                  <input
+                    type="number"
+                    onFocus={(e) => e.target.select()}
+                    min={0}
+                    max={Math.round((r.pct + maxPctForRow(r.id)) * 100) / 100}
+                    step={0.1}
+                    value={r.pct}
+                    onChange={(e) => updatePct(r.id, e.target.value)}
+                    aria-label={`${r.label} percent`}
+                    style={bloomInputStyle({ width: 96, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
+                  />
+                ) : (
+                  <input
+                    type="number"
+                    onFocus={(e) => e.target.select()}
+                    min={0}
+                    max={income > 0 ? Math.round(((income * (r.pct + maxPctForRow(r.id))) / 100) * 100) / 100 : undefined}
+                    step={0.01}
+                    value={r.usd ?? Math.round(((income * (r.pct || 0)) / 100) * 100) / 100}
+                    onChange={(e) => updateRowDollar(r.id, e.target.value)}
+                    aria-label={`${r.label} dollars`}
+                    style={bloomInputStyle({ width: 120, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "8px 10px" })}
+                  />
+                )}
+                <span className="text-sm" style={{ color: "#4A3F63", fontWeight: 600, minWidth: 64 }}>
+                  {modeOf(r.id) === "pct"
+                    ? `= ${currency(Math.round(((income * (r.pct || 0)) / 100) * 100) / 100)}`
+                    : `= ${Math.round((r.pct || 0) * 100) / 100}%`}
+                </span>
                 {r.custom ? (
                   <button onClick={() => removeRow(r.id)} aria-label="Remove category" style={{ background: "transparent", border: 0, color: "var(--color-accent-700)", cursor: "pointer" }}>
                     <Trash2 size={15} />

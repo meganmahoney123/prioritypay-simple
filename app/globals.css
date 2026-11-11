@@ -117,15 +117,15 @@ input[type="number"] {
 /* Higher-contrast "date chip" look used on Withdrawals, Close Out, One-Time Transfer and Savings Planner.
    Opt in by adding className="ps-page" to a page's root element. */
 .ps-page { color: #241337; }
-.ps-page [data-ps="card"] { background: #fff !important; border: 1.5px solid #CBB8F5 !important; border-radius: 24px !important; box-shadow: 0 6px 20px rgba(78,34,184,0.10) !important; }
+.ps-page [data-ps="card"] { background: #fff !important; border: 2px solid #9A72F0 !important; border-radius: 24px !important; box-shadow: 0 6px 20px rgba(78,34,184,0.14) !important; }
 .ps-page label.text-xs, .ps-page label > span.block, .ps-page .text-xs.font-semibold { font-size: 14px !important; font-weight: 800 !important; color: #241337 !important; }
 .ps-page p.text-xs, .ps-page .text-xs { font-size: 14px; line-height: 1.5; }
 .ps-page p.text-sm { color: #4A3F63; }
 .ps-page select, .ps-page input[type="text"], .ps-page input[type="number"], .ps-page input[type="date"], .ps-page input[type="month"] {
-  font-size: 16px !important; color: #241337 !important; background: #fff !important; border: 2px solid #CBB8F5 !important;
+  font-size: 16px !important; color: #241337 !important; background: #fff !important; border: 2px solid #8E63EA !important;
   border-radius: 14px !important; padding: 11px 14px !important; min-height: 48px; }
 .ps-page select:focus, .ps-page input:focus { outline: 3px solid #D9C9FF; border-color: #4E22B8 !important; }
-.ps-page div.border-neutral-200 { border: 2px solid #CBB8F5 !important; border-radius: 14px !important; font-size: 18px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 700; background: #fff; min-height: 48px; }
+.ps-page div.border-neutral-200 { border: 2px solid #8E63EA !important; border-radius: 14px !important; font-size: 18px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 700; background: #fff; min-height: 48px; }
 .ps-page div.border-neutral-200 input { border: 0 !important; padding: 0 !important; min-height: 0 !important; background: transparent !important; outline: none !important; font-size: 18px !important; font-weight: 700; font-family: inherit; }
 .ps-page input[type="range"] { accent-color: #4E22B8; min-height: 0; border: 0 !important; padding: 0 !important; background: transparent !important; }
 .ps-page .pp-ledger-btn-primary { min-height: 48px; border-radius: 14px !important; font-weight: 800 !important; font-size: 16px !important; background: #4E22B8 !important; color: #fff !important; }
