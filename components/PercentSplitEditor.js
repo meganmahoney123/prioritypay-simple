@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2, AlertTriangle, Pencil, Link2, X } from "lucide-react";
 import AccountSelect from "./AccountSelect";
 import PlaidLinkButton from "./PlaidLinkButton";
@@ -26,7 +26,44 @@ const BLOOM_DOT_COLORS = ["#D9C9FF", "#C4A9FA", "#9A72F0", "#6D3BE0", "#4E22B8",
 // old "Set a limit" dropdowns: null = no limit, "" = switched on but still
 // empty (settles to the $1 floor on blur, and settleCaps in
 // lib/allocations.js enforces it again before saving).
-function CapCard({ title, sub, value, onChange }) {
+// Progress under a limit: how much of it is already used. `used` is
+// undefined until the numbers load (or for a category that isn't saved yet),
+// in which case nothing is drawn.
+function CapProgress({ used, limit, unit }) {
+  const lim = Number(limit);
+  if (used === undefined || !Number.isFinite(lim) || lim <= 0) return null;
+  const pct = Math.min(100, Math.round((used / lim) * 100));
+  const full = used >= lim;
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ height: 8, borderRadius: 999, background: "#EDE6FF", overflow: "hidden" }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: full ? "#B58900" : "#6D3BE0" }} />
+      </div>
+      <div style={{ marginTop: 5, fontSize: 13, fontWeight: 700, color: full ? "#8A6A00" : "var(--color-text-muted, #4A3F63)", fontVariantNumeric: "tabular-nums" }}>
+        {currency(used)} of {currency(lim)} {unit}
+        {full ? " · limit reached" : ""}
+      </div>
+    </div>
+  );
+}
+
+// One shared fetch (cached for a few seconds) so a page full of categories
+// doesn't ask the server once per row.
+let usageCache = { at: 0, promise: null };
+function loadCapUsage() {
+  if (!usageCache.promise || Date.now() - usageCache.at > 15000) {
+    usageCache = {
+      at: Date.now(),
+      promise: fetch("/api/split-rules/cap-usage")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => j?.usage || null)
+        .catch(() => null),
+    };
+  }
+  return usageCache.promise;
+}
+
+function CapCard({ title, sub, value, onChange, used, unit }) {
   const isSet = value !== null && value !== undefined;
   const clamp = (raw) => {
     if (raw === "") return "";
@@ -102,20 +139,30 @@ function CapCard({ title, sub, value, onChange }) {
           style={{ width: "100%", minWidth: 0, border: 0, outline: "none", background: "transparent", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 17, color: "var(--color-text)" }}
         />
       </label>
+      {isSet && <CapProgress used={used} limit={value} unit={unit} />}
     </div>
   );
 }
 
 function CapCards({ rule, onUpdate }) {
+  const [usage, setUsage] = useState(null);
+  useEffect(() => {
+    let live = true;
+    loadCapUsage().then((u) => { if (live) setUsage(u); });
+    return () => { live = false; };
+  }, []);
+  const mine = usage && rule.label ? usage[rule.label] : undefined;
   return (
     <>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <CapCard title="Monthly limit" sub="Resets on the 1st of every month." value={rule.max} onChange={(v) => onUpdate(rule.id, { max: v })} />
+        <CapCard title="Monthly limit" sub="Resets on the 1st of every month." value={rule.max} onChange={(v) => onUpdate(rule.id, { max: v })} used={mine?.month} unit="this month" />
         <CapCard
           title="Total limit"
           sub="Starting balance plus everything PrioritySave has seen you send here."
           value={rule.categoryCap}
           onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
+          used={mine?.total}
+          unit="so far"
         />
       </div>
       <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted, #4A3F63)" }}>
