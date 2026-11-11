@@ -66,7 +66,7 @@ function daysLeftInMonth() {
   return lastDay - now.getUTCDate() + 1;
 }
 
-function CategoryCard({ category, color, onSavePct, savingPct }) {
+function CategoryCard({ category, color, onSavePct, savingPct, mode = "month" }) {
   const { label, monthlyContribution, balance, cap, lastWithdrawal } = category;
   const capPct = cap && cap > 0 ? Math.min(100, Math.round((balance / cap) * 100)) : null;
   const [draftPct, setDraftPct] = useState(category.pct);
@@ -144,7 +144,7 @@ function CategoryCard({ category, color, onSavePct, savingPct }) {
       </div>
 
       <div className="flex items-center justify-between text-xs mb-2" style={{ color: "var(--color-neutral-700)" }}>
-        <span>Contributed this month</span>
+        <span>{mode === "year" ? "Contributed this year" : "Contributed this month"}</span>
         <span className="font-mono font-semibold">{currency(monthlyContribution)}</span>
       </div>
 
@@ -377,6 +377,7 @@ export default function CategoryDistributionSection({ mode = "month", period, su
                 color={colorByLabel[c.label] || colorForIndex(0)}
                 onSavePct={savePct}
                 savingPct={savingPct}
+                mode={mode}
               />
             ))}
           </div>
