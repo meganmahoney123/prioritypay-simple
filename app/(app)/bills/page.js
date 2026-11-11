@@ -156,9 +156,72 @@ function CalendarView({ bills, today }) {
   );
 }
 
-function CommonBills({ onPick }) {
+function EditableName({ bill, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(bill.name);
+  const guessed = String(bill.note || "") === "Name is our best guess";
+  const save = async () => {
+    const v = val.trim();
+    setEditing(false);
+    if (v && v !== bill.name) await onSave(bill, v);
+    else setVal(bill.name);
+  };
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={val}
+        maxLength={80}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { setVal(bill.name); setEditing(false); } }}
+        aria-label="Payment name"
+        style={bloomInputStyle({ padding: "6px 10px", fontSize: 15 })}
+      />
+    );
+  }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+      <span style={{ fontWeight: 800, fontSize: 15.5, overflowWrap: "anywhere" }}>{bill.name}</span>
+      <button type="button" onClick={() => { setVal(bill.name); setEditing(true); }} aria-label={`Rename ${bill.name}`} title={guessed ? "This name is our best guess. Tap to edit." : "Edit name"} style={{ border: "none", background: "transparent", cursor: "pointer", color: muted, fontSize: 13, padding: 2 }}>✎</button>
+    </div>
+  );
+}
+
+function SuggestionCard({ s, onYes, onNo, busy }) {
+  const [label, setLabel] = useState(s.name);
+  const fmt = (iso) => { const d = parseIso(iso); return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : iso; };
+  const every = { quarterly: "3 months", semiannual: "6 months", yearly: "year" }[s.frequency] || "year";
+  const what = s.count > 1 ? `${currency(s.amount)} across ${s.count} charges` : currency(s.amount);
+  return (
+    <div style={{ border: "1.5px solid color-mix(in srgb, var(--color-accent) 40%, white)", borderRadius: 16, padding: "12px 14px", background: "#fff", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+      <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} aria-label="What this payment is" style={bloomInputStyle({ padding: "6px 10px", fontSize: 14.5, fontWeight: 800, flex: "1 1 200px", minWidth: 0 })} />
+          <span style={{ fontWeight: 800, fontSize: 14.5 }}>{what} on {fmt(s.lastDate)}</span>
+        </div>
+        {s.guessed && <div style={{ fontSize: 12.5, color: muted, marginTop: 4 }}>Charged as {s.merchant}. We guessed the name, so edit it if it's off.</div>}
+        <div style={{ fontSize: 13.5, color: muted, marginTop: 2 }}>A similar charge showed up on {fmt(s.prevDate)}. Does this come around every {every}?</div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <OutlineButton small onClick={() => onYes(s, label.trim() || s.name)} disabled={busy}>Yes, add it</OutlineButton>
+        <OutlineButton small onClick={() => onNo(s)} disabled={busy}>No, not recurring</OutlineButton>
+      </div>
+    </div>
+  );
+}
+
+function CommonBills({ onPick, suggestions = [], onYes, onNo, busy }) {
   return (
     <div style={{ marginTop: 14 }}>
+      {suggestions.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>Found in your past charges</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {suggestions.map((s) => <SuggestionCard key={s.id} s={s} onYes={onYes} onNo={onNo} busy={busy} />)}
+          </div>
+        </div>
+      )}
       <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>Common bills that are easy to miss</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {COMMON_BILLS.map((c) => (
@@ -237,6 +300,26 @@ export default function BillsPage() {
   const [prefill, setPrefill] = useState(null);
   const [view, setView] = useState("list");
   const [canSeed, setCanSeed] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+
+  const loadSuggestions = useCallback(async () => {
+    try {
+      const r = await fetch("/api/bills/suggestions");
+      const d = await r.json().catch(() => ({}));
+      setSuggestions(Array.isArray(d.suggestions) ? d.suggestions : []);
+    } catch { setSuggestions([]); }
+  }, []);
+  useEffect(() => { loadSuggestions(); }, [loadSuggestions]);
+  const suggestYes = async (sg, chosen) => {
+    const ok = await add({ name: chosen || sg.name, note: sg.guessed ? `Charged as ${sg.merchant}`.slice(0, 120) : null, amount: sg.amount, frequency: sg.frequency, nextDue: sg.nextDue, accountId: sg.accountId || null, autopay: false });
+    if (ok) setSuggestions((p) => p.filter((x) => x.id !== sg.id));
+  };
+  const suggestNo = async (sg) => {
+    setSuggestions((p) => p.filter((x) => x.id !== sg.id));
+    try {
+      await fetch("/api/bills/suggestions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dismiss: sg.id }) });
+    } catch {}
+  };
 
   const load = useCallback(async () => {
     const r = await fetch("/api/bills");
@@ -284,6 +367,9 @@ export default function BillsPage() {
     const r = await fetch(`/api/bills/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!r.ok) { const d = await r.json().catch(() => ({})); setError(d.error || "Couldn't save that."); return false; }
     return true;
+  };
+  const rename = async (b, name) => {
+    if (await patch(b.id, { name, note: null })) load();
   };
   const remove = async (id) => {
     const r = await fetch(`/api/bills/${id}`, { method: "DELETE" });
@@ -399,7 +485,7 @@ export default function BillsPage() {
               </div>
               <OutlineButton small onClick={() => setShowAdd((v) => !v)}>{showAdd ? "Close" : "+ Add a bill"}</OutlineButton>
             </div>
-            <CommonBills onPick={(c) => { setPrefill({ ...c, k: Date.now() }); setShowAdd(true); }} />
+            <CommonBills suggestions={suggestions} onYes={suggestYes} onNo={suggestNo} busy={busy} onPick={(c) => { setPrefill({ ...c, k: Date.now() }); setShowAdd(true); }} />
             {showAdd && (
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1.5px solid var(--color-divider)" }}>
                 <AddForm key={prefill?.k || "blank"} initial={prefill} accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) { setShowAdd(false); setPrefill(null); } return ok; }} busy={busy} />
@@ -414,8 +500,8 @@ export default function BillsPage() {
                 <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderTop: i ? "1.5px solid var(--color-divider)" : "none" }}>
                   <Check on={on} onChange={(v) => setKeep((p) => ({ ...p, [b.id]: v }))} label={`Keep ${b.name}`} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, fontSize: 15.5, overflowWrap: "anywhere" }}>{b.name}</div>
-                    <div style={{ fontSize: 12.5, color: muted }}>{frequencyLabel(b.frequency)}{acc ? ` · ${acc.label}` : ""}</div>
+                    <EditableName key={b.id + b.name} bill={b} onSave={rename} />
+                    <div style={{ fontSize: 12.5, color: muted }}>{frequencyLabel(b.frequency)}{acc ? ` · ${acc.label}` : ""}{b.note === "Name is our best guess" ? " · name is our best guess, tap ✎ to edit" : ""}</div>
                   </div>
                   <div style={{ ...mono, fontSize: 15 }}>{currency(b.amount)}</div>
                 </div>
@@ -441,7 +527,7 @@ export default function BillsPage() {
           {showAdd && (
             <Panel>
               <AddForm key={prefill?.k || "blank"} initial={prefill} accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) { setShowAdd(false); setPrefill(null); } return ok; }} busy={busy} />
-              <CommonBills onPick={(c) => setPrefill({ ...c, k: Date.now() })} />
+              <CommonBills suggestions={suggestions} onYes={suggestYes} onNo={suggestNo} busy={busy} onPick={(c) => setPrefill({ ...c, k: Date.now() })} />
             </Panel>
           )}
 
@@ -516,7 +602,7 @@ export default function BillsPage() {
                               <div style={{ ...mono, fontSize: 20, lineHeight: 1.1 }}>{d.getUTCDate()}</div>
                             </div>
                             <div style={{ minWidth: 0 }}>
-                              <div style={{ fontWeight: 800, fontSize: 15.5, overflowWrap: "anywhere" }}>{b.name}</div>
+                              <EditableName key={b.id + b.name} bill={b} onSave={rename} />
                               <div style={{ fontSize: 12.5, color: muted }}>{frequencyLabel(b.frequency)}{noteOf(b) ? ` · ${noteOf(b)}` : ""}</div>
                             </div>
                             <div style={{ ...mono, fontSize: 15, textAlign: "right" }}>{currency(b.amount)}</div>

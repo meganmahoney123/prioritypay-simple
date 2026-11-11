@@ -1,3 +1,4 @@
+import { guessLabel, labeledName, GUESS_NOTE } from "@/lib/billLabels";
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
@@ -55,8 +56,11 @@ export async function POST() {
         if (!amount || !s.predicted_next_date) continue;
         if (known.get(s.stream_id) === "dismissed") continue;
         const account = rows.find((r) => r.plaid_account_id === s.account_id) || rows[0];
+        const merchant = s.merchant_name || s.description || "Recurring payment";
+        const guess = guessLabel({ name: merchant, detailed: s.personal_finance_category?.detailed, amount, frequency });
         const base = {
-          name: (s.merchant_name || s.description || "Recurring payment").slice(0, 80),
+          name: labeledName(merchant, guess).slice(0, 80),
+          note: guess ? GUESS_NOTE : null,
           amount: Math.round(amount * 100) / 100,
           frequency,
           next_due: s.predicted_next_date,
