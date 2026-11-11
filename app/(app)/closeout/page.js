@@ -747,7 +747,7 @@ export default function CloseoutPage() {
   // the row above (profit for sole proprietors, draws received for the rest).
   const bizBreakdown = profitRows
     .filter((b) => b.income !== 0 || b.expenses !== 0)
-    .map((b) => ({ id: b.id, name: b.name, amount: b.profit, detail: `${currency(b.income)} income, ${currency(b.expenses)} expenses` }));
+    .map((b) => ({ id: b.id, name: b.name, profitLine: true, amount: b.profit, detail: `${currency(b.income)} income, ${currency(b.expenses)} expenses` }));
   const drawBreakdown = businesses
     .filter((b) => paysByDraw(b.entityType))
     .map((b) => {
@@ -1266,7 +1266,7 @@ export default function CloseoutPage() {
                             </div>
                             <div style={{ fontSize: 13, fontWeight: 800, color: PS_MUTED, width: 38, textAlign: "right" }}>{pct}%</div>
                           </div>
-                          <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 17, fontWeight: 600 }}>{currency(r.amount)}</div>
+                          <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 17, fontWeight: 600 }}>{r.key === "biz" && profitRows.length > 0 && <span style={{ display: "block", fontFamily: "inherit", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", color: PS_MUTED, textTransform: "uppercase" }}>Net profit</span>}{currency(r.amount)}</div>
                         </div>
                         {parts.length > 1 && (
                           <div style={{ marginBottom: 12, marginLeft: 6, paddingLeft: 14, borderLeft: "3px solid #D9C9FF" }}>
@@ -1277,7 +1277,7 @@ export default function CloseoutPage() {
                                   <div style={{ fontSize: 12.5, color: PS_MUTED }}>{b.detail}</div>
                                 </div>
                                 <div />
-                                <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 15, fontWeight: 600, color: PS_INK }}>{currency(b.amount)}</div>
+                                <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 15, fontWeight: 600, color: PS_INK }}>{b.profitLine && <span style={{ display: "block", fontFamily: "inherit", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", color: PS_MUTED, textTransform: "uppercase" }}>Net profit</span>}{currency(b.amount)}</div>
                               </div>
                             ))}
                           </div>
@@ -1309,7 +1309,7 @@ export default function CloseoutPage() {
                         <th style={{ textAlign: "left", padding: "6px 0" }}>BUSINESS</th>
                         <th>INCOME</th>
                         <th>EXPENSES</th>
-                        <th>PROFIT</th>
+                        <th>NET PROFIT</th>
                       </tr>
                     </thead>
                     <tbody>
