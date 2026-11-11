@@ -281,32 +281,29 @@ export async function POST() {
           });
         });
       };
-      // Income already sorted
-      add("inc-biz1", 3, "Client Payment", 3400, "in", { suggested_category: "income", confirmed_category: "income", business_id: soleProp.id });
-      add("inc-biz2", 17, "Client Payment", 2800, "in", { suggested_category: "income", confirmed_category: "income", business_id: soleProp.id });
-      add("inc-biz3", 24, "Client Payment", 1500, "in", { suggested_category: "income", confirmed_category: "income", business_id: soleProp.id });
-      if (llc) add("inc-draw", 15, `${llc.name} Owner Draw`, 3000, "in", { suggested_category: "income", confirmed_category: "income", business_id: llc.id });
-      add("inc-w2", 1, "Acme Corp Payroll", 3200, "in", { suggested_category: "w2_income", confirmed_category: "w2_income" });
-      add("inc-misc", 22, "Venmo from Sam", 85, "in", { suggested_category: "misc_income", confirmed_category: "misc_income" });
-      [["div1", 6, "Vanguard Dividend", 112], ["int1", 9, "Schwab Interest", 88], ["div2", 14, "Fidelity Dividend", 142], ["int2", 30, "Ally Savings Interest", 70]].forEach(([k, d, n, a]) =>
-        add(k, d, n, a, "in", { suggested_category: "investment_income", confirmed_category: "investment_income" })
+      // Sample month matches the approved Close Out mockup exactly.
+      rows.length = 0; // curated sample replaces the generic template rows
+      const inc = (key, day, name, amount, cat, biz) =>
+        add(key, day, name, amount, "in", { suggested_category: cat, confirmed_category: cat, ...(biz ? { business_id: biz } : {}) });
+      // Income, already sorted: $15,897 across five sources
+      inc("inc-biz1", 3, "Client Payment", 4000, "income", soleProp.id);
+      inc("inc-biz2", 14, "Client Payment", 3200, "income", soleProp.id);
+      inc("inc-biz3", 24, "Client Payment", 2000, "income", soleProp.id);
+      if (llc) inc("inc-draw", 15, `${llc.name} Owner Draw`, 3000, "income", llc.id);
+      inc("inc-w2", 1, "Acme Corp Payroll", 3200, "w2_income");
+      inc("inc-misc", 22, "Venmo from Sam", 85, "misc_income");
+      [["div1", 6, "Vanguard Dividend", 112], ["int1", 9, "Schwab Interest", 88], ["div2", 14, "Fidelity Dividend", 142], ["int2", 18, "Ally Savings Interest", 70]].forEach(([k, d, n, a]) =>
+        inc(k, d, n, a, "investment_income")
       );
-      // Business expenses already sorted
-      [["x-gw", 2, "Google Workspace", 72], ["x-web", 4, "Webflow", 39], ["x-not", 5, "Notion", 16], ["x-qb", 8, "QuickBooks", 35], ["x-ads", 10, "Facebook Ads", 380], ["x-up", 12, "Upwork Contractor", 450], ["x-mc", 18, "Mailchimp", 45], ["x-zap", 21, "Zapier", 30], ["x-dbx", 24, "Dropbox", 20], ["x-sq", 11, "Squarespace", 23], ["x-loom", 16, "Loom", 15], ["x-slk", 19, "Slack", 8.75], ["x-cal", 22, "Calendly", 12], ["x-fed", 25, "FedEx", 18.4], ["x-shut", 26, "Shutterstock", 29]].forEach(([k, d, n, a]) =>
-        add(k, d, n, a, "out", { suggested_category: "expense", confirmed_category: "expense", business_id: soleProp.id })
-      );
-      // Personal ones already marked Personal
-      [["x-gym", 7, "Planet Fitness", 24.99], ["x-tgt", 13, "Target", 87.2], ["x-cvs", 20, "CVS Pharmacy", 18.45], ["x-tj", 9, "Trader Joe's", 74.1], ["x-chev", 15, "Chevron", 52.3], ["x-nflx", 27, "Netflix", 15.49]].forEach(([k, d, n, a]) =>
-        add(k, d, n, a, "out", { suggested_category: "expense", confirmed_category: "exclude" })
+      // Six business expenses already sorted: $1,364 for the sole proprietor
+      [["x-ads", 10, "Facebook Ads", 520, "ADVERTISING"], ["x-up", 12, "Upwork Contractor", 450, "GENERAL_SERVICES"], ["x-web", 4, "Webflow", 77, "GENERAL_SERVICES"], ["x-gw", 2, "Google Workspace", 72, "GENERAL_SERVICES"], ["x-qb", 8, "QuickBooks", 35, "GENERAL_SERVICES"], ["x-ins", 15, "Business Insurance", 210, "GENERAL_SERVICES"]].forEach(([k, d, n, a, pfc]) =>
+        add(k, d, n, a, "out", { suggested_category: "expense", confirmed_category: "expense", business_id: soleProp.id, pfc_primary: pfc })
       );
       // Still needs attention: two income items and six expenses
-      add("n-inc1", 28, "Vanguard Dividend", 112, "in", { suggested_category: "investment_income" });
-      add("n-inc2", 29, "Zelle from Jordan", 60, "in", { suggested_category: "misc_income" });
-      add("n-inc3", 20, "Stripe Payout", 480, "in", { suggested_category: "income" });
-      add("n-inc4", 23, "Zelle from Alex", 150, "in", { suggested_category: "misc_income" });
-      add("n-inc5", 27, "Wealthfront Interest", 38.2, "in", { suggested_category: "investment_income" });
-      [["n-cva", 1, "Canva", 15], ["n-ado", 3, "Adobe", 54], ["n-zm", 7, "Zoom", 16], ["n-ub", 12, "Uber", 23], ["n-wf", 19, "Whole Foods", 68], ["n-sh", 24, "Shell", 41], ["n-sb", 5, "Starbucks", 7.45], ["n-amz", 6, "Amazon", 34.99], ["n-hd", 8, "Home Depot", 62.3], ["n-chip", 10, "Chipotle", 14.2], ["n-lyft", 14, "Lyft", 19.5], ["n-stp", 17, "Staples", 28.75], ["n-spot", 21, "Spotify", 11.99], ["n-wal", 22, "Walgreens", 22.1], ["n-cost", 26, "Costco", 96.4]].forEach(([k, d, n, a]) =>
-        add(k, d, n, a, "out", { suggested_category: "expense", pfc_primary: "GENERAL_SERVICES" })
+      add("n-inc1", 28, "VANGUARD DIVIDEND", 112, "in", { suggested_category: "investment_income" });
+      add("n-inc2", 30, "Zelle from Jordan", 60, "in", { suggested_category: "misc_income" });
+      [["n-cva", 1, "Canva", 15, "GENERAL_SERVICES"], ["n-ado", 3, "Adobe", 54, "GENERAL_SERVICES"], ["n-zm", 7, "Zoom", 16, "GENERAL_SERVICES"], ["n-ub", 12, "Uber", 23, "TRANSPORTATION"], ["n-wf", 19, "Whole Foods", 68, "FOOD_AND_DRINK"], ["n-sh", 24, "Shell", 41, "TRANSPORTATION"]].forEach(([k, d, n, a, pfc]) =>
+        add(k, d, n, a, "out", { suggested_category: "expense", pfc_primary: pfc })
       );
       rows.push(...extra);
     }

@@ -741,7 +741,7 @@ export default function CloseoutPage() {
   const [openDetails, setOpenDetails] = useState({});
   const chargeChoice = (t) => {
     const c = catOf(t);
-    if (c === "expense") return t.business_id || "__biz";
+    if (c === "expense") return t.business_id || (t.confirmed_category ? "__biz" : "");
     if (c === "exclude" && t.confirmed_category) return "__personal";
     return "";
   };
@@ -1185,13 +1185,7 @@ export default function CloseoutPage() {
           </div>
         </Card>
       )}
-      <Card className="p-6">
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: PS_INK }} className="mb-1">{isW2NoSideHustlePersona ? "Your Money In & Out" : "Step 1: Confirm Net Income"}</h2>
-        <p className="text-xs text-[var(--color-neutral-700)] mb-4">
-          PrioritySave pulled every transaction across your linked accounts for {periodLabel(period)} and made a
-          best guess at what&apos;s real income, a real expense, or an internal transfer that shouldn&apos;t count
-          as either (like PrioritySave&apos;s own splits moving between your accounts).
-        </p>
+      <div className="space-y-6">
         {isConfirmed && (
           <div
             className="mb-4 flex items-start gap-2 px-3 py-2.5 text-xs"
@@ -1394,7 +1388,7 @@ export default function CloseoutPage() {
             {confirming ? "Confirming…" : isW2NoSideHustlePersona || !showTaxGuidance ? "Save this month" : attentionCount > 0 ? `Confirm ${periodLabel(period).split(" ")[0]} (${attentionCount} left)` : "Confirm and see recommendations"}
           </PrimaryButton>
         )}
-      </Card>
+      </div>
 
       <SpendByCategory transactions={transactions} />
 
