@@ -22,6 +22,7 @@ import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
 import { notify } from "@/lib/notify";
+import AddCategoryCard from "@/components/AddCategoryCard";
 
 // Re-enabled: PrioritySave no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
@@ -1131,6 +1132,8 @@ function OnboardingPageInner() {
               persona={businessType}
             />
 
+            <AddCategoryCard style={{ marginTop: 22 }} suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
+
             {needsRetirement && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "16px 0 0" }}>
                 Most people with earned income put at least 1% toward retirement. You can add it back below if you removed it.
@@ -1178,56 +1181,6 @@ function OnboardingPageInner() {
                 </div>
               </div>
             )}
-
-            {availableSuggestions.length > 0 && (
-              <div style={{ marginTop: 26 }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
-                  Suggestions: click to add, starts at 0%
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-                  {availableSuggestions.map((sg) => (
-                    <button
-                      key={sg.label}
-                      onClick={() => addSuggested(sg)}
-                      className="pp-ledger-pill"
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 14,
-                        color: "color-mix(in srgb, var(--color-text) 72%, transparent)",
-                        background: "transparent",
-                        border: "1px solid var(--color-divider)",
-                        borderRadius: 999,
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      + &nbsp;{sg.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={addPercent}
-              className="pp-ledger-dashed"
-              style={{
-                width: "100%",
-                marginTop: 22,
-                background: "transparent",
-                border: "1px dashed var(--color-accent-300)",
-                borderRadius: "var(--radius-md)",
-                padding: "14px 16px",
-                cursor: "pointer",
-                fontFamily: "var(--font-heading)",
-                fontSize: 15,
-                letterSpacing: "0.04em",
-                color: "var(--color-accent-700)",
-              }}
-            >
-              + &nbsp;Add your own category
-            </button>
 
             <div style={{ borderTop: "1px solid var(--color-divider)", marginTop: 36, paddingTop: 24 }}>
               <label style={{ display: "block", fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", marginBottom: 10 }}>
@@ -1500,44 +1453,7 @@ function OnboardingPageInner() {
             />
             {editSplits ? (
               <>
-                <button
-                  onClick={addPercent}
-                  className="pp-ledger-dashed"
-                  style={{
-                    width: "100%",
-                    marginTop: 20,
-                    background: "transparent",
-                    border: "1px dashed var(--color-accent-300)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "14px 16px",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-heading)",
-                    fontSize: 15,
-                    letterSpacing: "0.04em",
-                    color: "var(--color-accent-700)",
-                  }}
-                >
-                  + &nbsp;Add your own category
-                </button>
-                {availableSuggestions.length > 0 && (
-                  <div style={{ marginTop: 30 }}>
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginBottom: 14 }}>
-                      Suggestions: click to add, starts at 0%
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-                      {availableSuggestions.map((sg) => (
-                        <button
-                          key={sg.label}
-                          onClick={() => addSuggested(sg)}
-                          className="pp-ledger-pill"
-                          style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", background: "transparent", border: "1px solid var(--color-divider)", borderRadius: 999, padding: "8px 16px", cursor: "pointer", whiteSpace: "nowrap" }}
-                        >
-                          + &nbsp;{sg.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <AddCategoryCard style={{ marginTop: 20 }} suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
                 <button
                   type="button"
                   onClick={() => setEditSplits(false)}

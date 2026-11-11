@@ -3,12 +3,12 @@
 import { drawNote, splitUnit } from "@/lib/entityCopy";
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
+import AddCategoryCard from "@/components/AddCategoryCard";
 
 // Split Rules is the exact same editor as onboarding's Percentage Splits
 // step (see components/PercentSplitEditor.js) -- same grouped
@@ -435,58 +435,7 @@ function SplitRulesPageInner() {
         hideSoloRetirementNote
       />
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={addPercent}
-          className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5"
-          style={{
-            background: "transparent",
-            border: "1px dashed #C4A9FA",
-            borderRadius: 18,
-            fontFamily: "var(--font-heading)",
-            fontSize: 15,
-            fontWeight: 600,
-            color: "#4E22B8",
-            cursor: "pointer",
-          }}
-        >
-          <Plus size={15} /> Add your own category
-        </button>
-      </div>
-
-      {availableSuggestions.length > 0 && (
-        <div>
-          <p
-            className="mb-2"
-            style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}
-          >
-            Suggestions, click to add, starts at 0%:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {availableSuggestions.map((s) => (
-              <button
-                key={s.label}
-                onClick={() => addSuggested(s)}
-                className="flex items-center gap-1"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: "var(--color-text)",
-                  background: "#FFFFFF",
-                  border: "1px solid var(--color-divider)",
-                  borderRadius: 999,
-                  padding: "8px 16px",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <Plus size={12} /> {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <AddCategoryCard suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
       <div className="flex items-baseline justify-between" style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 20 }}>
         <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
