@@ -35,6 +35,7 @@ function buildNav({ isW2Only = false, showDebt = false, showBusiness = false } =
   const manage = [
     { href: "/accounts", label: "Accounts" },
     { href: "/withdrawals", label: "Withdrawals" },
+    { href: "/bills", label: "Bills and Autopays" },
     { href: "/transfers", label: "One-Time Transfer" },
     { href: "/closeout", label: isW2Only ? "Month in Review" : "Close Out" },
   ];
@@ -75,6 +76,7 @@ const TITLES = {
   "/debt": "Debt Payoff",
   "/transfers": "One-Time Transfer",
   "/withdrawals": "Withdrawals",
+  "/bills": "Bills and Autopays",
   "/closeout": "Monthly Close-Out",
   "/history": "Transaction History",
   "/advisor": "Tax Savings Quiz",

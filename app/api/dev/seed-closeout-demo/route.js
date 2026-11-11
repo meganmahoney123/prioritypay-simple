@@ -2,6 +2,8 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { periodToDate } from "@/lib/closeoutSync";
 import { isW2NoSideHustle } from "@/lib/allocations";
+import { loadBusinessRows, typeForBusiness, closeoutCategoryFor } from "@/lib/businesses";
+import { SOLE_PROP, SINGLE_LLC } from "@/lib/entityCopy";
 
 // DEV/DEMO ONLY -- gives each demo persona account something real to show
 // on the Monthly Close-Out page.
@@ -176,10 +178,78 @@ export async function POST() {
     });
   });
 
-  const { error: insertError } = await admin
+  // Show what it looks like once deposits were tagged on Split My Deposits:
+  // most deposits already carry a type (and a business) and flow into Close
+  // Out as handled; the last couple of each month are left untagged so the
+  // "Needs your attention" list has something in it. Only for people who
+  // earn business income (W-2-only personas have nothing to attribute).
+  let tagged = 0;
+  if (incomeCategory === "income") {
+    let businesses = await loadBusinessRows(admin, user.id);
+    if (!businesses.length) {
+      const seedRows = [
+        { user_id: user.id, name: "Ignite My Site", entity_type: SOLE_PROP },
+        { user_id: user.id, name: "PriorityPay", entity_type: SINGLE_LLC },
+      ];
+      const { error: bizErr } = await admin.from("simple_businesses").insert(seedRows);
+      if (!bizErr) businesses = await loadBusinessRows(admin, user.id);
+    }
+    if (businesses.length) {
+      // deposit rows grouped by month, oldest first
+      const byMonth = {};
+      transfers.forEach((t) => {
+        const k = monthKey(t.created_at);
+        (byMonth[k] = byMonth[k] || []).push(t);
+      });
+      const pattern = ["biz", "biz", "w2", "misc"]; // cycles; a "biz" alternates between businesses
+      let bizTurn = 0;
+      for (const list of Object.values(byMonth)) {
+        const leaveOpen = list.length > 2 ? 2 : 0;
+        for (let i = 0; i < list.length - leaveOpen; i++) {
+          const t = list[i];
+          const kind = pattern[i % pattern.length];
+          let depositType = "misc";
+          let businessId = null;
+          if (kind === "biz") {
+            const biz = businesses[bizTurn++ % businesses.length];
+            depositType = typeForBusiness(biz.entityType);
+            businessId = biz.id;
+          } else if (kind === "w2") depositType = "w2";
+          const update = { deposit_type: depositType, business_id: businessId };
+          let r = await admin.from("simple_transfers").update(update).eq("id", t.id);
+          if (r.error) r = await admin.from("simple_transfers").update({ deposit_type: depositType }).eq("id", t.id);
+          const cat = closeoutCategoryFor(depositType);
+          const row = rows.find((x) => x.plaid_transaction_id === `demo-seed-income-${t.id}`);
+          if (row) {
+            row.suggested_category = cat;
+            row.confirmed_category = cat;
+            row.business_id = businessId;
+            row.name = depositType === "w2" ? "Payroll Direct Deposit" : depositType === "misc" ? "Venmo Payment" : "Client Payment";
+            tagged += 1;
+          }
+        }
+      }
+      // A few expenses already attributed to a business, so profit per business has numbers.
+      rows.forEach((r) => {
+        if (r.direction === "out" && ["Software Subscriptions", "Office Supplies", "Business Insurance"].includes(r.name)) {
+          const biz = businesses[r.name === "Business Insurance" ? businesses.length - 1 : 0];
+          r.confirmed_category = "expense";
+          r.business_id = biz.id;
+        }
+      });
+    }
+  }
+
+  let { error: insertError } = await admin
     .from("simple_closeout_transactions")
     .upsert(rows, { onConflict: "closeout_id,plaid_transaction_id" });
+  if (insertError && /business_id/.test(insertError.message || "")) {
+    // Biz-attribution SQL not run yet: seed without it.
+    ({ error: insertError } = await admin
+      .from("simple_closeout_transactions")
+      .upsert(rows.map(({ business_id, ...r }) => r), { onConflict: "closeout_id,plaid_transaction_id" }));
+  }
   if (insertError) return Response.json({ error: insertError.message }, { status: 500 });
 
-  return Response.json({ checkingAccountId, periods: Object.keys(closeoutIdByPeriod), transactionsSeeded: rows.length });
+  return Response.json({ checkingAccountId, periods: Object.keys(closeoutIdByPeriod), transactionsSeeded: rows.length, depositsTagged: tagged });
 }
