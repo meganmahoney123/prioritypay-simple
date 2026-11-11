@@ -465,11 +465,11 @@ export default function AppShell({ children, isSandbox = false }) {
           >
             <Bell size={14} style={{ flexShrink: 0, opacity: 0.85 }} />
             <span style={{ fontSize: 14, fontWeight: 600, textAlign: "center" }}>
-              {pendingGroups.length} split{pendingGroups.length > 1 ? "s" : ""} waiting to be sent &middot;{" "}
-              {currency(pendingTotal)} total
+              {waitingDeposits > 0 ? waitingDeposits : 1} deposit{waitingDeposits > 1 ? "s" : ""} ready to split &middot;{" "}
+              {currency(pendingTotal)} to transfer
             </span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 700, textDecoration: "underline", flexShrink: 0 }}>
-              Go send it <ArrowRight size={13} />
+              Go split {waitingDeposits > 1 ? "them" : "it"} <ArrowRight size={13} />
             </span>
           </Link>
         )}

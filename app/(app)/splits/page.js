@@ -3,7 +3,7 @@
 import { drawNote, splitUnit } from "@/lib/entityCopy";
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Undo2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
@@ -529,7 +529,7 @@ function SplitRulesPageInner() {
           bottom: 0,
           zIndex: 20,
           margin: 0, borderRadius: "20px 20px 0 0",
-          padding: "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))",
+          padding: "8px 16px calc(8px + env(safe-area-inset-bottom, 0px))",
           background: "#fff",
           borderTop: "1.5px solid #D9C9FF",
           boxShadow: "0 -8px 24px rgba(78,34,184,0.10)",
@@ -553,33 +553,27 @@ function SplitRulesPageInner() {
                   Try again
                 </button>
               )}
+              <span aria-hidden="true" style={{ color: "#CBB8F5" }}>·</span>
+              <button
+                type="button"
+                onClick={undo}
+                disabled={undoCount === 0 && !dirty}
+                title={undoCount === 0 && !dirty ? "Nothing to undo yet" : "Undo your last change"}
+                style={{
+                  textDecoration: "underline",
+                  fontWeight: 800,
+                  color: "#4E22B8",
+                  opacity: undoCount === 0 && !dirty ? 0.4 : 1,
+                  cursor: undoCount === 0 && !dirty ? "default" : "pointer",
+                  minHeight: 32,
+                  padding: "0 4px",
+                }}
+              >
+                Undo change
+              </button>
             </div>
           );
         })()}
-        <button
-          type="button"
-          onClick={undo}
-          disabled={undoCount === 0 && !dirty}
-          title="Undo your last change"
-          style={{
-            width: "100%",
-            minHeight: 48,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            border: "2px solid #6D3BE0",
-            background: "#fff",
-            color: "#4E22B8",
-            borderRadius: 14,
-            fontSize: 16,
-            fontWeight: 800,
-            opacity: undoCount === 0 && !dirty ? 0.4 : 1,
-            cursor: undoCount === 0 && !dirty ? "not-allowed" : "pointer",
-          }}
-        >
-          <Undo2 size={18} /> Undo
-        </button>
       </div>
     </div>
   );
