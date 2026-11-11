@@ -166,8 +166,17 @@ function OnboardingPageInner() {
   // Starting split for a persona and business structure. Draw-only owners start
   // without the OPEX row (their business pays its own expenses first); its
   // share moves to Savings so the starting total stays the same.
-  const defaultsFor = (persona, entity) => {
+  // Retired-only people can't contribute to an employer 401k or an IRA (no
+  // earned income) and mostly can't fund an HSA (Medicare), so they start with
+  // no retirement rows; that share goes to Savings so the total stays the same.
+  const defaultsFor = (persona, entity, picks = workPicks) => {
     let rows = getDefaultSplitRules(persona).percent;
+    if (picks.length > 0 && picks.every((v) => v === "retired")) {
+      const ret = rows.filter((r) => (r.group || "").startsWith("Retirement")).reduce((n, r) => n + (Number(r.pct) || 0), 0);
+      return rows
+        .filter((r) => !(r.group || "").startsWith("Retirement"))
+        .map((r) => (r.id === "savings" ? { ...r, pct: (Number(r.pct) || 0) + ret } : r));
+    }
     // Retirement starts as one generic bucket with the usual total. People then
     // tick the accounts they have open right now (see toggleRetirement).
     const isRet = (r) => (r.group || "").startsWith("Retirement");
@@ -234,7 +243,7 @@ function OnboardingPageInner() {
     // Retirement's default sub-account(s) depend on persona (see
     // getDefaultSplitRules in lib/allocations.js). Safe to reset here since
     // this is Step 1, before anyone has customized their split on Step 3.
-    setPercent(defaultsFor(nextType, isW2NoSideHustle(nextType) || !picks.length ? SOLE_PROP : entityType));
+    setPercent(defaultsFor(nextType, isW2NoSideHustle(nextType) || !picks.length ? SOLE_PROP : entityType, picks));
   };
   // Only asked/used for "Business Owner (With Employees)" -- a rough
   // self-reported number (no payroll integration exists) that feeds the
