@@ -1396,23 +1396,7 @@ export default function CloseoutPage() {
             </div>
           </div>
         )}
-        <div className="mt-6" style={{ background: "#EDE6FF", border: "2px solid #CBB8F5", borderRadius: 20, padding: "18px 20px" }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: PS_ACCENT, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Net income {isConfirmed ? "(confirmed)" : "(preview)"}
-          </div>
-          <div style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 38, fontWeight: 700, color: PS_INK, lineHeight: 1.2 }}>
-            {currency(displayNetIncome)}
-          </div>
-          <div style={{ fontSize: 14, color: PS_MUTED }}>
-            Money in {currency(moneyInTotal)} − expenses {currency(moneyOutTotal)}
-          </div>
-        </div>
-        {displayW2Income > 0 && (
-          <div className="flex items-center justify-between text-xs text-[var(--color-neutral-700)] mt-1">
-            <span>W2 income this month (excluded from retirement &amp; tax below)</span>
-            <span className="font-mono">{currency(displayW2Income)}</span>
-          </div>
-        )}
+        {/* The Net income preview card and the W2 line were removed: the income by source panel above already shows the same information. The figures still feed the retirement and tax math below. */}
         {displayBusiness > 0 && (
           <div className="flex items-center justify-between text-xs text-[var(--color-neutral-700)] mt-1">
             <span>Flagged as business this month (excluded, belongs to the business side, see Tax Summary)</span>
