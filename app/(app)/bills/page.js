@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton } from "@/components/ui";
 import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
+import { cancelLinkFor } from "@/lib/cancelLinks";
+import { COMMON_BILLS } from "@/lib/commonBills";
 import { FREQUENCIES, frequencyLabel, occurrencesBetween, upcoming, toIso, parseIso } from "@/lib/bills";
 
 const muted = "color-mix(in srgb, var(--color-text) 68%, transparent)";
@@ -154,8 +156,28 @@ function CalendarView({ bills, today }) {
   );
 }
 
-function AddForm({ accounts, onAdd, busy }) {
-  const [f, setF] = useState({ name: "", amount: "", frequency: "monthly", nextDue: "", accountId: "", autopay: false });
+function CommonBills({ onPick }) {
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 8 }}>Common bills that are easy to miss</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {COMMON_BILLS.map((c) => (
+          <button
+            key={c.name}
+            type="button"
+            onClick={() => onPick(c)}
+            style={{ fontFamily: "var(--font-body)", fontSize: 13.5, fontWeight: 700, cursor: "pointer", padding: "6px 12px", borderRadius: 999, border: "1.5px solid color-mix(in srgb, var(--color-accent) 40%, white)", background: "#fff", color: "var(--color-text)" }}
+          >
+            + {c.name} · {frequencyLabel(c.frequency).toLowerCase()}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AddForm({ accounts, onAdd, busy, initial }) {
+  const [f, setF] = useState({ name: initial?.name || "", amount: "", frequency: initial?.frequency || "monthly", nextDue: "", accountId: "", autopay: false });
   const [err, setErr] = useState("");
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   const field = (label, input) => (
@@ -212,6 +234,7 @@ export default function BillsPage() {
   const [skipped, setSkipped] = useState(false);
   const [keep, setKeep] = useState({});
   const [showAdd, setShowAdd] = useState(false);
+  const [prefill, setPrefill] = useState(null);
   const [view, setView] = useState("list");
   const [canSeed, setCanSeed] = useState(false);
 
@@ -373,9 +396,10 @@ export default function BillsPage() {
               </div>
               <OutlineButton small onClick={() => setShowAdd((v) => !v)}>{showAdd ? "Close" : "+ Add a bill"}</OutlineButton>
             </div>
+            <CommonBills onPick={(c) => { setPrefill({ ...c, k: Date.now() }); setShowAdd(true); }} />
             {showAdd && (
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1.5px solid var(--color-divider)" }}>
-                <AddForm accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) setShowAdd(false); return ok; }} busy={busy} />
+                <AddForm key={prefill?.k || "blank"} initial={prefill} accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) { setShowAdd(false); setPrefill(null); } return ok; }} busy={busy} />
               </div>
             )}
           </Panel>
@@ -412,7 +436,10 @@ export default function BillsPage() {
           {detectNote && <div style={{ fontSize: 14, color: muted }}>{detectNote}</div>}
 
           {showAdd && (
-            <Panel><AddForm accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) setShowAdd(false); return ok; }} busy={busy} /></Panel>
+            <Panel>
+              <AddForm key={prefill?.k || "blank"} initial={prefill} accounts={accounts} onAdd={async (b) => { const ok = await add(b); if (ok) { setShowAdd(false); setPrefill(null); } return ok; }} busy={busy} />
+              <CommonBills onPick={(c) => setPrefill({ ...c, k: Date.now() })} />
+            </Panel>
           )}
 
           {confirmed.length > 0 && (
@@ -494,7 +521,17 @@ export default function BillsPage() {
                               <div>{acc ? acc.label : "Not detected"}</div>
                               <div style={{ fontSize: 12.5, color: muted }}>{frequencyLabel(b.frequency)}</div>
                             </div>
-                            <div><Pill tone={isPending ? "ok" : b.autopay ? "on" : "hand"}>{isPending ? "Needs your OK" : b.autopay ? "Autopay on" : "You pay by hand"}</Pill></div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                              <Pill tone={isPending ? "ok" : b.autopay ? "on" : "hand"}>{isPending ? "Needs your OK" : b.autopay ? "Autopay on" : "You pay by hand"}</Pill>
+                              {(() => {
+                                const c = cancelLinkFor(b.name);
+                                return c ? (
+                                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "underline" }}>
+                                    {c.exact ? "Cancel or manage" : "How to cancel"}
+                                  </a>
+                                ) : null;
+                              })()}
+                            </div>
                             {isPending ? (
                               <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                                 <OutlineButton small onClick={async () => { if (await patch(b.id, { status: "confirmed" })) load(); }}>Keep</OutlineButton>
@@ -546,7 +583,7 @@ export default function BillsPage() {
           )}
 
           <p style={{ color: muted, fontSize: 13.5, margin: 0, maxWidth: 760, lineHeight: 1.55 }}>
-            Detected means we saw the payment repeat in your account history. It does not mean the lender has autopay turned on, so you tell us which ones are. Payments made through Zelle, Venmo, checks or a card may not show up, so you can add them by hand.
+            Detected means we saw the payment repeat in your account history. It does not mean the lender has autopay turned on, so you tell us which ones are. Payments made through Zelle, Venmo, checks or a card may not show up, so you can add them by hand. Cancel links open the company's own page. We never cancel or move money for you.
           </p>
         </>
       )}

@@ -19,6 +19,8 @@ export async function POST() {
       user: { client_user_id: user.id },
       client_name: "PrioritySave",
       products: [Products.Transactions],
+      // 24 months of history so yearly bills can be spotted.
+      transactions: { days_requested: 730 },
       country_codes: [CountryCode.Us],
       language: "en",
       account_filters: { depository: { account_subtypes: ["checking", "savings"] } },

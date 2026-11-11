@@ -43,6 +43,7 @@ export async function POST(request) {
       user: { client_user_id: user.id },
       client_name: "PrioritySave",
       products,
+      transactions: { days_requested: 730 },
       country_codes: [CountryCode.Us],
       language: "en",
       account_filters: {

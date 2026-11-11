@@ -31,6 +31,7 @@ export async function POST(request) {
       user: { client_user_id: user.id },
       client_name: "PrioritySave",
       products,
+      ...(products.includes(Products.Transactions) ? { transactions: { days_requested: 730 } } : {}),
       country_codes: [CountryCode.Us],
       language: "en",
       ...(savingsOnly ? { account_filters: { depository: { account_subtypes: ["savings"] } } } : {}),
