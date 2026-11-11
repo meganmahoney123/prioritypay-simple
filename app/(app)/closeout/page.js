@@ -699,8 +699,9 @@ export default function CloseoutPage() {
     if (t.direction === "in" && c === "income") return Boolean(t.business_id);
     return true;
   };
-  const attentionDeposits = depositTxns.filter((t) => !isHandled(t));
-  const attentionCharges = chargeTxns.filter((t) => !isHandled(t));
+  const byDateAsc = (a, b) => String(a.txn_date).localeCompare(String(b.txn_date));
+  const attentionDeposits = depositTxns.filter((t) => !isHandled(t)).sort(byDateAsc);
+  const attentionCharges = chargeTxns.filter((t) => !isHandled(t)).sort(byDateAsc);
   const handledDeposits = depositTxns.filter(isHandled);
   const handledCharges = chargeTxns.filter(isHandled);
   const attentionCount = attentionDeposits.length + attentionCharges.length;
@@ -721,11 +722,12 @@ export default function CloseoutPage() {
   const businessById = Object.fromEntries(businesses.map((b) => [b.id, b]));
   const sumOf = (list) => list.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   const isDrawDeposit = (t) => catOf(t) === "income" && t.business_id && paysByDraw(businessById[t.business_id]?.entityType);
-  const bizIncomeDeposits = depositTxns.filter((t) => catOf(t) === "income" && !isDrawDeposit(t));
-  const drawDeposits = depositTxns.filter(isDrawDeposit);
-  const w2Deposits = depositTxns.filter((t) => catOf(t) === "w2_income");
-  const investmentDeposits = depositTxns.filter((t) => catOf(t) === "investment_income");
-  const miscDeposits = depositTxns.filter((t) => catOf(t) === "misc_income");
+  const sortedDeposits = depositTxns.filter(isHandled); // only deposits already sorted count here
+  const bizIncomeDeposits = sortedDeposits.filter((t) => catOf(t) === "income" && !isDrawDeposit(t));
+  const drawDeposits = sortedDeposits.filter(isDrawDeposit);
+  const w2Deposits = sortedDeposits.filter((t) => catOf(t) === "w2_income");
+  const investmentDeposits = sortedDeposits.filter((t) => catOf(t) === "investment_income");
+  const miscDeposits = sortedDeposits.filter((t) => catOf(t) === "misc_income");
   const namesOf = (list) => [...new Set(list.map((t) => businessById[t.business_id]?.name).filter(Boolean))].join(", ");
   const hasSoleProp = businesses.some((b) => !paysByDraw(b.entityType));
   const incomeSources = [
@@ -783,7 +785,7 @@ export default function CloseoutPage() {
     return (
       <div key={t.id} style={compactRowStyle(i)}>
         <div className="co-grid" style={compactGrid}>
-          {compactTop(t, acc, "+", !cat && suggestion ? `looks like ${suggestion.label.toLowerCase()}` : "")}
+          {compactTop(t, acc, "+", "")}
           <select value={cat} onChange={(e) => canEditNow && e.target.value && setCategory(t.id, e.target.value)} disabled={!canEditNow} aria-label={`Type for ${t.name}`} style={compactSelect}>
             {!cat && <option value="">Choose a type</option>}
             {depositCats.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -1315,7 +1317,7 @@ export default function CloseoutPage() {
                   <span style={{ flex: 1 }}>
                     <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: PS_INK }}>Already handled</span>
                     <span style={{ display: "block", fontSize: 14, color: PS_MUTED }}>
-                      {handledDeposits.length} deposit{handledDeposits.length === 1 ? "" : "s"} and {handledCharges.length} expense{handledCharges.length === 1 ? "" : "s"} are counted.
+                      {handledDeposits.length} deposit{handledDeposits.length === 1 ? "" : "s"} from Split My Deposits and {handledCharges.length} expense{handledCharges.length === 1 ? "" : "s"} from Withdrawals are counted.
                     </span>
                   </span>
                   <span style={{ fontSize: 14.5, fontWeight: 800, color: PS_ACCENT }}>{showHandled ? "Hide" : "View"}</span>
