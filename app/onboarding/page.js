@@ -682,11 +682,22 @@ function OnboardingPageInner() {
       ...prev,
       { id: `new_${Date.now()}`, label: "New category", group: null, pct: 0, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null },
     ]);
+  // Debt Payoff starts at 10%, taken from Savings so the total stays the same
+  // (or less if Savings has less to give). Every other suggestion starts at 0%.
   const addSuggested = (suggestion) =>
-    setPercent((prev) => [
-      ...prev,
-      { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct: 0, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null },
-    ]);
+    setPercent((prev) => {
+      let pct = 0;
+      let rows = prev;
+      if (suggestion.label === "Debt Payoff") {
+        const savings = prev.find((r) => r.id === "savings");
+        pct = Math.min(10, Number(savings?.pct) || 0);
+        if (pct > 0) rows = prev.map((r) => (r.id === "savings" ? { ...r, pct: roundPct((Number(r.pct) || 0) - pct) } : r));
+      }
+      return [
+        ...rows,
+        { id: `new_${Date.now()}`, label: suggestion.label, group: null, pct, max: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null },
+      ];
+    });
   const usedLabels = new Set(percent.map((r) => r.label));
   const availableSuggestions = SUGGESTED_EXTRA_CATEGORIES.filter((s) => !usedLabels.has(s.label));
 
