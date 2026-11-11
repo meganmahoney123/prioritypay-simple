@@ -73,6 +73,8 @@ function WithdrawalsPageInner() {
   const [mileagePurpose, setMileagePurpose] = useState("");
   const [mealPurpose, setMealPurpose] = useState("");
   const [mealAttendees, setMealAttendees] = useState("");
+  const [businesses, setBusinesses] = useState([]);
+  const [businessId, setBusinessId] = useState("");
   const [receiptFile, setReceiptFile] = useState(null);
   const [receiptUrl, setReceiptUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -80,12 +82,14 @@ function WithdrawalsPageInner() {
   const [error, setError] = useState(null);
 
   const load = async () => {
-    const [rulesRes, balancesRes, cardRes, withdrawalsRes] = await Promise.all([
+    const [rulesRes, balancesRes, cardRes, withdrawalsRes, bizRes] = await Promise.all([
       fetch("/api/split-rules").then((r) => r.json()),
       fetch("/api/allocations/balances").then((r) => r.json()),
       fetch("/api/withdrawals/card-transactions").then((r) => r.json()),
       fetch("/api/withdrawals").then((r) => r.json()),
+      fetch("/api/businesses").then((r) => r.json()).catch(() => ({})),
     ]);
+    setBusinesses(bizRes.businesses || []);
     setSplitRulesPercent(rulesRes.splitRules?.percent || []);
     setCategoryBalances(balancesRes.balances || {});
     setCardAccounts(cardRes.accounts || []);
@@ -154,6 +158,11 @@ function WithdrawalsPageInner() {
     setCardMax("");
   };
 
+  // Business expenses are attributed to one business so profit adds up per business.
+  const isOpex = /^Business Expenses/i.test(categoryLabel || "");
+  useEffect(() => {
+    if (isOpex && !businessId && businesses.length === 1) setBusinessId(businesses[0].id);
+  }, [isOpex, businesses, businessId]);
   const mileage = isMileageLabel(categoryLabel);
   const meals = isMealsLabel(categoryLabel);
 
@@ -162,6 +171,7 @@ function WithdrawalsPageInner() {
     setDescription("");
     setOccurredAt(new Date().toISOString().slice(0, 10));
     setCategoryLabel("");
+    setBusinessId("");
     setAllocations([]);
     setAllocationsComplete(false);
     setSourceType("card");
@@ -216,6 +226,10 @@ function WithdrawalsPageInner() {
       setError("Pick a category (or Other) this came out of.");
       return;
     }
+    if (isOpex && !businessId) {
+      setError("Pick which business this expense was for.");
+      return;
+    }
     if (!allocationsComplete) {
       setError("Finish accounting for the full amount before saving.");
       return;
@@ -241,6 +255,7 @@ function WithdrawalsPageInner() {
         allocations,
         sourceType,
         closeoutTransactionId: sourceType === "card" ? matchedTxnId : null,
+        businessId: isOpex ? businessId : null,
       }),
     }).then((r) => r.json());
     setSaving(false);
@@ -504,6 +519,31 @@ function WithdrawalsPageInner() {
             <option value="Other">Other (not tracked)</option>
           </select>
         </label>
+
+        {isOpex && (
+          <div className="mb-3">
+            {businesses.length === 0 ? (
+              <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
+                <b>No businesses added yet.</b> Add each business in Settings and pick its type, then come back to save this expense.{" "}
+                <a href="/settings" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
+              </p>
+            ) : (
+              <label className="text-xs block">
+                <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>Which business was this for? <span style={{ color: "#B3261E" }}>*</span></span>
+                <select
+                  value={businessId}
+                  onChange={(e) => setBusinessId(e.target.value)}
+                  className="w-full text-sm border border-neutral-200 rounded-lg px-2.5 py-2"
+                >
+                  <option value="">Select…</option>
+                  {businesses.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        )}
 
         {categoryLabel && (Number(amount) || 0) > 0 && (
           <div className="mb-3">

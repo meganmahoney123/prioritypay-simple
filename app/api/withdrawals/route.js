@@ -30,6 +30,7 @@ export async function GET() {
       receiptUrl: w.receipt_url,
       sourceType: w.source_type || "cash",
       closeoutTransactionId: w.closeout_transaction_id,
+      businessId: w.business_id || null,
       allocations: (w.simple_withdrawal_allocations || []).map((a) => ({
         label: a.label,
         amount: Number(a.amount) || 0,
@@ -88,9 +89,14 @@ export async function POST(request) {
     }
   }
 
-  const { data: withdrawal, error } = await admin
-    .from("simple_withdrawals")
-    .insert({
+  // Business expenses are attributed to one of the person's businesses.
+  let businessId = null;
+  if (body.businessId) {
+    const { data: biz } = await admin.from("simple_businesses").select("id").eq("id", body.businessId).eq("user_id", user.id).maybeSingle();
+    if (!biz) return Response.json({ error: "That business couldn't be found." }, { status: 404 });
+    businessId = biz.id;
+  }
+  const insertRow = {
       user_id: user.id,
       amount,
       description: body.description || null,
@@ -107,9 +113,16 @@ export async function POST(request) {
       meal_attendees: body.mealAttendees || null,
       source_type: body.sourceType === "card" ? "card" : "cash",
       closeout_transaction_id: closeoutTransactionId,
-    })
+    };
+  let { data: withdrawal, error } = await admin
+    .from("simple_withdrawals")
+    .insert(businessId ? { ...insertRow, business_id: businessId } : insertRow)
     .select()
     .single();
+  if (error && businessId) {
+    // business_id column not there yet: save without it.
+    ({ data: withdrawal, error } = await admin.from("simple_withdrawals").insert(insertRow).select().single());
+  }
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   if (allocations.length) {
@@ -134,6 +147,9 @@ export async function POST(request) {
       .update({ confirmed_category: "expense" })
       .eq("id", closeoutTransactionId)
       .eq("user_id", user.id);
+    if (businessId) {
+      await admin.from("simple_closeout_transactions").update({ business_id: businessId }).eq("id", closeoutTransactionId).eq("user_id", user.id);
+    }
   }
 
   return Response.json({ withdrawal });

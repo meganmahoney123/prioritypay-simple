@@ -116,7 +116,7 @@ function isLastDayOfCurrentMonthUTC() {
 // but rendered together. Now a transaction only ever sees the set that
 // applies to its own direction.
 const DEPOSIT_CATS = [
-  { value: "income", label: "Income" },
+  { value: "income", label: "Biz Income" },
   { value: "w2_income", label: "W2 Income" },
   { value: "exclude", label: "Exclude" },
 ];
@@ -219,6 +219,11 @@ export default function CloseoutPage() {
   // once this whole panel is complete (see saveExpense below), which is
   // what enforces "no Expense without a category."
   const [expensePanels, setExpensePanels] = useState({});
+  // Saved businesses (Settings, Your profile). Income and business expenses
+  // are attributed to one of them, which is what profit by business adds up.
+  const [businesses, setBusinesses] = useState([]);
+  const [cashBizExpenses, setCashBizExpenses] = useState([]);
+  const [showHandled, setShowHandled] = useState(false);
 
   const load = async (p) => {
     setLoading(true);
@@ -254,6 +259,12 @@ export default function CloseoutPage() {
       if (w.closeoutTransactionId) linkedMap[w.closeoutTransactionId] = w;
     });
     setLinkedWithdrawalsByTxnId(linkedMap);
+    setBusinesses(closeoutRes.businesses || []);
+    setCashBizExpenses(
+      (withdrawalsRes.withdrawals || []).filter(
+        (w) => w.businessId && !w.closeoutTransactionId && w.sourceType === "cash" && String(w.occurredAt || "").slice(0, 7) === p
+      )
+    );
     setCloseout(closeoutRes.closeout);
     setTransactions(closeoutRes.transactions || []);
     setAccounts(accountsRes.accounts || []);
@@ -351,7 +362,27 @@ export default function CloseoutPage() {
       notify("Couldn't save that category, please try again.");
       return;
     }
+    if (category === "income" && businesses.length === 1) {
+      const txn = transactions.find((t) => t.id === txnId);
+      if (txn && !txn.business_id) setBusiness(txnId, businesses[0].id);
+    }
     if (isConfirmed) handleConfirm();
+  };
+
+  // Attributes one deposit or expense to a business. Profit by business
+  // updates right away.
+  const setBusiness = async (txnId, businessId) => {
+    const previous = transactions.find((t) => t.id === txnId)?.business_id ?? null;
+    setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, business_id: businessId || null } : t)));
+    const res = await fetch(`/api/closeout/transactions/${txnId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ businessId: businessId || null }),
+    });
+    if (!res.ok) {
+      setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, business_id: previous } : t)));
+      notify("Couldn't save that business, please try again.");
+    }
   };
 
   // Label-matching heuristic -- this app has no dedicated "Mileage"/"Meals"
@@ -363,6 +394,7 @@ export default function CloseoutPage() {
   // institutionLoginUrl in lib/allocations.js).
   const isMileageLabel = (label) => (label || "").toLowerCase().includes("mileage");
   const isMealsLabel = (label) => (label || "").toLowerCase().includes("meal");
+  const isOpexLabel = (label) => /^Business Expenses/i.test(label || "");
 
   const openExpensePanel = (txnId) => {
     setExpensePanels((prev) => ({
@@ -441,6 +473,12 @@ export default function CloseoutPage() {
   const selectExpenseCategory = (t, label) => {
     setExpenseCategoryInline(t.id, label);
     if (!label) return;
+    // Business expenses are attributed to one business first (it saves as
+    // soon as one is picked; with a single business it is picked for them).
+    if (isOpexLabel(label)) {
+      if (businesses.length === 1) selectExpenseBusiness(t, businesses[0].id, label);
+      return;
+    }
     const amt = Number(t.amount) || 0;
     const balance = label === "Other" ? Infinity : Number(categoryBalances[label]) || 0;
     if (balance >= amt) {
@@ -448,6 +486,19 @@ export default function CloseoutPage() {
         label === "Other" ? [{ label: "Other", amount: amt, sourceType: "external" }] : [{ label, amount: amt, sourceType: "category" }];
       updateExpensePanel(t.id, { allocations, allocationsComplete: true });
       saveExpense(t, allocations);
+    }
+  };
+
+  const selectExpenseBusiness = (t, businessId, labelOverride) => {
+    updateExpensePanel(t.id, { businessId: businessId || null });
+    if (!businessId) return;
+    const label = labelOverride || expensePanels[t.id]?.categoryLabel;
+    const amt = Number(t.amount) || 0;
+    const balance = Number(categoryBalances[label]) || 0;
+    if (label && balance >= amt) {
+      const allocations = [{ label, amount: amt, sourceType: "category" }];
+      updateExpensePanel(t.id, { allocations, allocationsComplete: true });
+      saveExpense(t, allocations, businessId, label);
     }
   };
 
@@ -493,10 +544,16 @@ export default function CloseoutPage() {
   // shortfall-cascade path (category can't cover it) still goes through
   // the allocator + explicit Save button exactly as before, with
   // overrideAllocations left undefined.
-  const saveExpense = async (txn, overrideAllocations) => {
-    const panel = expensePanels[txn.id];
-    if (!panel || !panel.categoryLabel) {
+  const saveExpense = async (txn, overrideAllocations, businessIdOverride, labelOverride) => {
+    const panel = expensePanels[txn.id] || {};
+    const categoryLabel = labelOverride || panel.categoryLabel;
+    if (!categoryLabel) {
       updateExpensePanel(txn.id, { error: "Pick a category (or Other) before saving." });
+      return;
+    }
+    const expenseBusinessId = businessIdOverride || panel.businessId || null;
+    if (isOpexLabel(categoryLabel) && !expenseBusinessId) {
+      updateExpensePanel(txn.id, { error: "Pick which business this expense was for." });
       return;
     }
     if (!overrideAllocations && !panel.allocationsComplete) {
@@ -504,8 +561,8 @@ export default function CloseoutPage() {
       return;
     }
     const allocations = overrideAllocations || panel.allocations;
-    const mileage = isMileageLabel(panel.categoryLabel);
-    const meals = isMealsLabel(panel.categoryLabel);
+    const mileage = isMileageLabel(categoryLabel);
+    const meals = isMealsLabel(categoryLabel);
     updateExpensePanel(txn.id, { saving: true, error: null });
     const res = await fetch("/api/withdrawals", {
       method: "POST",
@@ -514,7 +571,7 @@ export default function CloseoutPage() {
         amount: Number(txn.amount) || 0,
         description: txn.name,
         occurredAt: txn.txn_date,
-        categoryLabel: panel.categoryLabel,
+        categoryLabel,
         receiptUrl: panel.receiptUrl,
         mileageMiles: mileage ? panel.mileageMiles : null,
         mileagePurpose: mileage ? panel.mileagePurpose : null,
@@ -536,6 +593,7 @@ export default function CloseoutPage() {
       .catch(() => {});
     closeExpensePanel(txn.id);
     await setCategory(txn.id, "expense");
+    if (expenseBusinessId) await setBusiness(txn.id, expenseBusinessId);
   };
 
   const handleContribute = async (retirementType, room, holdingAccountId) => {
@@ -629,6 +687,34 @@ export default function CloseoutPage() {
   const moneyInTotal = depositTxns.filter((t) => catOf(t) === "income").reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
   const moneyOutTotal = chargeTxns.filter((t) => catOf(t) === "expense").reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
+  // What is left to handle: a deposit or charge the person (or Split My
+  // Deposits / Withdrawals) has already answered is "handled". Biz income
+  // only counts as handled once it has a business.
+  const isHandled = (t) => {
+    if (linkedWithdrawalsByTxnId[t.id]) return true;
+    const c = t.confirmed_category;
+    if (!c) return false;
+    if (t.direction === "in" && c === "income") return Boolean(t.business_id);
+    return true;
+  };
+  const attentionDeposits = depositTxns.filter((t) => !isHandled(t));
+  const attentionCharges = chargeTxns.filter((t) => !isHandled(t));
+  const handledDeposits = depositTxns.filter(isHandled);
+  const handledCharges = chargeTxns.filter(isHandled);
+  const attentionCount = attentionDeposits.length + attentionCharges.length;
+
+  // Profit by business: income and expenses attributed to each saved business.
+  const profitRows = businesses.map((b) => {
+    const income = depositTxns.filter((t) => catOf(t) === "income" && t.business_id === b.id).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const cardExpenses = chargeTxns.filter((t) => catOf(t) === "expense" && t.business_id === b.id).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const cashExpenses = cashBizExpenses.filter((w) => w.businessId === b.id).reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
+    const expenses = cardExpenses + cashExpenses;
+    return { ...b, income, expenses, profit: income - expenses };
+  });
+  const profitTotals = profitRows.reduce((a, r) => ({ income: a.income + r.income, expenses: a.expenses + r.expenses, profit: a.profit + r.profit }), { income: 0, expenses: 0, profit: 0 });
+  const unassignedIncome = depositTxns.filter((t) => catOf(t) === "income" && !t.business_id).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+  const entityLabel = (v) => (v === "Sole proprietor / freelancer" ? "Sole proprietor" : v || "");
+
   // Shared by both Deposits and Charges: a transaction already recorded
   // from the Withdrawals tab as a matched card charge renders read-only
   // instead of the normal pills/panel, so it never gets a second,
@@ -663,32 +749,67 @@ export default function CloseoutPage() {
             disabled={!canEditNow}
           />
         </div>
-        {(cat === "income" || cat === "w2_income") && (
+        {cat === "income" && (
+          <div className="mt-3">
+            {businesses.length === 0 ? (
+              <div className="p-3 text-xs" style={bloomNoticeCardStyle()}>
+                <b>No businesses added yet.</b> Add each business in Settings and pick its type (sole proprietor, LLC, S corp and more), then come back to pick one.{" "}
+                <a href="/settings" style={{ color: PS_ACCENT, fontWeight: 800 }}>Open Settings</a>
+              </div>
+            ) : (
+              <div className="flex items-end gap-3 flex-wrap">
+                <label className="text-xs" style={{ color: PS_MUTED, fontWeight: 800 }}>
+                  Which business? <span style={{ color: "#B3261E" }}>*</span>
+                  <select
+                    value={t.business_id || ""}
+                    onChange={(e) => setBusiness(t.id, e.target.value)}
+                    disabled={!canEditNow}
+                    className="block mt-1 text-sm rounded-xl px-3 py-2.5 disabled:opacity-60"
+                    style={{ border: `2px solid ${t.business_id ? "#9A72F0" : "#B3261E"}`, background: "#fff", color: PS_INK, fontWeight: 700, minWidth: 240 }}
+                  >
+                    {!t.business_id && <option value="">Choose a business</option>}
+                    {businesses.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}{b.entityType ? ` · ${entityLabel(b.entityType)}` : ""}</option>
+                    ))}
+                  </select>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Paid by (optional)"
+                  defaultValue={defaultPayer || ""}
+                  onChange={(e) => setIncomeSourceDrafts((prev) => ({ ...prev, [t.id]: { ...prev[t.id], payer: e.target.value } }))}
+                  onBlur={(e) => saveIncomeSource(t.id, e.target.value, defaultPurpose || "")}
+                  disabled={!canEditNow}
+                  className="text-sm rounded-xl px-3 py-2.5 w-48 disabled:opacity-60"
+                  style={{ border: "2px solid #9A72F0", background: "#fff" }}
+                />
+              </div>
+            )}
+            {businesses.length > 0 && !t.business_id && (
+              <div style={{ fontSize: 13, color: "#B3261E", fontWeight: 700, marginTop: 6 }}>Pick a business so this counts toward its profit.</div>
+            )}
+            {t.from_deposit && t.business_id && (
+              <div style={{ fontSize: 13, color: PS_MUTED, marginTop: 6 }}>Set on Split My Deposits. Change it here if anything looks off.</div>
+            )}
+          </div>
+        )}
+        {cat === "w2_income" && (
           <div className="flex items-center gap-2 flex-wrap mt-3">
             <input
               type="text"
-              placeholder="Paid by"
+              placeholder="Paid by (optional)"
               defaultValue={defaultPayer || ""}
               onChange={(e) => setIncomeSourceDrafts((prev) => ({ ...prev, [t.id]: { ...prev[t.id], payer: e.target.value } }))}
-              onBlur={(e) => {
-                const purpose = incomeSourceDrafts[t.id]?.purpose ?? defaultPurpose ?? "";
-                saveIncomeSource(t.id, e.target.value, purpose);
-              }}
+              onBlur={(e) => saveIncomeSource(t.id, e.target.value, defaultPurpose || "")}
               disabled={!canEditNow}
-              className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 w-32 disabled:opacity-60"
+              className="text-sm rounded-xl px-3 py-2.5 w-48 disabled:opacity-60"
+              style={{ border: "2px solid #9A72F0", background: "#fff" }}
             />
-            <input
-              type="text"
-              placeholder="For what?"
-              defaultValue={defaultPurpose || ""}
-              onChange={(e) => setIncomeSourceDrafts((prev) => ({ ...prev, [t.id]: { ...prev[t.id], purpose: e.target.value } }))}
-              onBlur={(e) => {
-                const payer = incomeSourceDrafts[t.id]?.payer ?? defaultPayer ?? "";
-                saveIncomeSource(t.id, payer, e.target.value);
-              }}
-              disabled={!canEditNow}
-              className="text-[11px] border border-neutral-200 rounded-lg px-2 py-1 w-36 disabled:opacity-60"
-            />
+          </div>
+        )}
+        {cat === "exclude" && (
+          <div style={{ fontSize: 13.5, color: PS_MUTED, marginTop: 8 }}>
+            Use Exclude for miscellaneous payments that have nothing to do with a side hustle or business income.
           </div>
         )}
       </div>
@@ -745,6 +866,33 @@ export default function CloseoutPage() {
                 onChange={(e) => e.target.files?.[0] && uploadReceipt(t.id, e.target.files[0])}
               />
             </label>
+          </div>
+        )}
+        {(isOpexLabel(panel?.categoryLabel) || (cat === "expense" && t.business_id)) && (
+          <div className="mt-3">
+            {businesses.length === 0 ? (
+              <div className="p-3 text-xs" style={bloomNoticeCardStyle()}>
+                <b>No businesses added yet.</b> Add each business in Settings, then come back to attribute this expense.{" "}
+                <a href="/settings" style={{ color: PS_ACCENT, fontWeight: 800 }}>Open Settings</a>
+              </div>
+            ) : (
+              <label className="text-xs" style={{ color: PS_MUTED, fontWeight: 800 }}>
+                Which business? <span style={{ color: "#B3261E" }}>*</span>
+                <select
+                  value={panel?.businessId || t.business_id || ""}
+                  onChange={(e) => (panel ? selectExpenseBusiness(t, e.target.value) : setBusiness(t.id, e.target.value))}
+                  disabled={!canEditNow}
+                  className="block mt-1 text-sm rounded-xl px-3 py-2.5 disabled:opacity-60"
+                  style={{ border: `2px solid ${panel?.businessId || t.business_id ? "#9A72F0" : "#B3261E"}`, background: "#fff", color: PS_INK, fontWeight: 700, minWidth: 240 }}
+                >
+                  {!(panel?.businessId || t.business_id) && <option value="">Choose a business</option>}
+                  {businesses.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}{b.entityType ? ` · ${entityLabel(b.entityType)}` : ""}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {t.business_id && <div style={{ fontSize: 13, color: "#0F6B4F", fontWeight: 700, marginTop: 6 }}>Counted in {businesses.find((b) => b.id === t.business_id)?.name || "your business"} expenses</div>}
           </div>
         )}
         {/* Only surfaces when the chosen category can't cover the full
@@ -949,34 +1097,94 @@ export default function CloseoutPage() {
                 synced credit-card charge alongside bank debits -- cards
                 aren't split out separately, just shown with their account
                 name/mask like any other row (see `acc` below). */}
+            {businesses.length > 0 && (
+              <div style={{ background: "#fff", border: "2px solid #9A72F0", borderRadius: 22, padding: "18px 22px" }}>
+                <div className="flex items-baseline justify-between flex-wrap gap-2">
+                  <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: PS_ACCENT }}>Profit by business, {periodLabel(period)}</div>
+                  <div style={{ fontSize: 13.5, color: PS_MUTED }}>Updates as you attribute income and expenses below</div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8, minWidth: 460 }}>
+                    <thead>
+                      <tr style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED, textAlign: "right" }}>
+                        <th style={{ textAlign: "left", padding: "6px 0" }}>BUSINESS</th>
+                        <th>INCOME</th>
+                        <th>EXPENSES</th>
+                        <th>PROFIT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {profitRows.map((r) => (
+                        <tr key={r.id} style={{ borderTop: "1.5px solid #E7DEFA", fontSize: 16 }}>
+                          <td style={{ padding: "12px 0" }}>
+                            <div style={{ fontWeight: 800, color: PS_INK }}>{r.name}</div>
+                            <div style={{ fontSize: 13, color: PS_MUTED }}>{entityLabel(r.entityType)}</div>
+                          </td>
+                          <td style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontWeight: 600 }}>{currency(r.income)}</td>
+                          <td style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontWeight: 600 }}>{currency(r.expenses)}</td>
+                          <td style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontWeight: 700, color: r.profit < 0 ? "#B3261E" : "#0F6B4F" }}>{currency(r.profit)}</td>
+                        </tr>
+                      ))}
+                      {profitRows.length > 1 && (
+                        <tr style={{ borderTop: `2px solid ${PS_INK}`, fontSize: 16, fontWeight: 800 }}>
+                          <td style={{ padding: "12px 0", color: PS_INK }}>All businesses</td>
+                          <td style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace' }}>{currency(profitTotals.income)}</td>
+                          <td style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace' }}>{currency(profitTotals.expenses)}</td>
+                          <td style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', color: profitTotals.profit < 0 ? "#B3261E" : "#0F6B4F" }}>{currency(profitTotals.profit)}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {unassignedIncome > 0 && (
+                  <div style={{ fontSize: 13.5, color: "#8A6A00", fontWeight: 700, marginTop: 8 }}>
+                    {currency(unassignedIncome)} of Biz Income has no business yet and is not in these numbers.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(handledDeposits.length > 0 || handledCharges.length > 0) && (
+              <div style={{ background: "#fff", border: "1.5px solid #E7DEFA", borderRadius: 18, padding: "14px 18px" }}>
+                <button type="button" onClick={() => setShowHandled((v) => !v)} className="flex items-center gap-3 w-full text-left" style={{ background: "none", border: 0, cursor: "pointer" }}>
+                  <span style={{ width: 30, height: 30, borderRadius: 99, background: "#E1F5EC", color: "#0F6B4F", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <CheckCircle2 size={16} />
+                  </span>
+                  <span style={{ flex: 1 }}>
+                    <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: PS_INK }}>Already handled</span>
+                    <span style={{ display: "block", fontSize: 14, color: PS_MUTED }}>
+                      {handledDeposits.length} deposit{handledDeposits.length === 1 ? "" : "s"} and {handledCharges.length} expense{handledCharges.length === 1 ? "" : "s"} are counted.
+                    </span>
+                  </span>
+                  <span style={{ fontSize: 14.5, fontWeight: 800, color: PS_ACCENT }}>{showHandled ? "Hide" : "View"}</span>
+                </button>
+                {showHandled && (
+                  <div className="space-y-3 mt-3">
+                    {handledDeposits.map((t) => renderDepositRow(t))}
+                    {handledCharges.map((t) => renderChargeRow(t))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
-              <div className="flex items-baseline justify-between mb-3">
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: PS_INK }}>Money in</h3>
-                <span style={{ fontSize: 14, color: PS_MUTED }}>
-                  Counted as income: <b style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', color: PS_INK }}>{currency(moneyInTotal)}</b>
+              <div className="flex items-baseline gap-3 flex-wrap mb-3">
+                <h3 style={{ fontSize: 22, fontWeight: 800, color: PS_INK }}>Needs your attention</h3>
+                <span style={{ fontSize: 14.5, color: PS_MUTED }}>
+                  {attentionCount === 0 ? "Nothing left. Everything is handled." : `${attentionCount} item${attentionCount === 1 ? "" : "s"} left. Only what is not already handled.`}
                 </span>
               </div>
-              {depositTxns.length === 0 ? (
-                <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>No deposits found.</p>
-              ) : (
-                <div className="space-y-3 max-h-[36rem] overflow-y-auto pr-1">
-                  {depositTxns.map((t) => renderDepositRow(t))}
-                </div>
+              {attentionDeposits.length > 0 && (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED, marginBottom: 8 }}>MONEY IN</div>
+                  <div className="space-y-3 mb-5">{attentionDeposits.map((t) => renderDepositRow(t))}</div>
+                </>
               )}
-            </div>
-            <div>
-              <div className="flex items-baseline justify-between mb-3">
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: PS_INK }}>Money out</h3>
-                <span style={{ fontSize: 14, color: PS_MUTED }}>
-                  Counted as expenses: <b style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', color: PS_INK }}>{currency(moneyOutTotal)}</b>
-                </span>
-              </div>
-              {chargeTxns.length === 0 ? (
-                <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>No charges found.</p>
-              ) : (
-                <div className="space-y-3 max-h-[44rem] overflow-y-auto pr-1">
-                  {chargeTxns.map((t) => renderChargeRow(t))}
-                </div>
+              {attentionCharges.length > 0 && (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED, marginBottom: 8 }}>EXPENSES</div>
+                  <div className="space-y-3 max-h-[44rem] overflow-y-auto pr-1">{attentionCharges.map((t) => renderChargeRow(t))}</div>
+                </>
               )}
             </div>
           </div>

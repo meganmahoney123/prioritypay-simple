@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { ensureCloseoutForPeriod } from "@/lib/closeoutSync";
+import { loadBusinessRows } from "@/lib/businesses";
 
 // GET creates the draft close-out for this period if it doesn't exist yet
 // (pulling and auto-tagging every transaction across every linked account
@@ -19,7 +20,17 @@ export async function GET(request, { params }) {
 
   try {
     const { closeout, transactions } = await ensureCloseoutForPeriod(admin, user.id, period);
-    return Response.json({ closeout, transactions });
+    // Which deposits were already typed on Split My Deposits, and the saved
+    // businesses, so the page can show only what is left to handle.
+    const ids = transactions.filter((t) => t.direction === "in").map((t) => t.plaid_transaction_id).filter(Boolean);
+    const typed = {};
+    if (ids.length) {
+      const { data: rows } = await admin.from("simple_transfers").select("plaid_transaction_id, deposit_type").eq("user_id", user.id).in("plaid_transaction_id", ids);
+      (rows || []).forEach((r) => { if (r.deposit_type) typed[r.plaid_transaction_id] = r.deposit_type; });
+    }
+    const withFlags = transactions.map((t) => (typed[t.plaid_transaction_id] ? { ...t, from_deposit: true, deposit_type: typed[t.plaid_transaction_id] } : t));
+    const businesses = await loadBusinessRows(admin, user.id);
+    return Response.json({ closeout, transactions: withFlags, businesses });
   } catch (err) {
     return Response.json({ error: err.message || "Could not load this month." }, { status: 500 });
   }

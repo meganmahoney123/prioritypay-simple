@@ -24,7 +24,7 @@ const VALID = ["income", "expense", "exclude", "w2_income", "business"];
 export async function PATCH(request, { params }) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  const { confirmedCategory, incomeSource } = await request.json();
+  const { confirmedCategory, incomeSource, businessId } = await request.json();
 
   const update = {};
   if (confirmedCategory !== undefined) {
@@ -36,17 +36,27 @@ export async function PATCH(request, { params }) {
   if (incomeSource !== undefined) {
     update.income_source = incomeSource || null;
   }
+  if (businessId !== undefined) update.business_id = businessId || null;
+  else if (confirmedCategory !== undefined && !["income", "expense"].includes(confirmedCategory)) update.business_id = null;
   if (Object.keys(update).length === 0) {
     return Response.json({ error: "Nothing to update." }, { status: 400 });
   }
 
   const admin = supabaseAdmin();
   const { id } = await params;
-  const { error } = await admin
+  let { error } = await admin
     .from("simple_closeout_transactions")
     .update(update)
     .eq("id", id)
     .eq("user_id", user.id);
+  if (error && "business_id" in update) {
+    // business_id column not there yet: save the rest.
+    const { business_id, ...rest } = update;
+    void business_id;
+    if (Object.keys(rest).length) {
+      ({ error } = await admin.from("simple_closeout_transactions").update(rest).eq("id", id).eq("user_id", user.id));
+    } else error = null;
+  }
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });

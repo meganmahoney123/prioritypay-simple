@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { DEPOSIT_TYPES, typeOptionsFor, guessDepositType, effectLine } from "@/lib/depositTypes";
+import { loadBusinessRows, typeForBusiness } from "@/lib/businesses";
 
 // Deposit-grouped transfer checklist (components/PendingTransfers.js).
 // Returns:
@@ -67,14 +68,18 @@ export async function GET() {
   // Stored deposit type (simple_transfers.deposit_type). Read in its own
   // query so everything keeps working until that column exists.
   const typeById = {};
+  const businessById = {};
   if (all.length) {
-    const { data: types, error: typeError } = await admin
-      .from("simple_transfers")
-      .select("id, deposit_type")
-      .eq("user_id", user.id)
-      .in("id", all.map((t) => t.id));
-    if (!typeError) (types || []).forEach((k) => { typeById[k.id] = k.deposit_type; });
+    const ids = all.map((t) => t.id);
+    const withBiz = await admin.from("simple_transfers").select("id, deposit_type, business_id").eq("user_id", user.id).in("id", ids);
+    if (!withBiz.error) {
+      (withBiz.data || []).forEach((k) => { typeById[k.id] = k.deposit_type; businessById[k.id] = k.business_id; });
+    } else {
+      const { data: types, error: typeError } = await admin.from("simple_transfers").select("id, deposit_type").eq("user_id", user.id).in("id", ids);
+      if (!typeError) (types || []).forEach((k) => { typeById[k.id] = k.deposit_type; });
+    }
   }
+  const businesses = await loadBusinessRows(admin, user.id);
   const { data: profile } = await admin.from("simple_profiles").select("*").eq("id", user.id).single();
   const typeOptions = typeOptionsFor(profile);
   const { data: ruleRows } = await admin.from("simple_split_rules_percent").select("label, pct, retirement_type").eq("user_id", user.id);
@@ -92,6 +97,7 @@ export async function GET() {
     // name and the person's onboarding answers.
     depositType: typeById[t.id] || guessDepositType({ profile, name: t.deposit_name }),
     typeSaved: Boolean(typeById[t.id]),
+    businessId: businessById[t.id] || null,
     skippedAt: t.skipped_at,
     skipReason: t.skip_reason,
     lines: (t.simple_transfer_allocations || []).map((a) => ({
@@ -102,8 +108,20 @@ export async function GET() {
   });
 
   const byNewest = (a, b) => (a.createdAt < b.createdAt ? 1 : -1);
+  // Biz income replaces Self-employed income and Owner's draw in the list:
+  // the business picked decides which of the two rule sets applies.
+  const hasBiz = typeOptions.includes("self_employed") || typeOptions.includes("owner_draw");
+  const optionList = [];
+  typeOptions.forEach((v) => {
+    if (v === "self_employed" || v === "owner_draw") {
+      if (!optionList.some((o) => o.value === "biz")) optionList.push({ value: "biz", label: "Biz income", effect: effects.self_employed });
+    } else optionList.push({ value: v, label: DEPOSIT_TYPES[v], effect: effects[v] });
+  });
   return Response.json({
-    typeOptions: typeOptions.map((v) => ({ value: v, label: DEPOSIT_TYPES[v], effect: effects[v] })),
+    hasBiz,
+    businesses: businesses.map((b) => ({ ...b, depositType: typeForBusiness(b.entityType) })),
+    effects,
+    typeOptions: optionList,
     typeLabels: DEPOSIT_TYPES,
     deposits: all.filter((t) => !t.skipped_at).map(shape).sort(byNewest),
     skipped: all

@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { recomputeTransferStatus } from "@/lib/depositChecklist";
 import { planSplit, buildAllocationRows } from "@/lib/splitPlan";
 import { isDepositType, typeOptionsFor } from "@/lib/depositTypes";
+import { loadBusinessRows, typeForBusiness, isBizType, syncDepositToCloseout } from "@/lib/businesses";
 
 // Changes what kind of money one deposit is (self-employed income, owner's
 // draw, W-2 paycheck, miscellaneous) and re-works that deposit's split with
@@ -16,12 +17,22 @@ export async function POST(request, { params }) {
   const { id } = await params;
 
   const body = await request.json().catch(() => ({}));
-  const type = body?.depositType;
+  // "biz" = Biz income: the chosen business decides whether it is treated as
+  // self-employed income (sole proprietor) or an owner's draw (everything else).
+  let type = body?.depositType;
+  let business = null;
+  if (type === "biz") {
+    const rows = await loadBusinessRows(admin, user.id);
+    business = rows.find((b) => b.id === body?.businessId) || null;
+    if (!rows.length) return Response.json({ error: "Add your businesses in Settings first." }, { status: 400 });
+    if (!business) return Response.json({ error: "Choose which business this deposit is for." }, { status: 400 });
+    type = typeForBusiness(business.entityType);
+  }
   if (!isDepositType(type)) return Response.json({ error: "Choose a deposit type." }, { status: 400 });
 
   const { data: transfer } = await admin
     .from("simple_transfers")
-    .select("id, source_amount, deposit_name, skipped_at, simple_transfer_allocations(id, status, source_account_id)")
+    .select("id, source_amount, deposit_name, skipped_at, plaid_transaction_id, simple_transfer_allocations(id, status, source_account_id)")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -41,14 +52,19 @@ export async function POST(request, { params }) {
   }
 
   const { data: profile } = await admin.from("simple_profiles").select("*").eq("id", user.id).single();
-  if (!typeOptionsFor(profile).includes(type)) {
+  const options = typeOptionsFor(profile);
+  if (!options.includes(type) && !(business && (options.includes("self_employed") || options.includes("owner_draw")))) {
     return Response.json({ error: "That type isn't one of your options." }, { status: 400 });
   }
 
   // Save the type first: if the column doesn't exist yet, nothing else changes.
-  const { error: saveError } = await admin.from("simple_transfers").update({ deposit_type: type }).eq("id", id).eq("user_id", user.id);
+  const { error: saveError } = await admin
+    .from("simple_transfers")
+    .update({ deposit_type: type, business_id: business ? business.id : null })
+    .eq("id", id)
+    .eq("user_id", user.id);
   if (saveError) {
-    const missing = /deposit_type/i.test(saveError.message || "");
+    const missing = /deposit_type|business_id/i.test(saveError.message || "");
     return Response.json(
       { error: missing ? "This needs a one-time database update before it can be saved." : saveError.message },
       { status: 500 }
@@ -79,5 +95,6 @@ export async function POST(request, { params }) {
     if (delError) return Response.json({ error: delError.message }, { status: 500 });
   }
   await recomputeTransferStatus(admin, id);
-  return Response.json({ ok: true, depositType: type });
+  await syncDepositToCloseout(admin, user.id, { plaidTransactionId: transfer.plaid_transaction_id, depositType: type, businessId: business?.id || null });
+  return Response.json({ ok: true, depositType: type, businessId: business?.id || null });
 }

@@ -226,7 +226,9 @@ const rowDivider = { padding: "12px 0", borderTop: "1px solid var(--color-divide
 const pairButton = { padding: "11px 12px", fontSize: 14, fontWeight: 700, borderRadius: 999, minHeight: 48, lineHeight: 1.25, textAlign: "center" };
 
 export default function PendingTransfers({ accounts, refreshKey, onChanged, showEmpty = false }) {
-  const [data, setData] = useState({ deposits: [], skipped: [], typeOptions: [], typeLabels: {} });
+  const [data, setData] = useState({ deposits: [], skipped: [], typeOptions: [], typeLabels: {}, businesses: [], effects: {} });
+  // Deposits where Biz income was just picked and a business is still needed.
+  const [bizPending, setBizPending] = useState({});
   const [loaded, setLoaded] = useState(false);
   const [busyKey, setBusyKey] = useState(null);
   const [error, setError] = useState(null);
@@ -252,7 +254,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     try {
       const [res, rulesRes] = await Promise.all([fetch("/api/transfers/deposits"), fetch("/api/split-rules").catch(() => null)]);
       const body = await res.json();
-      if (res.ok) setData({ deposits: body.deposits || [], skipped: body.skipped || [], typeOptions: body.typeOptions || [], typeLabels: body.typeLabels || {} });
+      if (res.ok) setData({ deposits: body.deposits || [], skipped: body.skipped || [], typeOptions: body.typeOptions || [], typeLabels: body.typeLabels || {}, businesses: body.businesses || [], effects: body.effects || {} });
       if (rulesRes?.ok) {
         const rb = await rulesRes.json().catch(() => ({}));
         setRules(rb?.splitRules?.percent || []);
@@ -538,6 +540,8 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   // with ONE "Transfer $X Now" and ONE "Mark as Transferred".
   const renderGroup = (g) => {
     const busy = busyKey === `row:${g.key}`;
+    // Biz income needs a business before any money is marked as moved.
+    const needsBiz = pendingDeposits.some((d) => (d.depositType === "self_employed" || d.depositType === "owner_draw") && !d.businessId);
     const destName = accountLabel(accountsById[g.dest_account_id], g.dest_account_label);
     const sheetTarget = {
       key: g.key,
@@ -558,13 +562,16 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700 }}>{money(g.total)}</span>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end" style={{ marginTop: 10 }}>
-          <PrimaryButton onClick={() => setSheetRow(sheetTarget)} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
+          <PrimaryButton onClick={() => setSheetRow(sheetTarget)} disabled={busy || busyKey === "all" || needsBiz} className="w-full sm:w-52" style={pairButton}>
             Transfer {money(g.total)} Now
           </PrimaryButton>
-          <PrimaryButton onClick={() => { setConfirmDifferent(false); setConfirmGroup(g); }} disabled={busy || busyKey === "all"} className="w-full sm:w-52" style={pairButton}>
+          <PrimaryButton onClick={() => { setConfirmDifferent(false); setConfirmGroup(g); }} disabled={busy || busyKey === "all" || needsBiz} className="w-full sm:w-52" style={pairButton}>
             {busy ? "Saving..." : "Mark as Transferred"}
           </PrimaryButton>
         </div>
+        {needsBiz && (
+          <div style={{ ...mutedText, fontSize: 13, textAlign: "right", marginTop: 6 }}>Pick a business for each Biz income deposit above to continue.</div>
+        )}
       </div>
     );
   };
@@ -602,7 +609,9 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   // listed, greyed out, with "Add back".
   // Deposit type: a dropdown while the deposit's lines can still change, a
   // plain tag otherwise. The effect line says what the chosen type does.
-  const typeLabel = (v) => data.typeLabels?.[v] || "Miscellaneous";
+  const typeLabel = (v) => (v === "self_employed" || v === "owner_draw" ? "Biz income" : data.typeLabels?.[v] || "Miscellaneous");
+  const isBiz = (v) => v === "self_employed" || v === "owner_draw";
+  const bizName = (id) => (data.businesses || []).find((b) => b.id === id)?.name;
   const sourceTag = (d, editable) => {
     const tagStyle = {
       fontSize: 12,
@@ -613,38 +622,87 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
       color: "var(--color-accent-700)",
     };
     const canEdit = editable && (d.lines || []).every((l) => ["needs_approval", "reserved"].includes(l.status));
-    if (!canEdit) return <span style={tagStyle}>{typeLabel(d.depositType)}</span>;
+    if (!canEdit) return <span style={tagStyle}>{typeLabel(d.depositType)}{isBiz(d.depositType) && bizName(d.businessId) ? ` · ${bizName(d.businessId)}` : ""}</span>;
     const options = [...(data.typeOptions || [])];
-    if (!options.some((o) => o.value === d.depositType)) options.push({ value: d.depositType, label: typeLabel(d.depositType) });
+    const shown = isBiz(d.depositType) || bizPending[d.id] ? "biz" : d.depositType;
+    if (!options.some((o) => o.value === shown)) options.push({ value: shown, label: typeLabel(shown) });
     const busyType = busyKey === `type:${d.id}`;
+    const businesses = data.businesses || [];
+    const needsBusiness = shown === "biz" && (!d.businessId || bizPending[d.id]);
+    const selectStyle = {
+      fontSize: 13,
+      fontWeight: 700,
+      color: "var(--color-accent-700)",
+      background: "var(--color-accent-100, #EDE6FF)",
+      border: "1px solid var(--color-accent-500, #9A72F0)",
+      borderRadius: 8,
+      padding: "3px 6px",
+      maxWidth: "100%",
+      cursor: busyType ? "not-allowed" : "pointer",
+    };
+    const chooseBusiness = (businessId) => {
+      setBizPending((p) => ({ ...p, [d.id]: false }));
+      return run(`type:${d.id}`, () => post(`/api/transfers/${d.id}/deposit-type`, { depositType: "biz", businessId }));
+    };
     return (
-      <select
-        aria-label={`Deposit type for ${d.title}`}
-        value={d.depositType}
-        disabled={busyType}
-        onChange={(e) => run(`type:${d.id}`, () => post(`/api/transfers/${d.id}/deposit-type`, { depositType: e.target.value }))}
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: "var(--color-accent-700)",
-          background: "var(--color-accent-100, #EDE6FF)",
-          border: "1px solid var(--color-accent-500, #9A72F0)",
-          borderRadius: 8,
-          padding: "3px 6px",
-          maxWidth: "100%",
-          cursor: busyType ? "not-allowed" : "pointer",
-        }}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <span style={{ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+        <select
+          aria-label={`Deposit type for ${d.title}`}
+          value={shown}
+          disabled={busyType}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v !== "biz") {
+              setBizPending((p) => ({ ...p, [d.id]: false }));
+              return run(`type:${d.id}`, () => post(`/api/transfers/${d.id}/deposit-type`, { depositType: v }));
+            }
+            if (businesses.length === 1) return chooseBusiness(businesses[0].id);
+            setBizPending((p) => ({ ...p, [d.id]: true }));
+          }}
+          style={selectStyle}
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        {shown === "biz" && businesses.length > 0 && (
+          <select
+            aria-label={`Which business is ${d.title} for`}
+            value={bizPending[d.id] ? "" : d.businessId || ""}
+            disabled={busyType}
+            onChange={(e) => e.target.value && chooseBusiness(e.target.value)}
+            style={{ ...selectStyle, ...(needsBusiness ? { borderColor: "#B3261E", color: "#B3261E", background: "#fff" } : {}) }}
+          >
+            {needsBusiness && <option value="">Which business? (required)</option>}
+            {businesses.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </span>
     );
   };
   const renderEffect = (d) => {
-    const e = (data.typeOptions || []).find((o) => o.value === d.depositType)?.effect;
+    if (isBiz(d.depositType) && !d.businessId) {
+      const none = (data.businesses || []).length === 0;
+      return (
+        <div style={{ marginTop: 6, fontSize: 13.5, background: "#FFF6DB", border: "1.5px solid #E8C766", borderRadius: 12, padding: "8px 12px", color: "#5C4600" }}>
+          {none ? (
+            <>
+              <b>No businesses added yet.</b> Add each business in Settings and pick its type (sole proprietor, LLC, S corp and more), then come back to pick one.{" "}
+              <a href="/settings" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
+            </>
+          ) : (
+            <b>Pick which business this deposit is for so it counts toward that business's profit.</b>
+          )}
+        </div>
+      );
+    }
+    const e = data.effects?.[d.depositType] || (data.typeOptions || []).find((o) => o.value === d.depositType)?.effect;
     if (!e) return null;
     return (
       <div style={{ ...mutedText, marginTop: 4, fontSize: 13 }}>
