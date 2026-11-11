@@ -238,14 +238,22 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   const [confirmGroup, setConfirmGroup] = useState(null); // group being marked as transferred
   const [confirmDifferent, setConfirmDifferent] = useState(false);
   const [sheetRow, setSheetRow] = useState(null); // category row whose "Transfer $X Now" sheet is open
+  const [rules, setRules] = useState([]); // split rules, to spot categories with no bank account
+  const [linkChoice, setLinkChoice] = useState({}); // ruleId -> chosen account id
+  const [linkingId, setLinkingId] = useState(null);
+  const [linkedNote, setLinkedNote] = useState(null);
 
   const accountsById = useMemo(() => Object.fromEntries((accounts || []).map((a) => [a.id, a])), [accounts]);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/transfers/deposits");
+      const [res, rulesRes] = await Promise.all([fetch("/api/transfers/deposits"), fetch("/api/split-rules").catch(() => null)]);
       const body = await res.json();
       if (res.ok) setData({ deposits: body.deposits || [], skipped: body.skipped || [] });
+      if (rulesRes?.ok) {
+        const rb = await rulesRes.json().catch(() => ({}));
+        setRules(rb?.splitRules?.percent || []);
+      }
     } finally {
       setLoaded(true);
     }
@@ -284,6 +292,20 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     return items;
   }, [deposits]);
 
+  // Categories with a percentage but no bank account yet.
+  const unlinked = useMemo(
+    () =>
+      rules
+        .filter((r) => (Number(r.pct) || 0) > 0 && !r.accountId)
+        .map((r) => {
+          const stay = rows.find((x) => x.kind === "stay" && !x.guiltFree && x.label === r.label);
+          return { ...r, amount: stay ? stay.total : Math.round(pendingTotal * (Number(r.pct) || 0)) / 100, stayLabel: stay?.source_account_label || null, stayAccountId: stay?.source_account_id || null };
+        }),
+    [rules, rows, pendingTotal]
+  );
+  const unlinkedLabels = useMemo(() => new Set(unlinked.map((u) => u.label)), [unlinked]);
+  const sourceIds = useMemo(() => new Set(pendingDeposits.map((d) => d.sourceAccountId).filter(Boolean)), [pendingDeposits]);
+
   const run = async (key, fn) => {
     setBusyKey(key);
     setError(null);
@@ -317,6 +339,27 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
       setSkipOpenFor(null);
       return res;
     });
+  const linkCategory = async (rule) => {
+    const accountId = linkChoice[rule.id];
+    if (!accountId) return;
+    setLinkingId(rule.id);
+    setError(null);
+    try {
+      const res = await post("/api/split-rules/link-account", { ruleId: rule.id, accountId });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.error || "Could not link that account. Please try again.");
+      } else {
+        const acc = accountsById[accountId];
+        setLinkedNote(`${rule.label} is now linked to ${accountLabel(acc, null)}. Updated in Split Rules and everywhere else.`);
+        setTimeout(() => setLinkedNote(null), 12000);
+        await load();
+        onChanged?.();
+      }
+    } finally {
+      setLinkingId(null);
+    }
+  };
   const undoSkip = (id) => run(`dep:${id}`, () => post(`/api/transfers/${id}/unskip`));
 
   const saveAmount = async (line) => {
@@ -477,6 +520,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
             <span style={{ minWidth: 0 }}>
               {r.label}
               {r.sharedPct != null ? ` (${r.sharedPct}%)` : ""}, stays in {accountLabel(accountsById[r.source_account_id], r.source_account_label)}
+              {unlinkedLabels.has(r.label) ? " until you link it" : ""}
             </span>
             <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{money(r.total)}</span>
           </div>
@@ -538,6 +582,74 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   const openSkip = (id) => {
     setSkipOpenFor(id);
     setSkipReason(SKIP_REASONS[0]);
+  };
+
+  // "Needs a bank account": categories with a percentage but nowhere to send
+  // it. Choosing an account saves it to the split rule (so it updates
+  // everywhere) and turns the waiting money into a transfer to that account.
+  const renderUnlinked = () => {
+    const amber = "#8A6A00";
+    const options = (accounts || []).filter((a) => !sourceIds.has(a.id));
+    return (
+      <div style={{ background: "#FFF6DB", border: "2px solid #E8C766", borderRadius: 24, padding: "16px 22px 18px" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: amber }}>Needs a bank account</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--color-text)", marginTop: 2 }}>
+          {unlinked.length === 1 ? "1 category isn't linked yet" : `${unlinked.length} categories aren't linked yet`}
+        </div>
+        {unlinked.map((u) => {
+          const busy = linkingId === u.id;
+          const stayName = u.stayLabel || accountLabel(accountsById[u.stayAccountId], null);
+          return (
+            <div key={u.id} style={{ marginTop: 14 }}>
+              <div className="flex items-center justify-between gap-3" style={{ fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>
+                <span className="flex items-center gap-2">
+                  <AlertCircle size={18} aria-hidden="true" style={{ color: amber, flex: "none" }} />
+                  {u.label} ({u.pct}%)
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{money(u.amount)}</span>
+              </div>
+              <div style={{ ...mutedText, fontSize: 14, margin: "6px 0 10px" }}>
+                This money is staying in {u.stayLabel || u.stayAccountId ? stayName : "the account your deposit landed in"}. Choose where it should go.
+              </div>
+              <div className="flex gap-2 items-stretch flex-wrap">
+                <select
+                  aria-label={`Bank account for ${u.label}`}
+                  value={linkChoice[u.id] || ""}
+                  onChange={(e) => setLinkChoice((c) => ({ ...c, [u.id]: e.target.value }))}
+                  style={{
+                    flex: "1 1 220px",
+                    minWidth: 0,
+                    border: "2px solid var(--color-accent, #6D3BE0)",
+                    borderRadius: 14,
+                    padding: "11px 14px",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    background: "var(--color-surface)",
+                    color: "var(--color-text)",
+                  }}
+                >
+                  <option value="">Choose an account</option>
+                  {options.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {accountLabel(a, null)}
+                    </option>
+                  ))}
+                </select>
+                <PrimaryButton onClick={() => linkCategory(u)} disabled={!linkChoice[u.id] || busy} style={{ ...pairButton, padding: "11px 24px", minHeight: 48 }}>
+                  {busy ? "Linking..." : "Link it"}
+                </PrimaryButton>
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ ...mutedText, marginTop: 10 }}>
+          Saved to your Split Rules, so it updates everywhere.{" "}
+          <a href="/accounts" style={{ color: "var(--color-accent-700)", fontWeight: 700, textDecoration: "underline" }}>
+            Connect a new bank account
+          </a>
+        </div>
+      </div>
+    );
   };
 
   const renderHeader = () => {
@@ -891,6 +1003,13 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
               : "Nothing needs approval right now."}
           </p>
           {renderHeader()}
+          {linkedNote && (
+            <div className="flex items-center gap-2" style={{ fontSize: 14, fontWeight: 700, color: "#0F6B4F", background: "#E8F7F3", borderRadius: 14, padding: "10px 14px" }}>
+              <Check size={18} aria-hidden="true" style={{ flex: "none" }} />
+              {linkedNote}
+            </div>
+          )}
+          {pendingDeposits.length > 0 && unlinked.length > 0 && renderUnlinked()}
           {error && <p style={{ margin: 0, fontSize: 14, color: "#b42318" }}>{error}</p>}
           {pendingDeposits.length > 0 && (
             <p style={{ ...mutedText, margin: 0 }}>
