@@ -1139,7 +1139,7 @@ export default function CloseoutPage() {
   const annualTaxEstimate = estimateTaxReserve(annualNetIncomeValue, annualTaxRatePct);
 
   return (
-    <div className="ps-page max-w-2xl space-y-6" style={BLOOM_TOKENS}>
+    <div className="ps-page max-w-2xl lg:max-w-[1200px] space-y-6" style={BLOOM_TOKENS}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GhostButton onClick={() => setPeriod((p) => shiftPeriod(p, -1))} className="px-2 py-1.5">

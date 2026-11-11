@@ -125,6 +125,14 @@ export async function POST() {
   }
 
   const periods = new Set(transfers.map((t) => monthKey(t.created_at)));
+  // Also the current and previous two calendar months, so the demo has a
+  // filled-in Close Out for whatever month the person opens.
+  for (let back = 0; back < 3; back++) {
+    const d = new Date();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() - back);
+    periods.add(d.toISOString().slice(0, 7));
+  }
   const closeoutIdByPeriod = {};
   for (const period of periods) {
     const periodDate = periodToDate(period);
