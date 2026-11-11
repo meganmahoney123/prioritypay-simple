@@ -365,9 +365,12 @@ export default function BillsPage() {
 
       {confirmScreen ? (
         <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 6px" }}>We found {pending.length} recurring payment{pending.length === 1 ? "" : "s"}</h1>
             <p style={{ color: muted, margin: 0, fontSize: 14.5 }}>Keep the ones that are real bills. You can change this any time.</p>
+          </div>
+            <PrimaryButton onClick={saveFound} disabled={busy}>Save These Auto Payments</PrimaryButton>
           </div>
           <div>
             <div style={{ ...eyebrow, marginBottom: 6 }}>Once you save, this fills in</div>
