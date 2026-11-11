@@ -525,7 +525,7 @@ function WithdrawalsPageInner() {
             {businesses.length === 0 ? (
               <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
                 <b>No businesses added yet.</b> Add each business in Settings and pick its type, then come back to save this expense.{" "}
-                <a href="/settings" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
+                <a href="/settings#businesses" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
               </p>
             ) : (
               <label className="text-xs block">

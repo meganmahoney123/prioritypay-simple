@@ -702,7 +702,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           {none ? (
             <>
               <b>No businesses added yet.</b> Add each business in Settings and pick its type (sole proprietor, LLC, S corp and more), then come back to pick one.{" "}
-              <a href="/settings" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
+              <a href="/settings#businesses" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
             </>
           ) : (
             <b>Pick which business this deposit is for so it counts toward that business's profit.</b>

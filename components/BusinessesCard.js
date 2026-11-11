@@ -44,7 +44,21 @@ export default function BusinessesCard() {
   if (!loaded) return null;
   const note = drawNote(joinEntities(list.map((b) => b.entityType)));
 
+  // Arriving from "Open Settings" links elsewhere (#businesses): scroll here
+  // and flash the card so people land right on the businesses list.
+  const [flash, setFlash] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || window.location.hash !== "#businesses") return;
+    const t = setTimeout(() => {
+      document.getElementById("businesses")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setFlash(true);
+      setTimeout(() => setFlash(false), 2200);
+    }, 350);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
+    <div id="businesses" style={{ scrollMarginTop: 90, borderRadius: 24, boxShadow: flash ? "0 0 0 4px #9A72F0" : "none", transition: "box-shadow .4s" }}>
     <Card className="p-6" style={{ maxWidth: "40em" }}>
       <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Your businesses</h2>
       <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
@@ -93,5 +107,6 @@ export default function BusinessesCard() {
       </div>
       {err && <p style={{ color: "#b3261e", fontSize: 13.5, margin: "10px 0 0" }}>{err}</p>}
     </Card>
+    </div>
   );
 }

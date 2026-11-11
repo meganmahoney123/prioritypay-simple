@@ -813,7 +813,7 @@ export default function CloseoutPage() {
           <div className="flex items-center gap-3 flex-wrap" style={{ marginTop: 8, paddingLeft: 68 }}>
             {businesses.length === 0 ? (
               <span style={{ fontSize: 13, color: PS_MUTED }}>
-                No businesses added yet. <a href="/settings" style={{ color: PS_ACCENT, fontWeight: 800 }}>Add them in Settings</a>
+                No businesses added yet. <a href="/settings#businesses" style={{ color: PS_ACCENT, fontWeight: 800 }}>Add them in Settings</a>
               </span>
             ) : (
               <select value={t.business_id || ""} onChange={(e) => setBusiness(t.id, e.target.value)} disabled={!canEditNow} aria-label="Which business" style={{ ...compactSelect, width: 260, border: `2px solid ${t.business_id ? "#9A72F0" : "#B3261E"}` }}>
@@ -902,7 +902,7 @@ export default function CloseoutPage() {
             {businesses.length === 0 ? (
               <div className="p-3 text-xs" style={bloomNoticeCardStyle()}>
                 <b>No businesses added yet.</b> Add each business in Settings and pick its type (sole proprietor, LLC, S corp and more), then come back to pick one.{" "}
-                <a href="/settings" style={{ color: PS_ACCENT, fontWeight: 800 }}>Open Settings</a>
+                <a href="/settings#businesses" style={{ color: PS_ACCENT, fontWeight: 800 }}>Open Settings</a>
               </div>
             ) : (
               <div className="flex items-end gap-3 flex-wrap">
@@ -1021,7 +1021,7 @@ export default function CloseoutPage() {
             {businesses.length === 0 ? (
               <div className="p-3 text-xs" style={bloomNoticeCardStyle()}>
                 <b>No businesses added yet.</b> Add each business in Settings, then come back to attribute this expense.{" "}
-                <a href="/settings" style={{ color: PS_ACCENT, fontWeight: 800 }}>Open Settings</a>
+                <a href="/settings#businesses" style={{ color: PS_ACCENT, fontWeight: 800 }}>Open Settings</a>
               </div>
             ) : (
               <label className="text-xs" style={{ color: PS_MUTED, fontWeight: 800 }}>
