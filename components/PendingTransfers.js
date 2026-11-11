@@ -537,21 +537,28 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   // one grand total. Each deposit is a row (name, date, Business/Other tag,
   // amount) that can be removed from the split, and removed deposits stay
   // listed, greyed out, with "Add back".
-  const sourceTag = (d) => {
+  const sourceTag = (d, editable) => {
     const biz = d.sourceKind === "business";
+    const style = {
+      fontSize: 12,
+      fontWeight: 800,
+      borderRadius: 999,
+      padding: "1px 9px",
+      background: biz ? "var(--color-accent-100, #EDE6FF)" : "var(--color-neutral-100)",
+      color: biz ? "var(--color-accent-700)" : "var(--color-neutral-700)",
+    };
+    if (!editable) return <span style={style}>{biz ? "Business" : "Other"}</span>;
+    // Tap to switch Business <-> Other; saved on the deposit.
     return (
-      <span
-        style={{
-          fontSize: 12,
-          fontWeight: 800,
-          borderRadius: 999,
-          padding: "1px 9px",
-          background: biz ? "var(--color-accent-100, #EDE6FF)" : "var(--color-neutral-100)",
-          color: biz ? "var(--color-accent-700)" : "var(--color-neutral-700)",
-        }}
+      <button
+        type="button"
+        onClick={() => run(`kind:${d.id}`, () => post(`/api/transfers/${d.id}/source-kind`, { sourceKind: biz ? "other" : "business" }))}
+        disabled={busyKey === `kind:${d.id}`}
+        title="Tap to switch between Business and Other"
+        style={{ ...style, border: "1px dashed currentColor", cursor: busyKey === `kind:${d.id}` ? "not-allowed" : "pointer" }}
       >
-        {biz ? "Business" : "Other"}
-      </span>
+        {biz ? "Business" : "Other"} ⇄
+      </button>
     );
   };
   const checkBox = (on, onClick, label, disabled) => (
@@ -677,7 +684,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)", overflowWrap: "anywhere" }}>{d.title}</div>
                   <div className="flex items-center gap-2 flex-wrap" style={{ ...mutedText, marginTop: 2 }}>
                     <span>{formatDate(d.createdAt, true)}</span>
-                    {sourceTag(d)}
+                    {sourceTag(d, true)}
                   </div>
                 </div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700 }}>{money(d.sourceAmount)}</div>

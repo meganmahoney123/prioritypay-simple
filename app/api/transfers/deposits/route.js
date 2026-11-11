@@ -63,6 +63,18 @@ export async function GET() {
     });
   }
 
+  // Stored Business/Other choice (simple_transfers.source_kind). Read in its
+  // own query so everything keeps working until that column exists.
+  const kindById = {};
+  if (all.length) {
+    const { data: kinds, error: kindError } = await admin
+      .from("simple_transfers")
+      .select("id, source_kind")
+      .eq("user_id", user.id)
+      .in("id", all.map((t) => t.id));
+    if (!kindError) (kinds || []).forEach((k) => { kindById[k.id] = k.source_kind; });
+  }
+
   const shape = (t) => ({
     id: t.id,
     sourceAmount: Number(t.source_amount) || 0,
@@ -70,9 +82,9 @@ export async function GET() {
     trigger: t.trigger,
     createdAt: t.created_at,
     name: t.deposit_name || null,
-    // Approximation (same as Transfer history): deposits that came from a bank
-    // transaction are Business, everything else is Other.
-    sourceKind: t.plaid_transaction_id ? "business" : "other",
+    // The saved choice if there is one; otherwise a guess: deposits that came
+    // from a bank transaction are Business, everything else is Other.
+    sourceKind: kindById[t.id] || (t.plaid_transaction_id ? "business" : "other"),
     skippedAt: t.skipped_at,
     skipReason: t.skip_reason,
     lines: (t.simple_transfer_allocations || []).map((a) => ({
