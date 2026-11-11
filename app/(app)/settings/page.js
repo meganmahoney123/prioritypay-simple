@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { SOLE_PROP, drawNote } from "@/lib/entityCopy";
-import EntityPicker from "@/components/EntityPicker";
+import ProfileCard from "@/components/ProfileCard";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { bloomInputStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
@@ -365,26 +364,7 @@ function SettingsPageInner() {
 
       <MfaSettings />
 
-      <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>How your business is set up</h2>
-        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
-          This decides whether PrioritySave splits every deposit (sole proprietors) or each owner&apos;s draw
-          (LLCs, partnerships and corporations). Select every kind of business you have.
-        </p>
-        <EntityPicker
-          value={profile.entityType || SOLE_PROP}
-          onChange={(v) => {
-            setSaved(false);
-            setProfile((p) => ({ ...p, entityType: v }));
-          }}
-        />
-        {drawNote(profile.entityType) && (
-          <p style={{ fontSize: 13.5, lineHeight: 1.65, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "10px 0 0" }}>
-            {drawNote(profile.entityType)}
-          </p>
-        )}
-      </Card>
+      <ProfileCard onChanged={loadProfile} />
 
       <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit splitting</h2>
