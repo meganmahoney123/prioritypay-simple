@@ -87,12 +87,16 @@ export default function MoneySimulatorDashboardPage() {
   const confirmApply = async () => {
     setApplying(true);
     try {
+      const nextRules = toPercentRules(pendingRows);
       await fetch("/api/split-rules", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ percent: toPercentRules(pendingRows) }),
+        body: JSON.stringify({ percent: nextRules }),
       });
-      router.push("/splits");
+      // New categories have no bank account yet: land on Split Rules with
+      // the "connect an account" prompt and scroll to the first one.
+      const needsAccount = nextRules.some((r) => (Number(r.pct) || 0) > 0 && !r.accountId);
+      router.push(needsAccount ? "/splits?connect=1" : "/splits");
     } finally {
       setApplying(false);
     }
@@ -157,6 +161,14 @@ export default function MoneySimulatorDashboardPage() {
                 No changes from your current split rules.
               </p>
             )}
+            {(() => {
+              const missing = toPercentRules(pendingRows).filter((r) => (Number(r.pct) || 0) > 0 && !r.accountId);
+              return missing.length > 0 ? (
+                <p style={{ fontSize: 14, lineHeight: 1.5, margin: "0 0 18px", color: "#7A2C18", background: "#FBEEEA", borderRadius: 12, padding: "10px 12px" }}>
+                  Next step: you&apos;ll choose a bank account for {missing.map((r) => r.label).join(", ")} so there&apos;s somewhere to send that money.
+                </p>
+              ) : null;
+            })()}
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={confirmApply} disabled={applying} className="pp-btn pp-btn-primary" style={{ padding: "12px 22px", opacity: applying ? 0.6 : 1 }}>
                 {applying ? "Updating…" : "Yes, implement these changes"}

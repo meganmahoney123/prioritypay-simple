@@ -203,7 +203,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
 
   if (theme === "ledger") {
     return (
-      <div style={{ border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
+      <div data-rule-id={rule.id} style={{ border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px 20px" }}>
           {!(canRename && editingName) ? (
             <span
@@ -667,7 +667,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   }
 
   return (
-    <div className="border border-neutral-200 rounded-xl p-3">
+    <div data-rule-id={rule.id} className="border border-neutral-200 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: rule.color }} />
         {locked ? (

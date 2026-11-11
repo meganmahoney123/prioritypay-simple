@@ -326,6 +326,27 @@ function SplitRulesPageInner() {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
+  // Categories that get a share of every deposit but have no bank account
+  // to send it to (typical right after adding one from the Savings Planner).
+  const needAccount = useMemo(
+    () => percent.filter((r) => (Number(r.pct) || 0) > 0 && !r.accountId),
+    [percent]
+  );
+  const scrollToFirstUnconnected = () => {
+    const r = needAccount[0];
+    if (!r) return;
+    const el = document.querySelector(`[data-rule-id="${String(r.id).replace(/"/g, '\\"')}"]`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+  // Arriving from the Savings Planner (?connect=1): jump straight to the
+  // first category that still needs an account.
+  useEffect(() => {
+    if (loading || !searchParams.get("connect")) return;
+    const t = setTimeout(scrollToFirstUnconnected, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   if (loading) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
@@ -357,6 +378,42 @@ function SplitRulesPageInner() {
           will be set aside for that account.
         </p>
       </div>
+
+      {needAccount.length > 0 && (
+        <div
+          role="alert"
+          style={{
+            background: "#FBEEEA",
+            border: "2px solid #E9B8AA",
+            borderRadius: 20,
+            padding: "14px 16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#7A2C18" }}>
+            Connect a bank account to finish setting up {needAccount.length === 1 ? "this category" : "these categories"}
+          </div>
+          <div style={{ fontSize: 15, lineHeight: 1.5, color: "#7A2C18" }}>
+            {needAccount.map((r) => r.label).join(", ")} {needAccount.length === 1 ? "has" : "have"} a percentage but nowhere to send it.
+            Until you pick an account, that money just stays where your deposit lands.
+          </div>
+          {accounts.length === 0 ? (
+            <a href="/accounts" style={{ alignSelf: "flex-start", background: "#4E22B8", color: "#fff", borderRadius: 14, padding: "10px 18px", fontWeight: 800, fontSize: 15 }}>
+              Connect a bank account first
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={scrollToFirstUnconnected}
+              style={{ alignSelf: "flex-start", background: "#4E22B8", color: "#fff", borderRadius: 14, padding: "10px 18px", fontWeight: 800, fontSize: 15 }}
+            >
+              Choose an account for {needAccount[0].label}
+            </button>
+          )}
+        </div>
+      )}
 
       <PercentSplitEditor
         percent={percent}
