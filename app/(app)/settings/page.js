@@ -273,12 +273,8 @@ function SettingsPageInner() {
         {isActive ? (
           <>
             <p style={{ fontSize: 15, margin: "0 0 16px" }}>
-              You&apos;re subscribed to PrioritySave{billing.isBusiness ? " Business" : ""}:{" "}
-              <strong>
-                {billing.subscriptionSource === "apple"
-                  ? billing.isBusiness ? "$39.99/month" : "$12.99/month"
-                  : billing.isBusiness ? "$39.99/month" : "$12.99/month"}
-              </strong>
+              You&apos;re subscribed to PrioritySave:{" "}
+              <strong>$12.99/month</strong>
               .
             </p>
             {billing.subscriptionSource === "apple" ? (
