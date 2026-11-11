@@ -272,7 +272,7 @@ function SplitRulesPageInner() {
     markDirty();
     setPercent((prev) => prev.filter((r) => r.id !== id));
   };
-  const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
+  const onAccountLinked = (account) => account && setAccounts((prev) => (prev.some((a) => a.id === account.id) ? prev : [...prev, account]));
 
   const addPercent = () => {
     markDirty();

@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
 import { isReadOnly, getBillingProfile, readOnlyError } from "@/lib/subscription";
 import { encryptToken } from "@/lib/tokenCrypto";
+import { refreshAccountBalance } from "@/lib/refreshAccountBalance";
 
 // Runs after Plaid Link succeeds in the browser: exchanges the public_token
 // for a real access_token (server-only, never sent to the client) and
@@ -43,6 +44,30 @@ export async function POST(request) {
     const accessToken = exchange.data.access_token;
     const itemId = exchange.data.item_id;
 
+    // Already connected? Linking the same bank account twice would otherwise
+    // create a second copy (duplicate rows on Accounts and in every account
+    // dropdown). Return the existing account instead and drop the extra Plaid
+    // Item this exchange just created (it belongs to nothing else).
+    if (mask) {
+      const { data: dupe } = await admin
+        .from("simple_accounts")
+        .select("id, institution_name, account_name, mask, current_balance, account_type, created_at")
+        .eq("user_id", user.id)
+        .eq("institution_name", institution_name || "Bank")
+        .eq("account_name", account_name || "Account")
+        .eq("mask", mask)
+        .limit(1)
+        .maybeSingle();
+      if (dupe) {
+        try {
+          await plaidClient.itemRemove({ access_token: accessToken });
+        } catch (err) {
+          console.error("Could not remove duplicate Plaid Item:", err?.response?.data || err?.message);
+        }
+        return Response.json({ account: dupe, existing: true });
+      }
+    }
+
     const { data: inserted, error: dbError } = await admin
       .from("simple_accounts")
       .insert({
@@ -59,7 +84,12 @@ export async function POST(request) {
       .single();
     if (dbError) throw dbError;
 
-    return Response.json({ account: inserted });
+    // Load the real balance now so the new account shows it right away
+    // (starting-balance checks and the Accounts list don't wait for a reload).
+    await refreshAccountBalance(admin, inserted.id);
+    const { data: fresh } = await admin.from("simple_accounts").select("current_balance").eq("id", inserted.id).maybeSingle();
+
+    return Response.json({ account: { ...inserted, current_balance: fresh?.current_balance ?? inserted.current_balance } });
   } catch (err) {
     const detail = err?.response?.data || err?.body || err?.message || String(err);
     console.error("Plaid link failed:", detail);

@@ -567,7 +567,7 @@ function OnboardingPageInner() {
     });
     setLastDeleted(null);
   };
-  const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
+  const onAccountLinked = (account) => account && setAccounts((prev) => (prev.some((a) => a.id === account.id) ? prev : [...prev, account]));
   // Step 2: categories removed with the x. Kept here (with their old position)
   // so one tap puts them back at 0%, which leaves every other split unchanged.
   const [removedRows, setRemovedRows] = useState([]);
