@@ -736,7 +736,11 @@ export default function CloseoutPage() {
     { key: "w2", label: "W-2 paycheck", list: w2Deposits, detail: "", color: "#C9B8F5" },
     { key: "inv", label: "Investment income", list: investmentDeposits, detail: "", color: "#2A1550" },
     { key: "misc", label: "Miscellaneous", list: miscDeposits, detail: "", color: "#8B84A0" },
-  ].map((r) => ({ ...r, amount: sumOf(r.list) })).filter((r) => r.list.length > 0);
+  ]
+    // The sole proprietor line shows profit (income minus that business's
+    // expenses), the same number as the profit table below, so the two agree.
+    .map((r) => ({ ...r, amount: r.key === "biz" && profitRows.length > 0 ? profitTotals.profit : sumOf(r.list) }))
+    .filter((r) => r.list.length > 0 || (r.key === "biz" && r.amount !== 0));
   const incomeGrandTotal = incomeSources.reduce((sum, r) => sum + r.amount, 0);
 
   // Compact rows for what still needs sorting: one line per transaction.
@@ -1233,7 +1237,7 @@ export default function CloseoutPage() {
                       <div>SOURCE</div><div>SHARE</div><div style={{ textAlign: "right" }}>AMOUNT</div>
                     </div>
                     {incomeSources.map((r) => {
-                      const pct = incomeGrandTotal > 0 ? Math.round((r.amount / incomeGrandTotal) * 100) : 0;
+                      const pct = incomeGrandTotal > 0 ? Math.max(0, Math.round((r.amount / incomeGrandTotal) * 100)) : 0;
                       return (
                         <div key={r.key} style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "13px 0", borderTop: "1.5px solid #E7DEFA" }}>
                           <div>
@@ -1257,7 +1261,7 @@ export default function CloseoutPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ fontSize: 13, color: PS_MUTED, marginTop: 6 }}>Tax reserve and retirement only apply to the business lines. Investment income and miscellaneous stay out of them.</div>
+                <div style={{ fontSize: 13, color: PS_MUTED, marginTop: 6 }}>Sole proprietor business shows profit after its expenses. Tax reserve and retirement only apply to the business lines. Investment income and miscellaneous stay out of them.</div>
               </div>
             )}
 
