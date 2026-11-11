@@ -1,9 +1,9 @@
 "use client";
 
 import { drawNote, splitUnit } from "@/lib/entityCopy";
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Save } from "lucide-react";
+import { Undo2, RotateCcw } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
@@ -15,12 +15,24 @@ import { decodeSim } from "@/lib/simSharing";
 // Investments/Retirement sub-accounts, same per-row connect-or-create
 // account controls, same copy voice. Connecting an account on any row
 // saves immediately (see updatePercent below) so that never depends on
-// someone remembering to hit Save; the Save button covers percentage/name
-// edits, which are lower-stakes to lose. No Monthly Cap $ field here
+// someone remembering to hit Save. Now every edit saves itself about a
+// second after the last change, with an Undo and a "Reset to how it was when
+// you opened this page" button in the bottom bar. No Monthly Cap $ field here
 // anymore -- removed per product decision, one less thing to configure.
 function SplitRulesPageInner() {
   const searchParams = useSearchParams();
   const [percent, setPercent] = useState([]);
+  // Auto-save + undo bookkeeping.
+  // baselineRef: the rules as they were when this page opened (Reset target).
+  // committedRef: the last settled version (what Undo steps back from).
+  // undoStack: older settled versions, newest last.
+  const baselineRef = useRef(null);
+  const committedRef = useRef(null);
+  const undoStack = useRef([]);
+  const [undoCount, setUndoCount] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [blockedMsg, setBlockedMsg] = useState(null);
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const [accounts, setAccounts] = useState([]);
   const [saved, setSaved] = useState(false);
   // True from the first edit until a successful save; drives the bottom save bar.
@@ -30,10 +42,6 @@ function SplitRulesPageInner() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState({});
   const [connecting, setConnecting] = useState({});
-  // { row, index } of the most recently deleted category/sub-account, so
-  // "Undo" can put it back exactly where it was. Cleared automatically
-  // after a few seconds or as soon as it's used.
-  const [lastDeleted, setLastDeleted] = useState(null);
   // Persona (see lib/allocations.js's PERSONA_* constants) -- only changes
   // which Retirement default this page falls back to for someone who
   // never finished onboarding (see savedPercent fallback below), and
@@ -67,19 +75,18 @@ function SplitRulesPageInner() {
       // to look at and build from, instead of a blank page that gives no
       // hint what to set up. These aren't saved until the user hits Save
       // or connects an account on a row, exactly like a fresh onboarding.
-      setPercent(simmed || (savedPercent && savedPercent.length ? savedPercent : getDefaultSplitRules(userPersona).percent));
-      if (simmed) markDirty();
+      const startRules = savedPercent && savedPercent.length ? savedPercent : getDefaultSplitRules(userPersona).percent;
+      setPercent(simmed || startRules);
+      // What "Reset" goes back to, and the starting point for Undo. A split
+      // carried over from the simulator counts as the first edit, so Reset
+      // returns to what was saved before it.
+      baselineRef.current = startRules;
+      committedRef.current = startRules;
       setAccounts(accountsRes.accounts || []);
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!lastDeleted) return;
-    const t = setTimeout(() => setLastDeleted(null), 8000);
-    return () => clearTimeout(t);
-  }, [lastDeleted]);
 
   const totalPct = useMemo(() => pctTotal(percent), [percent]);
   const remainingPct = roundPct(Math.max(0, 100 - totalPct));
@@ -119,12 +126,14 @@ function SplitRulesPageInner() {
 
   const saveNow = async (nextPercent) => {
     setSaveError(null);
+    setSaving(true);
     const res = await fetch("/api/split-rules", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ percent: settleCaps(nextPercent) }),
     });
     const data = await res.json().catch(() => ({}));
+    setSaving(false);
     if (!res.ok || data.error) {
       setSaveError(data.error || "Couldn't save, please try again.");
       markDirty();
@@ -132,6 +141,100 @@ function SplitRulesPageInner() {
     }
     setSaved(true);
     setDirty(false);
+  };
+
+  // Why the current rules can't be saved yet, or null if they can.
+  const blockReason = (rules) => {
+    const unconnected = rules.filter((r) => Number(r.pct) > 0 && !r.accountId);
+    if (unconnected.length > 0) {
+      return `Not saved yet: connect a bank account to ${unconnected.map((r) => r.label).join(", ")}.`;
+    }
+    if (computeStartingBalanceRoom(rules, accounts).anyOver) {
+      return "Not saved yet: a starting balance is more than the account holds.";
+    }
+    return null;
+  };
+
+  // Save these rules if they are valid; otherwise say what is missing.
+  const trySave = async (rules) => {
+    const reason = blockReason(rules);
+    setBlockedMsg(reason);
+    if (reason) return;
+    await saveNow(rules);
+  };
+
+  // Auto-save: about a second after the last edit, settle it (remember the
+  // version before it for Undo) and save.
+  const pendingRef = useRef(null);
+  useEffect(() => {
+    if (loading || committedRef.current === null) return;
+    if (same(percent, committedRef.current)) {
+      pendingRef.current = null;
+      return;
+    }
+    markDirty();
+    pendingRef.current = percent;
+    const t = setTimeout(() => {
+      undoStack.current.push(committedRef.current);
+      if (undoStack.current.length > 50) undoStack.current.shift();
+      committedRef.current = percent;
+      pendingRef.current = null;
+      setUndoCount(undoStack.current.length);
+      trySave(percent);
+    }, 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [percent, loading]);
+
+  // Closing the tab or switching away right after an edit should not lose it.
+  useEffect(() => {
+    const flush = () => {
+      const pending = pendingRef.current;
+      if (!pending || blockReason(pending)) return;
+      fetch("/api/split-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ percent: settleCaps(pending) }),
+        keepalive: true,
+      }).catch(() => {});
+    };
+    const onHide = () => { if (document.visibilityState === "hidden") flush(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", flush);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts]);
+
+  // Undo: throw away an edit still waiting to save, otherwise step back one
+  // settled change. Either way the result is saved.
+  const undo = () => {
+    let target;
+    if (pendingRef.current) {
+      target = committedRef.current;
+    } else if (undoStack.current.length) {
+      target = undoStack.current.pop();
+      setUndoCount(undoStack.current.length);
+    } else {
+      return;
+    }
+    pendingRef.current = null;
+    committedRef.current = target;
+    setPercent(target);
+    trySave(target);
+  };
+  // Reset: back to how the rules were when this page opened. Undo can undo it.
+  const resetToStart = () => {
+    const target = baselineRef.current;
+    if (!target || same(percent, target)) return;
+    undoStack.current.push(pendingRef.current ? committedRef.current : percent);
+    setUndoCount(undoStack.current.length);
+    pendingRef.current = null;
+    committedRef.current = target;
+    setPercent(target);
+    trySave(target);
   };
 
   const updatePercent = (id, patch) => {
@@ -165,21 +268,7 @@ function SplitRulesPageInner() {
   };
   const removeRow = (id) => {
     markDirty();
-    setPercent((prev) => {
-      const index = prev.findIndex((r) => r.id === id);
-      if (index === -1) return prev;
-      setLastDeleted({ row: prev[index], index });
-      return prev.filter((r) => r.id !== id);
-    });
-  };
-  const undoDelete = () => {
-    if (!lastDeleted) return;
-    setPercent((prev) => {
-      const copy = [...prev];
-      copy.splice(Math.min(lastDeleted.index, copy.length), 0, lastDeleted.row);
-      return copy;
-    });
-    setLastDeleted(null);
+    setPercent((prev) => prev.filter((r) => r.id !== id));
   };
   const onAccountLinked = (account) => account && setAccounts((prev) => [...prev, account]);
 
@@ -207,25 +296,6 @@ function SplitRulesPageInner() {
     () => SUGGESTED_EXTRA_CATEGORIES.filter((s) => !usedLabels.has(s.label)),
     [usedLabels]
   );
-
-  const handleSave = async () => {
-    // A category that gets a share of every deposit has to be connected to
-    // a bank account, otherwise there's nowhere to send that money. Block
-    // the save (rather than just warning) and name the categories to fix.
-    const unconnected = percent.filter((r) => Number(r.pct) > 0 && !r.accountId);
-    if (unconnected.length > 0) {
-      const names = unconnected.map((r) => r.label).join(", ");
-      markDirty();
-      setSaveError(
-        `Connect a bank account to ${names} before saving. Every category with a percentage needs an account to send money to.`
-      );
-      // The Save button in the sticky bar can be clicked from anywhere on
-      // the page, so bring the message into view.
-      setTimeout(() => document.getElementById("split-save-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
-      return;
-    }
-    await saveNow(percent);
-  };
 
   // AppShell's own header (components/AppShell.js) isn't a fixed height --
   // its title uses a responsive clamp() font-size, so the header runs
@@ -391,73 +461,69 @@ function SplitRulesPageInner() {
         </div>
       )}
 
-      {lastDeleted && (
-        <div
-          className="fixed bottom-32 left-1/2 -translate-x-1/2 text-sm pl-4 pr-2 py-2.5 flex items-center gap-3 z-50"
-          style={{ background: "#241634", color: "#FFFFFF", borderRadius: 999, boxShadow: "var(--shadow-lg)" }}
-        >
-          <span>&quot;{lastDeleted.row.label}&quot; removed.</span>
-          <button onClick={undoDelete} className="px-2 py-1" style={{ fontWeight: 700, color: "#C4A9FA" }}>
-            Undo
-          </button>
-        </div>
-      )}
-
-      {/* Save bar: always pinned to the bottom of the screen, so Save is never
-          out of reach. The status line above the button says whether there is
-          anything unsaved. */}
+      {/* Auto-save bar: pinned to the bottom. Every edit saves itself about a
+          second after the last change; Undo steps back one change and Reset
+          returns to how things were when the page opened. */}
       <div
         style={{
           position: "sticky",
           bottom: 0,
           zIndex: 20,
           margin: 0, borderRadius: "20px 20px 0 0",
-          padding: "12px 16px calc(16px + env(safe-area-inset-bottom, 0px))",
+          padding: "12px 16px calc(14px + env(safe-area-inset-bottom, 0px))",
           background: "#fff",
           borderTop: "1.5px solid #D9C9FF",
           boxShadow: "0 -8px 24px rgba(78,34,184,0.10)",
           display: "flex",
           flexDirection: "column",
-          gap: 8,
+          gap: 10,
         }}
       >
-        <div
-          role="status"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            fontSize: 14,
-            fontWeight: 700,
-            color: dirty ? "#8A4B00" : saved ? "#4E22B8" : "#4A3F63",
-          }}
-        >
-          <span style={{ width: 9, height: 9, borderRadius: "50%", background: dirty ? "#E07A1F" : saved ? "#4E22B8" : "#CBB8F5", display: "inline-block" }} />
-          {dirty ? "Unsaved changes" : saved ? "All changes saved" : "Nothing below is saved until you hit Save."}
+        {(() => {
+          const problem = blockedMsg || saveError;
+          const state = problem ? "problem" : saving ? "saving" : dirty ? "pending" : saved ? "saved" : "idle";
+          const color = { problem: "#9C3B22", saving: "#4E22B8", pending: "#8A4B00", saved: "#4E22B8", idle: "#4A3F63" }[state];
+          const dot = { problem: "#C2452B", saving: "#9A72F0", pending: "#E07A1F", saved: "#4E22B8", idle: "#CBB8F5" }[state];
+          const text = problem || (saving ? "Saving…" : dirty ? "Saving in a moment…" : saved ? "All changes saved" : "Changes save automatically.");
+          return (
+            <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 14, fontWeight: 700, color, textAlign: "center" }}>
+              <span style={{ width: 9, height: 9, borderRadius: "50%", background: dot, display: "inline-block", flex: "none" }} />
+              {text}
+            </div>
+          );
+        })()}
+        <div style={{ display: "flex", gap: 10 }}>
+          {[
+            { key: "undo", label: "Undo", Icon: Undo2, onClick: undo, disabled: undoCount === 0 && !dirty },
+            { key: "reset", label: "Reset to start", Icon: RotateCcw, onClick: resetToStart, disabled: !baselineRef.current || same(percent, baselineRef.current) },
+          ].map(({ key, label, Icon, onClick, disabled }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={onClick}
+              disabled={disabled}
+              title={key === "reset" ? "Put everything back to how it was when you opened this page" : "Undo your last change"}
+              style={{
+                flex: 1,
+                minHeight: 48,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                border: "2px solid #6D3BE0",
+                background: "#fff",
+                color: "#4E22B8",
+                borderRadius: 14,
+                fontSize: 16,
+                fontWeight: 800,
+                opacity: disabled ? 0.4 : 1,
+                cursor: disabled ? "not-allowed" : "pointer",
+              }}
+            >
+              <Icon size={18} /> {label}
+            </button>
+          ))}
         </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={startingBalanceOverBudget}
-          style={{
-            width: "100%",
-            minHeight: 56,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            background: "#4E22B8",
-            color: "#fff",
-            borderRadius: 16,
-            fontSize: 18,
-            fontWeight: 800,
-            opacity: startingBalanceOverBudget ? 0.45 : 1,
-            cursor: startingBalanceOverBudget ? "not-allowed" : "pointer",
-          }}
-        >
-          <Save size={18} /> Save split rules
-        </button>
       </div>
     </div>
   );

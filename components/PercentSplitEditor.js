@@ -467,6 +467,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                   onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
                   theme="ledger"
                 />
+                <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted, #4A3F63)" }}>
+                  Using both? Whichever limit is reached first stops new money for this category.
+                </p>
               </div>
             )}
           </div>
@@ -741,6 +744,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             value={rule.categoryCap}
             onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
           />
+          <p style={{ margin: "6px 0 0", fontSize: 13, lineHeight: 1.5, color: "var(--color-text-muted, #4A3F63)" }}>
+            Using both? Whichever limit is reached first stops new money for this category.
+          </p>
         </>
       )}
       {!hideStartingBalance && (
