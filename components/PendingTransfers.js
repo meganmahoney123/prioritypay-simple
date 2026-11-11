@@ -308,6 +308,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     });
 
   const markGroup = (g) => run(`row:${g.key}`, () => post("/api/transfer-allocations/confirm-batch", { allocationIds: g.ids }));
+  const unmark = (ids) => run(`undo:${ids.join(",")}`, () => post("/api/transfer-allocations/unmark", { allocationIds: ids }));
   const settleLine = (id) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/settle`));
   const candidate = (id, action) => run(`line:${id}`, () => post(`/api/transfer-allocations/${id}/candidate/${action}`));
   const skipDeposit = (id) =>
@@ -734,6 +735,13 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
         {onTheWayOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         On the way ({onTheWay.length})
       </button>
+      {onTheWayOpen && onTheWay.length > 1 && (
+        <div style={{ marginTop: 6 }}>
+          <button onClick={() => unmark(onTheWay.map((i) => i.line.id))} disabled={busyKey?.startsWith("undo:")} style={linkButtonStyle}>
+            Undo all ({onTheWay.length}): none of these were sent
+          </button>
+        </div>
+      )}
       {onTheWayOpen &&
         onTheWay.map(({ deposit, line }) => {
           const busy = busyKey === `line:${line.id}`;
@@ -754,6 +762,9 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
                   : "We can't see this account, so this isn't verified automatically. Mark it as landed once you see it."}
                 <button onClick={() => settleLine(line.id)} disabled={busy} style={{ ...linkButtonStyle, marginLeft: 6 }}>
                   It already landed
+                </button>
+                <button onClick={() => unmark([line.id])} disabled={busy} style={{ ...linkButtonStyle, marginLeft: 6 }}>
+                  Undo (I haven&apos;t sent this)
                 </button>
               </div>
               {line.candidate_transaction_id && line.candidate_amount != null && (
