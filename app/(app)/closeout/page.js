@@ -739,7 +739,6 @@ export default function CloseoutPage() {
 
   // Compact rows for what still needs sorting: one line per transaction.
   const [openDetails, setOpenDetails] = useState({});
-  const [bulkBusy, setBulkBusy] = useState(false);
   const chargeChoice = (t) => {
     const c = catOf(t);
     if (c === "expense") return t.business_id || "__biz";
@@ -755,12 +754,6 @@ export default function CloseoutPage() {
     }
     await setCategory(t.id, "expense");
     if (v !== "__biz") await setBusiness(t.id, v);
-  };
-  const bulkSetCharges = async (v) => {
-    if (!v) return;
-    setBulkBusy(true);
-    for (const t of attentionCharges) await pickChargeChoice(t, v);
-    setBulkBusy(false);
   };
   const compactTop = (t, acc, sign, hint) => {
     const [, m, d] = String(t.txn_date || "").split("-");
@@ -1349,8 +1342,7 @@ export default function CloseoutPage() {
                   {attentionCount === 0 ? "Nothing left. Everything is handled." : `${attentionCount} item${attentionCount === 1 ? "" : "s"} left. Only what is not already handled.`}
                 </span>
               </div>
-              <style>{`@media (min-width: 1024px){ .co-split .co-grid{ grid-template-columns: 54px minmax(0,1fr) auto !important; } .co-split .co-grid > select{ grid-column: 2 / -1; } }`}</style>
-              <div className={`co-split grid gap-6 items-start ${attentionDeposits.length > 0 && attentionCharges.length > 0 ? "lg:grid-cols-2" : ""}`}>
+              <div className="space-y-6">
               {attentionDeposits.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 8 }}>
@@ -1364,17 +1356,6 @@ export default function CloseoutPage() {
                 <div>
                   <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>EXPENSES</div>
-                    {attentionCharges.length > 1 && canEditNow && (
-                      <label className="flex items-center gap-2" style={{ fontSize: 13.5, fontWeight: 800, color: PS_ACCENT }}>
-                        Set all to
-                        <select value="" onChange={(e) => bulkSetCharges(e.target.value)} disabled={bulkBusy} aria-label="Set all expenses to" style={{ border: "2px solid #9A72F0", borderRadius: 12, background: "#fff", color: PS_INK, fontWeight: 700, fontSize: 14, padding: "7px 10px" }}>
-                          <option value="">{bulkBusy ? "Saving..." : "Choose"}</option>
-                          {businesses.length === 0 && <option value="__biz">Business expense</option>}
-                          {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                          <option value="__personal">Personal (leave out)</option>
-                        </select>
-                      </label>
-                    )}
                   </div>
                   <div className="max-h-[48rem] overflow-y-auto" style={{ background: "#fff", border: "1.5px solid #D9C9FF", borderRadius: 22, padding: "8px 22px" }}>{attentionCharges.map((t, i) => renderCompactCharge(t, i))}</div>
                   <div style={{ fontSize: 13.5, color: PS_MUTED, marginTop: 8 }}>Expenses marked Personal are left out of your business numbers.</div>
@@ -1410,7 +1391,7 @@ export default function CloseoutPage() {
         {!isConfirmed && (
           <PrimaryButton onClick={handleConfirm} disabled={confirming} className="w-full mt-4" style={{ minHeight: 56, fontSize: 18 }}>
             {confirming ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-            {confirming ? "Confirming…" : isW2NoSideHustlePersona || !showTaxGuidance ? "Save this month" : "Confirm and see recommendations"}
+            {confirming ? "Confirming…" : isW2NoSideHustlePersona || !showTaxGuidance ? "Save this month" : attentionCount > 0 ? `Confirm ${periodLabel(period).split(" ")[0]} (${attentionCount} left)` : "Confirm and see recommendations"}
           </PrimaryButton>
         )}
       </Card>
