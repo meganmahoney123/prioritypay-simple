@@ -3,7 +3,7 @@
 import { drawNote, splitUnit } from "@/lib/entityCopy";
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Undo2, RotateCcw } from "lucide-react";
+import { Plus, Undo2, RotateCcw } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
