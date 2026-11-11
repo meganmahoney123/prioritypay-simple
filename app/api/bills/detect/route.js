@@ -2,7 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { plaidClient } from "@/lib/plaid";
 import { decryptToken } from "@/lib/tokenCrypto";
-import { fromPlaidFrequency } from "@/lib/bills";
+import { classifyStream, looksLikeBill } from "@/lib/bills";
 
 // Looks for recurring payments in the person's linked accounts using Plaid's
 // recurring-transactions detection. Found payments are saved as "pending" so
@@ -39,9 +39,18 @@ export async function POST() {
       for (const s of streams) {
         if (!s.is_active || s.status === "TOMBSTONED") continue;
         const primary = s.personal_finance_category?.primary || "";
-        if (primary.startsWith("TRANSFER")) continue; // the person's own money moving, not a bill
-        const frequency = fromPlaidFrequency(s.frequency);
-        if (!frequency) continue;
+        const name = s.merchant_name || s.description || "";
+        const avg = Math.abs(Number(s.average_amount?.amount) || 0);
+        const last = Math.abs(Number(s.last_amount?.amount) || 0);
+        const steady = avg > 0 && Math.abs(last - avg) <= avg * 0.15;
+        if (!looksLikeBill({ name, primaryCategory: primary, steady })) continue; // transfers, one-off Venmo, shopping and the like
+        const frequency = classifyStream({
+          frequency: s.frequency,
+          firstDate: s.first_date,
+          lastDate: s.last_date,
+          count: Array.isArray(s.transaction_ids) ? s.transaction_ids.length : 0,
+        });
+        if (!frequency) continue; // not monthly, quarterly, every 6 months or yearly
         const amount = Math.abs(Number(s.average_amount?.amount ?? s.last_amount?.amount) || 0);
         if (!amount || !s.predicted_next_date) continue;
         if (known.get(s.stream_id) === "dismissed") continue;

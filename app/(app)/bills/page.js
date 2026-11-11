@@ -352,7 +352,7 @@ export default function BillsPage() {
   }
 
   const confirmScreen = pending.length > 0 && confirmed.length === 0 && !skipped;
-  const defaultOff = (b) => b.frequency === "weekly" || /venmo|zelle|cash app|paypal/i.test(b.name);
+  const defaultOff = (b) => String(b.note || "") === "demo:off"; // only the sample data starts with some unchecked
   const isKept = (b) => (keep[b.id] === undefined ? !defaultOff(b) : keep[b.id]);
   const keptCount = pending.filter(isKept).length;
 

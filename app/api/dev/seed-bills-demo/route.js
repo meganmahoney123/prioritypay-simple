@@ -55,8 +55,8 @@ export async function POST(request) {
           mk("Netflix", "", 15.49, "monthly", inDays(27), chase, { status: "pending" }),
           mk("Car insurance", "", 642, "semiannual", inDays(30), chase, { status: "pending" }),
           mk("Adobe Creative Cloud", "", 263.88, "yearly", nextYearly(2, 14), chase, { status: "pending" }),
-          mk("Venmo to Alex", "", 40, "monthly", inDays(12), chase, { status: "pending" }),
-          mk("Amazon", "", 62, "weekly", inDays(3), chase, { status: "pending" }),
+          mk("Venmo to Alex", "off", 40, "monthly", inDays(12), chase, { status: "pending" }),
+          mk("Amazon", "off", 62, "weekly", inDays(3), chase, { status: "pending" }),
         ]
       : [
           mk("Rent", "Parkview Apartments", 1850, "monthly", inDays(20), chase, { autopay: true }),
