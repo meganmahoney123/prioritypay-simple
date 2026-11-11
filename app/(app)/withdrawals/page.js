@@ -35,7 +35,9 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 function monthKey(iso) {
-  const d = new Date(iso);
+  // Noon local time so a date-only string never slips into the previous
+  // month in time zones behind UTC.
+  const d = new Date(`${String(iso).slice(0, 10)}T12:00:00`);
   return `${d.toLocaleDateString("en-US", { month: "long" })} ${d.getFullYear()}`;
 }
 
@@ -64,6 +66,9 @@ function WithdrawalsPageInner() {
   const [sourceType, setSourceType] = useState("card");
   const [matchedTxnId, setMatchedTxnId] = useState("");
   const [cardSearchQuery, setCardSearchQuery] = useState("");
+  const [cardMonth, setCardMonth] = useState("");
+  const [cardMin, setCardMin] = useState("");
+  const [cardMax, setCardMax] = useState("");
   const [mileageMiles, setMileageMiles] = useState("");
   const [mileagePurpose, setMileagePurpose] = useState("");
   const [mealPurpose, setMealPurpose] = useState("");
@@ -115,7 +120,16 @@ function WithdrawalsPageInner() {
     // of scrolling the whole (potentially long) grouped list -- doesn't
     // touch cardTransactions/unmatchedCardTxns themselves, so the
     // "Credit card activity" list elsewhere on the page is unaffected.
-    const filtered = q ? unmatchedCardTxns.filter((t) => (t.name || "").toLowerCase().includes(q)) : unmatchedCardTxns;
+    const min = cardMin === "" ? null : Number(cardMin);
+    const max = cardMax === "" ? null : Number(cardMax);
+    const filtered = unmatchedCardTxns.filter((t) => {
+      if (q && !(t.name || "").toLowerCase().includes(q)) return false;
+      if (cardMonth && String(t.txnDate).slice(0, 7) !== cardMonth) return false;
+      const amt = Math.abs(Number(t.amount) || 0);
+      if (min !== null && Number.isFinite(min) && amt < min) return false;
+      if (max !== null && Number.isFinite(max) && amt > max) return false;
+      return true;
+    });
     const groups = {};
     filtered.forEach((t) => {
       const acc = accountsById[t.accountId];
@@ -125,7 +139,20 @@ function WithdrawalsPageInner() {
       (groups[key] ||= []).push(t);
     });
     return groups;
-  }, [unmatchedCardTxns, accountsById, cardSearchQuery]);
+  }, [unmatchedCardTxns, accountsById, cardSearchQuery, cardMonth, cardMin, cardMax]);
+
+  // Months that actually have an unmatched charge, newest first.
+  const cardMonthOptions = useMemo(() => {
+    const keys = [...new Set(unmatchedCardTxns.map((t) => String(t.txnDate).slice(0, 7)))].sort().reverse();
+    return keys.map((k) => ({ value: k, label: monthKey(`${k}-01`) }));
+  }, [unmatchedCardTxns]);
+  const cardFiltersActive = !!(cardSearchQuery.trim() || cardMonth || cardMin !== "" || cardMax !== "");
+  const clearCardFilters = () => {
+    setCardSearchQuery("");
+    setCardMonth("");
+    setCardMin("");
+    setCardMax("");
+  };
 
   const mileage = isMileageLabel(categoryLabel);
   const meals = isMealsLabel(categoryLabel);
@@ -140,6 +167,9 @@ function WithdrawalsPageInner() {
     setSourceType("card");
     setMatchedTxnId("");
     setCardSearchQuery("");
+    setCardMonth("");
+    setCardMin("");
+    setCardMax("");
     setMileageMiles("");
     setMileagePurpose("");
     setMealPurpose("");
@@ -170,6 +200,9 @@ function WithdrawalsPageInner() {
     setDescription(t.name || "");
     setOccurredAt(t.txnDate);
     setCardSearchQuery("");
+    setCardMonth("");
+    setCardMin("");
+    setCardMax("");
   };
 
   const save = async () => {
@@ -306,19 +339,71 @@ function WithdrawalsPageInner() {
             ) : (
               <>
                 {unmatchedCardTxns.length > 0 && (
-                  <input
-                    type="text"
-                    value={cardSearchQuery}
-                    onChange={(e) => setCardSearchQuery(e.target.value)}
-                    placeholder="Search by merchant name…"
-                    className="w-full mb-3"
-                    style={{ minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 16, color: "#241337" }}
-                  />
+                  <div className="mb-3 flex flex-col gap-2">
+                    <input
+                      type="text"
+                      value={cardSearchQuery}
+                      onChange={(e) => setCardSearchQuery(e.target.value)}
+                      placeholder="Search by name (or part of a name)…"
+                      aria-label="Search charges by name"
+                      className="w-full"
+                      style={{ minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 16, color: "#241337" }}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={cardMonth}
+                        onChange={(e) => setCardMonth(e.target.value)}
+                        aria-label="Filter charges by month"
+                        style={{ minHeight: 44, padding: "0 12px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 15, color: "#241337" }}
+                      >
+                        <option value="">All months</option>
+                        {cardMonthOptions.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
+                      <span className="flex items-center gap-1.5" style={{ fontSize: 14, color: "#4A3F63" }}>
+                        Amount $
+                        <input
+                          type="number"
+                          min={0}
+                          inputMode="decimal"
+                          value={cardMin}
+                          onChange={(e) => setCardMin(e.target.value)}
+                          placeholder="Min"
+                          aria-label="Minimum amount"
+                          className="font-mono"
+                          style={{ width: 84, minHeight: 44, padding: "0 10px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 15, color: "#241337" }}
+                        />
+                        to
+                        <input
+                          type="number"
+                          min={0}
+                          inputMode="decimal"
+                          value={cardMax}
+                          onChange={(e) => setCardMax(e.target.value)}
+                          placeholder="Max"
+                          aria-label="Maximum amount"
+                          className="font-mono"
+                          style={{ width: 84, minHeight: 44, padding: "0 10px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 15, color: "#241337" }}
+                        />
+                      </span>
+                      {cardFiltersActive && (
+                        <button
+                          type="button"
+                          onClick={clearCardFilters}
+                          className="underline"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#4E22B8", fontWeight: 700, fontSize: 14, minHeight: 44 }}
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {Object.keys(groupedCardTxns).length === 0 ? (
                   <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
-                    {cardSearchQuery
-                      ? "No charges match your search."
+                    {cardFiltersActive
+                      ? "No charges match your search or filters."
                       : "No unmatched card activity found. It may already be logged, or hasn't synced yet."}
                   </p>
                 ) : (
@@ -403,6 +488,8 @@ function WithdrawalsPageInner() {
           </>
         )}
 
+        {(sourceType === "cash" || !!matchedTxnId) && (
+        <>
         <label className="text-xs block mb-2">
           <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>What category did this come out of?</span>
           <select
@@ -507,6 +594,8 @@ function WithdrawalsPageInner() {
         <PrimaryButton onClick={save} disabled={saving} className="text-sm px-4 py-2">
           {saving ? "Saving…" : "Save withdrawal"}
         </PrimaryButton>
+        </>
+        )}
       </Card>
 
       <Card className="p-6">
