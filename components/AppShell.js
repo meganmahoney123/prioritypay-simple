@@ -268,11 +268,11 @@ export default function AppShell({ children, isSandbox = false }) {
       const g = allGroups[0];
       const destAccount = pendingAccountsById[g.dest_account_id];
       const destName = destAccount
-        ? `${destAccount.institution_name} •••• ${destAccount.mask}`
+        ? `${destAccount.institution_name}${destAccount.mask ? ` •••• ${destAccount.mask}` : ""}`
         : g.dest_account_label || "your account";
       document.title = `→ ${currency(g.amount)} to ${destName} | PrioritySave`;
     } else {
-      document.title = `Transfers pending (${allGroups.length}) | PrioritySave`;
+      document.title = `${allGroups.length} transfers pending | PrioritySave`;
     }
     return () => {
       document.title = normalTitle;

@@ -12,6 +12,10 @@ import { DEFAULT_SPLIT_RULES } from "@/lib/allocations";
 export async function POST() {
   const user = await requireUser();
   if (!user) return unauthorized();
+  // Developer-only: restricted to the owner's email, like the other demo routes.
+  if ((user.email || "").toLowerCase() !== "megan@ignitemysite.com") {
+    return Response.json({ error: "Not available." }, { status: 403 });
+  }
   const admin = supabaseAdmin();
 
   const { data: existingRows } = await admin
