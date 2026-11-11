@@ -742,6 +742,20 @@ export default function CloseoutPage() {
     .map((r) => ({ ...r, amount: r.key === "biz" && profitRows.length > 0 ? profitTotals.profit : sumOf(r.list) }))
     .filter((r) => r.list.length > 0 || (r.key === "biz" && r.amount !== 0));
   const incomeGrandTotal = incomeSources.reduce((sum, r) => sum + r.amount, 0);
+  // Per-business lines shown under the sole proprietor and owner's draw rows
+  // when there is more than one business in that group. Amounts add up to
+  // the row above (profit for sole proprietors, draws received for the rest).
+  const bizBreakdown = profitRows
+    .filter((b) => b.income !== 0 || b.expenses !== 0)
+    .map((b) => ({ id: b.id, name: b.name, amount: b.profit, detail: `${currency(b.income)} income, ${currency(b.expenses)} expenses` }));
+  const drawBreakdown = businesses
+    .filter((b) => paysByDraw(b.entityType))
+    .map((b) => {
+      const list = drawDeposits.filter((t) => t.business_id === b.id);
+      return { id: b.id, name: b.name, amount: sumOf(list), detail: `${list.length} draw${list.length === 1 ? "" : "s"}` };
+    })
+    .filter((b) => b.amount !== 0);
+  const breakdownFor = (key) => (key === "biz" ? bizBreakdown : key === "draw" ? drawBreakdown : []);
 
   // Compact rows for what still needs sorting: one line per transaction.
   const [openDetails, setOpenDetails] = useState({});
@@ -1238,8 +1252,10 @@ export default function CloseoutPage() {
                     </div>
                     {incomeSources.map((r) => {
                       const pct = incomeGrandTotal > 0 ? Math.max(0, Math.round((r.amount / incomeGrandTotal) * 100)) : 0;
+                      const parts = breakdownFor(r.key);
                       return (
-                        <div key={r.key} style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "13px 0", borderTop: "1.5px solid #E7DEFA" }}>
+                        <div key={r.key} style={{ borderTop: "1.5px solid #E7DEFA" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "13px 0" }}>
                           <div>
                             <div style={{ fontSize: 16.5, fontWeight: 800, color: PS_INK }}>{r.label}</div>
                             <div style={{ fontSize: 13, color: PS_MUTED }}>{[r.detail, `${r.list.length} deposit${r.list.length === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</div>
@@ -1251,6 +1267,21 @@ export default function CloseoutPage() {
                             <div style={{ fontSize: 13, fontWeight: 800, color: PS_MUTED, width: 38, textAlign: "right" }}>{pct}%</div>
                           </div>
                           <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 17, fontWeight: 600 }}>{currency(r.amount)}</div>
+                        </div>
+                        {parts.length > 1 && (
+                          <div style={{ marginBottom: 12, marginLeft: 6, paddingLeft: 14, borderLeft: "3px solid #D9C9FF" }}>
+                            {parts.map((b) => (
+                              <div key={b.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "baseline", padding: "6px 0" }}>
+                                <div>
+                                  <div style={{ fontSize: 15, fontWeight: 700, color: PS_INK }}>{b.name}</div>
+                                  <div style={{ fontSize: 12.5, color: PS_MUTED }}>{b.detail}</div>
+                                </div>
+                                <div />
+                                <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 15, fontWeight: 600, color: PS_INK }}>{currency(b.amount)}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         </div>
                       );
                     })}

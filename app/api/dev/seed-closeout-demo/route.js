@@ -212,6 +212,20 @@ export async function POST() {
       const { error: bizErr } = await admin.from("simple_businesses").insert(seedRows);
       if (!bizErr) businesses = await loadBusinessRows(admin, user.id);
     }
+    // Sample accounts own two sole proprietor businesses and two LLCs paid by draw.
+    {
+      const have = new Set(businesses.map((b) => b.name));
+      const want = [
+        { name: "Ignite My Site", entity_type: SOLE_PROP },
+        { name: "Saddle & Stirrup Photography", entity_type: SOLE_PROP },
+        { name: "PriorityPay", entity_type: SINGLE_LLC },
+        { name: "Hayloft Media LLC", entity_type: SINGLE_LLC },
+      ].filter((b) => !have.has(b.name) && businesses.filter((x) => paysByDraw(x.entityType) === (b.entity_type === SINGLE_LLC)).length < 2);
+      if (want.length) {
+        const { error: bizErr2 } = await admin.from("simple_businesses").insert(want.map((b) => ({ user_id: user.id, ...b })));
+        if (!bizErr2) businesses = await loadBusinessRows(admin, user.id);
+      }
+    }
     if (businesses.length) {
       // deposit rows grouped by month, oldest first
       const byMonth = {};
@@ -263,8 +277,12 @@ export async function POST() {
       // Richer, mostly-sorted month so the Close Out sample looks lived in:
       // lots already handled from Split My Deposits and Withdrawals, a short
       // list of items still needing attention.
-      const soleProp = businesses.find((b) => !paysByDraw(b.entityType)) || businesses[0];
-      const llc = businesses.find((b) => paysByDraw(b.entityType));
+      const soleProps = businesses.filter((b) => !paysByDraw(b.entityType));
+      const llcs = businesses.filter((b) => paysByDraw(b.entityType));
+      const soleProp = soleProps[0] || businesses[0];
+      const soleProp2 = soleProps[1] || soleProp;
+      const llc = llcs[0];
+      const llc2 = llcs[1] || llc;
       const extra = [];
       const add = (key, day, name, amount, direction, extraFields) => {
         Object.entries(closeoutIdByPeriod).forEach(([period, closeoutId]) => {
@@ -286,18 +304,19 @@ export async function POST() {
       const inc = (key, day, name, amount, cat, biz) =>
         add(key, day, name, amount, "in", { suggested_category: cat, confirmed_category: cat, ...(biz ? { business_id: biz } : {}) });
       // Income, already sorted: $15,897 across five sources
-      inc("inc-biz1", 3, "Client Payment", 4000, "income", soleProp.id);
-      inc("inc-biz2", 14, "Client Payment", 3200, "income", soleProp.id);
-      inc("inc-biz3", 24, "Client Payment", 2000, "income", soleProp.id);
-      if (llc) inc("inc-draw", 15, `${llc.name} Owner Draw`, 3000, "income", llc.id);
+      inc("inc-biz1", 3, "Client Payment", 3000, "income", soleProp.id);
+      inc("inc-biz2", 14, "Client Payment", 2200, "income", soleProp.id);
+      inc("inc-biz3", 24, "Client Payment", 4000, "income", soleProp2.id);
+      if (llc) inc("inc-draw", 15, `${llc.name} Owner Draw`, 1800, "income", llc.id);
+      if (llc2) inc("inc-draw2", 16, `${llc2.name} Owner Draw`, 1200, "income", llc2.id);
       inc("inc-w2", 1, "Acme Corp Payroll", 3200, "w2_income");
       inc("inc-misc", 22, "Venmo from Sam", 85, "misc_income");
       [["div1", 6, "Vanguard Dividend", 112], ["int1", 9, "Schwab Interest", 88], ["div2", 14, "Fidelity Dividend", 142], ["int2", 18, "Ally Savings Interest", 70]].forEach(([k, d, n, a]) =>
         inc(k, d, n, a, "investment_income")
       );
       // Six business expenses already sorted: $1,364 for the sole proprietor
-      [["x-ads", 10, "Facebook Ads", 520, "ADVERTISING"], ["x-up", 12, "Upwork Contractor", 450, "GENERAL_SERVICES"], ["x-web", 4, "Webflow", 77, "GENERAL_SERVICES"], ["x-gw", 2, "Google Workspace", 72, "GENERAL_SERVICES"], ["x-qb", 8, "QuickBooks", 35, "GENERAL_SERVICES"], ["x-ins", 15, "Business Insurance", 210, "GENERAL_SERVICES"]].forEach(([k, d, n, a, pfc]) =>
-        add(k, d, n, a, "out", { suggested_category: "expense", confirmed_category: "expense", business_id: soleProp.id, pfc_primary: pfc })
+      [["x-ads", 10, "Facebook Ads", 620, "ADVERTISING", soleProp.id], ["x-web", 4, "Webflow", 77, "GENERAL_SERVICES", soleProp.id], ["x-gw", 2, "Google Workspace", 72, "GENERAL_SERVICES", soleProp.id], ["x-ins", 15, "Business Insurance", 245, "GENERAL_SERVICES", soleProp.id], ["x-cam", 8, "Camera Gear Rental", 250, "GENERAL_SERVICES", soleProp2.id], ["x-dbx", 12, "Dropbox", 100, "GENERAL_SERVICES", soleProp2.id]].forEach(([k, d, n, a, pfc, bid]) =>
+        add(k, d, n, a, "out", { suggested_category: "expense", confirmed_category: "expense", business_id: bid, pfc_primary: pfc })
       );
       // Still needs attention: two income items and six expenses
       add("n-inc1", 28, "VANGUARD DIVIDEND", 112, "in", { suggested_category: "investment_income" });
