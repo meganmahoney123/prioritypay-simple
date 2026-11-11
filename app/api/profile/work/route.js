@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { PERSONA_BUSINESS_OWNER } from "@/lib/allocations";
 import { ENTITY_OPTIONS, SOLE_PROP, joinEntities } from "@/lib/entityCopy";
 import { DEPOSIT_TYPES, typeOptionsFor } from "@/lib/depositTypes";
+import { loadBusinessRows } from "@/lib/businesses";
 import { WORK_PICK_VALUES, personaFromWork, picksForProfile, runsBusiness, businessesFromEntityType } from "@/lib/profileWork";
 
 // The "Your profile" card in Settings: how the person earns money now (jobs,
@@ -45,28 +46,22 @@ export async function POST(request) {
     return Response.json({ error: "Tell us whether you have employees (other than a spouse or your kids)." }, { status: 400 });
   }
 
-  let businesses = [];
-  if (runs) {
-    businesses = (Array.isArray(body.businesses) ? body.businesses : [])
-      .slice(0, 10)
-      .map((b) => ({
-        name: typeof b?.name === "string" ? b.name.trim().slice(0, 80) : "",
-        entityType: ENTITY_VALUES.includes(b?.entityType) ? b.entityType : SOLE_PROP,
-      }));
-    if (!businesses.length) businesses = [{ name: "", entityType: SOLE_PROP }];
-  }
-
   const { data: before } = await admin.from("simple_profiles").select("*").eq("id", user.id).single();
   if (!before) return Response.json({ error: "Profile not found." }, { status: 404 });
 
+  const savedBiz = runs ? await loadBusinessRows(admin, user.id) : [];
   const persona = personaFromWork(picks, runs && body.hasEmployees === true);
   const update = {
     persona,
     has_w2_plan: picks.includes("w2"),
     ...(runs
       ? {
-          entity_type: joinEntities([...new Set(businesses.map((b) => b.entityType))]),
-          business_name: businesses.find((b) => b.name)?.name || before.business_name || null,
+          ...(savedBiz.length
+            ? {
+                entity_type: joinEntities([...new Set(savedBiz.map((b) => b.entityType))]),
+                business_name: savedBiz.find((b) => b.name)?.name || before.business_name || null,
+              }
+            : {}),
           ...(persona === PERSONA_BUSINESS_OWNER && !before.income_handling ? { income_handling: "separate" } : {}),
         }
       : {}),
@@ -83,19 +78,11 @@ export async function POST(request) {
   const empRes = await admin.from("simple_profiles").update({ employer_name: employer || null }).eq("id", user.id);
   if (empRes.error) warnings.push("employer");
 
-  const { data: old } = await admin.from("simple_businesses").select("id").eq("user_id", user.id);
-  if (!old && runs) {
-    warnings.push("businesses");
-  } else {
-    if (runs) {
-      const { error: insErr } = await admin
-        .from("simple_businesses")
-        .insert(businesses.map((b) => ({ user_id: user.id, name: b.name, entity_type: b.entityType })));
-      if (insErr) warnings.push("businesses");
-      else if (old?.length) await admin.from("simple_businesses").delete().in("id", old.map((r) => r.id));
-    } else if (old?.length) {
-      await admin.from("simple_businesses").delete().in("id", old.map((r) => r.id));
-    }
+  // Businesses are managed in the Your businesses card, so their ids stay
+  // stable. Only when the person stops running a business are they cleared.
+  if (!runs) {
+    const { data: old } = await admin.from("simple_businesses").select("id").eq("user_id", user.id);
+    if (old?.length) await admin.from("simple_businesses").delete().in("id", old.map((r) => r.id));
   }
 
   // What changed for deposit types, in plain words.

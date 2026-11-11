@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { FREQUENCY_VALUES } from "@/lib/bills";
+import { DEMO_EMAILS } from "@/lib/demoEmails";
 
 // Bills and autopays: recurring payments found in linked accounts (pending
 // until confirmed) plus ones added by hand. Nothing here moves money.
@@ -17,6 +18,7 @@ export async function GET() {
     return Response.json({ error: missing ? "setup" : billsRes.error.message, needsSetup: missing }, { status: missing ? 200 : 500 });
   }
   return Response.json({
+    canSeed: DEMO_EMAILS.has(user.email),
     bills: billsRes.data || [],
     accounts: (accountsRes.data || []).map((a) => ({
       id: a.id,

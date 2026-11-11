@@ -114,7 +114,7 @@ export async function GET() {
   const optionList = [];
   typeOptions.forEach((v) => {
     if (v === "self_employed" || v === "owner_draw") {
-      if (!optionList.some((o) => o.value === "biz")) optionList.push({ value: "biz", label: "Biz income", effect: effects.self_employed });
+      if (!optionList.some((o) => o.value === "biz")) optionList.push({ value: "biz", label: "Biz Income/Owners Draw", effect: effects.self_employed });
     } else optionList.push({ value: v, label: DEPOSIT_TYPES[v], effect: effects[v] });
   });
   return Response.json({

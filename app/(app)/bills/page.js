@@ -49,6 +49,65 @@ function Switch({ on, onChange, label }) {
   );
 }
 
+function Chip({ on, children, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 700, cursor: "pointer", padding: "6px 14px", borderRadius: 999,
+        border: `1.5px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`,
+        background: on ? "color-mix(in srgb, var(--color-accent) 9%, transparent)" : "transparent",
+        color: on ? "var(--color-accent-700)" : "var(--color-text)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// Month grids from this month through the month 30 days out, with each
+// payment on the day it is due.
+function CalendarView({ bills, today }) {
+  const end = toIso(new Date(parseIso(today).getTime() + 30 * 86400000));
+  const confirmed = bills.filter((b) => b.status !== "dismissed");
+  const byDay = {};
+  confirmed.forEach((b) => occurrencesBetween(b, today.slice(0, 8) + "01", end).forEach((d) => { (byDay[d] = byDay[d] || []).push(b); }));
+  const months = [];
+  let y = Number(today.slice(0, 4));
+  let m = Number(today.slice(5, 7)) - 1;
+  const endY = Number(end.slice(0, 4));
+  const endM = Number(end.slice(5, 7)) - 1;
+  while (y < endY || (y === endY && m <= endM)) { months.push([y, m]); m += 1; if (m > 11) { m = 0; y += 1; } }
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {months.map(([yy, mm]) => {
+        const first = new Date(Date.UTC(yy, mm, 1));
+        const days = new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate();
+        const cells = [...Array(first.getUTCDay()).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+        return (
+          <div key={`${yy}-${mm}`}>
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>{first.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" })}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4 }}>
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => <div key={i} style={{ fontSize: 11.5, color: muted, textAlign: "center" }}>{d}</div>)}
+              {cells.map((d, i) => {
+                const iso = d ? toIso(new Date(Date.UTC(yy, mm, d))) : null;
+                const list = iso ? byDay[iso] || [] : [];
+                return (
+                  <div key={i} style={{ minHeight: 52, padding: 4, borderRadius: 8, background: list.length ? "color-mix(in srgb, var(--color-accent) 10%, transparent)" : "transparent", border: d ? "1px solid var(--color-divider)" : "none", overflow: "hidden" }}>
+                    {d && <div style={{ fontSize: 12, fontWeight: 700 }}>{d}</div>}
+                    {list.map((b) => <div key={b.id} style={{ fontSize: 10.5, lineHeight: 1.2, overflowWrap: "anywhere" }}>{b.name}</div>)}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function AddForm({ accounts, onAdd, busy }) {
   const [f, setF] = useState({ name: "", amount: "", frequency: "monthly", nextDue: "", accountId: "", autopay: false });
   const [err, setErr] = useState("");
@@ -107,6 +166,8 @@ export default function BillsPage() {
   const [skipped, setSkipped] = useState(false);
   const [keep, setKeep] = useState({});
   const [showAdd, setShowAdd] = useState(false);
+  const [view, setView] = useState("list");
+  const [canSeed, setCanSeed] = useState(false);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/bills");
@@ -115,6 +176,7 @@ export default function BillsPage() {
     if (!r.ok) { setError(d.error || "Couldn't load your bills."); return null; }
     setBills(d.bills || []);
     setAccounts(d.accounts || []);
+    setCanSeed(Boolean(d.canSeed));
     return d;
   }, []);
 
@@ -177,7 +239,7 @@ export default function BillsPage() {
     setBusy(true); setError("");
     try {
       for (const b of pending) {
-        if (keep[b.id] === false) await remove(b.id);
+        if (!isKept(b)) await remove(b.id);
         else await patch(b.id, { status: "confirmed" });
       }
       await load();
@@ -185,22 +247,31 @@ export default function BillsPage() {
   };
 
   const today = todayIso();
-  const month = today.slice(0, 7);
-  const monthEnd = toIso(new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)));
-  const next30 = useMemo(() => upcoming(confirmed, today, 30), [confirmed, today]);
+  const next30 = useMemo(() => upcoming(bills, today, 30), [bills, today]);
   const total30 = next30.reduce((s, x) => s + Number(x.bill.amount), 0);
   const notOnAutopay = confirmed.filter((b) => !b.autopay).length;
   const byAccount = useMemo(() => {
     const m = new Map();
-    confirmed.forEach((b) => {
-      const n = occurrencesBetween(b, today, monthEnd).length;
-      if (!n) return;
-      const key = b.account_id || "none";
-      m.set(key, (m.get(key) || 0) + n * Number(b.amount));
+    next30.forEach(({ bill }) => {
+      const key = bill.account_id || "none";
+      m.set(key, (m.get(key) || 0) + Number(bill.amount));
     });
-    return [...m.entries()].map(([id, amt]) => ({ id, amt, acc: accountById[id] })).sort((a, b) => b.amt - a.amt);
-  }, [confirmed, today, monthEnd, accountById]);
-  const monthName = parseIso(today).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+    return [...m.entries()].filter(([id]) => id !== "none").map(([id, amt]) => ({ id, amt, acc: accountById[id] })).sort((x, y) => y.amt - x.amt);
+  }, [next30, accountById]);
+  const noteOf = (b) => String(b.note || "").replace(/^demo:/, "");
+  const seed = async (mode) => {
+    setBusy(true); setError("");
+    try {
+      const r = await fetch("/api/dev/seed-bills-demo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(d.error || "Couldn't load sample data."); return; }
+      setSkipped(false); setKeep({});
+      await load();
+    } finally { setBusy(false); }
+  };
+  const biggest = next30.reduce((m, x) => (!m || Number(x.bill.amount) > Number(m.bill.amount) ? x : m), null);
+  const topAccount = byAccount.find((x) => x.acc && x.acc.balance != null);
+  const accountNames = [...new Set(next30.map((x) => accountById[x.bill.account_id]?.label).filter(Boolean))];
 
   if (loading) return <div style={{ padding: 24, color: muted }}>Loading your bills...</div>;
   if (needsSetup) {
@@ -212,7 +283,9 @@ export default function BillsPage() {
   }
 
   const confirmScreen = pending.length > 0 && confirmed.length === 0 && !skipped;
-  const keptCount = pending.filter((b) => keep[b.id] !== false).length;
+  const defaultOff = (b) => b.frequency === "weekly" || /venmo|zelle|cash app|paypal/i.test(b.name);
+  const isKept = (b) => (keep[b.id] === undefined ? !defaultOff(b) : keep[b.id]);
+  const keptCount = pending.filter(isKept).length;
 
   return (
     <div style={{ maxWidth: 900, display: "flex", flexDirection: "column", gap: 18 }}>
@@ -223,13 +296,13 @@ export default function BillsPage() {
           <div>
             <h1 style={{ ...h2, fontSize: 28 }}>We found {pending.length} recurring payment{pending.length === 1 ? "" : "s"}</h1>
             <p style={{ color: muted, margin: 0, maxWidth: 620 }}>
-              These repeat in your linked accounts. Keep the real bills and uncheck anything that isn't one. We only read your history. Nothing here moves money.
+              These repeat in your linked accounts. Keep the ones that are real bills. You can change this any time. Nothing here moves money.
             </p>
           </div>
           <Card>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {pending.map((b) => {
-                const on = keep[b.id] !== false;
+                const on = isKept(b);
                 return (
                   <label key={b.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--color-divider)", cursor: "pointer" }}>
                     <input type="checkbox" checked={on} onChange={(e) => setKeep((p) => ({ ...p, [b.id]: e.target.checked }))} style={{ width: 18, height: 18, accentColor: "var(--color-accent)" }} />
@@ -255,14 +328,11 @@ export default function BillsPage() {
         </>
       ) : (
         <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
-            <div>
-              <h1 style={{ ...h2, fontSize: 28 }}>Bills and Autopays</h1>
-              <p style={{ color: muted, margin: 0 }}>What's coming out of your accounts, so you can keep money set aside for it.</p>
-            </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+            <p style={{ color: muted, margin: 0 }}>Detected from your linked accounts, plus anything you add.</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <GhostButton onClick={() => detect(false)} disabled={detecting}>{detecting ? "Looking..." : "Look for new payments"}</GhostButton>
-              <PrimaryButton onClick={() => setShowAdd((v) => !v)}>{showAdd ? "Close" : "Add a payment"}</PrimaryButton>
+              <PrimaryButton onClick={() => setShowAdd((v) => !v)}>{showAdd ? "Close" : "+ Add a bill"}</PrimaryButton>
             </div>
           </div>
           {detectNote && <div style={{ fontSize: 14, color: muted }}>{detectNote}</div>}
@@ -274,24 +344,29 @@ export default function BillsPage() {
           {confirmed.length > 0 && (
             <Card>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
-                <div style={{ flex: "1 1 180px" }}>
+                <div style={{ flex: "1 1 170px" }}>
                   <div style={eyebrow}>Next 30 days</div>
                   <div style={{ ...num, fontSize: 30 }}>{currency(total30)}</div>
-                  <div style={{ color: muted, fontSize: 13 }}>across {next30.length} payment{next30.length === 1 ? "" : "s"}</div>
+                  <div style={{ color: muted, fontSize: 13 }}>leaving across {next30.length} payment{next30.length === 1 ? "" : "s"}</div>
                 </div>
-                <div style={{ flex: "1 1 180px" }}>
+                <div style={{ flex: "1 1 170px" }}>
                   <div style={eyebrow}>Next up</div>
                   {next30[0] ? (
                     <>
-                      <div style={{ fontWeight: 700, fontSize: 18, overflowWrap: "anywhere" }}>{fmtDate(next30[0].date)} {next30[0].bill.name}</div>
-                      <div style={{ ...num, color: muted }}>{currency(next30[0].bill.amount)}</div>
+                      <div style={{ fontWeight: 800, fontSize: 28, color: "#8A6A00" }}>{fmtDate(next30[0].date)}</div>
+                      <div style={{ color: muted, fontSize: 13, overflowWrap: "anywhere" }}>{next30[0].bill.name} · {currency(next30[0].bill.amount)}</div>
                     </>
                   ) : <div style={{ color: muted }}>Nothing in the next 30 days</div>}
                 </div>
-                <div style={{ flex: "1 1 180px" }}>
-                  <div style={eyebrow}>You pay by hand</div>
-                  <div style={{ ...num, fontSize: 30 }}>{notOnAutopay}</div>
-                  <div style={{ color: muted, fontSize: 13 }}>not marked as autopay</div>
+                <div style={{ flex: "1 1 170px" }}>
+                  <div style={eyebrow}>By account</div>
+                  <div style={{ ...num, fontSize: 30 }}>{accountNames.length}</div>
+                  <div style={{ color: muted, fontSize: 13 }}>{accountNames.join(" · ") || "No account chosen yet"}</div>
+                </div>
+                <div style={{ flex: "1 1 170px" }}>
+                  <div style={eyebrow}>Not on autopay</div>
+                  <div style={{ ...num, fontSize: 30, color: notOnAutopay ? "#8A6A00" : undefined }}>{notOnAutopay}</div>
+                  <div style={{ color: muted, fontSize: 13 }}>{notOnAutopay === 1 ? "you pay this one by hand" : "you pay these by hand"}</div>
                 </div>
               </div>
             </Card>
@@ -304,20 +379,35 @@ export default function BillsPage() {
             </Card>
           ) : (
             <Card>
-              <h2 style={h2}>Coming up</h2>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 8, flexWrap: "wrap" }}>
+                <h2 style={{ ...h2, margin: 0 }}>Coming up</h2>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Chip on={view === "list"} onClick={() => setView("list")}>List</Chip>
+                  <Chip on={view === "calendar"} onClick={() => setView("calendar")}>Calendar</Chip>
+                </div>
+              </div>
+              {view === "calendar" ? (
+                <CalendarView bills={bills} today={today} />
+              ) : (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {[...bills]
                   .sort((x, y) => (x.next_due < y.next_due ? -1 : 1))
                   .map((b) => {
                     const isPending = b.status === "pending";
+                    const acc = accountById[b.account_id];
+                    const d = parseIso(b.next_due);
                     return (
-                      <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--color-divider)", flexWrap: "wrap" }}>
-                        <div style={{ width: 56, fontWeight: 700 }}>{fmtDate(b.next_due)}</div>
-                        <div style={{ flex: "1 1 180px", minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, overflowWrap: "anywhere" }}>{b.name}</div>
-                          <div style={{ fontSize: 13, color: muted }}>{frequencyLabel(b.frequency)}{accountById[b.account_id] ? ` · ${accountById[b.account_id].label}` : ""}</div>
+                      <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderTop: "1px solid var(--color-divider)", flexWrap: "wrap" }}>
+                        <div style={{ width: 46, textAlign: "center", flex: "none" }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: muted }}>{d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}</div>
+                          <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{d.getUTCDate()}</div>
                         </div>
-                        <div style={num}>{currency(b.amount)}</div>
+                        <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, overflowWrap: "anywhere" }}>{b.name}</div>
+                          <div style={{ fontSize: 13, color: muted }}>{frequencyLabel(b.frequency)}{noteOf(b) ? ` · ${noteOf(b)}` : ""}</div>
+                        </div>
+                        <div style={{ ...num, minWidth: 70, textAlign: "right" }}>{currency(b.amount)}</div>
+                        <div style={{ flex: "1 1 150px", fontSize: 13.5, color: muted }}>{acc ? acc.label : "Not detected"}</div>
                         {isPending ? (
                           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                             <Pill tone="ok">Needs your OK</Pill>
@@ -335,32 +425,37 @@ export default function BillsPage() {
                     );
                   })}
               </div>
+              )}
             </Card>
           )}
 
           {byAccount.length > 0 && (
             <Card>
-              <h2 style={h2}>Money leaving each account in {monthName}</h2>
-              <p style={{ color: muted, margin: "0 0 12px", fontSize: 14 }}>Still to go this month, compared with what's in the account now.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <h2 style={h2}>Money leaving each account in the next 30 days</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
                 {byAccount.map(({ id, amt, acc }) => {
                   const bal = acc?.balance;
                   const pct = bal > 0 ? Math.min(100, Math.round((amt / bal) * 100)) : 100;
                   const short = bal != null && amt > bal;
                   return (
                     <div key={id}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 15, flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 700 }}>{acc ? acc.label : "Account not chosen"}</span>
-                        <span style={num}>{currency(amt)}{bal != null ? <span style={{ color: muted, fontWeight: 400 }}> of {currency(bal)}</span> : null}</span>
+                        <span style={num}>{currency(amt)}{bal != null ? <span style={{ color: muted, fontWeight: 400 }}> of {currency(bal)} balance</span> : null}</span>
                       </div>
-                      <div style={{ height: 8, borderRadius: 999, background: "color-mix(in srgb, var(--color-text) 10%, transparent)", marginTop: 6 }}>
+                      <div style={{ height: 10, borderRadius: 999, background: "color-mix(in srgb, var(--color-text) 10%, transparent)", marginTop: 6 }}>
                         <div style={{ width: `${bal == null ? 0 : pct}%`, height: "100%", borderRadius: 999, background: short ? "#B3261E" : "var(--color-accent)" }} />
                       </div>
-                      {short && <div style={{ color: "#B3261E", fontSize: 13, marginTop: 4 }}>Bills this month are more than what's in this account.</div>}
+                      {short && <div style={{ color: "#B3261E", fontSize: 13, marginTop: 4 }}>These payments are more than what's in this account.</div>}
                     </div>
                   );
                 })}
               </div>
+              {biggest && topAccount && (
+                <div style={{ color: muted, fontSize: 13.5, marginTop: 12 }}>
+                  {biggest.bill.name} is the biggest payment. About {currency(Math.max(0, topAccount.acc.balance - topAccount.amt))} stays in {topAccount.acc.label} after these payments.
+                </div>
+              )}
             </Card>
           )}
 
@@ -368,6 +463,13 @@ export default function BillsPage() {
             We find these by spotting payments that repeat in your linked accounts, so a payment is not necessarily on autopay at the lender. You tell us which ones are. Payments made by Zelle, Venmo, check or from an account that isn't linked may not show up, so add those by hand.
           </p>
         </>
+      )}
+      {canSeed && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", paddingTop: 8 }}>
+          <span style={{ fontSize: 12.5, color: muted }}>Demo account:</span>
+          <GhostButton onClick={() => seed("main")} disabled={busy}>Load sample data</GhostButton>
+          <GhostButton onClick={() => seed("confirm")} disabled={busy}>Load first-time sample</GhostButton>
+        </div>
       )}
     </div>
   );

@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
-import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
+import { bloomInputStyle } from "@/lib/bloomTheme";
 import ChipCheckboxes from "@/components/ChipCheckboxes";
-import { ENTITY_OPTIONS, SOLE_PROP, drawNote, joinEntities } from "@/lib/entityCopy";
 import { WORK_OPTIONS, runsBusiness } from "@/lib/profileWork";
 
 const muted = { fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)" };
@@ -18,7 +17,6 @@ export default function ProfileCard({ onChanged }) {
   const [loaded, setLoaded] = useState(false);
   const [picks, setPicks] = useState([]);
   const [employer, setEmployer] = useState("");
-  const [businesses, setBusinesses] = useState([]);
   const [hasEmployees, setHasEmployees] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -31,8 +29,7 @@ export default function ProfileCard({ onChanged }) {
         if (d.error) return;
         setPicks(d.workPicks || []);
         setEmployer(d.employerName || "");
-        setBusinesses(d.businesses || []);
-        setHasEmployees(d.businesses?.length ? !!d.hasEmployees : null);
+        setHasEmployees(runsBusiness(d.workPicks || []) ? !!d.hasEmployees : null);
         setLoaded(true);
       })
       .catch(() => {});
@@ -49,10 +46,7 @@ export default function ProfileCard({ onChanged }) {
     // Retired and between jobs stand alone; the others can combine.
     const cleaned = v === "retired" || v === "between" ? (next.includes(v) ? [v] : next) : next.filter((p) => p !== "retired" && p !== "between");
     setPicks(cleaned);
-    if (runsBusiness(cleaned) && !businesses.length) setBusinesses([{ name: "", entityType: SOLE_PROP }]);
   };
-
-  const setBiz = (i, patch) => { touch(); setBusinesses((list) => list.map((b, j) => (j === i ? { ...b, ...patch } : b))); };
 
   const save = async () => {
     setSaving(true); touch();
@@ -60,7 +54,7 @@ export default function ProfileCard({ onChanged }) {
       const res = await fetch("/api/profile/work", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workPicks: picks, employerName: employer, businesses, hasEmployees }),
+        body: JSON.stringify({ workPicks: picks, employerName: employer, hasEmployees }),
       });
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Couldn't save your profile."); return; }
@@ -97,28 +91,7 @@ export default function ProfileCard({ onChanged }) {
 
       {runs && (
         <>
-          <span style={label}>Your businesses</span>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {businesses.map((b, i) => (
-              <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-                <input value={b.name} onChange={(e) => setBiz(i, { name: e.target.value })} placeholder="Business name" maxLength={80} style={bloomInputStyle({ flex: "1 1 180px", width: "auto" })} />
-                <select value={b.entityType} onChange={(e) => setBiz(i, { entityType: e.target.value })} style={bloomSelectStyle({ flex: "1 1 200px", width: "auto" })}>
-                  {ENTITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                {businesses.length > 1 && (
-                  <GhostButton type="button" onClick={() => { touch(); setBusinesses((l) => l.filter((_, j) => j !== i)); }}>Remove</GhostButton>
-                )}
-              </div>
-            ))}
-          </div>
-          {businesses.length < 10 && (
-            <div style={{ marginTop: 10 }}>
-              <GhostButton type="button" onClick={() => { touch(); setBusinesses((l) => [...l, { name: "", entityType: SOLE_PROP }]); }}>+ Add a business</GhostButton>
-            </div>
-          )}
-          {drawNote(joinEntities(businesses.map((b) => b.entityType))) && (
-            <p style={{ ...muted, fontSize: 13.5, margin: "10px 0 0" }}>{drawNote(joinEntities(businesses.map((b) => b.entityType)))}</p>
-          )}
+          <p style={{ ...muted, fontSize: 13.5, margin: "14px 0 0" }}>Add and edit your businesses in the Your businesses card below.</p>
 
           <span style={label}>Do you have employees (other than a spouse or your kids)?</span>
           <ChipCheckboxes

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import ProfileCard from "@/components/ProfileCard";
+import BusinessesCard from "@/components/BusinessesCard";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { bloomInputStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
@@ -365,6 +366,8 @@ function SettingsPageInner() {
       <MfaSettings />
 
       <ProfileCard onChanged={loadProfile} />
+
+      <BusinessesCard />
 
       <Card className="p-6" style={{ maxWidth: "40em" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit splitting</h2>

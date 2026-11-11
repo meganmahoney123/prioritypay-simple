@@ -541,7 +541,9 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   const renderGroup = (g) => {
     const busy = busyKey === `row:${g.key}`;
     // Biz income needs a business before any money is marked as moved.
-    const needsBiz = pendingDeposits.some((d) => (d.depositType === "self_employed" || d.depositType === "owner_draw") && !d.businessId);
+    const needsBiz = pendingDeposits.some((d) => (d.typeSaved && (d.depositType === "self_employed" || d.depositType === "owner_draw") && !d.businessId) || bizPending[d.id]);
+    // With more than one deposit type on offer, each deposit needs one picked first.
+    const needsType = (data.typeOptions || []).length > 1 && pendingDeposits.some((d) => !d.typeSaved && !bizPending[d.id]);
     const destName = accountLabel(accountsById[g.dest_account_id], g.dest_account_label);
     const sheetTarget = {
       key: g.key,
@@ -562,16 +564,18 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700 }}>{money(g.total)}</span>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end" style={{ marginTop: 10 }}>
-          <PrimaryButton onClick={() => setSheetRow(sheetTarget)} disabled={busy || busyKey === "all" || needsBiz} className="w-full sm:w-52" style={pairButton}>
+          <PrimaryButton onClick={() => setSheetRow(sheetTarget)} disabled={busy || busyKey === "all" || needsBiz || needsType} className="w-full sm:w-52" style={pairButton}>
             Transfer {money(g.total)} Now
           </PrimaryButton>
-          <PrimaryButton onClick={() => { setConfirmDifferent(false); setConfirmGroup(g); }} disabled={busy || busyKey === "all" || needsBiz} className="w-full sm:w-52" style={pairButton}>
+          <PrimaryButton onClick={() => { setConfirmDifferent(false); setConfirmGroup(g); }} disabled={busy || busyKey === "all" || needsBiz || needsType} className="w-full sm:w-52" style={pairButton}>
             {busy ? "Saving..." : "Mark as Transferred"}
           </PrimaryButton>
         </div>
-        {needsBiz && (
-          <div style={{ ...mutedText, fontSize: 13, textAlign: "right", marginTop: 6 }}>Pick a business for each Biz income deposit above to continue.</div>
-        )}
+        {needsType ? (
+          <div style={{ ...mutedText, fontSize: 13, textAlign: "right", marginTop: 6 }}>Choose a type for each deposit above to continue.</div>
+        ) : needsBiz ? (
+          <div style={{ ...mutedText, fontSize: 13, textAlign: "right", marginTop: 6 }}>Pick a business for each Biz Income/Owners Draw deposit above to continue.</div>
+        ) : null}
       </div>
     );
   };
@@ -609,7 +613,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   // listed, greyed out, with "Add back".
   // Deposit type: a dropdown while the deposit's lines can still change, a
   // plain tag otherwise. The effect line says what the chosen type does.
-  const typeLabel = (v) => (v === "self_employed" || v === "owner_draw" ? "Biz income" : data.typeLabels?.[v] || "Miscellaneous");
+  const typeLabel = (v) => (v === "self_employed" || v === "owner_draw" ? "Biz Income/Owners Draw" : data.typeLabels?.[v] || "Miscellaneous");
   const isBiz = (v) => v === "self_employed" || v === "owner_draw";
   const bizName = (id) => (data.businesses || []).find((b) => b.id === id)?.name;
   const sourceTag = (d, editable) => {
@@ -624,8 +628,10 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     const canEdit = editable && (d.lines || []).every((l) => ["needs_approval", "reserved"].includes(l.status));
     if (!canEdit) return <span style={tagStyle}>{typeLabel(d.depositType)}{isBiz(d.depositType) && bizName(d.businessId) ? ` · ${bizName(d.businessId)}` : ""}</span>;
     const options = [...(data.typeOptions || [])];
-    const shown = isBiz(d.depositType) || bizPending[d.id] ? "biz" : d.depositType;
-    if (!options.some((o) => o.value === shown)) options.push({ value: shown, label: typeLabel(shown) });
+    // Until a type is picked the dropdown says Select; the guessed type is not shown.
+    const unchosen = !d.typeSaved && !bizPending[d.id];
+    const shown = unchosen ? "" : isBiz(d.depositType) || bizPending[d.id] ? "biz" : d.depositType;
+    if (shown && !options.some((o) => o.value === shown)) options.push({ value: shown, label: typeLabel(shown) });
     const busyType = busyKey === `type:${d.id}`;
     const businesses = data.businesses || [];
     const needsBusiness = shown === "biz" && (!d.businessId || bizPending[d.id]);
@@ -661,6 +667,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           }}
           style={selectStyle}
         >
+          {unchosen && <option value="" disabled>Select...</option>}
           {options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -687,7 +694,8 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     );
   };
   const renderEffect = (d) => {
-    if (isBiz(d.depositType) && !d.businessId) {
+    if (!d.typeSaved && !bizPending[d.id]) return null;
+    if (bizPending[d.id] || (isBiz(d.depositType) && !d.businessId)) {
       const none = (data.businesses || []).length === 0;
       return (
         <div style={{ marginTop: 6, fontSize: 13.5, background: "#FFF6DB", border: "1.5px solid #E8C766", borderRadius: 12, padding: "8px 12px", color: "#5C4600" }}>
