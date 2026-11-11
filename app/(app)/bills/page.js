@@ -494,6 +494,12 @@ export default function BillsPage() {
     });
     return [...m.entries()].filter(([id]) => id !== "none").map(([id, amt]) => ({ id, amt, acc: accountById[id] })).sort((x, y) => y.amt - x.amt);
   }, [next30, accountById]);
+  // Company name to add to the search when the bill's own name is generic.
+  const linkHint = (b) => {
+    const n = String(b.note || "").replace(/^demo:/, "").trim();
+    if (!n || /^(off|paid by|name is)/i.test(n)) return "";
+    return n.replace(/^charged as\s+/i, "");
+  };
   const noteOf = (b) => String(b.note || "").replace(/^demo:/, "");
   const seed = async (mode) => {
     setBusy(true); setError("");
@@ -694,10 +700,10 @@ export default function BillsPage() {
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
                               <Pill tone={isPending ? "ok" : b.autopay ? "on" : "hand"}>{isPending ? "Needs your OK" : b.autopay ? "Autopay on" : "You pay by hand"}</Pill>
                               {(() => {
-                                const c = cancelLinkFor(b.name);
+                                const c = cancelLinkFor(b.name, linkHint(b));
                                 return c ? (
                                   <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "underline" }}>
-                                    {c.exact ? "Cancel or manage" : "How to cancel"}
+                                    {c.kind === "exact" ? "Cancel or manage" : c.kind === "manage" ? "Manage" : "How to cancel"}
                                   </a>
                                 ) : null;
                               })()}
