@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { periodToDate } from "@/lib/closeoutSync";
 import { isW2NoSideHustle } from "@/lib/allocations";
 import { loadBusinessRows, typeForBusiness, closeoutCategoryFor } from "@/lib/businesses";
-import { SOLE_PROP, SINGLE_LLC } from "@/lib/entityCopy";
+import { SOLE_PROP, SINGLE_LLC, paysByDraw } from "@/lib/entityCopy";
 
 // DEV/DEMO ONLY -- gives each demo persona account something real to show
 // on the Monthly Close-Out page.
@@ -236,7 +236,55 @@ export async function POST() {
           r.confirmed_category = "expense";
           r.business_id = biz.id;
         }
+        // The everyday personal lines are already marked Personal.
+        if (r.direction === "out" && ["Grocery Store", "Restaurants & Coffee", "Gas & Rideshare", "Streaming & Fun", "Rent & Utilities"].includes(r.name)) {
+          r.confirmed_category = "exclude";
+        }
       });
+
+      // Richer, mostly-sorted month so the Close Out sample looks lived in:
+      // lots already handled from Split My Deposits and Withdrawals, a short
+      // list of items still needing attention.
+      const soleProp = businesses.find((b) => !paysByDraw(b.entityType)) || businesses[0];
+      const llc = businesses.find((b) => paysByDraw(b.entityType));
+      const extra = [];
+      const add = (key, day, name, amount, direction, extraFields) => {
+        Object.entries(closeoutIdByPeriod).forEach(([period, closeoutId]) => {
+          extra.push({
+            closeout_id: closeoutId,
+            user_id: user.id,
+            account_id: checkingAccountId,
+            plaid_transaction_id: `demo-seed-x-${period}-${key}`,
+            txn_date: `${period}-${String(day).padStart(2, "0")}`,
+            name,
+            amount,
+            direction,
+            ...extraFields,
+          });
+        });
+      };
+      // Income already sorted
+      add("inc-biz1", 3, "Client Payment", 3400, "in", { suggested_category: "income", confirmed_category: "income", business_id: soleProp.id });
+      add("inc-biz2", 17, "Client Payment", 2800, "in", { suggested_category: "income", confirmed_category: "income", business_id: soleProp.id });
+      if (llc) add("inc-draw", 15, `${llc.name} Owner Draw`, 3000, "in", { suggested_category: "income", confirmed_category: "income", business_id: llc.id });
+      [["div1", 6, "Vanguard Dividend", 112], ["int1", 9, "Schwab Interest", 88], ["div2", 14, "Fidelity Dividend", 142], ["int2", 30, "Ally Savings Interest", 70]].forEach(([k, d, n, a]) =>
+        add(k, d, n, a, "in", { suggested_category: "investment_income", confirmed_category: "investment_income" })
+      );
+      // Business expenses already sorted
+      [["x-gw", 2, "Google Workspace", 72], ["x-web", 4, "Webflow", 39], ["x-not", 5, "Notion", 16], ["x-qb", 8, "QuickBooks", 35], ["x-ads", 10, "Facebook Ads", 380], ["x-up", 12, "Upwork Contractor", 450], ["x-mc", 18, "Mailchimp", 45], ["x-zap", 21, "Zapier", 30], ["x-dbx", 24, "Dropbox", 20]].forEach(([k, d, n, a]) =>
+        add(k, d, n, a, "out", { suggested_category: "expense", confirmed_category: "expense", business_id: soleProp.id })
+      );
+      // Personal ones already marked Personal
+      [["x-gym", 7, "Planet Fitness", 24.99], ["x-tgt", 13, "Target", 87.2], ["x-cvs", 20, "CVS Pharmacy", 18.45]].forEach(([k, d, n, a]) =>
+        add(k, d, n, a, "out", { suggested_category: "expense", confirmed_category: "exclude" })
+      );
+      // Still needs attention: two income items and six expenses
+      add("n-inc1", 28, "Vanguard Dividend", 112, "in", { suggested_category: "investment_income" });
+      add("n-inc2", 29, "Zelle from Jordan", 60, "in", { suggested_category: "misc_income" });
+      [["n-cva", 1, "Canva", 15], ["n-ado", 3, "Adobe", 54], ["n-zm", 7, "Zoom", 16], ["n-ub", 12, "Uber", 23], ["n-wf", 19, "Whole Foods", 68], ["n-sh", 24, "Shell", 41]].forEach(([k, d, n, a]) =>
+        add(k, d, n, a, "out", { suggested_category: "expense", pfc_primary: "GENERAL_SERVICES" })
+      );
+      rows.push(...extra);
     }
   }
 

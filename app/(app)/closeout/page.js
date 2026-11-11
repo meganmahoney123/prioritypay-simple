@@ -789,7 +789,7 @@ export default function CloseoutPage() {
     const suggestion = depositCats.find((c) => c.value === t.suggested_category);
     return (
       <div key={t.id} style={compactRowStyle(i)}>
-        <div style={compactGrid}>
+        <div className="co-grid" style={compactGrid}>
           {compactTop(t, acc, "+", !cat && suggestion ? `looks like ${suggestion.label.toLowerCase()}` : "")}
           <select value={cat} onChange={(e) => canEditNow && e.target.value && setCategory(t.id, e.target.value)} disabled={!canEditNow} aria-label={`Type for ${t.name}`} style={compactSelect}>
             {!cat && <option value="">Choose a type</option>}
@@ -828,7 +828,7 @@ export default function CloseoutPage() {
     const choice = chargeChoice(t);
     return (
       <div key={t.id} style={compactRowStyle(i)}>
-        <div style={compactGrid}>
+        <div className="co-grid" style={compactGrid}>
           {compactTop(t, acc, "-", "")}
           <select value={choice} onChange={(e) => pickChargeChoice(t, e.target.value)} disabled={!canEditNow} aria-label={`Business or personal for ${t.name}`} style={compactSelect}>
             {!choice && <option value="">Business or personal?</option>}
@@ -1349,17 +1349,19 @@ export default function CloseoutPage() {
                   {attentionCount === 0 ? "Nothing left. Everything is handled." : `${attentionCount} item${attentionCount === 1 ? "" : "s"} left. Only what is not already handled.`}
                 </span>
               </div>
+              <style>{`@media (min-width: 1024px){ .co-split .co-grid{ grid-template-columns: 54px minmax(0,1fr) auto !important; } .co-split .co-grid > select{ grid-column: 2 / -1; } }`}</style>
+              <div className={`co-split grid gap-6 items-start ${attentionDeposits.length > 0 && attentionCharges.length > 0 ? "lg:grid-cols-2" : ""}`}>
               {attentionDeposits.length > 0 && (
-                <>
+                <div>
                   <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>INCOME</div>
                     <div style={{ fontSize: 13.5, color: PS_MUTED }}>Most of your income is already sorted from Split My Deposits</div>
                   </div>
-                  <div className="mb-5" style={{ background: "#fff", border: "1.5px solid #D9C9FF", borderRadius: 22, padding: "8px 22px" }}>{attentionDeposits.map((t, i) => renderCompactDeposit(t, i))}</div>
-                </>
+                  <div style={{ background: "#fff", border: "1.5px solid #D9C9FF", borderRadius: 22, padding: "8px 22px" }}>{attentionDeposits.map((t, i) => renderCompactDeposit(t, i))}</div>
+                </div>
               )}
               {attentionCharges.length > 0 && (
-                <>
+                <div>
                   <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>EXPENSES</div>
                     {attentionCharges.length > 1 && canEditNow && (
@@ -1376,8 +1378,9 @@ export default function CloseoutPage() {
                   </div>
                   <div className="max-h-[48rem] overflow-y-auto" style={{ background: "#fff", border: "1.5px solid #D9C9FF", borderRadius: 22, padding: "8px 22px" }}>{attentionCharges.map((t, i) => renderCompactCharge(t, i))}</div>
                   <div style={{ fontSize: 13.5, color: PS_MUTED, marginTop: 8 }}>Expenses marked Personal are left out of your business numbers.</div>
-                </>
+                </div>
               )}
+              </div>
             </div>
           </div>
         )}
