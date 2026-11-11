@@ -3,7 +3,7 @@
 import { drawNote, splitUnit } from "@/lib/entityCopy";
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Undo2, RotateCcw } from "lucide-react";
+import { Plus, Undo2 } from "lucide-react";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
@@ -145,10 +145,6 @@ function SplitRulesPageInner() {
 
   // Why the current rules can't be saved yet, or null if they can.
   const blockReason = (rules) => {
-    const unconnected = rules.filter((r) => Number(r.pct) > 0 && !r.accountId);
-    if (unconnected.length > 0) {
-      return `Not saved yet: connect a bank account to ${unconnected.map((r) => r.label).join(", ")}.`;
-    }
     if (computeStartingBalanceRoom(rules, accounts).anyOver) {
       return "Not saved yet: a starting balance is more than the account holds.";
     }
@@ -220,17 +216,6 @@ function SplitRulesPageInner() {
     } else {
       return;
     }
-    pendingRef.current = null;
-    committedRef.current = target;
-    setPercent(target);
-    trySave(target);
-  };
-  // Reset: back to how the rules were when this page opened. Undo can undo it.
-  const resetToStart = () => {
-    const target = baselineRef.current;
-    if (!target || same(percent, target)) return;
-    undoStack.current.push(pendingRef.current ? committedRef.current : percent);
-    setUndoCount(undoStack.current.length);
     pendingRef.current = null;
     committedRef.current = target;
     setPercent(target);
@@ -549,38 +534,30 @@ function SplitRulesPageInner() {
             </div>
           );
         })()}
-        <div style={{ display: "flex", gap: 10 }}>
-          {[
-            { key: "undo", label: "Undo", Icon: Undo2, onClick: undo, disabled: undoCount === 0 && !dirty },
-            { key: "reset", label: "Reset to start", Icon: RotateCcw, onClick: resetToStart, disabled: !baselineRef.current || same(percent, baselineRef.current) },
-          ].map(({ key, label, Icon, onClick, disabled }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={onClick}
-              disabled={disabled}
-              title={key === "reset" ? "Put everything back to how it was when you opened this page" : "Undo your last change"}
-              style={{
-                flex: 1,
-                minHeight: 48,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                border: "2px solid #6D3BE0",
-                background: "#fff",
-                color: "#4E22B8",
-                borderRadius: 14,
-                fontSize: 16,
-                fontWeight: 800,
-                opacity: disabled ? 0.4 : 1,
-                cursor: disabled ? "not-allowed" : "pointer",
-              }}
-            >
-              <Icon size={18} /> {label}
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={undo}
+          disabled={undoCount === 0 && !dirty}
+          title="Undo your last change"
+          style={{
+            width: "100%",
+            minHeight: 48,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            border: "2px solid #6D3BE0",
+            background: "#fff",
+            color: "#4E22B8",
+            borderRadius: 14,
+            fontSize: 16,
+            fontWeight: 800,
+            opacity: undoCount === 0 && !dirty ? 0.4 : 1,
+            cursor: undoCount === 0 && !dirty ? "not-allowed" : "pointer",
+          }}
+        >
+          <Undo2 size={18} /> Undo
+        </button>
       </div>
     </div>
   );
