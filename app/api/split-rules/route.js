@@ -2,6 +2,7 @@ import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { investmentTypeFromLabel } from "@/lib/allocations";
 import { refreshAccountBalance } from "@/lib/refreshAccountBalance";
+import { accountLabel } from "@/lib/accountLabel";
 
 // PrioritySave Simple has no fixed-minimums layer at all -- every category is
 // a percentage of each deposit, full stop. `fixed` is kept as an always-empty
@@ -113,7 +114,7 @@ export async function PUT(request) {
       const accountBalance = Number(acct.current_balance) || 0;
       if (total > accountBalance) {
         const overBy = total - accountBalance;
-        const acctLabel = `${acct.institution_name} ${acct.account_name} •••• ${acct.mask}`;
+        const acctLabel = accountLabel(acct);
         const others = rows.filter((r) => r.startingBalance > 0).map((r) => r.label).join(", ");
         return Response.json(
           {

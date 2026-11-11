@@ -1,6 +1,7 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { estimateRetirementRoom, estimateTaxReserve, DEFAULT_TAX_RESERVE_RATE_PCT } from "@/lib/allocations";
+import { accountLabel } from "@/lib/accountLabel";
 
 function periodToDate(period) {
   return `${period}-01`;
@@ -124,7 +125,7 @@ export async function POST(request, { params }) {
 
   const describe = (accountId) => {
     const a = accountId ? accountsById[accountId] : null;
-    return a ? `${a.institution_name} ${a.account_name} •••• ${a.mask}` : null;
+    return a ? accountLabel(a) : null;
   };
 
   const retirement = (fixedRetirementRows || []).map((r) => {

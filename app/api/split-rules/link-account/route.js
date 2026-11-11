@@ -1,5 +1,6 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { accountLabel } from "@/lib/accountLabel";
 
 // "Needs a bank account" card on Split My Deposits: links ONE category (split
 // rule) to a bank account without resaving the whole rule set.
@@ -81,7 +82,7 @@ export async function POST(request) {
       .eq("status", "reserved")
       .eq("reserved_only", true)
       .is("dest_account_id", null);
-    const label = `${account.institution_name} ${account.account_name} •••• ${account.mask}`;
+    const label = accountLabel(account);
     for (const line of lines || []) {
       if (line.source_account_id === account.id) continue; // already in that account: nothing to send
       const { error } = await admin

@@ -13,6 +13,7 @@ import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
 import SubscriptionDisclosure from "@/components/SubscriptionDisclosure";
+import { notify } from "@/lib/notify";
 
 // The persona-switch testing panel below (see /api/dev/set-persona, which
 // enforces the same allowlist server-side -- this client-side check is
@@ -237,7 +238,7 @@ function SettingsPageInner() {
     const data = await res.json();
     setPersonaSwitchBusy(null);
     if (!res.ok || data.error) {
-      alert(data.error || "Could not switch persona.");
+      notify(data.error || "Could not switch persona.");
       return;
     }
     // Split rules and dashboard/close-out copy both read from the DB fresh

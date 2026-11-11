@@ -15,7 +15,8 @@ import { planForProductId, statusForRevenueCatEvent } from "@/lib/revenuecat";
 // way the Stripe handler looks up by stripe_customer_id.
 export async function POST(request) {
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.REVENUECAT_WEBHOOK_SECRET}`) {
+  const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return Response.json({ error: "Invalid webhook authorization." }, { status: 401 });
   }
 

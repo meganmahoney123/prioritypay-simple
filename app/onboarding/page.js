@@ -21,6 +21,7 @@ import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 import { normalizeUSPhone, isValidUSPhone } from "@/lib/phone";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { isNativeApp, purchasePlan, restorePurchases } from "@/lib/native";
+import { notify } from "@/lib/notify";
 
 // Re-enabled: PrioritySave no longer needs a banking partner/ACH approval
 // to onboard people at all (see TRANSFER_EXECUTION_MODE in lib/runSplit.js
@@ -507,7 +508,7 @@ function OnboardingPageInner() {
         // categories claiming it, but still possible if two rows in this
         // step point at the same account with too much starting balance
         // between them.
-        alert(data.error || "Couldn't save that -- please try again.");
+        notify(data.error || "Couldn't save that -- please try again.");
       }
       return res;
     });

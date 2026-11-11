@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { verifyPlaidWebhook } from "@/lib/plaidWebhookVerify";
 import { syncNewTransactions } from "@/lib/plaidSync";
 import { runSplit } from "@/lib/runSplit";
 import { decryptToken, encryptToken, isLegacyPlaintext } from "@/lib/tokenCrypto";
@@ -27,9 +28,17 @@ import { matchInTransitAllocation, findBatchMatch, markAllocationCompleted, mayb
 // until a real cursor comes back, every webhook delivery in the meantime
 // safely retries the baseline step instead of misfiring.
 export async function POST(request) {
+  const raw = await request.text();
+  if (process.env.PLAID_WEBHOOK_VERIFY !== "off") {
+    const valid = await verifyPlaidWebhook(raw, request.headers.get("plaid-verification"));
+    if (!valid) {
+      console.warn("Plaid webhook rejected: bad or missing Plaid-Verification");
+      return Response.json({ error: "Invalid webhook signature." }, { status: 401 });
+    }
+  }
   let payload;
   try {
-    payload = await request.json();
+    payload = JSON.parse(raw);
   } catch {
     return Response.json({ ok: true });
   }

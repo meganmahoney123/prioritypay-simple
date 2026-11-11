@@ -8,6 +8,7 @@ import AccountCategoryBreakdown from "@/components/AccountCategoryBreakdown";
 
 const SHOW_ACCOUNT_BREAKDOWN = false;
 import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
+import { accountLabel } from "@/lib/accountLabel";
 
 // Identity verification used to gate this whole page -- see the removed
 // verification-status check below and the equivalent removal in
@@ -25,6 +26,7 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState(null);
   const [disconnectError, setDisconnectError] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
 
   const load = async () => {
     // Fetched once here (not per-account inside AccountCategoryBreakdown)
@@ -129,11 +131,17 @@ export default function AccountsPage() {
   const creditAccounts = accounts.filter((a) => a.account_type === "credit");
 
   const disconnect = async (acc) => {
-    const confirmed = window.confirm(
-      `Disconnect ${acc.institution_name} ${acc.account_name} •••• ${acc.mask}? ` +
-        `Any split rule currently sending money here will need a new account, and PrioritySave will stop seeing its deposits.`
-    );
-    if (!confirmed) return;
+    // Two-step confirm without a browser popup: first click arms the button
+    // and shows the warning, second click (within 8s) disconnects.
+    if (confirmId !== acc.id) {
+      setConfirmId(acc.id);
+      setDisconnectError(
+        `Disconnect ${accountLabel(acc)}? Any split rule currently sending money here will need a new account, and PrioritySave will stop seeing its deposits. Click Disconnect again to confirm.`
+      );
+      setTimeout(() => setConfirmId((c) => (c === acc.id ? null : c)), 8000);
+      return;
+    }
+    setConfirmId(null);
 
     setDisconnectError(null);
     setDisconnectingId(acc.id);
@@ -174,7 +182,7 @@ export default function AccountsPage() {
           </div>
           <div>
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name}</div>
-            <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{acc.account_name} •••• {acc.mask}</div>
+            <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{acc.account_name}{acc.mask ? ` •••• ${acc.mask}` : ""}</div>
           </div>
         </div>
         <Badge>{acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}</Badge>
@@ -248,7 +256,7 @@ export default function AccountsPage() {
             cursor: disconnectingId === acc.id ? "not-allowed" : "pointer",
           })}
         >
-          {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
+          {disconnectingId === acc.id ? "Disconnecting…" : confirmId === acc.id ? "Confirm disconnect" : "Disconnect"}
         </button>
       </div>
       {/* Hidden for launch: the per-account category breakdown (donut, category
@@ -280,7 +288,7 @@ export default function AccountsPage() {
             <div style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
               {acc.institution_name} {acc.account_name}
             </div>
-            <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>•••• {acc.mask}</div>
+            <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{acc.mask ? `•••• ${acc.mask}` : ""}</div>
           </div>
         </div>
         {cc ? (
@@ -325,7 +333,7 @@ export default function AccountsPage() {
               cursor: disconnectingId === acc.id ? "not-allowed" : "pointer",
             })}
           >
-            {disconnectingId === acc.id ? "Disconnecting…" : "Disconnect"}
+            {disconnectingId === acc.id ? "Disconnecting…" : confirmId === acc.id ? "Confirm disconnect" : "Disconnect"}
           </button>
         </div>
       </div>

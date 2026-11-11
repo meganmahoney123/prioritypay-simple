@@ -1,5 +1,6 @@
 import "./globals.css";
 import NumberInputWheelGuard from "@/components/NumberInputWheelGuard";
+import Toaster from "@/components/Toaster";
 
 // metadataBase makes every child page's canonical/OG URL resolve
 // correctly even where a page only supplies a relative one; the
@@ -63,6 +64,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="text-neutral-900">
         <NumberInputWheelGuard />
+        <Toaster />
         {children}
       </body>
     </html>

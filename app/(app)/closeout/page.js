@@ -15,6 +15,7 @@ import { Paperclip } from "lucide-react";
 import Link from "next/link";
 import { paysByDraw } from "@/lib/entityCopy";
 import { RETIREMENT_LABELS, RETIREMENT_SETUP_LINKS, estimateTaxReserve, overallDCLimit, electiveDeferralLimit, CATEGORY_COLORS, pickUniqueColor, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
+import { notify } from "@/lib/notify";
 
 const PS_INK = "#241337";
 const PS_MUTED = "#4A3F63";
@@ -41,7 +42,7 @@ function PsRowTop({ t, acc, sign }) {
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 17, fontWeight: 700, color: PS_INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</div>
-        <div style={{ fontSize: 14, color: PS_MUTED }}>{acc ? `${acc.institution_name} •••• ${acc.mask}` : ""}</div>
+        <div style={{ fontSize: 14, color: PS_MUTED }}>{acc ? `${acc.institution_name}${acc.mask ? ` •••• ${acc.mask}` : ""}` : ""}</div>
       </div>
       <span style={{ fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 18, fontWeight: 700, color: PS_INK, flexShrink: 0 }}>
         {sign}{currency(t.amount)}
@@ -347,7 +348,7 @@ export default function CloseoutPage() {
     });
     if (!res.ok) {
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, confirmed_category: previous ?? null } : t)));
-      alert("Couldn't save that category, please try again.");
+      notify("Couldn't save that category, please try again.");
       return;
     }
     if (isConfirmed) handleConfirm();
@@ -468,7 +469,7 @@ export default function CloseoutPage() {
     });
     if (!res.ok) {
       setTransactions((prev) => prev.map((t) => (t.id === txnId ? { ...t, income_source: previous } : t)));
-      alert("Couldn't save that, please try again.");
+      notify("Couldn't save that, please try again.");
     }
   };
 
@@ -549,7 +550,7 @@ export default function CloseoutPage() {
     }).then((r) => r.json());
     setSending((prev) => ({ ...prev, [retirementType]: false }));
     if (res.error) {
-      alert(res.error);
+      notify(res.error);
       return;
     }
     await load(period);
@@ -570,7 +571,7 @@ export default function CloseoutPage() {
     }).then((r) => r.json());
     setToppingUp(false);
     if (res.error) {
-      alert(res.error);
+      notify(res.error);
       return;
     }
     setTopUp({ open: false, fromAccountId: null, toAccountId: null, amount: "" });
@@ -603,7 +604,7 @@ export default function CloseoutPage() {
     });
     setSavingObligations(false);
     if (!res.ok) {
-      alert("Couldn't save this reserve, please try again.");
+      notify("Couldn't save this reserve, please try again.");
       return;
     }
     setSplitRulesPercent(nextPercent);
@@ -1444,7 +1445,7 @@ export default function CloseoutPage() {
                         <Briefcase size={16} className="text-[var(--color-neutral-700)]" />
                         <div>
                           <div className="text-sm font-medium">{acc.institution_name}</div>
-                          <div className="text-xs text-[var(--color-neutral-700)]">{acc.account_name} •••• {acc.mask}</div>
+                          <div className="text-xs text-[var(--color-neutral-700)]">{acc.account_name}{acc.mask ? ` •••• ${acc.mask}` : ""}</div>
                         </div>
                       </div>
                       <span className="font-mono font-semibold text-sm">{currency(acc.current_balance ?? 0)}</span>
