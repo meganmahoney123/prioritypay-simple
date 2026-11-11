@@ -70,6 +70,9 @@ export async function GET() {
     trigger: t.trigger,
     createdAt: t.created_at,
     name: t.deposit_name || null,
+    // Approximation (same as Transfer history): deposits that came from a bank
+    // transaction are Business, everything else is Other.
+    sourceKind: t.plaid_transaction_id ? "business" : "other",
     skippedAt: t.skipped_at,
     skipReason: t.skip_reason,
     lines: (t.simple_transfer_allocations || []).map((a) => ({

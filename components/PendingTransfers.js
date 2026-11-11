@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton } from "./ui";
 import { bloomAccentCardStyle } from "@/lib/bloomTheme";
 import { resolveBankLoginUrl } from "@/lib/bankLinks";
-import { ExternalLink, Clock, ChevronDown, ChevronRight, Pencil, AlertCircle } from "lucide-react";
+import { ExternalLink, Clock, ChevronDown, ChevronRight, Pencil, AlertCircle, Check } from "lucide-react";
 
 // The "Transfers to make" checklist on the Dashboard: ONE grand-totals card
 // (Nov 2026). PrioritySave never moves money; every row is a transfer the
@@ -489,83 +489,141 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     );
   };
 
-  // Top of the card: where the money came from. Each pending deposit's name,
-  // date and amount with Skip, the combined total when there's more than
-  // one, and recently skipped deposits with Undo.
-  const renderHeader = () => (
-    <div style={{ padding: "8px 0 12px" }}>
-      {pendingDeposits.length > 0 && (
-        <div style={{ ...mutedText, fontWeight: 600, marginBottom: 2 }}>{pendingDeposits.length > 1 ? "Deposits included" : "Deposit included"}</div>
-      )}
-      {pendingDeposits.map((d) => {
-        const busy = busyKey === `dep:${d.id}`;
-        return (
-          <div key={d.id} style={{ padding: "4px 0" }}>
-            <div className="flex items-baseline justify-between gap-3">
-              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)", minWidth: 0 }}>{d.title}</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700 }}>{money(d.sourceAmount)}</span>
+  // Top card, "Splitting together": every waiting deposit is combined into
+  // one grand total. Each deposit is a row (name, date, Business/Other tag,
+  // amount) that can be removed from the split, and removed deposits stay
+  // listed, greyed out, with "Add back".
+  const sourceTag = (d) => {
+    const biz = d.sourceKind === "business";
+    return (
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 800,
+          borderRadius: 999,
+          padding: "1px 9px",
+          background: biz ? "var(--color-accent-100, #EDE6FF)" : "var(--color-neutral-100)",
+          color: biz ? "var(--color-accent-700)" : "var(--color-neutral-700)",
+        }}
+      >
+        {biz ? "Business" : "Other"}
+      </span>
+    );
+  };
+  const checkBox = (on, onClick, label, disabled) => (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      aria-pressed={on}
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: 7,
+        flex: "none",
+        padding: 0,
+        cursor: disabled ? "not-allowed" : "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: on ? "none" : "2px solid var(--color-accent-300, #9A72F0)",
+        background: on ? "var(--color-accent, #6D3BE0)" : "var(--color-surface)",
+        color: "#fff",
+      }}
+    >
+      {on && <Check size={14} strokeWidth={3.4} aria-hidden="true" />}
+    </button>
+  );
+  const openSkip = (id) => {
+    setSkipOpenFor(id);
+    setSkipReason(SKIP_REASONS[0]);
+  };
+
+  const renderHeader = () => {
+    const n = pendingDeposits.length;
+    return (
+      <Card style={bloomAccentCardStyle({ padding: "18px 22px 8px", borderRadius: 24, background: "var(--color-surface)" })}>
+        <div className="flex items-end justify-between gap-3" style={{ paddingBottom: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+              {n > 0 ? "Splitting together" : "Split My Deposits"}
             </div>
-            <div className="flex items-baseline justify-between gap-3" style={mutedText}>
-              <span>{formatDate(d.createdAt, true)}</span>
-              {skipOpenFor !== d.id && (
-                <button
-                  onClick={() => {
-                    setSkipOpenFor(d.id);
-                    setSkipReason(SKIP_REASONS[0]);
-                  }}
-                  style={linkButtonStyle}
-                >
-                  Remove
-                </button>
+            <div style={{ fontSize: 21, fontWeight: 800, color: "var(--color-text)", marginTop: 4 }}>
+              {n > 1 ? `${n} deposits · grand total` : n === 1 ? "1 deposit" : "No deposits in this split"}
+            </div>
+          </div>
+          {n > 0 && <div style={{ fontFamily: "var(--font-mono)", fontSize: 30, fontWeight: 700, color: "var(--color-accent-700)" }}>{money(pendingTotal)}</div>}
+        </div>
+        {pendingDeposits.map((d) => {
+          const busy = busyKey === `dep:${d.id}`;
+          return (
+            <div key={d.id} style={{ padding: "12px 0", borderTop: "1px solid var(--color-divider)" }}>
+              <div className="flex items-center gap-3">
+                {checkBox(true, () => openSkip(d.id), `Remove ${d.title} from this split`, busy)}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)", overflowWrap: "anywhere" }}>{d.title}</div>
+                  <div className="flex items-center gap-2 flex-wrap" style={{ ...mutedText, marginTop: 2 }}>
+                    <span>{formatDate(d.createdAt, true)}</span>
+                    {sourceTag(d)}
+                  </div>
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700 }}>{money(d.sourceAmount)}</div>
+                {skipOpenFor !== d.id && (
+                  <button onClick={() => openSkip(d.id)} style={{ ...linkButtonStyle, fontSize: 14 }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+              {skipOpenFor === d.id && (
+                <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 8, marginLeft: 34 }}>
+                  <label style={mutedText} htmlFor={`skip-${d.id}`}>
+                    Reason
+                  </label>
+                  <select
+                    id={`skip-${d.id}`}
+                    value={skipReason}
+                    onChange={(e) => setSkipReason(e.target.value)}
+                    style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "1px solid var(--color-divider)", background: "var(--color-surface)", color: "var(--color-text)" }}
+                  >
+                    {SKIP_REASONS.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
+                  </select>
+                  <button onClick={() => skipDeposit(d.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-text)" }}>
+                    {busy ? "Removing..." : "Remove from split"}
+                  </button>
+                  <button onClick={() => setSkipOpenFor(null)} style={linkButtonStyle}>
+                    Cancel
+                  </button>
+                </div>
               )}
             </div>
-            {skipOpenFor === d.id && (
-              <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 4 }}>
-                <label style={mutedText} htmlFor={`skip-${d.id}`}>
-                  Reason
-                </label>
-                <select
-                  id={`skip-${d.id}`}
-                  value={skipReason}
-                  onChange={(e) => setSkipReason(e.target.value)}
-                  style={{ fontSize: 13, padding: "4px 8px", borderRadius: 8, border: "1px solid var(--color-divider)", background: "var(--color-surface)", color: "var(--color-text)" }}
-                >
-                  {SKIP_REASONS.map((r) => (
-                    <option key={r}>{r}</option>
-                  ))}
-                </select>
-                <button onClick={() => skipDeposit(d.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-text)" }}>
-                  {busy ? "Removing..." : "Remove deposit"}
-                </button>
-                <button onClick={() => setSkipOpenFor(null)} style={linkButtonStyle}>
-                  Cancel
-                </button>
+          );
+        })}
+        {skipped.map((s) => {
+          const busy = busyKey === `dep:${s.id}`;
+          return (
+            <div key={s.id} className="flex items-center gap-3" style={{ padding: "12px 0", borderTop: "1px solid var(--color-divider)", opacity: 0.7 }}>
+              {checkBox(false, () => undoSkip(s.id), `Add ${s.title} back to this split`, busy)}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)", textDecoration: "line-through", overflowWrap: "anywhere" }}>{s.title}</div>
+                <div className="flex items-center gap-2 flex-wrap" style={{ ...mutedText, marginTop: 2 }}>
+                  <span>{formatDate(s.createdAt, true)}</span>
+                  {sourceTag(s)}
+                  <span style={{ fontWeight: 700 }}>Not in this split ({s.skipReason || "Other"})</span>
+                </div>
               </div>
-            )}
-          </div>
-        );
-      })}
-      {pendingDeposits.length > 1 && (
-        <div className="flex items-baseline justify-between gap-3" style={{ borderTop: "1px solid var(--color-divider)", marginTop: 6, paddingTop: 8 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>Total deposits</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 800 }}>{money(pendingTotal)}</span>
-        </div>
-      )}
-      {skipped.map((s) => {
-        const busy = busyKey === `dep:${s.id}`;
-        return (
-          <div key={s.id} className="flex items-baseline justify-between gap-3" style={{ ...mutedText, padding: "6px 0 0", opacity: 0.75 }}>
-            <span style={{ minWidth: 0 }}>
-              {s.title} · {formatDate(s.createdAt)} · {money(s.sourceAmount)} · Removed ({s.skipReason || "Other"}), not counted in any totals
-            </span>
-            <button onClick={() => undoSkip(s.id)} disabled={busy} style={{ ...linkButtonStyle, fontWeight: 700, color: "var(--color-accent-700)" }}>
-              {busy ? "Restoring..." : "Add back"}
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, textDecoration: "line-through" }}>{money(s.sourceAmount)}</div>
+              <button onClick={() => undoSkip(s.id)} disabled={busy} style={{ ...linkButtonStyle, fontSize: 14, fontWeight: 700, color: "var(--color-accent-700)" }}>
+                {busy ? "Adding..." : "Add back"}
+              </button>
+            </div>
+          );
+        })}
+      </Card>
+    );
+  };
 
   // "Transfer $X Now" sheet: pick which bank to open. PrioritySave only
   // opens the bank; the user makes the transfer there.
@@ -826,56 +884,29 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
   return (
     <div className="space-y-4">
       {showMainCard && (
-        <Card style={bloomAccentCardStyle({ padding: "20px 24px", borderRadius: 24, background: "var(--color-surface)" })}>
-          <div
-            style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: 13,
-              fontWeight: 800,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--color-accent-700)",
-              marginBottom: 6,
-            }}
-          >
-            Split My Deposits
-          </div>
-          <p style={{ margin: "0 0 4px", fontSize: 15, lineHeight: 1.6, color: "var(--color-text)" }}>
+        <>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: "var(--color-neutral-700)" }}>
             {pendingDeposits.length
-              ? `${pendingDeposits.length} ${pendingDeposits.length === 1 ? "deposit is" : "deposits are"} ready to split. PrioritySave never moves your money: make each transfer in your bank, then mark it as transferred so your category balances stay accurate.`
+              ? "Your deposits are combined into one split. PrioritySave never moves your money: make each transfer in your bank, then mark it as transferred."
               : "Nothing needs approval right now."}
           </p>
           {renderHeader()}
-          {error && <p style={{ margin: "4px 0", fontSize: 14, color: "#b42318" }}>{error}</p>}
-
+          {error && <p style={{ margin: 0, fontSize: 14, color: "#b42318" }}>{error}</p>}
           {pendingDeposits.length > 0 && (
-            <p style={{ ...mutedText, margin: "0 0 6px" }}>
-              Remove a deposit to leave it out of these transfers (like a refund or a personal transfer). You can add it back any time.
-            </p>
-          )}
-          {pendingDeposits.length > 1 && (
-            <p style={{ margin: "10px 0 4px", fontSize: 14, color: "var(--color-accent-800)" }}>
-              <b>Split as one: </b>all deposits are combined, so you make just one transfer per account.
+            <p style={{ ...mutedText, margin: 0 }}>
+              Deposits that pile up are added together automatically. Remove any that shouldn&apos;t be split (like a refund or a personal transfer). You can add it back any time.
             </p>
           )}
           {pendingDeposits.length > 0 && (
-            <div className="flex items-baseline justify-between gap-3" style={{ marginTop: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                Your {money(pendingTotal)} split
-              </span>
-              <span style={mutedText}>
-                {groups.length} {groups.length === 1 ? "transfer" : "transfers"} to make
-              </span>
-            </div>
+            <Card style={bloomAccentCardStyle({ padding: "8px 22px 18px", borderRadius: 24, background: "var(--color-surface)" })}>
+              <p style={{ ...mutedText, margin: "10px 0 2px" }}>
+                These amounts come from your splits. Tap any amount to change what you send. Your total updates.
+              </p>
+              {groups.map(renderGroup)}
+              {renderTieOut()}
+            </Card>
           )}
-          {pendingDeposits.length > 0 && (
-            <p style={{ ...mutedText, margin: "4px 0 0" }}>
-              These amounts come from your splits. Tap any amount to change what you send. Your total updates.
-            </p>
-          )}
-          {groups.map(renderGroup)}
-          {pendingDeposits.length > 0 && renderTieOut()}
-        </Card>
+        </>
       )}
 
       {onTheWay.length > 0 && renderOnTheWay()}
