@@ -43,6 +43,11 @@ function CapProgress({ used, limit, unit }) {
         {currency(used)} of {currency(lim)} {unit}
         {full ? " · limit reached" : ""}
       </div>
+      {used > lim && (
+        <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.4, color: "#8A6A00" }}>
+          Already above this limit, so no new money will go to this category. Raise it or turn it off to keep sending here.
+        </div>
+      )}
     </div>
   );
 }
@@ -70,9 +75,11 @@ function CapCard({ title, sub, value, onChange, used, unit }) {
     const n = Number(raw);
     return Number.isFinite(n) && n > 0 ? n : 1;
   };
+  // Clicking away from an empty (or zero) box turns the limit back off. It
+  // used to snap to $1, which silently blocked the whole category.
   const settle = (raw) => {
     const n = Number(raw);
-    return !raw || !Number.isFinite(n) || n <= 0 ? 1 : n;
+    return !raw || !Number.isFinite(n) || n <= 0 ? null : n;
   };
   return (
     <div
