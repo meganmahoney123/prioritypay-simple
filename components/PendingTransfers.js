@@ -724,67 +724,102 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
     );
   };
 
-  const renderOnTheWay = () => (
-    <Card className="p-5" style={{ borderRadius: 24 }}>
-      <button
-        onClick={() => setOnTheWayOpen((v) => !v)}
-        aria-expanded={onTheWayOpen}
-        className="inline-flex items-center gap-1"
-        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}
-      >
-        {onTheWayOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        On the way ({onTheWay.length})
-      </button>
-      {onTheWayOpen && onTheWay.length > 1 && (
-        <div style={{ marginTop: 6 }}>
-          <button onClick={() => unmark(onTheWay.map((i) => i.line.id))} disabled={busyKey?.startsWith("undo:")} style={linkButtonStyle}>
-            Undo all ({onTheWay.length}): none of these were sent
-          </button>
-        </div>
-      )}
-      {onTheWayOpen &&
-        onTheWay.map(({ deposit, line }) => {
-          const busy = busyKey === `line:${line.id}`;
-          const destAccount = accountsById[line.dest_account_id];
-          return (
-            <div key={line.id} style={rowDivider}>
-              <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                <div style={{ fontSize: 14, fontWeight: 600 }}>
-                  {line.label} · {deposit.title}
+  const renderOnTheWay = () => {
+    const smallBtn = {
+      minHeight: 44,
+      padding: "0 16px",
+      borderRadius: 12,
+      fontSize: 15,
+      fontWeight: 800,
+      cursor: "pointer",
+      border: "2px solid #4E22B8",
+    };
+    return (
+      <Card className="p-5 space-y-3" style={{ borderRadius: 24 }}>
+        <button
+          onClick={() => setOnTheWayOpen((v) => !v)}
+          aria-expanded={onTheWayOpen}
+          className="flex items-center gap-2 font-bold text-lg"
+          style={{ minHeight: 44, background: "transparent", border: "none", padding: 0, cursor: "pointer", color: "var(--color-text)" }}
+        >
+          {onTheWayOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+          On the way ({onTheWay.length})
+        </button>
+        {onTheWayOpen && (
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: "#4A3F63" }}>
+            You marked these as sent. Once the money shows up in the account, tap <b>It landed</b>. For accounts we can see, this
+            happens on its own.
+          </p>
+        )}
+        {onTheWayOpen && onTheWay.length > 1 && (
+          <div>
+            <button onClick={() => unmark(onTheWay.map((i) => i.line.id))} disabled={busyKey?.startsWith("undo:")} style={linkButtonStyle}>
+              Undo all ({onTheWay.length}): none of these were sent
+            </button>
+          </div>
+        )}
+        {onTheWayOpen &&
+          onTheWay.map(({ deposit, line }) => {
+            const busy = busyKey === `line:${line.id}`;
+            const destAccount = accountsById[line.dest_account_id];
+            const watching = !!destAccount?.hasPlaidConnection;
+            return (
+              <div key={line.id} style={{ background: "#F8F5FF", border: "2px solid #D9C9FF", borderRadius: 18, padding: "14px 16px", display: "grid", gap: 8 }}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "#241337" }}>{line.label}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 19, fontWeight: 700, color: "#241337" }}>{money(line.amount)}</span>
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{money(line.amount)}</div>
-              </div>
-              <div style={mutedText}>To {accountLabel(destAccount, line.dest_account_label)}</div>
-              <div className="inline-flex items-center gap-1 flex-wrap" style={mutedText}>
-                <Clock size={13} /> Marked as transferred {formatDate(line.confirmed_at)}.{" "}
-                {destAccount?.hasPlaidConnection
-                  ? `We're watching ${accountLabel(destAccount, line.dest_account_label)} for ${money(line.amount)} to land.`
-                  : "We can't see this account, so this isn't verified automatically. Mark it as landed once you see it."}
-                <button onClick={() => settleLine(line.id)} disabled={busy} style={{ ...linkButtonStyle, marginLeft: 6 }}>
-                  It already landed
-                </button>
-                <button onClick={() => unmark([line.id])} disabled={busy} style={{ ...linkButtonStyle, marginLeft: 6 }}>
-                  Undo (I haven&apos;t sent this)
-                </button>
-              </div>
-              {line.candidate_transaction_id && line.candidate_amount != null && (
-                <div style={{ ...mutedText, marginTop: 4 }}>
-                  <AlertCircle size={13} style={{ display: "inline", verticalAlign: "-2px", marginRight: 4 }} />
-                  This doesn&apos;t match: we saw {money(line.candidate_amount)} land in {accountLabel(destAccount, line.dest_account_label)}
-                  {line.candidate_date ? ` on ${line.candidate_date}` : ""}. Is this your {line.label} transfer?{" "}
-                  <button onClick={() => candidate(line.id, "confirm")} disabled={busy} style={linkButtonStyle}>
-                    Yes, that&apos;s it
-                  </button>{" "}
-                  <button onClick={() => candidate(line.id, "dismiss")} disabled={busy} style={linkButtonStyle}>
-                    No, that&apos;s not it
+                <div style={{ fontSize: 15, color: "#4A3F63", lineHeight: 1.45 }}>
+                  <div>From: {deposit.title}</div>
+                  <div>To: {accountLabel(destAccount, line.dest_account_label)}</div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 14,
+                      fontWeight: 800,
+                      color: watching ? "#0F6B4F" : "#8A4B00",
+                      background: watching ? "#E3F5EE" : "#FFF1DE",
+                      borderRadius: 999,
+                      padding: "5px 12px",
+                    }}
+                  >
+                    <Clock size={14} /> {watching ? "Watching for it to land" : "Waiting for you to confirm"}
+                  </span>
+                  <span style={{ fontSize: 14, color: "#4A3F63" }}>Marked sent {formatDate(line.confirmed_at)}</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 2 }}>
+                  <button onClick={() => settleLine(line.id)} disabled={busy} style={{ ...smallBtn, background: "#4E22B8", color: "#fff" }}>
+                    It landed
+                  </button>
+                  <button onClick={() => unmark([line.id])} disabled={busy} style={{ ...smallBtn, background: "#fff", color: "#4E22B8" }}>
+                    I didn&apos;t send this
                   </button>
                 </div>
-              )}
-            </div>
-          );
-        })}
-    </Card>
-  );
+                {line.candidate_transaction_id && line.candidate_amount != null && (
+                  <div style={{ background: "#FFF1DE", border: "1.5px solid #E8B77A", borderRadius: 12, padding: "10px 12px", fontSize: 15, lineHeight: 1.5, color: "#5C3200" }}>
+                    <AlertCircle size={15} style={{ display: "inline", verticalAlign: "-3px", marginRight: 6 }} />
+                    We saw {money(line.candidate_amount)} land in {accountLabel(destAccount, line.dest_account_label)}
+                    {line.candidate_date ? ` on ${line.candidate_date}` : ""}, which doesn&apos;t match. Is this your {line.label} transfer?
+                    <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 8 }}>
+                      <button onClick={() => candidate(line.id, "confirm")} disabled={busy} style={{ ...smallBtn, background: "#4E22B8", color: "#fff" }}>
+                        Yes, that&apos;s it
+                      </button>
+                      <button onClick={() => candidate(line.id, "dismiss")} disabled={busy} style={{ ...smallBtn, background: "#fff", color: "#4E22B8" }}>
+                        No, that&apos;s not it
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+      </Card>
+    );
+  };
 
   const showMainCard = pendingDeposits.length > 0 || skipped.length > 0;
 
