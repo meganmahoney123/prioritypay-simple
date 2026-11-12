@@ -1083,8 +1083,8 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
         </button>
         {onTheWayOpen && (
           <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, color: "#4A3F63" }}>
-            You marked these as sent. Once the money shows up in the account, tap <b>It landed</b>. For accounts we can see, this
-            happens on its own.
+            You marked these as sent. Accounts that are connected are watched for you and clear on their own. For any account we
+            can&apos;t see, tap <b>It landed</b> once the money arrives.
           </p>
         )}
         {onTheWayOpen && onTheWay.length > 1 && (
@@ -1099,6 +1099,9 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
             const busy = busyKey === `line:${line.id}`;
             const destAccount = accountsById[line.dest_account_id];
             const watching = !!destAccount?.hasPlaidConnection;
+            // No bank account on the line (e.g. cash): nothing to watch, so it is just "Done".
+            const isCash = !line.dest_account_id && !destAccount;
+            const pillGreen = watching || isCash;
             return (
               <div key={line.id} style={{ background: "#F8F5FF", border: "2px solid #D9C9FF", borderRadius: 18, padding: "14px 16px", display: "grid", gap: 8 }}>
                 <div className="flex items-baseline justify-between gap-3">
@@ -1117,24 +1120,34 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
                       gap: 6,
                       fontSize: 14,
                       fontWeight: 800,
-                      color: watching ? "#0F6B4F" : "#8A4B00",
-                      background: watching ? "#E3F5EE" : "#FFF1DE",
+                      color: pillGreen ? "#0F6B4F" : "#8A4B00",
+                      background: pillGreen ? "#E3F5EE" : "#FFF1DE",
                       borderRadius: 999,
                       padding: "5px 12px",
                     }}
                   >
-                    <Clock size={14} /> {watching ? "Watching for it to land" : "Waiting for you to confirm"}
+                    <Clock size={14} />{" "}
+                    {watching ? "Watching for it to land" : isCash ? "Cash: nothing to watch" : "We can\u2019t see this account. Tap It landed once it arrives."}
                   </span>
                   <span style={{ fontSize: 14, color: "#4A3F63" }}>Marked sent {formatDate(line.confirmed_at)}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 2 }}>
                   <button onClick={() => settleLine(line.id)} disabled={busy} style={{ ...smallBtn, background: "#4E22B8", color: "#fff" }}>
-                    It landed
+                    {isCash ? "Done" : "It landed"}
                   </button>
                   <button onClick={() => unmark([line.id])} disabled={busy} style={{ ...smallBtn, background: "#fff", color: "#4E22B8" }}>
                     I didn&apos;t send this
                   </button>
                 </div>
+                {!watching && !isCash && (
+                  <div style={{ fontSize: 14, color: "#4A3F63" }}>
+                    Not connected.{" "}
+                    <a href="/accounts" style={{ color: "#4E22B8", fontWeight: 800, textDecoration: "underline" }}>
+                      Connect this account
+                    </a>{" "}
+                    and we&apos;ll watch for it to land.
+                  </div>
+                )}
                 {line.candidate_transaction_id && line.candidate_amount != null && (
                   <div style={{ background: "#FFF1DE", border: "1.5px solid #E8B77A", borderRadius: 12, padding: "10px 12px", fontSize: 15, lineHeight: 1.5, color: "#5C3200" }}>
                     <AlertCircle size={15} style={{ display: "inline", verticalAlign: "-3px", marginRight: 6 }} />

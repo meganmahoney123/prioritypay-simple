@@ -163,7 +163,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
                 {rows.map((r) => (
                   <BillRow key={r.id} r={r} showErrors={showErrors} accounts={accounts} onUpdate={onUpdate} onRemoveRow={onRemoveRow} focusName={!initialIds.current.has(r.id)} />
                 ))}
-                <button type="button" className="pp-tier-add" onClick={() => onAddRow(t)}>+ Add to this tier</button>
+                <button type="button" className="pp-tier-add" onClick={() => onAddRow(t)}>+ Add a category</button>
               </div>
               <div className="pp-tier-flow">↓ Cap reached? The rest flows down</div>
             </div>
@@ -182,7 +182,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
                     {n === 1 ? "Nothing here yet. Add the bills you want paid first, like rent." : "Nothing here yet. Add the next bills to pay once the tier above is full."}
                   </span>
                 </div>
-                <button type="button" className="pp-tier-add" onClick={() => onAddRow(tiers.length + 1)}>+ Add to this tier</button>
+                <button type="button" className="pp-tier-add" onClick={() => onAddRow(tiers.length + 1)}>+ Add a category</button>
               </div>
               <div className="pp-tier-flow">↓ Cap reached? The rest flows down</div>
             </div>

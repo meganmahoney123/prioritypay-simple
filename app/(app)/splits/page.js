@@ -383,6 +383,52 @@ function SplitRulesPageInner() {
     () => percent.filter((r) => (Number(r.pct) || 0) > 0 && !r.accountId),
     [percent]
   );
+  // A category added just now gets a quiet moment to be given an account before
+  // the "Connect a bank account" warning appears. It shows once the person clicks
+  // or tabs to anything outside that category. Rows that were already unconnected
+  // when the page loaded show the warning right away.
+  const knownNeedRef = useRef(null);
+  const releasedRef = useRef(new Set());
+  const [held, setHeld] = useState(() => new Set());
+  useEffect(() => {
+    if (loading) return;
+    if (knownNeedRef.current === null) {
+      knownNeedRef.current = new Set(needAccount.map((r) => String(r.id)));
+      return;
+    }
+    const fresh = needAccount
+      .map((r) => String(r.id))
+      .filter((id) => !knownNeedRef.current.has(id) && !releasedRef.current.has(id));
+    if (!fresh.length) return;
+    setHeld((prev) => {
+      const next = new Set(prev);
+      fresh.forEach((id) => next.add(id));
+      return next;
+    });
+  }, [needAccount, loading]);
+  useEffect(() => {
+    if (!held.size) return;
+    const release = (e) => {
+      const outside = [...held].filter((id) => {
+        const el = document.querySelector(`[data-rule-id="${id.replace(/"/g, '\\"')}"]`);
+        return !el || !el.contains(e.target);
+      });
+      if (!outside.length) return;
+      outside.forEach((id) => releasedRef.current.add(id));
+      setHeld((prev) => {
+        const next = new Set(prev);
+        outside.forEach((id) => next.delete(id));
+        return next;
+      });
+    };
+    document.addEventListener("pointerdown", release, true);
+    document.addEventListener("focusin", release, true);
+    return () => {
+      document.removeEventListener("pointerdown", release, true);
+      document.removeEventListener("focusin", release, true);
+    };
+  }, [held]);
+  const shownNeed = needAccount.filter((r) => !held.has(String(r.id)));
   const scrollToFirstUnconnected = () => {
     const r = needAccount[0];
     if (!r) return;
@@ -413,7 +459,7 @@ function SplitRulesPageInner() {
         )}
       </div>
 
-      {needAccount.length > 0 && (
+      {shownNeed.length > 0 && (
         <div
           role="alert"
           style={{
@@ -427,10 +473,10 @@ function SplitRulesPageInner() {
           }}
         >
           <div style={{ fontSize: 16, fontWeight: 800, color: "#7A2C18" }}>
-            Connect a bank account to finish setting up {needAccount.length === 1 ? "this category" : "these categories"}
+            Connect a bank account to finish setting up {shownNeed.length === 1 ? "this category" : "these categories"}
           </div>
           <div style={{ fontSize: 15, lineHeight: 1.5, color: "#7A2C18" }}>
-            {needAccount.map((r) => r.label).join(", ")} {needAccount.length === 1 ? "has" : "have"} a percentage but nowhere to send it.
+            {shownNeed.map((r) => r.label).join(", ")} {shownNeed.length === 1 ? "has" : "have"} a percentage but nowhere to send it.
             Until you pick an account, that money just stays where your deposit lands.
           </div>
           {accounts.length === 0 ? (
@@ -443,7 +489,7 @@ function SplitRulesPageInner() {
               onClick={scrollToFirstUnconnected}
               style={{ alignSelf: "flex-start", background: "#4E22B8", color: "#fff", borderRadius: 14, padding: "10px 18px", fontWeight: 800, fontSize: 15 }}
             >
-              Choose an account for {needAccount[0].label}
+              Choose an account for {shownNeed[0].label}
             </button>
           )}
         </div>
