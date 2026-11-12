@@ -34,7 +34,7 @@ export async function POST(request) {
 
   const pct = Math.min(5, room);
   if (pct <= 0) {
-    return Response.json({ error: "Your splits already add up to 100%. Lower another category in Split Rules, then add your 401k." }, { status: 409 });
+    return Response.json({ error: "Your splits already add up to 100%. Lower another category in Deposit Splits, then add your 401k." }, { status: 409 });
   }
   const { error: insErr } = await admin.from("simple_split_rules_percent").insert({
     user_id: user.id,

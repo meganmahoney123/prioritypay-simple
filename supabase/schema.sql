@@ -669,3 +669,6 @@ alter table simple_profiles add column if not exists retention_offer_used boolea
 -- already turned on for themselves.
 alter table simple_profiles alter column sms_notifications_enabled set default false;
 update simple_profiles set sms_notifications_enabled = false where sms_notifications_enabled = true;
+
+-- Tiers (waterfall): 1 and 2 are paid first, NULL is the last tier.
+alter table simple_split_rules_percent add column if not exists tier smallint;

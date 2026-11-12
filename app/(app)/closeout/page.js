@@ -1450,8 +1450,8 @@ export default function CloseoutPage() {
               <div className="space-y-5">
                 <p className="text-sm text-[var(--color-neutral-700)]">
                   {isW2NoSideHustlePersona
-                    ? "You haven't added a retirement category to your Income Split Rules yet. You can still calculate what you'd be able to contribute below, and see how to open one, before deciding what to route toward retirement."
-                    : "You haven't added a Solo 401k category to your Income Split Rules yet. You can still calculate what you'd be able to contribute below, and see how to open one, before deciding what to route toward retirement."}
+                    ? "You haven't added a retirement category to your Deposit Splits yet. You can still calculate what you'd be able to contribute below, and see how to open one, before deciding what to route toward retirement."
+                    : "You haven't added a Solo 401k category to your Deposit Splits yet. You can still calculate what you'd be able to contribute below, and see how to open one, before deciding what to route toward retirement."}
                 </p>
 
                 {!isBusinessOwnerWithEmployees && !isW2NoSideHustlePersona && (
@@ -1492,7 +1492,7 @@ export default function CloseoutPage() {
                     ? "Want a 401k, IRA, HSA, or another retirement account?"
                     : "Want a different retirement account instead?"}{" "}
                   <Link href="/splits" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Connect another retirement account</Link> in
-                  Income Split Rules so a share of every deposit is planned for it.
+                  Deposit Splits so a share of every deposit is planned for it.
                 </p>
               </div>
             ) : (
@@ -1683,7 +1683,7 @@ export default function CloseoutPage() {
               accurate, and it&apos;s not tax advice. Talk to a tax professional about your real effective rate.
             </p>
             <p className="text-xs text-[var(--color-neutral-700)] mb-3">
-              All of this stays in whichever account you already chose for Tax Reserve on Income Split Rules, this is
+              All of this stays in whichever account you already chose for Tax Reserve on Deposit Splits, this is
               just a number to compare against what&apos;s already there. Want to add more?
             </p>
             {!topUp.open ? (

@@ -225,7 +225,7 @@ export default function PlaidLinkButton({
       const setData = await setRes.json();
       setExchanging(false);
       if (!setRes.ok) {
-        setError(setData.error || "Linked the account, but couldn't assign it. Check Split Rules.");
+        setError(setData.error || "Linked the account, but couldn't assign it. Check Deposit Splits.");
         return;
       }
       onLinked?.(data.account);
@@ -241,7 +241,7 @@ export default function PlaidLinkButton({
       const setData = await setRes.json();
       setExchanging(false);
       if (!setRes.ok) {
-        setError(setData.error || "Linked the account, but couldn't assign it. Check Split Rules.");
+        setError(setData.error || "Linked the account, but couldn't assign it. Check Deposit Splits.");
         return;
       }
       onLinked?.(data.account);

@@ -51,7 +51,7 @@ export async function POST(request) {
     const balance = Number(account.current_balance) || 0;
     if (total > balance) {
       return Response.json(
-        { error: `${rule.label} has a starting balance that would put ${account.institution_name} ${account.account_name} over what it holds. Lower the starting balance in Split Rules, or pick another account.` },
+        { error: `${rule.label} has a starting balance that would put ${account.institution_name} ${account.account_name} over what it holds. Lower the starting balance in Deposit Splits, or pick another account.` },
         { status: 400 }
       );
     }

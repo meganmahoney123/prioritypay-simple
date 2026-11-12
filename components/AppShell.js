@@ -50,7 +50,7 @@ function buildNav({ isW2Only = false, showDebt = false, showBusiness = false } =
     top: [
       { href: "/dashboard", label: "Dashboard", tab: "Home", Icon: Home },
       { href: "/deposits", label: "Split My Deposits", tab: "Deposits", Icon: Download },
-      { href: "/splits", label: "Income Split Rules", tab: "Split rules", Icon: SlidersHorizontal },
+      { href: "/splits", label: "Deposit Splits", tab: "Split rules", Icon: SlidersHorizontal },
     ],
     groups: [
       { key: "manage", label: "Manage", tab: "Manage", Icon: LayoutGrid, items: manage },
@@ -71,7 +71,7 @@ const TITLES = {
   "/deposits": "Split My Deposits",
   "/projections": "Investment & Retirement Projections",
   "/accounts": "Linked Accounts",
-  "/splits": "Income Split Rules",
+  "/splits": "Deposit Splits",
   "/simulator": "Savings Calculator",
   "/debt": "Debt Payoff",
   "/transfers": "One-Time Transfer",
@@ -86,7 +86,7 @@ const TITLES = {
 
 // /splits/minimums and /splits/percentage-splits are now just redirects
 // back to the single /splits page -- this still resolves any of the three
-// paths to the same "Income Split Rules" header title and nav highlight.
+// paths to the same "Deposit Splits" header title and nav highlight.
 function titleFor(pathname) {
   if (pathname.startsWith("/splits")) return TITLES["/splits"];
   return TITLES[pathname] || "PrioritySave";
@@ -799,7 +799,7 @@ export default function AppShell({ children, isSandbox = false }) {
         body {
           background: var(--color-bg, #FAF7FD);
         }
-        /* Section headings across Dashboard/Accounts/Income Split Rules/Close
+        /* Section headings across Dashboard/Accounts/Deposit Splits/Close
            Out/Settings inherit the shared heading font -- weight
            still comes from each element's own Tailwind font-* class, this
            only swaps the typeface. */
@@ -818,7 +818,7 @@ export default function AppShell({ children, isSandbox = false }) {
         /* Broad sweep for the remaining plain Tailwind neutral-gray
            borders/backgrounds/text left inside page-specific markup (card
            containers, info banners, muted copy) across Dashboard/
-           Accounts/Income Split Rules/Close Out/Settings -- keeps every leftover
+           Accounts/Deposit Splits/Close Out/Settings -- keeps every leftover
            spot visually consistent with the Bloom palette without
            needing to hand-convert every className. Screens not yet migrated
            off Ledger tokens still render inside this same shell, so these

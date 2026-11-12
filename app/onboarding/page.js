@@ -10,8 +10,9 @@ import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SimpleSplitCard from "@/components/SimpleSplitCard";
 import OnboardingLimits from "@/components/OnboardingLimits";
+import TierCards from "@/components/TierCards";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, setTierPct } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // isValidUSPhone no longer used here -- the phone-number step is
@@ -61,7 +62,7 @@ const ONBOARDING_LIVE = true;
 // Order (Nov 2026): the fun part first (percentages), then connect banks, then
 // the plan step, and only after paying are accounts matched to each split.
 // Payment no longer finishes onboarding -- the last step does.
-const STEPS = ["Welcome", "Business", "Percentage Splits", "Limits", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts", "Credit Cards"];
+const STEPS = ["Welcome", "Business", "Set Your Splits", "Limits", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts", "Credit Cards"];
 const STEP_LIMITS = 3;
 const STEP_CONNECT = 4;
 const STEP_PLAN = 5;
@@ -169,7 +170,7 @@ function OnboardingPageInner() {
   // Retired-only people can't contribute to an employer 401k or an IRA (no
   // earned income) and mostly can't fund an HSA (Medicare), so they start with
   // no retirement rows; that share goes to Savings so the total stays the same.
-  const defaultsFor = (persona, entity, picks = workPicks) => {
+  const defaultsForBase = (persona, entity, picks = workPicks) => {
     let rows = getDefaultSplitRules(persona).percent;
     if (picks.length > 0 && picks.every((v) => v === "retired")) {
       const ret = rows.filter((r) => (r.group || "").startsWith("Retirement")).reduce((n, r) => n + (Number(r.pct) || 0), 0);
@@ -194,6 +195,13 @@ function OnboardingPageInner() {
     return rows
       .filter((r) => r.id !== "opex")
       .map((r) => (r.id === "savings" ? { ...r, pct: (Number(r.pct) || 0) + (Number(opex.pct) || 0) } : r));
+  };
+  // Starting point for everyone: a sample tier 1 (Rent) and tier 2 (Car payment,
+  // Insurance, Utilities) on top of the usual percent categories. People edit or
+  // delete them rather than starting from a blank page.
+  const defaultsFor = (persona, entity, picks = workPicks) => {
+    const base = defaultsForBase(persona, entity, picks);
+    return [...tierSampleRows(base.map((r) => r.color)), ...base];
   };
   // Retirement picker on the percentage step: one row per account the person
   // has. The group's total stays the same and is shared evenly between them.
@@ -262,7 +270,7 @@ function OnboardingPageInner() {
   // Removed rather than just skipped, so this doesn't quietly collect SSNs
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
-  const [percent, setPercent] = useState(DEFAULT_SPLIT_RULES.percent);
+  const [percent, setPercent] = useState(() => [...tierSampleRows(DEFAULT_SPLIT_RULES.percent.map((r) => r.color)), ...DEFAULT_SPLIT_RULES.percent]);
   // On the match step, splits are read-only until someone asks to edit them.
   const [editSplits, setEditSplits] = useState(false);
   // Anyone with earned income should put at least 1% toward retirement. Retired
@@ -533,6 +541,7 @@ function OnboardingPageInner() {
   // most they could actually enter. Cleared automatically after a few
   // seconds, same pattern as the "row deleted" toast below.
   const [pctOverflow, setPctOverflow] = useState(null);
+  const [showTierErrors, setShowTierErrors] = useState(false);
   useEffect(() => {
     if (!pctOverflow) return;
     const t = setTimeout(() => setPctOverflow(null), 5000);
@@ -603,7 +612,18 @@ function OnboardingPageInner() {
     });
     setRemovedRows((prev) => prev.filter((x) => x.row.id !== id));
   };
-  const clearAllLimits = () => setPercent((prev) => prev.map((r) => ({ ...r, max: null, categoryCap: null, balanceCap: null })));
+  // Tier 1 and 2 caps are required, so "no limits" only clears the last tier.
+  const clearAllLimits = () => setPercent((prev) => prev.map((r) => (tierOf(r) === 0 ? { ...r, max: null, categoryCap: null, balanceCap: null } : r)));
+  // Tier 1 / tier 2 editing (see TierCards).
+  const addTier = (tier) =>
+    setPercent((prev) =>
+      addTierRow(prev, tier, { id: `new_${Date.now()}`, label: "New bill", group: null, pct: 0, max: null, categoryCap: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null })
+    );
+  const removeTier = (id) => setPercent((prev) => removeTierRow(prev, id));
+  const setTierPercent = (id, value) => setPercent((prev) => setTierPct(prev, id, value));
+  const skipTiers = () => setPercent((prev) => prev.filter((r) => tierOf(r) === 0));
+  const tierIssues = tierProblems(percent);
+  const lastTierRows = percent.filter((r) => tierOf(r) === 0);
 
   // Step 4 (Starting Balances) -- live balance + market-based flag per
   // connected account, fetched from the same route the Accounts page's
@@ -720,6 +740,8 @@ function OnboardingPageInner() {
   // Every category can be removed now, so "at least 1% to retirement" is a
   // gentle note on the screen (see needsRetirement) rather than a block.
   const handleStep2Continue = () => {
+    // Tier 1 and 2 need a cap on every row and must total exactly 100%.
+    if (step === 2 && tierIssues.length > 0) { setShowTierErrors(true); return; }
     next();
   };
 
@@ -1136,7 +1158,7 @@ function OnboardingPageInner() {
         {step === 2 && (
           <div style={{ maxWidth: "40em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Set your percentage splits
+              Set your splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             {paysByDraw(entityType) && (
@@ -1147,12 +1169,29 @@ function OnboardingPageInner() {
               </p>
             )}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              Decide what share of each {splitUnit(entityType)} goes where. Change a number and the chart updates. Remove anything you
-              don&apos;t need, or add your own below.
+              We started you with an example. Every {splitUnit(entityType)} fills tier 1 first, what is left flows to tier 2, then
+              the rest is split in tier 3. Change anything, add what you need, and remove what you do not.
             </p>
 
+            <TierCards
+              percent={percent}
+              onUpdate={updatePercent}
+              onSetPct={setTierPercent}
+              onAddRow={addTier}
+              onRemoveRow={removeTier}
+              showErrors={showTierErrors}
+            />
+
+            <div style={{ margin: "6px 0 14px" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4E22B8" }}>Tier 3 · Last: everything else</div>
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "4px 0 0" }}>
+                Splits whatever is left. This is the last tier, so no caps are needed, and it can add up to less than 100%. Anything
+                not assigned stays where your deposit lands.
+              </p>
+            </div>
+
             <SimpleSplitCard
-              rows={percent}
+              rows={lastTierRows}
               onUpdate={updatePercent}
               onRemove={removeFromStep2}
               overflow={pctOverflow}
@@ -1243,7 +1282,7 @@ function OnboardingPageInner() {
               Add limits, if you want them
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <OnboardingLimits rows={percent} onUpdate={updatePercent} />
+            <OnboardingLimits rows={lastTierRows} onUpdate={updatePercent} />
           </div>
         )}
 
@@ -1774,6 +1813,9 @@ function OnboardingPageInner() {
                 {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
               </span>
             </div>
+            {step === 2 && tierIssues.length > 0 && (
+              <p style={{ fontSize: 14, lineHeight: 1.5, color: "#b3261e", margin: "0 0 12px" }}>{tierIssues[0]}</p>
+            )}
             {step === STEP_MATCH && showBlockHint && unconnectedForStep4.length > 0 && (
               <p style={{ fontSize: 14, lineHeight: 1.5, color: "#b3261e", margin: "0 0 12px" }}>
                 Choose an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} to continue.
@@ -1781,10 +1823,13 @@ function OnboardingPageInner() {
             )}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <BackBtn onClick={back} />
+              {step === 2 && (
+                <GhostBtn onClick={() => { skipTiers(); setShowTierErrors(false); }}>Skip tiers 1 and 2</GhostBtn>
+              )}
               {step === STEP_LIMITS && (
                 <GhostBtn onClick={() => { clearAllLimits(); next(); }}>Skip, no limits</GhostBtn>
               )}
-              <PrimaryBtn onClick={step === 2 || step === STEP_LIMITS ? handleStep2Continue : handleStep4Continue} flex>Continue &nbsp;→</PrimaryBtn>
+              <PrimaryBtn onClick={step === 2 || step === STEP_LIMITS ? handleStep2Continue : handleStep4Continue} disabled={step === 2 && tierIssues.length > 0} flex>Continue &nbsp;→</PrimaryBtn>
             </div>
             {step === STEP_MATCH && unconnectedForStep4.length > 0 && isDevTester && (
               <button

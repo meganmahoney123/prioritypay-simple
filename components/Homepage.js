@@ -216,7 +216,7 @@ const FAQS = [
   },
   {
     q: "Can I change my percentages later?",
-    a: "Anytime, from Split Rules in your dashboard. Add or remove categories, adjust any percentage, and reconnect accounts whenever your income or goals change.",
+    a: "Anytime, from Deposit Splits in your dashboard. Add or remove categories, adjust any percentage, and reconnect accounts whenever your income or goals change.",
   },
   {
     q: "Is my account information secure?",

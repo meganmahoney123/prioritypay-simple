@@ -42,7 +42,7 @@ export async function POST() {
 
   if (!rules || !rules.length) {
     return Response.json(
-      { error: "No categories found yet. Add at least one category on the Income Split Rules page first." },
+      { error: "No categories found yet. Add at least one category on the Deposit Splits page first." },
       { status: 400 }
     );
   }

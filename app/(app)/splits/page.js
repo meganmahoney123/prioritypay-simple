@@ -6,7 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { PrimaryButton } from "@/components/ui";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SplitPercentPieChart from "@/components/SplitPercentPieChart";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, setTierPct } from "@/lib/allocations";
+import TierCards from "@/components/TierCards";
 import { decodeSim } from "@/lib/simSharing";
 import AddCategoryCard from "@/components/AddCategoryCard";
 
@@ -153,6 +154,8 @@ function SplitRulesPageInner() {
 
   // Why the current rules can't be saved yet, or null if they can.
   const blockReason = (rules) => {
+    const tierIssue = tierProblems(rules)[0];
+    if (tierIssue) return `Not saved yet: ${tierIssue}`;
     if (computeStartingBalanceRoom(rules, accounts).anyOver) {
       return "Not saved yet: a starting balance is more than the account holds.";
     }
@@ -264,6 +267,23 @@ function SplitRulesPageInner() {
       return next;
     });
   };
+  // Tier 1 / tier 2 editing (see TierCards): adding, removing and setting a
+  // percent keep each tier adding up to 100%.
+  const addTier = (tier) => {
+    markDirty();
+    setPercent((prev) =>
+      addTierRow(prev, tier, { id: `new_${Date.now()}`, label: "New bill", group: null, pct: 0, max: null, categoryCap: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null })
+    );
+  };
+  const removeTier = (id) => {
+    markDirty();
+    setPercent((prev) => removeTierRow(prev, id));
+  };
+  const setTierPercent = (id, value) => {
+    markDirty();
+    setPercent((prev) => setTierPct(prev, id, value));
+  };
+  const lastTierRows = useMemo(() => percent.filter((r) => tierOf(r) === 0), [percent]);
   const addSubAccount = (group) => {
     markDirty();
     setPercent((prev) => [...prev, newSubAccountRow(group, prev.map((r) => r.color))]);
@@ -355,20 +375,39 @@ function SplitRulesPageInner() {
     <div className="space-y-6" style={{ maxWidth: 780 }}>
       <div>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px, 3.4vw, 36px)", fontWeight: 800, margin: "0 0 8px" }}>
-          Split every {splitUnit(entityType)} by percentage
+          Deposit Splits
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
-          Each {splitUnit(entityType)} you receive will be split by percentage into the following accounts, and you&apos;ll get a
-          checklist to confirm and send each transfer yourself. Here, set the percentages you want sent to each
-          account.
+          Each {splitUnit(entityType)} you receive is split in tiers, top to bottom, and you&apos;ll get a checklist to confirm
+          and send each transfer yourself. Tier 1 is paid first, up to a monthly cap. Whatever is left flows to tier 2, and then
+          to the last tier, which is split by percentage.
         </p>
         {drawNote(entityType) && (
           <p style={{ fontSize: 15, lineHeight: 1.7, color: "#574A68", margin: "12px 0 0" }}>{drawNote(entityType)}</p>
         )}
       </div>
 
-      <SplitPercentPieChart percent={percent} remainingPct={remainingPct} />
+      <TierCards
+        percent={percent}
+        onUpdate={updatePercent}
+        onSetPct={setTierPercent}
+        onAddRow={addTier}
+        onRemoveRow={removeTier}
+        accounts={accounts}
+        showErrors
+      />
+
+      <div>
+        <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 800, margin: 0 }}>
+          Tier 3 · Last: everything else
+        </h3>
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: "4px 0 0" }}>
+          Splits whatever is left. No caps are needed here, and it can add up to less than 100%.
+        </p>
+      </div>
+
+      <SplitPercentPieChart percent={lastTierRows} remainingPct={remainingPct} />
 
       <div>
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
@@ -418,7 +457,7 @@ function SplitRulesPageInner() {
       )}
 
       <PercentSplitEditor
-        percent={percent}
+        percent={lastTierRows}
         accounts={accounts}
         onUpdatePercent={updatePercent}
         onAddSubAccount={addSubAccount}

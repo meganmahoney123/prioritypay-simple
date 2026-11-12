@@ -356,7 +356,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
         setError(body.error || "Could not link that account. Please try again.");
       } else {
         const acc = accountsById[accountId];
-        setLinkedNote(`${rule.label} is now linked to ${accountLabel(acc, null)}. Updated in Split Rules and everywhere else.`);
+        setLinkedNote(`${rule.label} is now linked to ${accountLabel(acc, null)}. Updated in Deposit Splits and everywhere else.`);
         setTimeout(() => setLinkedNote(null), 12000);
         await load();
         onChanged?.();
@@ -809,7 +809,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           );
         })}
         <div style={{ ...mutedText, marginTop: 10 }}>
-          Saved to your Split Rules, so it updates everywhere.{" "}
+          Saved to your Deposit Splits, so it updates everywhere.{" "}
           <a href="/accounts" style={{ color: "var(--color-accent-700)", fontWeight: 700, textDecoration: "underline" }}>
             Connect a new bank account
           </a>

@@ -421,7 +421,7 @@ function SettingsPageInner() {
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
           Instantly switches your own account to a different onboarding persona and resets your split rules to
           that persona&apos;s defaults, so there's no need to sign up a second account to see how Dashboard, Close Out, and
-          Split Rules look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.
+          Deposit Splits look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.
         </p>
         <div className="flex flex-wrap gap-2">
           {[
