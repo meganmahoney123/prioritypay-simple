@@ -62,14 +62,13 @@ const ONBOARDING_LIVE = true;
 // Order (Nov 2026): the fun part first (percentages), then connect banks, then
 // the plan step, and only after paying are accounts matched to each split.
 // Payment no longer finishes onboarding -- the last step does.
-const STEPS = ["Welcome", "Business", "Set Your Splits", "Caps", "Connect Accounts", "Start Plan", "Match Accounts", "Starting Balances", "Deposit Alerts", "Credit Cards"];
+const STEPS = ["Welcome", "Business", "Set Your Splits", "Caps", "Connect Accounts", "Start Plan", "Match Accounts", "Deposit Alerts", "Credit Cards"];
 const STEP_LIMITS = 3;
 const STEP_CONNECT = 4;
 const STEP_PLAN = 5;
 const STEP_MATCH = 6;
-const STEP_BALANCES = 7;
-const STEP_ALERTS = 8;
-const STEP_CARDS = 9;
+const STEP_ALERTS = 7;
+const STEP_CARDS = 8;
 // businessType drives real retirement-calculation logic downstream (see
 // finish() below). "Business Owner (With Employees)" is the one option
 // that unlocks two extra inline questions on this same step (see step 1
@@ -628,72 +627,6 @@ function OnboardingPageInner() {
   const tierIssues = tierProblems(percent);
   const lastTierRows = percent.filter((r) => tierOf(r) === 0);
 
-  // Step 4 (Starting Balances) -- live balance + market-based flag per
-  // connected account, fetched from the same route the Accounts page's
-  // per-account pie charts use (GET /api/allocations/account-balances).
-  // `percent` itself (already linked to accounts by the time someone
-  // reaches this step -- see saveSplitRulesNow, called on every accountId
-  // change) stays the source of truth for WHICH categories to list under
-  // each account; this fetch only supplies each account's live balance and
-  // whether it's market-based (a real brokerage/401k/IRA connected
-  // directly, as opposed to a plain savings account being used to HOLD
-  // money before an end-of-month transfer into a real retirement account --
-  // see PERSONA_* comments in lib/allocations.js). Market-based accounts
-  // are skipped entirely here since their balance already comes from Plaid
-  // live, not a starting-balance guess; a savings account holding money
-  // for e.g. a Solo 401k is NOT market-based, so it still shows.
-  const [accountBalances, setAccountBalances] = useState([]);
-  const [balancesLoading, setBalancesLoading] = useState(false);
-  useEffect(() => {
-    if (step !== STEP_BALANCES) return;
-    setBalancesLoading(true);
-    // An account linked earlier THIS SAME onboarding session has never had
-    // its current_balance seeded -- app/api/plaid/exchange-public-token
-    // deliberately leaves it null (Plaid's initial data pull isn't
-    // guaranteed done yet right after Link succeeds), and the only place
-    // that fills it in with a real, live Plaid number is GET /api/accounts
-    // (the Accounts page). Nothing in onboarding calls that route before
-    // now, so without this, /api/allocations/account-balances below reads
-    // a still-null current_balance, coerces it to a bare 0 ("Number(null)
-    // || 0"), and the Starting Balances step then reports every account as
-    // having a real balance of exactly $0 -- blocking anyone from entering
-    // a nonzero starting balance for an account that, in reality, Plaid
-    // just hasn't reported on yet. Firing GET /api/accounts here (fire-
-    // and-forget -- its own response isn't used, only its side effect of
-    // writing a fresh current_balance/balance_reconciled_at per account)
-    // closes that gap before the balance check below runs.
-    fetch("/api/accounts")
-      .catch((err) => console.error("[onboarding] balance reconciliation fetch failed", err))
-      .then(() =>
-        fetch("/api/allocations/account-balances")
-          .then((r) => r.json())
-          .then((data) => setAccountBalances(data.accounts || []))
-      )
-      .finally(() => setBalancesLoading(false));
-    // Only re-fetch on entering this step, not on every percent/accounts
-    // change -- categories already save immediately as they're linked
-    // (saveSplitRulesNow), so the live balances just need to be current as
-    // of arriving here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
-  const accountNameById = {};
-  accounts.forEach((a) => {
-    accountNameById[a.id] = `${a.institution_name || "Bank"} ${a.account_name || "Account"}${a.mask ? ` •••• ${a.mask}` : ""}`;
-  });
-  const startingBalanceGroups = accountBalances
-    .filter((entry) => !entry.isMarketBased)
-    .map((entry) => ({
-      ...entry,
-      rows: percent.filter((r) => r.accountId === entry.accountId),
-    }))
-    .filter((g) => g.rows.length > 0);
-  const startingBalanceOverBudget = startingBalanceGroups.some((g) => {
-    if (g.accountBalance === null) return false;
-    const sum = g.rows.reduce((s, r) => s + (Number(r.startingBalance) || 0), 0);
-    return sum > g.accountBalance;
-  });
-  const formatMoney = (n) =>
-    Number(n || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
   // Same "add your own category" capability as Split Rules -- Wedding,
   // College Fund, Hobbies, Profit, or literally anything else -- available
@@ -959,7 +892,7 @@ function OnboardingPageInner() {
             </span>
             <span style={{ width: 34, height: 1, background: "var(--color-accent)" }} />
           </div>
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 400, lineHeight: 1.1, margin: "0 0 16px" }}>
+          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 800, lineHeight: 1.1, margin: "0 0 16px" }}>
             We&apos;re almost ready.
           </h1>
           <p style={{ fontSize: 16, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", margin: "0 0 30px" }}>
@@ -1062,7 +995,7 @@ function OnboardingPageInner() {
       <main style={{ flex: 1, maxWidth: 1180, width: "100%", margin: "0 auto", padding: "clamp(40px, 7vw, 88px) clamp(18px, 4vw, 40px) 90px" }}>
         {step === 0 && (
           <div style={{ maxWidth: "44em", margin: "clamp(10px, 6vw, 60px) auto 0", textAlign: "center" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(34px, 6vw, 56px)", fontWeight: 400, lineHeight: 1.06, letterSpacing: "-0.02em", margin: "0 0 26px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(34px, 6vw, 56px)", fontWeight: 800, lineHeight: 1.06, letterSpacing: "-0.02em", margin: "0 0 26px" }}>
               Send money to savings, investments, and retirement.<span style={{ fontStyle: "italic", color: "var(--color-accent-700)" }}> BEFORE you spend it.</span>
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 74%, transparent)", maxWidth: "32em", margin: "0 auto 40px" }}>
@@ -1077,7 +1010,7 @@ function OnboardingPageInner() {
 
         {step === 1 && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               Tell us about yourself
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 34px" }} />
@@ -1160,7 +1093,7 @@ function OnboardingPageInner() {
 
         {step === 2 && (
           <div style={{ maxWidth: "40em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               Set your splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
@@ -1276,7 +1209,7 @@ function OnboardingPageInner() {
 
         {step === STEP_LIMITS && (
           <div style={{ maxWidth: "46em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               Want a limit on any of your final categories?
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
@@ -1286,7 +1219,7 @@ function OnboardingPageInner() {
 
         {step === STEP_CONNECT && (
           <div style={{ maxWidth: "36em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               Connect everywhere money reaches you
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
@@ -1398,7 +1331,7 @@ function OnboardingPageInner() {
 
         {step === STEP_PLAN && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               {isPaid ? "Your plan is active" : "Start your plan"}
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
@@ -1484,7 +1417,7 @@ function OnboardingPageInner() {
 
         {step === STEP_MATCH && (
           <div style={{ maxWidth: "40em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               Match accounts to your splits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
@@ -1538,98 +1471,10 @@ function OnboardingPageInner() {
           </div>
         )}
 
-        {step === STEP_BALANCES && (
-          <div style={{ maxWidth: "40em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Starting balances
-            </h1>
-            <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 32px" }}>
-              Already have money saved towards a category? Add that balance here.
-            </p>
-            {balancesLoading && (
-              <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Loading your connected accounts…
-              </p>
-            )}
-            {!balancesLoading && startingBalanceGroups.length === 0 && (
-              <p style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                Nothing to set here yet. None of your connected accounts have categories linked to them.
-              </p>
-            )}
-            {!balancesLoading &&
-              startingBalanceGroups.map((group) => {
-                const sum = group.rows.reduce((s, r) => s + (Number(r.startingBalance) || 0), 0);
-                const over = group.accountBalance !== null && sum > group.accountBalance;
-                return (
-                  <div
-                    key={group.accountId}
-                    style={{
-                      border: `1px solid ${over ? "#b3261e" : "var(--color-divider)"}`,
-                      borderRadius: "var(--radius-md)",
-                      padding: "18px 20px",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, marginBottom: 14 }}>
-                      <span style={{ fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 600 }}>
-                        {accountNameById[group.accountId] || "Connected account"}
-                      </span>
-                      <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                        {group.accountBalance === null ? "" : `${formatMoney(group.accountBalance)} live balance`}
-                      </span>
-                    </div>
-                    <div style={{ display: "grid", gap: 10 }}>
-                      {group.rows.map((r) => (
-                        <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-                          <span style={{ fontSize: 14.5 }}>{r.label}</span>
-                          <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                            <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
-                            <input
-                              type="number"
-                              onFocus={(e) => e.target.select()}
-                              min={0}
-                              step={1}
-                              placeholder="0"
-                              value={r.startingBalance ?? ""}
-                              onChange={(e) => updatePercent(r.id, { startingBalance: e.target.value.replace(/^0+(?=\d)/, "") })}
-                              style={{
-                                width: 100,
-                                textAlign: "right",
-                                fontFamily: "var(--font-heading)",
-                                fontSize: 15,
-                                color: "var(--color-text)",
-                                background: "transparent",
-                                border: 0,
-                                borderBottom: "1px solid var(--color-divider)",
-                                padding: "3px 2px",
-                              }}
-                            />
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {over && (
-                      <p style={{ fontSize: 13, color: "#b3261e", margin: "12px 0 0" }}>
-                        That adds up to {formatMoney(sum)}, more than this account&apos;s real balance of{" "}
-                        {formatMoney(group.accountBalance)}. Please adjust so the total is{" "}
-                        {formatMoney(group.accountBalance)} or less.
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-              <BackBtn onClick={back} />
-              <PrimaryBtn onClick={next} disabled={startingBalanceOverBudget} flex>Continue &nbsp;→</PrimaryBtn>
-            </div>
-          </div>
-        )}
-
         {confirmingPayment && (
           <div style={{ ...BLOOM_TOKENS, position: "fixed", inset: 0, zIndex: 80, background: "var(--color-bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
             <div style={{ maxWidth: "34em" }}>
-              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 16px" }}>
+              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 16px" }}>
                 Confirming your payment…
               </h1>
               <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: 0 }}>
@@ -1641,7 +1486,7 @@ function OnboardingPageInner() {
 
         {step === STEP_ALERTS && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               Get notified the moment a deposit lands
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
@@ -1735,7 +1580,7 @@ function OnboardingPageInner() {
 
         {step === STEP_CARDS && (
           <div style={{ maxWidth: "34em", margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
+            <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
               Connect your credit cards
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
@@ -1843,7 +1688,7 @@ function OnboardingPageInner() {
       {showConfirmAccountsModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", maxWidth: "26em", width: "100%", padding: "34px 34px 30px" }}>
-            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 400, margin: "0 0 10px" }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 10px" }}>
               Are you sure these are all your income accounts?
             </h2>
             <p style={{ fontSize: 13.5, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 60%, transparent)", margin: "0 0 26px" }}>
@@ -1871,7 +1716,7 @@ function OnboardingPageInner() {
       {showAddMorePopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", maxWidth: "26em", width: "100%", padding: "34px 34px 30px" }}>
-            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 400, margin: "0 0 20px" }}>Have any more accounts to add?</h2>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 20px" }}>Have any more accounts to add?</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <PlaidLinkButton
                 label="Connect More Accounts"
@@ -1897,7 +1742,7 @@ function OnboardingPageInner() {
       {showUnconnectedModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "color-mix(in srgb, #171614 55%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ background: "var(--color-bg)", border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", maxWidth: "30em", width: "100%", padding: "34px 34px 30px" }}>
-            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 28, fontWeight: 400, margin: "0 0 8px" }}>Missing accounts</h2>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>Missing accounts</h2>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 20px" }} />
             <p style={{ fontSize: 15.5, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 28px" }}>
               You haven&apos;t connected an account for {joinWithAnd(unconnectedForStep4.map((r) => r.label))} yet.
