@@ -140,7 +140,9 @@ input[type="number"] {
   font-size: 15px !important; border: 1px solid #D9D3E6 !important; border-radius: 8px !important; padding: 8px 12px !important; min-height: 42px; }
 .ps-page.ps-refined select:focus, .ps-page.ps-refined input:focus { outline: 2px solid #E3DAFA; border-color: #6D3BE0 !important; }
 .ps-page.ps-refined div.border-neutral-200 { border: 1px solid #D9D3E6 !important; border-radius: 8px !important; font-size: 16px; font-weight: 500; min-height: 42px; }
-.ps-page.ps-refined div.border-neutral-200 input { font-size: 16px !important; font-weight: 500; }
+.ps-page.ps-refined div.border-neutral-200 input { font-size: 16px !important; font-weight: 500; border: 0 !important; padding: 0 !important; min-height: 0 !important; background: transparent !important; outline: none !important; box-shadow: none !important; flex: 1 1 auto; min-width: 0; width: 100%; }
+.ps-page.ps-refined div.border-neutral-200:focus-within { border-color: #6D3BE0 !important; outline: 2px solid #E3DAFA; }
+.ps-page.ps-refined div.border-neutral-200 { display: flex; align-items: center; }
 .ps-page.ps-refined .pp-ledger-btn-primary { min-height: 42px; border-radius: 10px !important; font-weight: 600 !important; font-size: 15px !important; }
 .ps-page.ps-refined h1 { font-size: 24px !important; font-weight: 600 !important; }
 .ps-page.ps-refined input.ps-compact { font-weight: 500; font-size: 16px !important; }
