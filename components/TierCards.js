@@ -17,7 +17,7 @@ const PURPLE = "#4E22B8";
 const LINE = "#E7DEFA";
 const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
 
-const TIER_SUB = "Paid first, split evenly between the rows. Every row needs a monthly cap; anything a capped row can\u2019t take goes to the others, then flows down.";
+const TIER_SUB = "100% of each deposit is split evenly across these categories. As soon as a category meets the monthly cap, the rest of the deposit waterfalls down to the next tier.";
 
 export const TIER_CSS = `
 .pp-tier-card{background:#fff;border:2px solid #9A72F0;border-radius:22px;padding:6px 20px 8px}
