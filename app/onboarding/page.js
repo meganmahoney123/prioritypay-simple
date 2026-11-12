@@ -1153,7 +1153,7 @@ function OnboardingPageInner() {
               </p>
             )}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              Decide what percentage of each deposit goes where. You can use tiers to prioritize filling specific categories (like rent) before moving on to percentage based splits.
+              Decide what percentage of each deposit goes where. You can use tiers to prioritize filling specific categories (like rent) before the rest of your deposit flows to percentage based splits.
             </p>
 
             <div style={{ margin: "0 0 22px" }}>

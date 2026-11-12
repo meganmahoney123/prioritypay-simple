@@ -43,8 +43,8 @@ const CSS = `
 .pp-ex-bar i{display:block;height:100%;width:0;border-radius:99px;transition:width .7s ease,background .3s}
 .pp-tier-stack .pp-tier-head + .pp-tier-row{border-top:0}
 .pp-ex-eq{color:#8A7FA0;font-weight:800}
-.pp-ex-flow{position:relative;height:18px;line-height:18px;padding:5px 0}
-.pp-ex-flow span{position:absolute;top:5px;left:0;right:0;text-align:center;transition:opacity .35s}
+.pp-ex-flow{position:relative;box-sizing:border-box;height:38px;line-height:34px;padding:0;font-size:13px}
+.pp-ex-flow span{position:absolute;top:0;left:0;right:0;text-align:center;transition:opacity .35s}
 `;
 
 export default function SplitExample() {
