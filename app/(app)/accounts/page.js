@@ -23,6 +23,7 @@ export default function AccountsPage() {
   const [categoryBalances, setCategoryBalances] = useState({});
   const [creditCardBalances, setCreditCardBalances] = useState({});
   const [investmentAccountIds, setInvestmentAccountIds] = useState(new Set());
+  const [ruleRows, setRuleRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [disconnectingId, setDisconnectingId] = useState(null);
   const [disconnectError, setDisconnectError] = useState(null);
@@ -57,6 +58,7 @@ export default function AccountsPage() {
         .map((r) => r.accountId)
     );
     setInvestmentAccountIds(investmentIds);
+    setRuleRows(splitRulesRes.splitRules?.percent || []);
     setLoading(false);
   };
 
@@ -195,6 +197,31 @@ export default function AccountsPage() {
           <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "1px solid var(--color-divider)" }}>
             <span className="text-xs font-semibold" style={{ color: "var(--color-neutral-700)" }}>Account balance</span>
             <span className="font-mono font-bold" style={{ fontSize: 18 }}>{currency(Number(bal))}</span>
+          </div>
+        );
+      })()}
+      {acc.account_type !== "credit" && (() => {
+        // The categories from Deposit Splits that send money to this account.
+        const mine = ruleRows.filter((r) => r.accountId === acc.id);
+        return (
+          <div className="mb-3 pb-3" style={{ borderBottom: "1px solid var(--color-divider)" }}>
+            <div className="text-xs font-semibold" style={{ color: "var(--color-neutral-700)", marginBottom: 6 }}>Categories sent here</div>
+            {mine.length ? (
+              <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 14, lineHeight: 1.6, color: "var(--color-text)" }}>
+                {mine.map((r) => (
+                  <li key={r.id}>
+                    <span style={{ fontWeight: 600 }}>{r.label}</span>
+                    {r.max != null ? (
+                      <span style={{ color: "var(--color-neutral-700)" }}> · up to {currency(Number(r.max))}/month</span>
+                    ) : Number(r.pct) > 0 ? (
+                      <span style={{ color: "var(--color-neutral-700)" }}> · {Math.round(Number(r.pct) * 100) / 100}% of each deposit</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div style={{ fontSize: 14, color: "var(--color-neutral-700)" }}>No categories send money here yet.</div>
+            )}
           </div>
         );
       })()}
