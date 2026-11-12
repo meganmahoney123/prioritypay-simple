@@ -126,8 +126,16 @@ function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow, focusName }) 
   );
 }
 
-export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, onAddTier, onRemoveTier, accounts, showErrors = true, children }) {
+export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, onAddTier, onRemoveTier, accounts, showErrors = true, minTiers = 0, children }) {
   const tiers = priorityTiers(percent);
+  // Empty placeholder tiers: with `minTiers` set (Deposit Splits), at least that
+  // many priority tiers are always drawn, even before they have a category, so
+  // people can see the waterfall has more than one level. They are only a
+  // drawing: nothing is saved until a category is added to one. "Add a
+  // priority tier" adds one more placeholder while any are showing.
+  const [extra, setExtra] = useState(0);
+  const placeholders = Math.max(0, minTiers + extra - tiers.length);
+  const shown = tiers.length + placeholders;
   const [confirming, setConfirming] = useState(null);
   const initialIds = useRef(null);
   if (initialIds.current === null) initialIds.current = new Set(percent.map((r) => r.id));
@@ -161,10 +169,29 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
             </div>
           );
         })}
-        {children}
+        {Array.from({ length: placeholders }, (_, k) => {
+          const n = tiers.length + k + 1;
+          return (
+            <div key={`ph${n}`}>
+              <div className="pp-tier-card">
+                <Header n={n} title={tierName(n)} tag={TIER_TAG} tagTitle={TIER_SUB} action={placeholders + tiers.length > minTiers && k === placeholders - 1 && extra > 0 ? <button type="button" className="pp-tier-more" style={{ color: "#8A7FA0" }} onClick={() => setExtra((v) => Math.max(0, v - 1))}>Remove tier</button> : null} />
+                <p className="pp-tier-sub">{TIER_SUB}</p>
+                <div className="pp-tier-row" style={{ color: "#6B5F80", fontSize: 14 }}>
+                  <span className="pp-tier-dot" style={{ background: "#D2C4F0" }} />
+                  <span style={{ flex: 1 }}>
+                    {n === 1 ? "Nothing here yet. Add the bills you want paid first, like rent." : "Nothing here yet. Add the next bills to pay once the tier above is full."}
+                  </span>
+                </div>
+                <button type="button" className="pp-tier-add" onClick={() => onAddRow(tiers.length + 1)}>+ Add to this tier</button>
+              </div>
+              <div className="pp-tier-flow">↓ Cap reached? The rest flows down</div>
+            </div>
+          );
+        })}
+        {typeof children === "function" ? children(shown) : children}
       </div>
-      <button type="button" className="pp-tier-addlink" onClick={onAddTier}>
-        + Add a priority tier{tiers.length === 0 ? " (rent, car payment, insurance... paid before anything else)" : ""}
+      <button type="button" className="pp-tier-addlink" onClick={() => (placeholders > 0 ? setExtra((v) => v + 1) : onAddTier())}>
+        + Add a priority tier{shown === 0 ? " (rent, car payment, insurance... paid before anything else)" : ""}
       </button>
     </div>
   );

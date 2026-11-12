@@ -152,6 +152,70 @@ function CapCard({ title, sub, value, onChange, used, unit }) {
   );
 }
 
+// Deposit Splits (tier style): what has been set shows right on the row, so
+// nobody has to open "See more" just to see it. Says what is LEFT in words,
+// with the used amount and a bar underneath. Editing still happens in the
+// dropdown. Shows nothing for a category with no limits and no starting balance.
+function LimitSummary({ rule }) {
+  const [usage, setUsage] = useState(null);
+  useEffect(() => {
+    let live = true;
+    loadCapUsage().then((u) => { if (live) setUsage(u); });
+    return () => { live = false; };
+  }, []);
+  const mine = usage && rule.label ? usage[rule.label] : undefined;
+  const fmt = (n) => `$${Math.round(n).toLocaleString("en-US")}`;
+  const num = (v) => (Number(v) > 0 ? Number(v) : null);
+  const monthly = num(rule.max);
+  const goal = num(rule.categoryCap);
+  const start = num(rule.startingBalance);
+  if (!monthly && !goal && !start) return null;
+  const line = (limit, usedRaw, leftWord, doneWord, usedUnit) => {
+    const used = Number(usedRaw);
+    const known = usedRaw !== undefined && usedRaw !== null && Number.isFinite(used);
+    const full = known && used >= limit;
+    const pctDone = known ? Math.min(100, (used / limit) * 100) : 0;
+    return (
+      <div key={usedUnit} style={{ marginTop: 7, maxWidth: 470 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", fontSize: 14 }}>
+          {known ? (
+            <span>
+              {full ? (
+                <b style={{ color: "#2E7D4F" }}>{doneWord}</b>
+              ) : (
+                <>
+                  <b style={{ fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", color: "#4E22B8" }}>{fmt(limit - used)}</b> {leftWord}
+                </>
+              )}
+            </span>
+          ) : (
+            <span>
+              <b style={{ fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", color: "#4E22B8" }}>{fmt(limit)}</b> {usedUnit === "this month" ? "monthly cap" : "total savings goal"}
+            </span>
+          )}
+          {known && <span style={{ color: "#8A7FA0", fontSize: 13 }}>{fmt(used)} of {fmt(limit)} {usedUnit}</span>}
+        </div>
+        {known && (
+          <div style={{ marginTop: 4, height: 9, background: "#EAE2FA", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ width: `${pctDone}%`, height: "100%", background: full ? "#2E7D4F" : "#7A4BE0", borderRadius: 99, transition: "width .5s ease" }} />
+          </div>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div style={{ paddingLeft: 19 }}>
+      {monthly && line(monthly, mine?.month ?? (usage ? 0 : undefined), "left this month", "Monthly cap reached", "this month")}
+      {goal && line(goal, mine?.total ?? (usage ? 0 : undefined), "to reach your goal", "Goal reached", "saved")}
+      {start && (
+        <div style={{ fontSize: 12.5, color: "#8A7FA0", marginTop: 6 }}>
+          {goal ? `Goal includes your ${fmt(start)} starting balance` : `Started with ${fmt(start)}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CapCards({ rule, onUpdate }) {
   const [usage, setUsage] = useState(null);
   useEffect(() => {
@@ -308,6 +372,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 <button type="button" className="pp-tier-x" aria-label={`Remove ${rule.label}`} onClick={() => onRemove(rule.id)}>✕</button>
               )}
             </div>
+            {!tierOpen && <LimitSummary rule={rule} />}
             {overflowMessage && <p style={{ fontSize: 13, lineHeight: 1.5, color: "#B42318", margin: "6px 0 0" }}>{overflowMessage}</p>}
           </>
         ) : (
@@ -590,11 +655,11 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         <div style={{ marginTop: 4 }}>
           {true ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 85%, transparent)" }}>
                 <span title="If you've already started saving for this category, add the amount here." style={{ cursor: "help" }}>{forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Starting Balance:"}</span>
               </span>
               <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
+                <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 85%, transparent)" }}>$</span>
                 <input
                   type="number"
                   onFocus={(e) => e.target.select()}
@@ -852,7 +917,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
       {!hideStartingBalance && (
       <div className="mt-2">
         {showStartingBalance ? (
-          <label className="flex items-center gap-1.5 text-xs text-neutral-500">
+          <label className="flex items-center gap-1.5 text-sm font-semibold text-neutral-700">
             {forceShowStartingBalance
               ? "Starting balance for this category (enter 0 if none):"
               : "Starting Balance:"}

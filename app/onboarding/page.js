@@ -11,6 +11,7 @@ import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SimpleSplitCard from "@/components/SimpleSplitCard";
 import OnboardingLimits from "@/components/OnboardingLimits";
 import TierCards, { TierLastCard } from "@/components/TierCards";
+import SplitExample from "@/components/SplitExample";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
@@ -1152,9 +1153,12 @@ function OnboardingPageInner() {
               </p>
             )}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              We started you with an example. Every {splitUnit(entityType)} pays your top priority categories first, what is left flows
-              to the next tier, and the rest is split by percent. Change anything, add or delete whole tiers, and remove what you do not need.
+              Decide what percentage of each deposit goes where. You can use tiers to prioritize filling specific categories (like rent) before moving on to percentage based splits.
             </p>
+
+            <div style={{ margin: "0 0 22px" }}>
+              <SplitExample />
+            </div>
 
             <TierCards
               percent={percent}

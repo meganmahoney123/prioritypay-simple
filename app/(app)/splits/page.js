@@ -7,6 +7,7 @@ import { PrimaryButton } from "@/components/ui";
 import { LastTierEditor } from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import TierCards from "@/components/TierCards";
+import SplitExample from "@/components/SplitExample";
 import { decodeSim } from "@/lib/simSharing";
 import AddCategoryCard from "@/components/AddCategoryCard";
 
@@ -383,11 +384,7 @@ function SplitRulesPageInner() {
           Deposit Splits
         </h2>
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
-          Each {splitUnit(entityType)} you receive is split in tiers, top to bottom, and you&apos;ll get a checklist to confirm
-          and send each transfer yourself. Your top priority categories are paid first, up to a monthly cap, then whatever is left flows
-          down to the next tier, and finally to the last tier, which is split by percentage.
-        </p>
+        <SplitExample />
         {drawNote(entityType) && (
           <p style={{ fontSize: 15, lineHeight: 1.7, color: "#574A68", margin: "12px 0 0" }}>{drawNote(entityType)}</p>
         )}
@@ -438,7 +435,9 @@ function SplitRulesPageInner() {
         onRemoveTier={removeTierBy}
         accounts={accounts}
         showErrors
+        minTiers={2}
       >
+        {(shownTiers) => (
         <LastTierEditor
           percent={percent}
           accounts={accounts}
@@ -452,10 +451,11 @@ function SplitRulesPageInner() {
           pctOverflow={pctOverflow}
           persona={persona}
           title="Final Categories"
-          num={priorityTiers(percent).length + 1}
+          num={shownTiers + 1}
         >
           <AddCategoryCard inline suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
         </LastTierEditor>
+        )}
       </TierCards>
 
 
