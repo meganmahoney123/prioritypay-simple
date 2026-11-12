@@ -11,6 +11,7 @@ import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SimpleSplitCard from "@/components/SimpleSplitCard";
 import OnboardingLimits from "@/components/OnboardingLimits";
 import TierCards, { TierLastCard } from "@/components/TierCards";
+import DepositPreview from "@/components/DepositPreview";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
@@ -1214,6 +1215,8 @@ function OnboardingPageInner() {
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <OnboardingLimits rows={lastTierRows} onUpdate={updatePercent} priorityRows={percent.filter((r) => tierOf(r) >= 1)} onEditPriority={() => setStep(2)} />
+            <div style={{ height: 18 }} />
+            <DepositPreview percent={percent} />
           </div>
         )}
 

@@ -7,6 +7,7 @@ import { PrimaryButton } from "@/components/ui";
 import { LastTierEditor } from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import TierCards from "@/components/TierCards";
+import DepositPreview from "@/components/DepositPreview";
 import { decodeSim } from "@/lib/simSharing";
 import AddCategoryCard from "@/components/AddCategoryCard";
 
@@ -460,6 +461,8 @@ function SplitRulesPageInner() {
 
       <AddCategoryCard suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
+      <DepositPreview percent={percent} showLaterToggle title="Try a deposit" />
+
 
       {startingBalanceOverBudget && (
         <p className="text-sm" style={{ color: "#9C3B22", fontFamily: "var(--font-heading)", fontWeight: 600, margin: 0 }}>
@@ -504,10 +507,12 @@ function SplitRulesPageInner() {
       >
         {(() => {
           const problem = !saving && !dirty ? blockedMsg || lastError : null;
-          const state = saving ? "saving" : dirty ? "pending" : problem ? "problem" : saved ? "saved" : "idle";
+          // A missing monthly cap is "not finished yet", not a failure: amber, calm wording.
+          const soft = !!problem && !lastError && /monthly cap/.test(problem);
+          const state = saving ? "saving" : dirty ? "pending" : soft ? "pending" : problem ? "problem" : saved ? "saved" : "idle";
           const color = { problem: "#9C3B22", saving: "#4E22B8", pending: "#8A4B00", saved: "#4E22B8", idle: "#4A3F63" }[state];
           const dot = { problem: "#C2452B", saving: "#9A72F0", pending: "#E07A1F", saved: "#4E22B8", idle: "#CBB8F5" }[state];
-          const text = state === "problem" ? problem : saving ? "Saving…" : dirty ? "Unsaved changes" : saved ? "All changes saved" : "Changes save automatically.";
+          const text = soft && !dirty && !saving ? "Almost there: add a monthly cap to each priority row and your changes save automatically." : state === "problem" ? problem : saving ? "Saving…" : dirty ? "Unsaved changes" : saved ? "All changes saved" : "Changes save automatically.";
           return (
             <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, fontSize: 14, fontWeight: 700, color, textAlign: "center" }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: dot, display: "inline-block", flex: "none" }} />

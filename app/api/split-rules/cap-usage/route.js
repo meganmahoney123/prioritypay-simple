@@ -1,9 +1,9 @@
 import { requireUser, unauthorized } from "@/lib/apiAuth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-// Read-only numbers behind the progress bars on the Monthly / Total limit
+// Read-only numbers behind the progress bars on the Monthly cap / Total savings goal
 // cards in Split Rules: per category (by label), how much has been sent this
-// month and the running total. Same math runSplit uses to enforce the limits,
+// month and the running total. Same math runSplit uses to enforce the caps,
 // so the bar always matches what the next split will actually do.
 export async function GET() {
   const user = await requireUser();

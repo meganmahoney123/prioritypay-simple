@@ -246,7 +246,7 @@ export default function BudgetIrregularIncomePage() {
         once the category reaches it, PrioritySave sets fixed costs to 0% and switches its suggested split to Stage
         2.
       </p>
-      <h3>Three kinds of caps</h3>
+      <h3>Three ways to cap a category</h3>
       <ul>
         <li>
           <b>Monthly cap:</b> for recurring monthly costs, like fixed costs. It tracks how much you've sent to the
@@ -257,8 +257,9 @@ export default function BudgetIrregularIncomePage() {
           separate savings account, it stops at $60,000 and starts again if the balance drops.
         </li>
         <li>
-          <b>Category cap:</b> the same idea, but based on the category's balance instead of the bank balance. Use
-          this when several categories share one savings account.
+          <b>Total savings goal:</b> the same idea, but based on the category's own total (including any starting
+          balance) instead of the bank balance. Once it hits the goal, it stops taking new money. Use this when
+          several categories share one savings account.
         </li>
       </ul>
 

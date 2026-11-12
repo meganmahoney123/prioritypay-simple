@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import AccountSelect from "./AccountSelect";
 import { tierRows, priorityTiers, tierName, computeAllocations, isCoreRow, currency } from "@/lib/allocations";
 
@@ -44,6 +44,7 @@ export const TIER_CSS = `
 .pp-tier-details{width:100%;padding:4px 0 2px 19px;display:grid;gap:10px}
 .pp-tier-add{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1.5px solid ${LINE};padding:12px 0 6px;font:inherit;font-size:15px;font-weight:800;color:${PURPLE};cursor:pointer}
 .pp-tier-arrow{text-align:center;color:${PURPLE};font-weight:800;font-size:14px;padding:2px 0}
+.pp-tier-hint{font-size:13px;font-weight:600;color:#6B4FB8;width:100%}
 .pp-tier-err{font-size:13px;font-weight:700;color:#B3261E;width:100%}
 .pp-tier-acct{width:100%;max-width:420px}
 .pp-tier-acct-l{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#574A68;margin-bottom:4px}
@@ -62,14 +63,20 @@ export function TierArrow({ children }) {
   return <div className="pp-tier-arrow">↓ {children}</div>;
 }
 
-function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow }) {
+function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow, focusName }) {
   const [open, setOpen] = useState(false);
+  // The red "required" error only shows after they click out of the empty cap
+  // box, so a brand new row never starts out looking like a mistake.
+  const [touched, setTouched] = useState(false);
+  const nameRef = useRef(null);
+  useEffect(() => { if (focusName && nameRef.current) nameRef.current.focus(); }, [focusName]);
   const capMissing = !(Number(r.max) > 0);
+  const showBad = showErrors && touched && capMissing;
   return (
     <div data-rule-id={r.id} className="pp-tier-row">
       <span className="pp-tier-dot" />
-      <input className="pp-tier-name" aria-label="Bill name" placeholder="Name" value={r.label || ""} onChange={(e) => onUpdate(r.id, { label: e.target.value })} />
-      <span className={`pp-tier-cap${showErrors && capMissing ? " pp-tier-bad" : ""}`}>
+      <input ref={nameRef} className="pp-tier-name" aria-label="Bill name" placeholder="Name" value={r.label || ""} onChange={(e) => onUpdate(r.id, { label: e.target.value })} />
+      <span className={`pp-tier-cap${showBad ? " pp-tier-bad" : ""}`}>
         Monthly cap
         <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 15, color: "#241337" }}>$</span>
         <input
@@ -81,6 +88,7 @@ function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow }) {
           placeholder="Required"
           value={r.max === null || r.max === undefined ? "" : r.max}
           onFocus={(e) => e.target.select()}
+          onBlur={() => setTouched(true)}
           onChange={(e) => onUpdate(r.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
         />
       </span>
@@ -90,7 +98,8 @@ function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow }) {
         </button>
       )}
       <button type="button" className="pp-tier-x" aria-label={`Remove ${r.label || "bill"}`} onClick={() => onRemoveRow(r.id)}>✕</button>
-      {showErrors && capMissing && <div className="pp-tier-err">Enter a monthly cap to continue.</div>}
+      {showBad && <div className="pp-tier-err">Enter a monthly cap to continue.</div>}
+      {showErrors && !touched && capMissing && <div className="pp-tier-hint">Add a monthly cap to finish this row. It saves as soon as you do.</div>}
       {accounts && open && (
         <div className="pp-tier-details">
           <div className="pp-tier-acct">
@@ -106,6 +115,8 @@ function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow }) {
 export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, onAddTier, onRemoveTier, accounts, showErrors = true }) {
   const tiers = priorityTiers(percent);
   const [confirming, setConfirming] = useState(null);
+  const initialIds = useRef(null);
+  if (initialIds.current === null) initialIds.current = new Set(percent.map((r) => r.id));
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <style>{TIER_CSS}</style>
@@ -127,7 +138,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
               <Header title={tierName(t)} action={delAction} />
               <p className="pp-tier-sub">{TIER_SUB}</p>
               {rows.map((r) => (
-                <BillRow key={r.id} r={r} showErrors={showErrors} accounts={accounts} onUpdate={onUpdate} onRemoveRow={onRemoveRow} />
+                <BillRow key={r.id} r={r} showErrors={showErrors} accounts={accounts} onUpdate={onUpdate} onRemoveRow={onRemoveRow} focusName={!initialIds.current.has(r.id)} />
               ))}
               <button type="button" className="pp-tier-add" onClick={() => onAddRow(t)}>+ Add to this tier</button>
             </div>

@@ -1,12 +1,12 @@
 "use client";
 
 // Onboarding step 3 (optional): add a limit to any category.
-//   Total Category Cap  -> row.categoryCap  (stops at a total balance)
+//   Total Savings Goal  -> row.categoryCap  (stops at a total balance)
 //   Monthly Category Cap -> row.max         (stops at a monthly amount)
 // Both fields already exist in the split engine (lib/allocations.js), so this
 // screen only sets them. A blank amount is stored as "no cap", never as $1.
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const SAMPLE = 10000;
 const money = (n) => "$" + Math.round(n).toLocaleString("en-US");
@@ -168,28 +168,37 @@ function Tip({ children, text }) {
 //                           + row.startingBalance (what is already saved)
 export default function OnboardingLimits({ rows, onUpdate, priorityRows = [], onEditPriority }) {
   const live = rows.filter((r) => Number(r.pct) > 0);
-  const typeOf = (r) => (hasVal(r.max) ? "monthly" : hasVal(r.categoryCap) ? "total" : "none");
-  const [types, setTypes] = useState(() => {
+  const flagsOf = (r) => ({ monthly: hasVal(r.max), total: hasVal(r.categoryCap) });
+  const [flags, setFlags] = useState(() => {
     const t = {};
-    rows.forEach((r) => { t[r.id] = typeOf(r); });
+    rows.forEach((r) => { t[r.id] = flagsOf(r); });
     return t;
   });
-  const typeFor = (r) => types[r.id] || typeOf(r);
+  const flagsFor = (r) => flags[r.id] || flagsOf(r);
+  const [openId, setOpenId] = useState(null);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    if (!openId) return undefined;
+    const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setOpenId(null); };
+    const esc = (e) => { if (e.key === "Escape") setOpenId(null); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
+  }, [openId]);
 
-  const setType = (r, type) => {
-    const cur = typeFor(r);
-    const carry = cur === "monthly" ? r.max : cur === "total" ? r.categoryCap : null;
-    setTypes((p) => ({ ...p, [r.id]: type }));
-    onUpdate(r.id, {
-      max: type === "monthly" && hasVal(carry) ? carry : null,
-      categoryCap: type === "total" && hasVal(carry) ? carry : null,
-    });
+  // Tick or untick one kind of cap. Unticking clears that amount; the other stays.
+  const toggle = (r, kind) => {
+    const f = flagsFor(r);
+    const next = { ...f, [kind]: !f[kind] };
+    setFlags((p) => ({ ...p, [r.id]: next }));
+    if (!next[kind]) onUpdate(r.id, kind === "monthly" ? { max: null } : { categoryCap: null });
   };
-  const setAmount = (r, type, raw) => {
+  const setAmount = (r, kind, raw) => {
     const n = Number(raw);
     const v = raw === "" || !Number.isFinite(n) || n <= 0 ? null : n;
-    onUpdate(r.id, type === "monthly" ? { max: v, categoryCap: null } : { categoryCap: v, max: null });
+    onUpdate(r.id, kind === "monthly" ? { max: v } : { categoryCap: v });
   };
+  const labelFor = (f) => (f.monthly && f.total ? "Monthly cap + goal" : f.monthly ? "Monthly cap" : f.total ? "Total savings goal" : "No cap");
 
   const priorityList = priorityRows
     .filter((r) => hasVal(r.max))
@@ -205,7 +214,13 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [], on
         .pp-cap-dot{width:9px;height:9px;border-radius:50%;background:#9A72F0;flex:none}
         .pp-cap-name{flex:1 1 130px;min-width:0;font-size:17px;font-weight:700;overflow-wrap:anywhere}
         .pp-cap-pct{background:#F4EEFF;border-radius:999px;padding:4px 12px;font-family:${MONO};font-weight:700;font-size:16px;color:${PURPLE}}
-        .pp-cap-sel{min-width:170px;height:40px;font:inherit;font-size:15px;font-weight:700;color:#241337;border:2px solid #D9C9FF;border-radius:12px;padding:0 10px;background:#fff}
+        .pp-cap-menu{position:relative}
+        .pp-cap-sel{min-width:190px;height:40px;display:flex;align-items:center;justify-content:space-between;gap:10px;font:inherit;font-size:15px;font-weight:700;color:#241337;border:2px solid #D9C9FF;border-radius:12px;padding:0 12px;background:#fff;cursor:pointer}
+        .pp-cap-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:100%;background:#fff;border:2px solid #9A72F0;border-radius:12px;padding:6px;box-shadow:0 10px 24px rgba(78,34,184,.15)}
+        .pp-cap-opt{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:15px;font-weight:700;color:#241337;cursor:pointer;white-space:nowrap}
+        .pp-cap-opt:hover{background:#F4EEFF}
+        .pp-cap-opt input{width:18px;height:18px;accent-color:#4E22B8}
+        .pp-cap-both{width:100%;font-size:13px;font-weight:600;color:#6B4FB8}
         .pp-cap-detail{width:100%;display:flex;gap:8px;flex-wrap:wrap;padding:0 0 4px 19px}
         .pp-cap-chip{display:inline-flex;align-items:center;gap:6px;border:2px solid #9A72F0;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:800;color:${PURPLE};white-space:nowrap}
         .pp-cap-chip.soft{border-color:#D9C9FF}
@@ -254,50 +269,53 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [], on
           <span style={{ fontSize: 13, fontWeight: 700, color: "#8A7FA0" }}>Optional caps</span>
         </div>
         <p style={{ fontSize: 14, lineHeight: 1.5, color: "#4A3F63", margin: "0 0 4px" }}>
-          Add a monthly cap or a total savings goal to any category you want to stop funding once it is full. Monthly caps reset each month.
+          Tick a monthly cap, a total savings goal, or both for any category you want to stop funding once it is full. Monthly caps reset each month.
           Total savings goals reset when the category dips below the target savings amount.
         </p>
         {live.map((r) => {
-          const type = typeFor(r);
+          const f = flagsFor(r);
+          const isOpen = openId === r.id;
           return (
             <div className="pp-cap-row" key={r.id}>
               <span className="pp-cap-dot" />
               <span className="pp-cap-name">{r.label}</span>
               <span className="pp-cap-pct">{Math.round((Number(r.pct) || 0) * 100) / 100}%</span>
-              <select className="pp-cap-sel" aria-label={`Cap for ${r.label}`} value={type} onChange={(e) => setType(r, e.target.value)}>
-                <option value="none">No cap</option>
-                <option value="monthly">Monthly cap</option>
-                <option value="total">Total savings goal</option>
-              </select>
-              {type !== "none" && (
+              <div className="pp-cap-menu" ref={isOpen ? menuRef : null}>
+                <button type="button" className="pp-cap-sel" aria-haspopup="true" aria-expanded={isOpen} aria-label={`Cap for ${r.label}`} onClick={() => setOpenId(isOpen ? null : r.id)}>
+                  <span>{labelFor(f)}</span><span aria-hidden="true">▾</span>
+                </button>
+                {isOpen && (
+                  <div className="pp-cap-pop" role="group" aria-label={`Cap types for ${r.label}`}>
+                    <label className="pp-cap-opt"><input type="checkbox" checked={f.monthly} onChange={() => toggle(r, "monthly")} />Monthly cap</label>
+                    <label className="pp-cap-opt"><input type="checkbox" checked={f.total} onChange={() => toggle(r, "total")} />Total savings goal</label>
+                  </div>
+                )}
+              </div>
+              {(f.monthly || f.total) && (
                 <div className="pp-cap-detail">
-                  <label className="pp-cap-chip">
-                    {type === "monthly" ? "Monthly cap" : "Goal"} $
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={1}
-                      step="any"
-                      aria-label={`${r.label} ${type === "monthly" ? "monthly cap" : "savings goal"} amount`}
-                      placeholder={type === "monthly" ? "1,500" : "25,000"}
-                      value={hasVal(type === "monthly" ? r.max : r.categoryCap) ? (type === "monthly" ? r.max : r.categoryCap) : ""}
-                      onChange={(e) => setAmount(r, type, e.target.value)}
-                    />
-                  </label>
-                  {type === "total" && (
-                    <label className="pp-cap-chip soft">
-                      <Tip text={START_TIP}>Starting balance</Tip> $
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        step="any"
-                        aria-label={`${r.label} starting balance`}
-                        placeholder="0"
-                        value={r.startingBalance ?? ""}
-                        onChange={(e) => onUpdate(r.id, { startingBalance: e.target.value.replace(/^0+(?=\d)/, "") })}
-                      />
+                  {f.monthly && (
+                    <label className="pp-cap-chip">
+                      Monthly cap $
+                      <input type="number" inputMode="decimal" min={1} step="any" aria-label={`${r.label} monthly cap amount`} placeholder="1,500"
+                        value={hasVal(r.max) ? r.max : ""} onChange={(e) => setAmount(r, "monthly", e.target.value)} />
                     </label>
+                  )}
+                  {f.total && (
+                    <>
+                      <label className="pp-cap-chip">
+                        Goal $
+                        <input type="number" inputMode="decimal" min={1} step="any" aria-label={`${r.label} savings goal amount`} placeholder="25,000"
+                          value={hasVal(r.categoryCap) ? r.categoryCap : ""} onChange={(e) => setAmount(r, "total", e.target.value)} />
+                      </label>
+                      <label className="pp-cap-chip soft">
+                        <Tip text={START_TIP}>Starting balance</Tip> $
+                        <input type="number" inputMode="decimal" min={0} step="any" aria-label={`${r.label} starting balance`} placeholder="0"
+                          value={r.startingBalance ?? ""} onChange={(e) => onUpdate(r.id, { startingBalance: e.target.value.replace(/^0+(?=\d)/, "") })} />
+                      </label>
+                    </>
+                  )}
+                  {f.monthly && f.total && (
+                    <div className="pp-cap-both">Using both? Whichever limit is reached first stops new money for this category.</div>
                   )}
                 </div>
               )}
