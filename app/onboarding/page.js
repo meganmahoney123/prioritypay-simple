@@ -10,7 +10,7 @@ import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SimpleSplitCard from "@/components/SimpleSplitCard";
 import OnboardingLimits from "@/components/OnboardingLimits";
-import TierCards from "@/components/TierCards";
+import TierCards, { TierLastCard, TierExample } from "@/components/TierCards";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, setTierPct } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
@@ -1179,18 +1179,10 @@ function OnboardingPageInner() {
               onSetPct={setTierPercent}
               onAddRow={addTier}
               onRemoveRow={removeTier}
-              showErrors={showTierErrors}
             />
+            <div style={{ height: 12 }} />
 
-            <div style={{ margin: "6px 0 14px" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4E22B8" }}>Tier 3 · Last: everything else</div>
-              <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "4px 0 0" }}>
-                Splits whatever is left. This is the last tier, so no caps are needed, and it can add up to less than 100%. Anything
-                not assigned stays where your deposit lands.
-              </p>
-            </div>
-
-            <SimpleSplitCard
+            <TierLastCard
               rows={lastTierRows}
               onUpdate={updatePercent}
               onRemove={removeFromStep2}
@@ -1199,6 +1191,8 @@ function OnboardingPageInner() {
             />
 
             <AddCategoryCard style={{ marginTop: 22 }} suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
+
+            <div style={{ marginTop: 18 }}><TierExample percent={percent} /></div>
 
             {needsRetirement && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "16px 0 0" }}>

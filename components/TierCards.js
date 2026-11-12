@@ -1,18 +1,20 @@
 "use client";
 
 import AccountSelect from "./AccountSelect";
-import { tierRows, tierTotals } from "@/lib/allocations";
+import { tierRows, tierTotals, computeAllocations, isCoreRow, currency } from "@/lib/allocations";
 
-// Tier 1 ("paid first") and tier 2 ("fixed bills") of the deposit waterfall.
-// Every row has a percent (of what reaches its tier) and a REQUIRED monthly
-// cap. The percents in a tier add up to exactly 100%. The last tier (everything
-// else, no required caps) is not drawn here: each page keeps its own list for it.
+// The tiered Deposit Splits layout (see the "Set your splits" design): Tier 1
+// (paid first), Tier 2 (fixed bills) and the last tier, each a purple-outlined
+// card with a header, a one-line explainer and plain rows. Tier 1 and 2 rows have a
+// percent (of what reaches the tier) and a REQUIRED monthly cap, and each tier
+// adds up to exactly 100%. The last tier needs no caps and may add up to less.
 //
-// Used by onboarding (no account pickers yet -- those come in a later step) and
-// by the Deposit Splits page (`accounts` passed, so each bill can pick one).
+// Used by onboarding (no account pickers yet) and by Deposit Splits
+// (`accounts` passed, so each bill can pick the account it is paid from).
 
 const PURPLE = "#4E22B8";
 const LINE = "#E7DEFA";
+const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
 
 const TIERS = [
   {
@@ -20,39 +22,61 @@ const TIERS = [
     title: "Tier 1 · Paid first",
     sub: "Takes its percent of each deposit until its monthly cap is reached. Every row needs a cap.",
     empty: "Nothing here yet. Add a bill you want paid before anything else, like rent.",
-    addLabel: "Add a bill",
-    newLabel: "New bill",
   },
   {
     tier: 2,
     title: "Tier 2 · Fixed bills",
-    sub: "Splits what flows down from tier 1. Every row needs a cap; extra from a capped row goes to the others.",
+    sub: "Splits what flows down from tier 1. Each row needs a cap; extra from a capped row goes to the others.",
     empty: "Nothing here yet. Add other bills that should come before savings.",
-    addLabel: "Add a bill",
-    newLabel: "New bill",
   },
 ];
 
-const inputBase = {
-  border: "2px solid #D9C9FF",
-  borderRadius: 12,
-  padding: "8px 10px",
-  fontSize: 16,
-  background: "#fff",
-  color: "#241337",
-  minWidth: 0,
-};
+const CSS = `
+.pp-tier-card{background:#fff;border:2px solid #9A72F0;border-radius:22px;padding:6px 20px 8px}
+.pp-tier-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 0 2px}
+.pp-tier-title{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:${PURPLE}}
+.pp-tier-sub{font-size:14px;line-height:1.5;color:#4A3F63;margin:0 0 4px}
+.pp-tier-row{padding:13px 0;border-top:1.5px solid ${LINE};display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pp-tier-dot{width:9px;height:9px;border-radius:50%;background:#9A72F0;flex:none}
+.pp-tier-name{flex:1 1 130px;min-width:0;font:inherit;font-size:17px;font-weight:700;color:inherit;background:transparent;border:1.5px solid transparent;border-radius:10px;padding:4px 6px;margin-left:-6px}
+.pp-tier-name:hover,.pp-tier-name:focus{border-color:#D9C9FF;background:#fff;outline:none}
+.pp-tier-namefixed{flex:1 1 130px;min-width:0;font-size:17px;font-weight:700}
+.pp-tier-pill{display:inline-flex;align-items:center;gap:2px;background:#F4EEFF;border-radius:999px;padding:4px 12px;font-family:${MONO};font-weight:700;font-size:16px;color:${PURPLE};white-space:nowrap}
+.pp-tier-pill input{width:44px;border:0;background:transparent;font:inherit;color:inherit;text-align:right;padding:2px 0;outline:none;-moz-appearance:textfield}
+.pp-tier-pill input::-webkit-outer-spin-button,.pp-tier-pill input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pp-tier-pill input:focus{background:#fff;border-radius:6px}
+.pp-tier-pill input[readonly]{cursor:default}
+.pp-tier-cap{display:inline-flex;align-items:center;gap:6px;border:2px solid #9A72F0;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:800;color:${PURPLE};white-space:nowrap}
+.pp-tier-cap input{width:62px;border:0;background:transparent;font-family:${MONO};font-weight:700;font-size:15px;color:#241337;text-align:right;padding:2px 0;outline:none;-moz-appearance:textfield}
+.pp-tier-cap input::-webkit-outer-spin-button,.pp-tier-cap input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pp-tier-cap.pp-tier-bad{border-color:#B3261E}
+.pp-tier-x{width:30px;height:30px;border:0;background:transparent;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#8A7FA0;font-size:15px;font-weight:800}
+.pp-tier-x:hover{background:#F3EEFF;color:#4A3F63}
+.pp-tier-add{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1.5px solid ${LINE};padding:12px 0 6px;font:inherit;font-size:15px;font-weight:800;color:${PURPLE};cursor:pointer}
+.pp-tier-arrow{text-align:center;color:${PURPLE};font-weight:800;font-size:14px;padding:2px 0}
+.pp-tier-err{font-size:13px;font-weight:700;color:#B3261E;width:100%}
+.pp-tier-acct{width:100%;max-width:420px}
+.pp-tier-acct-l{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#574A68;margin-bottom:4px}
+`;
 
-function Arrow({ children }) {
+function Header({ title, total, ok, show = true }) {
   return (
-    <div style={{ textAlign: "center", color: PURPLE, fontWeight: 800, fontSize: 14, padding: "2px 0" }}>↓ {children}</div>
+    <div className="pp-tier-head">
+      <div className="pp-tier-title">{title}</div>
+      <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: ok ? PURPLE : "#B3261E", whiteSpace: "nowrap" }}>{show ? total : ""}</span>
+    </div>
   );
 }
 
-export default function TierCards({ percent, onUpdate, onSetPct, onAddRow, onRemoveRow, accounts, showErrors = false }) {
+export function TierArrow({ children }) {
+  return <div className="pp-tier-arrow">↓ {children}</div>;
+}
+
+export default function TierCards({ percent, onUpdate, onSetPct, onAddRow, onRemoveRow, accounts, showErrors = true }) {
   const totals = tierTotals(percent);
   return (
     <div style={{ display: "grid", gap: 12 }}>
+      <style>{CSS}</style>
       {TIERS.map((cfg, i) => {
         const rows = tierRows(percent, cfg.tier);
         const total = totals[cfg.tier];
@@ -60,86 +84,55 @@ export default function TierCards({ percent, onUpdate, onSetPct, onAddRow, onRem
         const sole = rows.length === 1;
         return (
           <div key={cfg.tier} style={{ display: "grid", gap: 12 }}>
-            <div style={{ background: "#fff", border: "2px solid #9A72F0", borderRadius: 22, padding: "6px 20px 10px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "12px 0 2px" }}>
-                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: PURPLE }}>{cfg.title}</div>
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontWeight: 700,
-                    fontSize: 14,
-                    color: totalOk ? PURPLE : "#B3261E",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {rows.length === 0 ? "" : totalOk ? "100%" : `${total}% · needs 100%`}
-                </span>
-              </div>
-              <div style={{ fontSize: 14, lineHeight: 1.5, color: "#4A3F63", marginBottom: 4 }}>{cfg.sub}</div>
+            <div className="pp-tier-card">
+              <Header title={cfg.title} total={totalOk ? "100%" : `${total}% · needs 100%`} ok={totalOk} show={rows.length > 0} />
+              <p className="pp-tier-sub">{cfg.sub}</p>
 
               {rows.length === 0 && (
-                <div style={{ padding: "12px 0", fontSize: 15, color: "#574A68", borderTop: `1.5px solid ${LINE}` }}>{cfg.empty}</div>
+                <div className="pp-tier-row" style={{ fontSize: 15, color: "#574A68" }}>{cfg.empty}</div>
               )}
 
               {rows.map((r) => {
                 const capMissing = !(Number(r.max) > 0);
                 return (
-                  <div key={r.id} data-rule-id={r.id} style={{ padding: "12px 0", borderTop: `1.5px solid ${LINE}`, display: "grid", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <div key={r.id} data-rule-id={r.id} className="pp-tier-row">
+                    <span className="pp-tier-dot" />
+                    <input className="pp-tier-name" aria-label="Bill name" placeholder="Name" value={r.label || ""} onChange={(e) => onUpdate(r.id, { label: e.target.value })} />
+                    <span className="pp-tier-pill">
                       <input
-                        aria-label="Bill name"
-                        value={r.label || ""}
-                        onChange={(e) => onUpdate(r.id, { label: e.target.value })}
-                        placeholder="Name"
-                        style={{ ...inputBase, flex: "1 1 150px", fontWeight: 700 }}
+                        aria-label={`${r.label || "Bill"} percent`}
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        max={100}
+                        step="0.01"
+                        readOnly={sole}
+                        value={sole ? 100 : r.pct === 0 ? "0" : r.pct ?? ""}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => onSetPct(r.id, e.target.value)}
                       />
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        <input
-                          aria-label={`${r.label || "Bill"} percent`}
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          max={100}
-                          step="0.01"
-                          readOnly={sole}
-                          value={sole ? 100 : r.pct === 0 ? "0" : r.pct ?? ""}
-                          onFocus={(e) => e.target.select()}
-                          onChange={(e) => onSetPct(r.id, e.target.value)}
-                          style={{ ...inputBase, width: 84, textAlign: "right", background: sole ? "#F4EEFF" : "#fff" }}
-                        />
-                        <span style={{ fontWeight: 700 }}>%</span>
-                      </label>
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: PURPLE, whiteSpace: "nowrap" }}>Monthly cap</span>
-                        <span style={{ fontWeight: 700 }}>$</span>
-                        <input
-                          aria-label={`${r.label || "Bill"} monthly cap`}
-                          type="number"
-                          inputMode="decimal"
-                          min={1}
-                          step="1"
-                          placeholder="Required"
-                          value={r.max === null || r.max === undefined ? "" : r.max}
-                          onFocus={(e) => e.target.select()}
-                          onChange={(e) => onUpdate(r.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
-                          style={{ ...inputBase, width: 110, textAlign: "right", borderColor: showErrors && capMissing ? "#B3261E" : "#D9C9FF" }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        aria-label={`Remove ${r.label || "bill"}`}
-                        onClick={() => onRemoveRow(r.id)}
-                        style={{ background: "#fff", border: "1px solid #D9C9FF", borderRadius: 10, padding: "6px 10px", fontWeight: 800, color: "#574A68", cursor: "pointer" }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    {showErrors && capMissing && (
-                      <div style={{ fontSize: 13, color: "#B3261E", fontWeight: 700 }}>Enter a monthly cap to continue.</div>
-                    )}
+                      %
+                    </span>
+                    <span className={`pp-tier-cap${showErrors && capMissing ? " pp-tier-bad" : ""}`}>
+                      Monthly cap
+                      <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 15, color: "#241337" }}>$</span>
+                      <input
+                        aria-label={`${r.label || "Bill"} monthly cap`}
+                        type="number"
+                        inputMode="decimal"
+                        min={1}
+                        step="1"
+                        placeholder="Required"
+                        value={r.max === null || r.max === undefined ? "" : r.max}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => onUpdate(r.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
+                      />
+                    </span>
+                    <button type="button" className="pp-tier-x" aria-label={`Remove ${r.label || "bill"}`} onClick={() => onRemoveRow(r.id)}>✕</button>
+                    {showErrors && capMissing && <div className="pp-tier-err">Enter a monthly cap to continue.</div>}
                     {accounts && (
-                      <div style={{ maxWidth: 420 }}>
-                        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#574A68", marginBottom: 4 }}>Paid from</div>
+                      <div className="pp-tier-acct">
+                        <div className="pp-tier-acct-l">Paid from</div>
                         <AccountSelect value={r.accountId || ""} onChange={(id) => onUpdate(r.id, { accountId: id })} accounts={accounts} />
                       </div>
                     )}
@@ -148,23 +141,99 @@ export default function TierCards({ percent, onUpdate, onSetPct, onAddRow, onRem
               })}
 
               {rows.length > 1 && !totalOk && (
-                <div style={{ padding: "10px 0 2px", fontSize: 14, fontWeight: 700, color: "#B3261E" }}>
+                <div className="pp-tier-row" style={{ color: "#B3261E", fontSize: 14, fontWeight: 700 }}>
                   The percents in this tier add up to {total}%. Adjust them to total exactly 100%.
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => onAddRow(cfg.tier)}
-                style={{ width: "100%", marginTop: 8, background: "transparent", border: "1px dashed #C4A9FA", borderRadius: 16, padding: "10px 14px", cursor: "pointer", fontSize: 15, fontWeight: 700, color: PURPLE }}
-              >
-                + {cfg.addLabel}
-              </button>
+              <button type="button" className="pp-tier-add" onClick={() => onAddRow(cfg.tier)}>+ Add to this tier</button>
             </div>
-            <Arrow>{i === 0 ? "What is left after the caps flows down" : "Then what is left flows down"}</Arrow>
+            <TierArrow>{i === 0 ? "What is left after the caps flows down" : "Then what is left flows down"}</TierArrow>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Onboarding's last tier, drawn like the two above: plain rows with a percent
+// pill, no caps. Core rows (Tax Reserve, Savings...) keep their name fixed.
+export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, children }) {
+  const total = Math.round(rows.reduce((n, r) => n + (Number(r.pct) || 0), 0) * 100) / 100;
+  const stays = Math.round(Math.max(0, 100 - total) * 100) / 100;
+  const over = total > 100.0001;
+  return (
+    <div className="pp-tier-card">
+      <style>{CSS}</style>
+      <Header title="Tier 3 · Last: everything else" total={`${total}%`} ok={!over} />
+      <p className="pp-tier-sub">
+        Splits whatever is left. This is the last tier, so no caps. It can add up to less than 100%
+        {stays > 0 ? `: ${stays}% stays where your deposit lands.` : "."}
+      </p>
+      {rows.map((r) => {
+        const editableName = !isCoreRow(r, persona);
+        return (
+          <div key={r.id}>
+            <div className="pp-tier-row">
+              <span className="pp-tier-dot" />
+              {editableName ? (
+                <input className="pp-tier-name" aria-label="Category name" value={r.label} onChange={(e) => onUpdate(r.id, { label: e.target.value })} onFocus={(e) => e.target.select()} />
+              ) : (
+                <span className="pp-tier-namefixed">{r.label}</span>
+              )}
+              <span className="pp-tier-pill">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step="any"
+                  aria-label={`${r.label} percent`}
+                  value={r.pct === 0 || r.pct === "0" ? 0 : r.pct ?? ""}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => onUpdate(r.id, { pct: e.target.value })}
+                />
+                %
+              </span>
+              <button type="button" className="pp-tier-x" aria-label={`Remove ${r.label}`} onClick={() => onRemove(r.id)}>✕</button>
+            </div>
+            {overflow && overflow.id === r.id && (
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: "#B42318", margin: "0 0 8px" }}>{overflow.message}</p>
+            )}
+          </div>
+        );
+      })}
+      {children}
+    </div>
+  );
+}
+
+// "Example: a $3,000 deposit." -- the same engine the real split uses, run on
+// what is on screen, so it updates as someone edits.
+const EXAMPLE = 3000;
+export function TierExample({ percent }) {
+  const { allocated } = computeAllocations({ fixed: [], percent }, EXAMPLE);
+  const amt = (r) => allocated[r.id] || 0;
+  const list = (arr) => (arr.length <= 1 ? arr[0] || "" : `${arr.slice(0, -1).join(", ")} and ${arr[arr.length - 1]}`);
+  const sentences = [];
+  let used = 0;
+  [1, 2].forEach((t) => {
+    const rows = tierRows(percent, t).filter((r) => amt(r) > 0.005);
+    if (!rows.length) return;
+    rows.forEach((r) => { used += amt(r); });
+    sentences.push(`Tier ${t} sends ${list(rows.map((r) => `${currency(amt(r))} to ${r.label}`))}.`);
+  });
+  const left = Math.max(0, EXAMPLE - used);
+  const last = tierRows(percent, 0).filter((r) => amt(r) > 0.005);
+  const lastSum = last.reduce((n, r) => n + amt(r), 0);
+  const stays = Math.max(0, left - lastSum);
+  if (last.length) {
+    sentences.push(`The remaining ${currency(left)} goes to tier 3${stays > 0.005 ? `, and ${currency(stays)} of it stays where your deposit landed` : ""}.`);
+  }
+  if (!sentences.length) return null;
+  return (
+    <div style={{ background: "#EDE6FF", borderRadius: 14, padding: "12px 16px", fontSize: 14, lineHeight: 1.55 }}>
+      <b style={{ color: PURPLE }}>Example: a {currency(EXAMPLE)} deposit.</b> {sentences.join(" ")}
     </div>
   );
 }
