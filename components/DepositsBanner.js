@@ -66,7 +66,7 @@ export default function DepositsBanner({ refreshKey }) {
           {info.count}
         </div>
         <div>
-          <div style={{ fontSize: 19, fontWeight: 600 }}>
+          <div style={{ fontSize: 17, fontWeight: 600 }}>
             {info.count} {info.count === 1 ? "deposit is" : "deposits are"} ready to split
           </div>
           <div style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>

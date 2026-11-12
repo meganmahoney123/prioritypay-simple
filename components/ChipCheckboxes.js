@@ -17,7 +17,7 @@ export default function ChipCheckboxes({ options, selected, onToggle, pill = fal
               fontFamily: "var(--font-body)",
               fontSize: 14.5,
               padding: pill ? "9px 18px" : "10px 14px",
-              borderRadius: pill ? 999 : "var(--radius-md)",
+              borderRadius: pill ? 12 : "var(--radius-md)",
               border: pill ? `2px solid ${on ? "#4E22B8" : "#D9C9FF"}` : `1px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`,
               fontWeight: pill ? 800 : undefined,
               background: pill ? (on ? "#EDE6FF" : "#fff") : on ? "color-mix(in srgb, var(--color-accent) 7%, transparent)" : "transparent",

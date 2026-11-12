@@ -37,22 +37,23 @@ function currency(n) {
 // Same look as the Bills and Autopays tab: white card, purple outline, small
 // spaced-out grey labels, big monospace numbers, thicker hairline dividers.
 const cardStyle = {
-  border: "1px solid #DDD5F3",
+  border: "1px solid var(--color-divider)",
+  boxShadow: "var(--shadow-sm)",
   borderRadius: 14,
   background: "#fff",
   color: "var(--color-text)",
-  padding: "24px 26px",
+  padding: "20px 22px",
 };
-const eyebrow = { fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280" };
-const bigNumber = { fontSize: 34, fontWeight: 600, lineHeight: 1.15, marginTop: 6, color: "#241337" };
-const divider = { height: 2, background: "#E7DEFA", margin: "14px 0 10px" };
+const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280" };
+const bigNumber = { fontSize: 26, fontWeight: 600, lineHeight: 1.15, marginTop: 4, color: "#241337" };
+const divider = { height: 1, background: "#E7DEFA", margin: "14px 0 10px" };
 const minus = { color: "#9C3B22" };
 
 function Breakdown({ items }) {
   return (
     <div className="flex flex-col gap-1.5">
       {items.map((c) => (
-        <div key={c.label} className="flex items-center justify-between" style={{ fontSize: 17, fontWeight: 600, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
+        <div key={c.label} className="flex items-center justify-between" style={{ fontSize: 15, fontWeight: 500, padding: "5px 0", borderTop: "1px solid #E7DEFA" }}>
           <span className="flex items-center gap-2 min-w-0">
             <span className="shrink-0" style={{ width: 11, height: 11, borderRadius: "50%", backgroundColor: colorForLabel(c.label) }} />
             <span className="truncate">{c.label}</span>
@@ -90,7 +91,7 @@ function DepositRow({ d }) {
 // opens the popup with the full details (who it was from).
 function CompactDepositRow({ d }) {
   return (
-    <div className="flex items-center justify-between gap-3" style={{ fontSize: 17, fontWeight: 600, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
+    <div className="flex items-center justify-between gap-3" style={{ fontSize: 15, fontWeight: 500, padding: "5px 0", borderTop: "1px solid #E7DEFA" }}>
       <span>{shortDate(d.date)}</span>
       <span className="font-mono shrink-0" style={{ color: "#241337" }}>{currency(d.amount)}</span>
     </div>
@@ -226,24 +227,24 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
       {/* Guilt-free spending available */}
       <div style={cardStyle}>
         <div style={eyebrow}>Guilt-Free Spending Available</div>
-        <div className="font-mono" style={{ ...bigNumber, fontSize: 34, color: "#0F6B4F" }}>
+        <div className="font-mono" style={{ ...bigNumber, fontSize: 26, color: "#0F6B4F" }}>
           {currency(guiltFree)}
         </div>
         {rangeLabel && <div style={{ fontSize: 15, color: "#4A3F63", marginTop: 2 }}>{rangeLabel}</div>}
         <div style={divider} />
-        <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 17 }}>
+        <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 15 }}>
           <div className="flex justify-between gap-3" style={{ color: "#241337" }}>
-            <span className="font-sans font-semibold">Total income</span>
+            <span className="font-sans font-medium">Total income</span>
             <span>{currency(totalDeposited)}</span>
           </div>
           {cardCharges > 0 && (
             <div className="flex justify-between gap-3" style={minus}>
-              <span className="font-sans font-semibold">− Credit card payments</span>
+              <span className="font-sans font-medium">− Credit card payments</span>
               <span>{currency(cardCharges)}</span>
             </div>
           )}
           <div className="flex justify-between gap-3" style={minus}>
-            <span className="font-sans font-semibold">− Saved {periodWord}</span>
+            <span className="font-sans font-medium">− Saved {periodWord}</span>
             <span>{currency(savedTotal)}</span>
           </div>
         </div>

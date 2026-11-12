@@ -373,15 +373,15 @@ export default function AccountsPage() {
         {depositoryAccounts.length > 0 && (
           <div
             style={{
-              border: "1px solid var(--color-accent-300)", borderRadius: "var(--radius-lg)",
-              background: "var(--color-accent-200)", color: "var(--color-accent-800)",
-              padding: "26px 30px",
+              border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)",
+              background: "#fff", color: "var(--color-text)",
+              padding: "20px 22px",
             }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280" }}>
               Guilt-Free Spending Available
             </div>
-            <div className="font-mono" style={{ fontSize: 40, fontWeight: 600, marginTop: 4, color: "var(--color-accent-900)" }}>
+            <div className="font-mono" style={{ fontSize: 28, fontWeight: 600, marginTop: 4, color: "var(--color-text)" }}>
               {currency(guiltFreeAvailable)}
             </div>
             <div style={{ height: 1, background: "var(--color-accent-300)", margin: "18px 0 14px" }} />
