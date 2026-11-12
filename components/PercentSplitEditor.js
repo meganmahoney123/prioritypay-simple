@@ -972,7 +972,7 @@ export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow
         <span style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, fontSize: 14, color: total > 100.0001 ? "#B3261E" : "#4E22B8", whiteSpace: "nowrap" }}>{total}%</span>
       </div>
       <p className="pp-tier-sub">
-        Splits whatever is left. No caps are needed, and it can add up to less than 100%{stays > 0 ? `: ${stays}% stays where your deposit lands.` : "."}
+        This is the final tier. The percentages below do NOT need to add up to 100% of your deposit. For example, you could schedule just 75% of each deposit to be split among the categories below.
       </p>
       {rows.map((rule) => (
         <PercentRow

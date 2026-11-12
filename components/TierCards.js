@@ -158,8 +158,7 @@ export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, titl
       <style>{TIER_CSS}</style>
       <Header title={title} total={`${total}%`} ok={!over} />
       <p className="pp-tier-sub">
-        Splits whatever is left by percent. This is the last tier, so no caps. It can add up to less than 100%
-        {stays > 0 ? `: ${stays}% stays where your deposit lands.` : "."}
+        This is the final tier. The percentages below do NOT need to add up to 100% of your deposit. For example, you could schedule just 75% of each deposit to be split among the categories below.
       </p>
       {rows.map((r) => {
         const editableName = !isCoreRow(r, persona);
