@@ -10,7 +10,8 @@ import ChipCheckboxes from "./ChipCheckboxes";
 import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
 import SplitPreviewPie from "./SplitPreviewPie";
 import { CapExplainer } from "@/components/OnboardingLimits";
-import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, RETIREMENT_GROUP_SUBTEXT, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom } from "@/lib/allocations";
+import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, RETIREMENT_GROUP_SUBTEXT, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom, tierOf } from "@/lib/allocations";
+import { TIER_CSS } from "./TierCards";
 import { bloomWarningCardStyle } from "@/lib/bloomTheme";
 
 // Purple ramp used for each row's colour dot in the Bloom-styled ("ledger"
@@ -201,7 +202,7 @@ function flattenSelfEmployedRetirement(sections) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, readOnly, lockLabel, persona, startingBalanceRoomInfo }) {
+function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, readOnly, lockLabel, persona, startingBalanceRoomInfo, tierStyle }) {
   const locked = isCoreRow(rule, persona) || !!lockLabel || !!readOnly;
   // A starting balance only ever counts as money already sitting in THIS
   // row's own connected account (see the PUT /api/split-rules validation
@@ -230,7 +231,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
   // is the main density fix for this step. Local to each row's own render
   // rather than lifted to the parent, since nothing outside this row ever
   // needs to know whether its caps panel happens to be open.
-  const [showLimits, setShowLimits] = useState(false);
+  const [showLimits, setShowLimits] = useState(!!tierStyle);
+  // Deposit Splits (tier style): the extras live behind "See more".
+  const [tierOpen, setTierOpen] = useState(false);
   // Every row shows its name the same way once added (like "Savings"); a
   // brand-new unnamed row starts in edit mode, and the pencil renames any
   // custom row later.
@@ -265,7 +268,49 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
 
   if (theme === "ledger") {
     return (
-      <div data-rule-id={rule.id} style={{ border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
+      <div data-rule-id={rule.id} style={tierStyle ? { borderTop: "1.5px solid #E7DEFA", padding: "13px 0" } : { border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
+        {tierStyle ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span className="pp-tier-dot" />
+              {canRename ? (
+                <input
+                  className="pp-tier-name"
+                  aria-label="Category name"
+                  value={rule.label}
+                  placeholder="Name this category"
+                  onChange={(e) => onUpdate(rule.id, { label: e.target.value })}
+                  onFocus={(e) => e.target.select()}
+                />
+              ) : (
+                <span className="pp-tier-namefixed">{rule.label}</span>
+              )}
+              <span className="pp-tier-pill">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step="any"
+                  aria-label={`${rule.label} percent`}
+                  value={rule.pct === 0 || rule.pct === "0" ? 0 : rule.pct ?? ""}
+                  disabled={isEmployerRetirementRow(rule) && rule.employerHandles}
+                  readOnly={!!readOnly}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => onUpdate(rule.id, { pct: e.target.value })}
+                />
+                %
+              </span>
+              <button type="button" className="pp-tier-more" aria-expanded={tierOpen} onClick={() => setTierOpen((v) => !v)}>
+                {tierOpen ? "See less ▴" : "See more ▾"}
+              </button>
+              {canDelete && (
+                <button type="button" className="pp-tier-x" aria-label={`Remove ${rule.label}`} onClick={() => onRemove(rule.id)}>✕</button>
+              )}
+            </div>
+            {overflowMessage && <p style={{ fontSize: 13, lineHeight: 1.5, color: "#B42318", margin: "6px 0 0" }}>{overflowMessage}</p>}
+          </>
+        ) : (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px 20px" }}>
           {!(canRename && editingName) ? (
             <span
@@ -379,7 +424,10 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             )}
           </span>
         </div>
-        {overflowMessage && (
+        )}
+        {(!tierStyle || tierOpen) && (
+        <div className={tierStyle ? "pp-tier-details" : undefined} style={tierStyle ? { paddingTop: 4 } : undefined}>
+        {!tierStyle && overflowMessage && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: "#9C3B22", margin: "8px 0 0" }}>{overflowMessage}</p>
         )}
         {!hideAccountPicker && isEmployerRetirementRow(rule) && (
@@ -473,6 +521,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
         )}
         {!readOnly && (!isGrouped || !hideStartingBalance) && (
           <div style={{ marginTop: 4 }}>
+            {!tierStyle && (
             <button
               type="button"
               onClick={() => setShowLimits((v) => !v)}
@@ -495,6 +544,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                 ? "Add monthly or total limits"
                 : "Add a starting balance"}
             </button>
+            )}
             <div>
               <button
                 type="button"
@@ -724,6 +774,8 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
             theme="ledger"
           />
         )}
+        </div>
+        )}
       </div>
     );
   }
@@ -904,6 +956,48 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
 //
 // `theme="ledger"` opts a caller into the new visual system without
 // changing this component's behavior -- see the module comment above.
+// Deposit Splits' last tier: the same compact card as tiers 1 and 2, one row per
+// category. "See more" on a row opens its bank account, monthly / total cap and
+// starting balance (the same controls as before).
+export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow, onAccountLinked, creating, setCreating, connecting, setConnecting, pctOverflow, persona, children , title = "Everything else" }) {
+  const rows = (percent || []).filter((r) => tierOf(r) === 0);
+  const total = roundPct(rows.reduce((n, r) => n + (Number(r.pct) || 0), 0));
+  const stays = roundPct(Math.max(0, 100 - total));
+  const { byRuleId: roomById } = computeStartingBalanceRoom(percent, accounts);
+  return (
+    <div className="pp-tier-card">
+      <style>{TIER_CSS}</style>
+      <div className="pp-tier-head">
+        <div className="pp-tier-title">{title}</div>
+        <span style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, fontSize: 14, color: total > 100.0001 ? "#B3261E" : "#4E22B8", whiteSpace: "nowrap" }}>{total}%</span>
+      </div>
+      <p className="pp-tier-sub">
+        Splits whatever is left. No caps are needed, and it can add up to less than 100%{stays > 0 ? `: ${stays}% stays where your deposit lands.` : "."}
+      </p>
+      {rows.map((rule) => (
+        <PercentRow
+          key={rule.id}
+          rule={rule}
+          accounts={accounts}
+          onUpdate={onUpdatePercent}
+          onRemove={onRemoveRow}
+          creating={creating}
+          setCreating={setCreating}
+          connecting={connecting}
+          setConnecting={setConnecting}
+          onAccountLinked={onAccountLinked}
+          overflowMessage={pctOverflow && pctOverflow.id === rule.id ? pctOverflow.message : null}
+          theme="ledger"
+          tierStyle
+          persona={persona}
+          startingBalanceRoomInfo={roomById[rule.id]}
+        />
+      ))}
+      {children}
+    </div>
+  );
+}
+
 export default function PercentSplitEditor({
   percent,
   accounts,

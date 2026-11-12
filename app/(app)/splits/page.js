@@ -4,10 +4,9 @@ import { drawNote, splitUnit } from "@/lib/entityCopy";
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PrimaryButton } from "@/components/ui";
-import PercentSplitEditor from "@/components/PercentSplitEditor";
-import SplitPercentPieChart from "@/components/SplitPercentPieChart";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, setTierPct } from "@/lib/allocations";
-import TierCards from "@/components/TierCards";
+import { LastTierEditor } from "@/components/PercentSplitEditor";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
+import TierCards, { TierExample } from "@/components/TierCards";
 import { decodeSim } from "@/lib/simSharing";
 import AddCategoryCard from "@/components/AddCategoryCard";
 
@@ -272,16 +271,22 @@ function SplitRulesPageInner() {
   const addTier = (tier) => {
     markDirty();
     setPercent((prev) =>
-      addTierRow(prev, tier, { id: `new_${Date.now()}`, label: "New bill", group: null, pct: 0, max: null, categoryCap: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null })
+      addTierRow(prev, tier, { id: `new_${Date.now()}`, label: "New bill", group: null, max: null, categoryCap: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null })
     );
   };
   const removeTier = (id) => {
     markDirty();
     setPercent((prev) => removeTierRow(prev, id));
   };
-  const setTierPercent = (id, value) => {
+  const addTierBy = () => {
     markDirty();
-    setPercent((prev) => setTierPct(prev, id, value));
+    setPercent((prev) =>
+      addTierBlock(prev, { id: `new_${Date.now()}`, label: "New bill", group: null, max: null, categoryCap: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null })
+    );
+  };
+  const removeTierBy = (t) => {
+    markDirty();
+    setPercent((prev) => removeTierBlock(prev, t));
   };
   const lastTierRows = useMemo(() => percent.filter((r) => tierOf(r) === 0), [percent]);
   const addSubAccount = (group) => {
@@ -380,44 +385,12 @@ function SplitRulesPageInner() {
         <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
         <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
           Each {splitUnit(entityType)} you receive is split in tiers, top to bottom, and you&apos;ll get a checklist to confirm
-          and send each transfer yourself. Tier 1 is paid first, up to a monthly cap. Whatever is left flows to tier 2, and then
-          to the last tier, which is split by percentage.
+          and send each transfer yourself. Your top priority categories are paid first, up to a monthly cap, then whatever is left flows
+          down to the next tier, and finally to the last tier, which is split by percentage.
         </p>
         {drawNote(entityType) && (
           <p style={{ fontSize: 15, lineHeight: 1.7, color: "#574A68", margin: "12px 0 0" }}>{drawNote(entityType)}</p>
         )}
-      </div>
-
-      <TierCards
-        percent={percent}
-        onUpdate={updatePercent}
-        onSetPct={setTierPercent}
-        onAddRow={addTier}
-        onRemoveRow={removeTier}
-        accounts={accounts}
-        showErrors
-      />
-
-      <div>
-        <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 800, margin: 0 }}>
-          Tier 3 · Last: everything else
-        </h3>
-        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#574A68", margin: "4px 0 0" }}>
-          Splits whatever is left. No caps are needed here, and it can add up to less than 100%.
-        </p>
-      </div>
-
-      <SplitPercentPieChart percent={lastTierRows} remainingPct={remainingPct} />
-
-      <div>
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: "0 0 12px" }}>
-          For example, if you select &quot;10%&quot; for savings, and PrioritySave detects a $100 {splitUnit(entityType)}, it&apos;ll
-          tell you to send $10 to the savings account connected.
-        </p>
-        <p style={{ fontSize: 17, lineHeight: 1.7, color: "#574A68", margin: 0 }}>
-          If you don&apos;t have one of these accounts, you can set the percentage to &quot;0%&quot; and no money
-          will be set aside for that account.
-        </p>
       </div>
 
       {needAccount.length > 0 && (
@@ -456,34 +429,38 @@ function SplitRulesPageInner() {
         </div>
       )}
 
-      <PercentSplitEditor
-        percent={lastTierRows}
+      <TierCards
+        percent={percent}
+        onUpdate={updatePercent}
+        onAddRow={addTier}
+        onRemoveRow={removeTier}
+        onAddTier={addTierBy}
+        onRemoveTier={removeTierBy}
         accounts={accounts}
-        onUpdatePercent={updatePercent}
-        onAddSubAccount={addSubAccount}
-        onRemoveRow={removeRow}
-        onAccountLinked={onAccountLinked}
-        creating={creating}
-        setCreating={setCreating}
-        connecting={connecting}
-        setConnecting={setConnecting}
-        persona={persona}
-        totalPct={totalPct}
-        pctOverflow={pctOverflow}
-        theme="ledger"
-        hideSoloRetirementNote
+        showErrors
       />
+
+      <div style={{ display: "grid", gap: 12 }}>
+        <div className="pp-tier-arrow" style={{ textAlign: "center", color: "#4E22B8", fontWeight: 800, fontSize: 14 }}>↓ Then what is left flows down</div>
+        <LastTierEditor
+          percent={percent}
+          accounts={accounts}
+          onUpdatePercent={updatePercent}
+          onRemoveRow={removeRow}
+          onAccountLinked={onAccountLinked}
+          creating={creating}
+          setCreating={setCreating}
+          connecting={connecting}
+          setConnecting={setConnecting}
+          pctOverflow={pctOverflow}
+          persona={persona}
+          title={priorityTiers(percent).length ? tierName(priorityTiers(percent).length + 1) : "Your Categories"}
+        />
+      </div>
 
       <AddCategoryCard suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
-      <div className="flex items-baseline justify-between" style={{ borderTop: "1px solid var(--color-divider)", paddingTop: 20 }}>
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-          Allocated
-        </span>
-        <span style={{ fontFamily: "var(--font-body)", fontSize: 16, color: "var(--color-text)" }}>
-          {totalPct}% allocated{remainingPct > 0 ? ` and ${remainingPct}% remains where it was deposited.` : "."}
-        </span>
-      </div>
+      <TierExample percent={percent} />
 
       {startingBalanceOverBudget && (
         <p className="text-sm" style={{ color: "#9C3B22", fontFamily: "var(--font-heading)", fontWeight: 600, margin: 0 }}>

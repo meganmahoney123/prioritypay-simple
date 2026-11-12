@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import AccountSelect from "./AccountSelect";
-import { tierRows, tierTotals, computeAllocations, isCoreRow, currency } from "@/lib/allocations";
+import { tierRows, priorityTiers, tierName, computeAllocations, isCoreRow, currency } from "@/lib/allocations";
 
 // The tiered Deposit Splits layout (see the "Set your splits" design): Tier 1
 // (paid first), Tier 2 (fixed bills) and the last tier, each a purple-outlined
@@ -16,22 +17,9 @@ const PURPLE = "#4E22B8";
 const LINE = "#E7DEFA";
 const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
 
-const TIERS = [
-  {
-    tier: 1,
-    title: "Tier 1 · Paid first",
-    sub: "Takes its percent of each deposit until its monthly cap is reached. Every row needs a cap.",
-    empty: "Nothing here yet. Add a bill you want paid before anything else, like rent.",
-  },
-  {
-    tier: 2,
-    title: "Tier 2 · Fixed bills",
-    sub: "Splits what flows down from tier 1. Each row needs a cap; extra from a capped row goes to the others.",
-    empty: "Nothing here yet. Add other bills that should come before savings.",
-  },
-];
+const TIER_SUB = "Paid first, split evenly between the rows. Every row needs a monthly cap; anything a capped row can\u2019t take goes to the others, then flows down.";
 
-const CSS = `
+export const TIER_CSS = `
 .pp-tier-card{background:#fff;border:2px solid #9A72F0;border-radius:22px;padding:6px 20px 8px}
 .pp-tier-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 0 2px}
 .pp-tier-title{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:${PURPLE}}
@@ -52,6 +40,8 @@ const CSS = `
 .pp-tier-cap.pp-tier-bad{border-color:#B3261E}
 .pp-tier-x{width:30px;height:30px;border:0;background:transparent;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#8A7FA0;font-size:15px;font-weight:800}
 .pp-tier-x:hover{background:#F3EEFF;color:#4A3F63}
+.pp-tier-more{background:transparent;border:0;font:inherit;font-size:14px;font-weight:800;color:${PURPLE};cursor:pointer;padding:4px 6px;white-space:nowrap}
+.pp-tier-details{width:100%;padding:4px 0 2px 19px;display:grid;gap:10px}
 .pp-tier-add{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1.5px solid ${LINE};padding:12px 0 6px;font:inherit;font-size:15px;font-weight:800;color:${PURPLE};cursor:pointer}
 .pp-tier-arrow{text-align:center;color:${PURPLE};font-weight:800;font-size:14px;padding:2px 0}
 .pp-tier-err{font-size:13px;font-weight:700;color:#B3261E;width:100%}
@@ -59,11 +49,11 @@ const CSS = `
 .pp-tier-acct-l{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#574A68;margin-bottom:4px}
 `;
 
-function Header({ title, total, ok, show = true }) {
+function Header({ title, total, ok, show = true, action }) {
   return (
     <div className="pp-tier-head">
       <div className="pp-tier-title">{title}</div>
-      <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: ok ? PURPLE : "#B3261E", whiteSpace: "nowrap" }}>{show ? total : ""}</span>
+      {action || <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: ok ? PURPLE : "#B3261E", whiteSpace: "nowrap" }}>{show ? total : ""}</span>}
     </div>
   );
 }
@@ -72,102 +62,103 @@ export function TierArrow({ children }) {
   return <div className="pp-tier-arrow">↓ {children}</div>;
 }
 
-export default function TierCards({ percent, onUpdate, onSetPct, onAddRow, onRemoveRow, accounts, showErrors = true }) {
-  const totals = tierTotals(percent);
+function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow }) {
+  const [open, setOpen] = useState(false);
+  const capMissing = !(Number(r.max) > 0);
+  return (
+    <div data-rule-id={r.id} className="pp-tier-row">
+      <span className="pp-tier-dot" />
+      <input className="pp-tier-name" aria-label="Bill name" placeholder="Name" value={r.label || ""} onChange={(e) => onUpdate(r.id, { label: e.target.value })} />
+      <span className={`pp-tier-cap${showErrors && capMissing ? " pp-tier-bad" : ""}`}>
+        Monthly cap
+        <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 15, color: "#241337" }}>$</span>
+        <input
+          aria-label={`${r.label || "Bill"} monthly cap`}
+          type="number"
+          inputMode="decimal"
+          min={1}
+          step="1"
+          placeholder="Required"
+          value={r.max === null || r.max === undefined ? "" : r.max}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => onUpdate(r.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
+        />
+      </span>
+      {accounts && (
+        <button type="button" className="pp-tier-more" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+          {open ? "See less ▴" : "See more ▾"}
+        </button>
+      )}
+      <button type="button" className="pp-tier-x" aria-label={`Remove ${r.label || "bill"}`} onClick={() => onRemoveRow(r.id)}>✕</button>
+      {showErrors && capMissing && <div className="pp-tier-err">Enter a monthly cap to continue.</div>}
+      {accounts && open && (
+        <div className="pp-tier-details">
+          <div className="pp-tier-acct">
+            <div className="pp-tier-acct-l">Bank account</div>
+            <AccountSelect value={r.accountId || ""} onChange={(id) => onUpdate(r.id, { accountId: id })} accounts={accounts} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, onAddTier, onRemoveTier, accounts, showErrors = true }) {
+  const tiers = priorityTiers(percent);
+  const [confirming, setConfirming] = useState(null);
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <style>{CSS}</style>
-      {TIERS.map((cfg, i) => {
-        const rows = tierRows(percent, cfg.tier);
-        const total = totals[cfg.tier];
-        const totalOk = rows.length === 0 || Math.abs(total - 100) <= 0.01;
-        const sole = rows.length === 1;
+      <style>{TIER_CSS}</style>
+      {tiers.map((t) => {
+        const rows = tierRows(percent, t);
+        const delAction =
+          confirming === t ? (
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#B3261E", whiteSpace: "nowrap" }}>
+              Delete this tier and its {rows.length} {rows.length === 1 ? "bill" : "bills"}?{" "}
+              <button type="button" className="pp-tier-more" style={{ color: "#B3261E" }} onClick={() => { setConfirming(null); onRemoveTier(t); }}>Yes, delete</button>
+              <button type="button" className="pp-tier-more" onClick={() => setConfirming(null)}>Cancel</button>
+            </span>
+          ) : (
+            <button type="button" className="pp-tier-more" style={{ color: "#8A7FA0" }} onClick={() => setConfirming(t)}>Delete tier</button>
+          );
         return (
-          <div key={cfg.tier} style={{ display: "grid", gap: 12 }}>
+          <div key={t} style={{ display: "grid", gap: 12 }}>
             <div className="pp-tier-card">
-              <Header title={cfg.title} total={totalOk ? "100%" : `${total}% · needs 100%`} ok={totalOk} show={rows.length > 0} />
-              <p className="pp-tier-sub">{cfg.sub}</p>
-
-              {rows.length === 0 && (
-                <div className="pp-tier-row" style={{ fontSize: 15, color: "#574A68" }}>{cfg.empty}</div>
-              )}
-
-              {rows.map((r) => {
-                const capMissing = !(Number(r.max) > 0);
-                return (
-                  <div key={r.id} data-rule-id={r.id} className="pp-tier-row">
-                    <span className="pp-tier-dot" />
-                    <input className="pp-tier-name" aria-label="Bill name" placeholder="Name" value={r.label || ""} onChange={(e) => onUpdate(r.id, { label: e.target.value })} />
-                    <span className="pp-tier-pill">
-                      <input
-                        aria-label={`${r.label || "Bill"} percent`}
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        max={100}
-                        step="0.01"
-                        readOnly={sole}
-                        value={sole ? 100 : r.pct === 0 ? "0" : r.pct ?? ""}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => onSetPct(r.id, e.target.value)}
-                      />
-                      %
-                    </span>
-                    <span className={`pp-tier-cap${showErrors && capMissing ? " pp-tier-bad" : ""}`}>
-                      Monthly cap
-                      <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 15, color: "#241337" }}>$</span>
-                      <input
-                        aria-label={`${r.label || "Bill"} monthly cap`}
-                        type="number"
-                        inputMode="decimal"
-                        min={1}
-                        step="1"
-                        placeholder="Required"
-                        value={r.max === null || r.max === undefined ? "" : r.max}
-                        onFocus={(e) => e.target.select()}
-                        onChange={(e) => onUpdate(r.id, { max: e.target.value === "" ? null : Number(e.target.value) })}
-                      />
-                    </span>
-                    <button type="button" className="pp-tier-x" aria-label={`Remove ${r.label || "bill"}`} onClick={() => onRemoveRow(r.id)}>✕</button>
-                    {showErrors && capMissing && <div className="pp-tier-err">Enter a monthly cap to continue.</div>}
-                    {accounts && (
-                      <div className="pp-tier-acct">
-                        <div className="pp-tier-acct-l">Paid from</div>
-                        <AccountSelect value={r.accountId || ""} onChange={(id) => onUpdate(r.id, { accountId: id })} accounts={accounts} />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {rows.length > 1 && !totalOk && (
-                <div className="pp-tier-row" style={{ color: "#B3261E", fontSize: 14, fontWeight: 700 }}>
-                  The percents in this tier add up to {total}%. Adjust them to total exactly 100%.
-                </div>
-              )}
-
-              <button type="button" className="pp-tier-add" onClick={() => onAddRow(cfg.tier)}>+ Add to this tier</button>
+              <Header title={tierName(t)} action={delAction} />
+              <p className="pp-tier-sub">{TIER_SUB}</p>
+              {rows.map((r) => (
+                <BillRow key={r.id} r={r} showErrors={showErrors} accounts={accounts} onUpdate={onUpdate} onRemoveRow={onRemoveRow} />
+              ))}
+              <button type="button" className="pp-tier-add" onClick={() => onAddRow(t)}>+ Add to this tier</button>
             </div>
-            <TierArrow>{i === 0 ? "What is left after the caps flows down" : "Then what is left flows down"}</TierArrow>
+            <TierArrow>What is left flows down</TierArrow>
           </div>
         );
       })}
+      <button
+        type="button"
+        onClick={onAddTier}
+        style={{ border: "2px dashed #9A72F0", background: "transparent", borderRadius: 18, padding: "14px 16px", font: "inherit", fontSize: 15, fontWeight: 800, color: PURPLE, cursor: "pointer" }}
+      >
+        + Add a priority tier{tiers.length === 0 ? " (rent, car payment, insurance... paid before anything else)" : ""}
+      </button>
+      {tiers.length > 0 && null}
     </div>
   );
 }
 
 // Onboarding's last tier, drawn like the two above: plain rows with a percent
 // pill, no caps. Core rows (Tax Reserve, Savings...) keep their name fixed.
-export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, children }) {
+export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, title = "Everything else", children }) {
   const total = Math.round(rows.reduce((n, r) => n + (Number(r.pct) || 0), 0) * 100) / 100;
   const stays = Math.round(Math.max(0, 100 - total) * 100) / 100;
   const over = total > 100.0001;
   return (
     <div className="pp-tier-card">
-      <style>{CSS}</style>
-      <Header title="Tier 3 · Last: everything else" total={`${total}%`} ok={!over} />
+      <style>{TIER_CSS}</style>
+      <Header title={title} total={`${total}%`} ok={!over} />
       <p className="pp-tier-sub">
-        Splits whatever is left. This is the last tier, so no caps. It can add up to less than 100%
+        Splits whatever is left by percent. This is the last tier, so no caps. It can add up to less than 100%
         {stays > 0 ? `: ${stays}% stays where your deposit lands.` : "."}
       </p>
       {rows.map((r) => {
@@ -217,18 +208,18 @@ export function TierExample({ percent }) {
   const list = (arr) => (arr.length <= 1 ? arr[0] || "" : `${arr.slice(0, -1).join(", ")} and ${arr[arr.length - 1]}`);
   const sentences = [];
   let used = 0;
-  [1, 2].forEach((t) => {
+  priorityTiers(percent).forEach((t) => {
     const rows = tierRows(percent, t).filter((r) => amt(r) > 0.005);
     if (!rows.length) return;
     rows.forEach((r) => { used += amt(r); });
-    sentences.push(`Tier ${t} sends ${list(rows.map((r) => `${currency(amt(r))} to ${r.label}`))}.`);
+    sentences.push(`${tierName(t).replace(" Categories", "")} sends ${list(rows.map((r) => `${currency(amt(r))} to ${r.label}`))}.`);
   });
   const left = Math.max(0, EXAMPLE - used);
   const last = tierRows(percent, 0).filter((r) => amt(r) > 0.005);
   const lastSum = last.reduce((n, r) => n + amt(r), 0);
   const stays = Math.max(0, left - lastSum);
   if (last.length) {
-    sentences.push(`The remaining ${currency(left)} goes to tier 3${stays > 0.005 ? `, and ${currency(stays)} of it stays where your deposit landed` : ""}.`);
+    sentences.push(`The remaining ${currency(left)} goes to your percent split${stays > 0.005 ? `, and ${currency(stays)} of it stays where your deposit landed` : ""}.`);
   }
   if (!sentences.length) return null;
   return (

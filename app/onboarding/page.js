@@ -12,7 +12,7 @@ import SimpleSplitCard from "@/components/SimpleSplitCard";
 import OnboardingLimits from "@/components/OnboardingLimits";
 import TierCards, { TierLastCard, TierExample } from "@/components/TierCards";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, setTierPct } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
 import { BLOOM_TOKENS, bloomInputStyle } from "@/lib/bloomTheme";
 // isValidUSPhone no longer used here -- the phone-number step is
@@ -620,8 +620,11 @@ function OnboardingPageInner() {
       addTierRow(prev, tier, { id: `new_${Date.now()}`, label: "New bill", group: null, pct: 0, max: null, categoryCap: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null })
     );
   const removeTier = (id) => setPercent((prev) => removeTierRow(prev, id));
-  const setTierPercent = (id, value) => setPercent((prev) => setTierPct(prev, id, value));
-  const skipTiers = () => setPercent((prev) => prev.filter((r) => tierOf(r) === 0));
+  const addTierBy = () =>
+    setPercent((prev) =>
+      addTierBlock(prev, { id: `new_${Date.now()}`, label: "New bill", group: null, max: null, categoryCap: null, balanceCap: null, color: pickUniqueColor(prev.map((r) => r.color)), accountId: null, startingBalance: null })
+    );
+  const removeTierBy = (t) => setPercent((prev) => removeTierBlock(prev, t));
   const tierIssues = tierProblems(percent);
   const lastTierRows = percent.filter((r) => tierOf(r) === 0);
 
@@ -1169,16 +1172,17 @@ function OnboardingPageInner() {
               </p>
             )}
             <p style={{ fontSize: 16, lineHeight: 1.75, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 22px", maxWidth: "34em" }}>
-              We started you with an example. Every {splitUnit(entityType)} fills tier 1 first, what is left flows to tier 2, then
-              the rest is split in tier 3. Change anything, add what you need, and remove what you do not.
+              We started you with an example. Every {splitUnit(entityType)} pays your top priority categories first, what is left flows
+              to the next tier, and the rest is split by percent. Change anything, add or delete whole tiers, and remove what you do not need.
             </p>
 
             <TierCards
               percent={percent}
               onUpdate={updatePercent}
-              onSetPct={setTierPercent}
               onAddRow={addTier}
               onRemoveRow={removeTier}
+              onAddTier={addTierBy}
+              onRemoveTier={removeTierBy}
             />
             <div style={{ height: 12 }} />
 
@@ -1188,6 +1192,7 @@ function OnboardingPageInner() {
               onRemove={removeFromStep2}
               overflow={pctOverflow}
               persona={businessType}
+              title={priorityTiers(percent).length ? tierName(priorityTiers(percent).length + 1) : "Your Categories"}
             />
 
             <AddCategoryCard style={{ marginTop: 22 }} suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
@@ -1799,14 +1804,16 @@ function OnboardingPageInner() {
           }}
         >
           <div style={{ maxWidth: "40em", margin: "0 auto", padding: "16px clamp(18px, 4vw, 40px) 20px" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", marginBottom: 12 }}>
-              <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, color: "var(--color-accent-700)" }}>
-                {totalPct}% allocated
-              </span>
-              <span>
-                {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
-              </span>
-            </div>
+            {step !== 2 && (
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", marginBottom: 12 }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, color: "var(--color-accent-700)" }}>
+                  {totalPct}% allocated
+                </span>
+                <span>
+                  {remainingPct > 0 ? `· ${remainingPct}% remains where it was deposited` : ""}
+                </span>
+              </div>
+            )}
             {step === 2 && tierIssues.length > 0 && (
               <p style={{ fontSize: 14, lineHeight: 1.5, color: "#b3261e", margin: "0 0 12px" }}>{tierIssues[0]}</p>
             )}
@@ -1817,9 +1824,6 @@ function OnboardingPageInner() {
             )}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <BackBtn onClick={back} />
-              {step === 2 && (
-                <GhostBtn onClick={() => { skipTiers(); setShowTierErrors(false); }}>Skip tiers 1 and 2</GhostBtn>
-              )}
               {step === STEP_LIMITS && (
                 <GhostBtn onClick={() => { clearAllLimits(); next(); }}>Skip, no limits</GhostBtn>
               )}

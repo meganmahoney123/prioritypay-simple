@@ -110,7 +110,7 @@ export async function POST(request) {
       balance_cap: r.balanceCap === null || r.balanceCap === undefined || r.balanceCap === "" ? null : Number(r.balanceCap),
       color: r.color,
       account_id: r.accountId || null,
-      ...(Number(r.tier) === 1 || Number(r.tier) === 2 ? { tier: Number(r.tier) } : {}),
+      ...(Number.isInteger(Number(r.tier)) && Number(r.tier) >= 1 && Number(r.tier) <= 10 ? { tier: Number(r.tier) } : {}),
       retirement_type: r.retirementType || null,
       // Same derivation as /api/split-rules -- see the comment there.
       investment_type: r.group === "Investments" && !r.retirementType ? investmentTypeFromLabel(r.label) : null,

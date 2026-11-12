@@ -22,7 +22,7 @@ function rowToPercent(r) {
     balanceCap: r.balance_cap === null || r.balance_cap === undefined ? null : Number(r.balance_cap),
     color: r.color,
     accountId: r.account_id,
-    tier: r.tier === 1 || r.tier === 2 ? r.tier : null,
+    tier: Number.isInteger(r.tier) && r.tier >= 1 && r.tier <= 10 ? r.tier : null,
     retirementType: r.retirement_type || null,
     investmentType: r.investment_type || null,
     startingBalance: r.starting_balance === null || r.starting_balance === undefined ? null : Number(r.starting_balance),
@@ -70,8 +70,7 @@ export async function PUT(request) {
   if (!Array.isArray(percent)) {
     return Response.json({ error: "Request body must include a 'percent' array." }, { status: 400 });
   }
-  // Tier 1 and 2 need a monthly cap on every row and must add up to exactly
-  // 100% (only the last tier may add up to less). The pages enforce this
+  // Every row in a priority tier needs a monthly cap. The pages enforce this
   // too; this stops a stray request from saving a half-finished waterfall.
   const problems = tierProblems(percent);
   if (problems.length) {
@@ -155,7 +154,7 @@ export async function PUT(request) {
       balance_cap: r.balanceCap === null || r.balanceCap === undefined || r.balanceCap === "" ? null : Number(r.balanceCap),
       color: r.color,
       account_id: r.accountId || null,
-      ...(Number(r.tier) === 1 || Number(r.tier) === 2 ? { tier: Number(r.tier) } : {}),
+      ...(Number.isInteger(Number(r.tier)) && Number(r.tier) >= 1 && Number(r.tier) <= 10 ? { tier: Number(r.tier) } : {}),
       retirement_type: r.retirementType || null,
       starting_balance: r.startingBalance === null || r.startingBalance === undefined || r.startingBalance === "" ? null : Number(r.startingBalance),
       // Derived server-side from group + retirementType + label, same
