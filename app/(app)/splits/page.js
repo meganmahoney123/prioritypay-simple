@@ -449,10 +449,6 @@ function SplitRulesPageInner() {
   return (
     <div className="space-y-6" style={{ maxWidth: 780 }}>
       <div>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(28px, 3.4vw, 36px)", fontWeight: 800, margin: "0 0 8px" }}>
-          Deposit Splits
-        </h2>
-        <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 24px" }} />
         <SplitExample />
         {drawNote(entityType) && (
           <p style={{ fontSize: 15, lineHeight: 1.7, color: "#574A68", margin: "12px 0 0" }}>{drawNote(entityType)}</p>

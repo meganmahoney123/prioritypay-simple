@@ -116,7 +116,6 @@ export default function DebtPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
           <Link href="/dashboard" style={{ fontSize: 14, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "none" }}>‹ Dashboard</Link>
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 34, fontWeight: 700, margin: "4px 0 2px" }}>Debt Payoff plan</h1>
           <div style={{ fontSize: 14, color: muted }}>{active.length ? `${active.length} ${active.length === 1 ? "debt" : "debts"}` : "Add your debts to see a payoff date"}</div>
         </div>
         {!adding && <GhostButton onClick={() => { setAdding(true); setEditing(null); }}>+ Add a debt</GhostButton>}

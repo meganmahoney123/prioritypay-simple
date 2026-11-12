@@ -524,7 +524,6 @@ export default function TransfersPage() {
   return (
     <div className="ps-page max-w-2xl space-y-6">
       <div>
-        <h1 className="text-lg font-semibold mb-1">One-Time Transfer</h1>
         <p className="text-sm text-[var(--color-neutral-700)]">
           Great for boosting a category with some extra unallocated cash you&apos;re sitting on, or moving money
           straight between two categories, like $3,000 from Wedding to Maintenance. Works category to category, or

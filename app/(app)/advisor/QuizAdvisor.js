@@ -322,7 +322,6 @@ export default function QuizAdvisor() {
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
       <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 30, margin: "0 0 8px" }}>Tax Savings Quiz</h1>
         <p style={{ margin: 0, color: "var(--color-neutral-700)", fontSize: 15, lineHeight: 1.5 }}>
           Answer a few questions and get your top tax savings options to look into, then ask follow-up questions in the chat. This is a guide to
           bring to your CPA, not tax or legal advice.
