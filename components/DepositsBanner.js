@@ -40,7 +40,7 @@ export default function DepositsBanner({ refreshKey }) {
       style={{
         background: "var(--color-surface)",
         border: "2px solid var(--color-accent)",
-        borderRadius: 24,
+        borderRadius: 14,
         padding: "18px 22px",
         textDecoration: "none",
         color: "var(--color-text)",
@@ -60,13 +60,13 @@ export default function DepositsBanner({ refreshKey }) {
             alignItems: "center",
             justifyContent: "center",
             fontSize: 20,
-            fontWeight: 700,
+            fontWeight: 600,
           }}
         >
           {info.count}
         </div>
         <div>
-          <div style={{ fontSize: 19, fontWeight: 700 }}>
+          <div style={{ fontSize: 19, fontWeight: 600 }}>
             {info.count} {info.count === 1 ? "deposit is" : "deposits are"} ready to split
           </div>
           <div style={{ fontSize: 15, color: "var(--color-neutral-700)" }}>
@@ -76,7 +76,7 @@ export default function DepositsBanner({ refreshKey }) {
       </div>
       <span
         className="inline-flex items-center gap-2 w-full sm:w-auto justify-center"
-        style={{ height: 48, padding: "0 24px", borderRadius: 999, background: "var(--color-accent)", color: "#fff", fontSize: 16, fontWeight: 700 }}
+        style={{ height: 48, padding: "0 24px", borderRadius: 999, background: "var(--color-accent)", color: "#fff", fontSize: 16, fontWeight: 600 }}
       >
         Review and transfer <ArrowRight size={16} />
       </span>

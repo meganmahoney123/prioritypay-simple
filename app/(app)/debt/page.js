@@ -8,8 +8,8 @@ import { DEBT_TYPES, buildPlan, debtTypeLabel, extraOptions, payoffLabel, sugges
 
 const muted = "color-mix(in srgb, var(--color-text) 68%, transparent)";
 const h2 = { fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" };
-const eyebrow = { fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: muted };
-const num = { fontFamily: "var(--font-mono, ui-monospace, monospace)", fontWeight: 700 };
+const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: muted };
+const num = { fontFamily: "var(--font-mono, ui-monospace, monospace)", fontWeight: 600 };
 
 function Chip({ on, children, onClick }) {
   return (
@@ -17,7 +17,7 @@ function Chip({ on, children, onClick }) {
       type="button"
       onClick={onClick}
       style={{
-        fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 700, cursor: "pointer", padding: "7px 14px", borderRadius: 999,
+        fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 600, cursor: "pointer", padding: "7px 14px", borderRadius: 999,
         border: `1.5px solid ${on ? "var(--color-accent)" : "var(--color-divider)"}`,
         background: on ? "color-mix(in srgb, var(--color-accent) 9%, transparent)" : "transparent",
         color: on ? "var(--color-accent-700)" : "var(--color-text)",
@@ -35,7 +35,7 @@ function DebtForm({ initial = EMPTY, submitLabel, onSubmit, onCancel, busy }) {
   const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
   const field = (label, input) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 130px", minWidth: 0 }}>
-      <span style={{ fontSize: 12.5, fontWeight: 700, color: muted }}>{label}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: muted }}>{label}</span>
       {input}
     </label>
   );
@@ -115,7 +115,7 @@ export default function DebtPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: "52em" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <Link href="/dashboard" style={{ fontSize: 14, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "none" }}>‹ Dashboard</Link>
+          <Link href="/dashboard" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "none" }}>‹ Dashboard</Link>
           <div style={{ fontSize: 14, color: muted }}>{active.length ? `${active.length} ${active.length === 1 ? "debt" : "debts"}` : "Add your debts to see a payoff date"}</div>
         </div>
         {!adding && <GhostButton onClick={() => { setAdding(true); setEditing(null); }}>+ Add a debt</GhostButton>}
@@ -126,7 +126,7 @@ export default function DebtPage() {
       {active.length > 0 && (
         <Card className="p-6">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>
+            <div style={{ fontSize: 20, fontWeight: 600 }}>
               {plan.neverPaysOff ? "These payments don't pay off every debt" : `Debt-free by ${payoffLabel(plan.months)}`}
             </div>
             <div style={{ fontSize: 14, color: muted }}>Total owed <span style={num}>{currency(info.totalOwed)}</span></div>
@@ -170,16 +170,16 @@ export default function DebtPage() {
                   />
                 ) : (
                   <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                    <span style={{ width: 26, height: 26, borderRadius: 99, background: "var(--color-accent)", color: "#fff", fontWeight: 800, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{i + 1}</span>
+                    <span style={{ width: 26, height: 26, borderRadius: 99, background: "var(--color-accent)", color: "#fff", fontWeight: 600, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{i + 1}</span>
                     <div style={{ flex: "1 1 160px", minWidth: 0 }}>
-                      <div style={{ fontSize: 15.5, fontWeight: 700 }}>{d.name}</div>
+                      <div style={{ fontSize: 15.5, fontWeight: 600 }}>{d.name}</div>
                       <div style={{ fontSize: 12.5, color: muted }}>{debtTypeLabel(d.debtType)}</div>
                     </div>
                     <div style={{ display: "flex", gap: 18, alignItems: "baseline", flexWrap: "wrap" }}>
                       <span style={{ ...num, fontSize: 15 }}>{currency(d.balance)}</span>
                       <span style={{ ...num, fontSize: 15, color: d.apr >= HIGH_APR ? "#B3261E" : undefined }}>{d.apr}%</span>
                       <span style={{ ...num, fontSize: 15 }}>{currency(d.minPayment)}/mo</span>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: "var(--color-accent-700)" }}>{payoffLabel(plan.payoff[d.id])}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)" }}>{payoffLabel(plan.payoff[d.id])}</span>
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <GhostButton onClick={() => { setPaying(paying === d.id ? null : d.id); setPayAmount(""); }}>Log a payment</GhostButton>
@@ -221,7 +221,7 @@ export default function DebtPage() {
               return (
                 <button key={n} type="button" onClick={() => pickExtra(n)} style={{ textAlign: "left", cursor: "pointer", padding: "12px 14px", borderRadius: 14, border: `${n === extra ? 2.5 : 1.5}px solid ${n === extra ? "var(--color-accent)" : "var(--color-divider)"}`, background: n === extra ? "color-mix(in srgb, var(--color-accent) 9%, transparent)" : "transparent", color: "var(--color-text)", fontFamily: "var(--font-body)" }}>
                   <div style={{ ...num, fontSize: 18 }}>+{currency(n)}/mo</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--color-accent-700)", marginTop: 4 }}>{payoffLabel(s.months)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)", marginTop: 4 }}>{payoffLabel(s.months)}</div>
                   <div style={{ fontSize: 12.5, color: muted }}>{s.neverPaysOff ? "never at this payment" : `${currency(s.totalInterest)} interest`}</div>
                 </button>
               );
@@ -240,11 +240,11 @@ export default function DebtPage() {
           <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 10 }} />
           {info.payoffOrder.map((d) => (
             <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0" }}>
-              <span style={{ width: 110, fontSize: 14, fontWeight: 700, flex: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+              <span style={{ width: 110, fontSize: 14, fontWeight: 600, flex: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
               <div style={{ flex: 1, background: "color-mix(in srgb, var(--color-accent) 9%, transparent)", borderRadius: 99, height: 14 }}>
                 <div style={{ width: `${Math.round(((plan.payoff[d.id] || 0) / lastMonths) * 100)}%`, height: 14, borderRadius: 99, background: "var(--color-accent)" }} />
               </div>
-              <span style={{ width: 78, textAlign: "right", fontSize: 13.5, fontWeight: 800, color: "var(--color-accent-700)", flex: "none" }}>{payoffLabel(plan.payoff[d.id])}</span>
+              <span style={{ width: 78, textAlign: "right", fontSize: 13.5, fontWeight: 600, color: "var(--color-accent-700)", flex: "none" }}>{payoffLabel(plan.payoff[d.id])}</span>
             </div>
           ))}
           <div style={{ fontSize: 13, color: muted, marginTop: 8 }}>As each debt is paid off, its minimum rolls into the next one.</div>

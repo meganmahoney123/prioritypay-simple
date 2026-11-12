@@ -128,7 +128,7 @@ export default function TaxSummarySection() {
                 fontFamily: "var(--font-mono)",
                 fontSize: "clamp(32px, 5vw, 52px)",
                 lineHeight: 1,
-                fontWeight: 800,
+                fontWeight: 600,
                 letterSpacing: "-0.02em",
                 color: "#fff",
               }}

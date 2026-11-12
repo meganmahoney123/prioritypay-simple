@@ -77,8 +77,8 @@ export default function BusinessesCard({ embedded = false, picks }) {
 
   if (embedded) {
     return (
-      <div id="businesses" style={{ scrollMarginTop: 90, borderRadius: 24, boxShadow: flash ? "0 0 0 4px #9A72F0" : "none", transition: "box-shadow .4s" }}>
-      <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", display: "block", margin: "18px 0 8px" }}>Your businesses</span>
+      <div id="businesses" style={{ scrollMarginTop: 90, borderRadius: 14, boxShadow: flash ? "0 0 0 4px #9A72F0" : "none", transition: "box-shadow .4s" }}>
+      <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280", display: "block", margin: "18px 0 8px" }}>Your businesses</span>
       <p style={{ ...muted, margin: "0 0 14px" }}>
         Add each business you earn through and mark its type (sole proprietor, LLC, S corp and more). When you split a deposit you pick which business it belongs to, and Close Out shows profit for each one.
       </p>
@@ -129,9 +129,9 @@ export default function BusinessesCard({ embedded = false, picks }) {
   }
 
   return (
-    <div id="businesses" style={{ scrollMarginTop: 90, borderRadius: 24, boxShadow: flash ? "0 0 0 4px #9A72F0" : "none", transition: "box-shadow .4s" }}>
-    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Your businesses</h2>
+    <div id="businesses" style={{ scrollMarginTop: 90, borderRadius: 14, boxShadow: flash ? "0 0 0 4px #9A72F0" : "none", transition: "box-shadow .4s" }}>
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 30px" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, margin: "0 0 6px" }}>Your businesses</h2>
       <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
       <p style={{ ...muted, margin: "0 0 14px" }}>
         Add each business you earn through and mark its type (sole proprietor, LLC, S corp and more). When you split a deposit you pick which business it belongs to, and Close Out shows profit for each one.

@@ -73,9 +73,9 @@ export default function SpendDistributionChart({ rules = [] }) {
   const emptyLabel = mode === "month" ? periodLabel(period) : `the ${rangeLabel}`;
 
   return (
-    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
+    <Card className="p-5" style={{ borderRadius: 14, background: "var(--color-surface)" }}>
       <div className="flex items-center justify-between mb-1 flex-wrap gap-3">
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>Where your money has gone</h2>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 600, color: "var(--color-text)" }}>Where your money has gone</h2>
         <div className="flex items-center gap-1.5 flex-wrap">
           {MODES.map((m) => (
             <button

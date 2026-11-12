@@ -363,7 +363,7 @@ export default function QuizAdvisor() {
           {current && (
             <div>
               <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, margin: "0 0 16px" }}>{current.prompt}</h2>
-              <p style={{ margin: "-6px 0 12px", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", color: "#6B4FD8" }}>
+              <p style={{ margin: "-6px 0 12px", fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: "#6B4FD8" }}>
                 {current.type === "multi" ? "Choose all that apply" : "Choose one"}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

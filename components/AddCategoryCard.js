@@ -9,7 +9,7 @@ export default function AddCategoryCard({ suggestions = [], onAddSuggested, onAd
     // Lives inside the final tier card: no box of its own, just the chips and a link.
     return (
       <div style={{ borderTop: "1.5px solid #E7DEFA", padding: "12px 0 8px", ...style }}>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 800, marginBottom: 8 }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 600, marginBottom: 8 }}>
           Add a category <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500, color: "#4A3F63", fontSize: 13 }}>· added at 0%, then set its share above</span>
         </div>
         {suggestions.length > 0 && (
@@ -19,22 +19,22 @@ export default function AddCategoryCard({ suggestions = [], onAddSuggested, onAd
                 key={sg.label}
                 type="button"
                 onClick={() => onAddSuggested(sg)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 700, color: "#4E22B8", background: "#fff", border: "1.5px solid #9A72F0", borderRadius: 999, padding: "5px 13px", cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 600, color: "#4E22B8", background: "#fff", border: "1.1px solid #DDD5F3", borderRadius: 999, padding: "5px 13px", cursor: "pointer", whiteSpace: "nowrap" }}
               >
                 <Plus size={13} /> {sg.label}
               </button>
             ))}
           </div>
         )}
-        <button type="button" onClick={onAddOwn} style={{ background: "transparent", border: 0, padding: "2px 0", cursor: "pointer", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 800, color: "#4E22B8", display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <button type="button" onClick={onAddOwn} style={{ background: "transparent", border: 0, padding: "2px 0", cursor: "pointer", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 600, color: "#4E22B8", display: "inline-flex", alignItems: "center", gap: 6 }}>
           <Plus size={15} /> Add your own category
         </button>
       </div>
     );
   }
   return (
-    <div style={{ border: "1px solid #D9C9FF", borderRadius: 20, background: "#F7F3FF", padding: "18px 18px 20px", ...style }}>
-      <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 700 }}>
+    <div style={{ border: "1px solid #DDD5F3", borderRadius: 20, background: "#F7F3FF", padding: "18px 18px 20px", ...style }}>
+      <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 600 }}>
         Add a category
       </div>
       <div style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, color: "var(--color-text)", margin: "4px 0 4px" }}>
@@ -52,8 +52,8 @@ export default function AddCategoryCard({ suggestions = [], onAddSuggested, onAd
               onClick={() => onAddSuggested(sg)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 700, color: "#4E22B8",
-                background: "#fff", border: "1.5px solid #9A72F0", borderRadius: 999, padding: "8px 16px",
+                fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: "#4E22B8",
+                background: "#fff", border: "1.1px solid #DDD5F3", borderRadius: 999, padding: "8px 16px",
                 cursor: "pointer", whiteSpace: "nowrap",
               }}
             >
@@ -68,7 +68,7 @@ export default function AddCategoryCard({ suggestions = [], onAddSuggested, onAd
         style={{
           width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           background: "#fff", border: "2px dashed #6D3BE0", borderRadius: 16, padding: "13px 16px",
-          cursor: "pointer", fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 700, color: "#4E22B8",
+          cursor: "pointer", fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 600, color: "#4E22B8",
         }}
       >
         <Plus size={16} /> Add your own category

@@ -155,11 +155,11 @@ export default function MoneySimulator({
       <div className="sim-columns">
         <div>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 800 }}>Your split</span>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 600 }}>Your split</span>
             <span
               className="text-sm"
               style={{
-                fontWeight: 700,
+                fontWeight: 600,
                 color: remainingPct < 0 ? "#7a2f2a" : "var(--color-accent-700)",
                 background: remainingPct < 0 ? "color-mix(in srgb, #9b3b3b 10%, transparent)" : "var(--color-accent-100)",
                 borderRadius: 999,
@@ -203,7 +203,7 @@ export default function MoneySimulator({
                 padding: "10px 14px",
                 background: "#EDE6FF",
                 fontSize: 12,
-                fontWeight: 800,
+                fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 color: "#4E22B8",
@@ -217,7 +217,7 @@ export default function MoneySimulator({
             {rows.map((r) => (
               <div
                 key={r.id}
-                style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 84px 112px 20px", gap: 8, alignItems: "center", padding: "10px 14px", borderTop: "1.5px solid #D9C9FF" }}
+                style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 84px 112px 20px", gap: 8, alignItems: "center", padding: "10px 14px", borderTop: "1.1px solid #DDD5F3" }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <span style={{ width: 12, height: 12, borderRadius: "50%", background: dotColorFor(r.id), flex: "none" }} />
@@ -226,13 +226,13 @@ export default function MoneySimulator({
                       value={r.label}
                       onChange={(e) => updateRow(r.id, { label: e.target.value })}
                       aria-label="Category name"
-                      style={bloomInputStyle({ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700 })}
+                      style={bloomInputStyle({ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600 })}
                     />
                   ) : (
-                    <span style={{ minWidth: 0, fontSize: 16, fontWeight: 800, overflowWrap: "anywhere" }}>
+                    <span style={{ minWidth: 0, fontSize: 16, fontWeight: 600, overflowWrap: "anywhere" }}>
                       {r.label}
                       {r.fixed && (
-                        <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#4E22B8", background: "#EDE6FF", borderRadius: 999, padding: "2px 7px" }}>
+                        <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#4E22B8", background: "#EDE6FF", borderRadius: 999, padding: "2px 7px" }}>
                           fixed
                         </span>
                       )}
@@ -251,12 +251,12 @@ export default function MoneySimulator({
                     onChange={(e) => updatePct(r.id, e.target.value)}
                     className="ps-compact"
                     aria-label={`${r.label} percent`}
-                    style={bloomInputStyle({ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "7px 8px", width: "100%", minWidth: 0 })}
+                    style={bloomInputStyle({ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "7px 8px", width: "100%", minWidth: 0 })}
                   />
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "#4A3F63", fontFamily: "var(--font-mono)" }}>%</span>
+                  <span style={{ fontSize: 18, fontWeight: 600, color: "#4A3F63", fontFamily: "var(--font-mono)" }}>%</span>
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "#4A3F63", fontFamily: "var(--font-mono)" }}>$</span>
+                  <span style={{ fontSize: 18, fontWeight: 600, color: "#4A3F63", fontFamily: "var(--font-mono)" }}>$</span>
                   <input
                     type="number"
                     onFocus={(e) => e.target.select()}
@@ -267,7 +267,7 @@ export default function MoneySimulator({
                     onChange={(e) => updateRowDollar(r.id, e.target.value)}
                     className="ps-compact"
                     aria-label={`${r.label} dollars per month`}
-                    style={bloomInputStyle({ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "7px 8px", width: "100%", minWidth: 0 })}
+                    style={bloomInputStyle({ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 18, background: "#fff", border: "2px solid #6D3BE0", borderRadius: "var(--radius-sm)", padding: "7px 8px", width: "100%", minWidth: 0 })}
                   />
                 </span>
                 {r.custom ? (
@@ -280,7 +280,7 @@ export default function MoneySimulator({
               </div>
             ))}
             <div
-              style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 84px 112px 20px", gap: 8, alignItems: "center", padding: "12px 14px", background: "#241337", color: "#fff", fontWeight: 800 }}
+              style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 84px 112px 20px", gap: 8, alignItems: "center", padding: "12px 14px", background: "#241337", color: "#fff", fontWeight: 600 }}
             >
               <span style={{ fontSize: 16 }}>Total allocated</span>
               <span style={{ textAlign: "right", paddingRight: 18, fontFamily: "var(--font-mono)", fontSize: 17 }}>{totalPct}%</span>
@@ -397,19 +397,19 @@ export default function MoneySimulator({
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, margin: "0 0 10px" }}>
                     <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{isRecurring ? "-" : months}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 600 }}>{isRecurring ? "-" : months}</div>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
                         {isRecurring ? "recurring" : "months away"}
                       </div>
                     </div>
                     <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{currency(monthlyNeeded)}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 600 }}>{currency(monthlyNeeded)}</div>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
                         needed / mo
                       </div>
                     </div>
                     <div style={{ background: "var(--color-neutral-100)", borderRadius: "var(--radius-sm)", padding: "10px 8px", textAlign: "center" }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 800 }}>{Math.round(pctOfIncome * 10) / 10}%</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 600 }}>{Math.round(pctOfIncome * 10) / 10}%</div>
                       <div style={{ fontSize: 11, fontWeight: 600, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", marginTop: 2 }}>
                         of income
                       </div>

@@ -257,10 +257,10 @@ function SettingsPageInner() {
 
       <ProfileCard onChanged={loadProfile} />
 
-            <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Deposit settings</h2>
+            <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, margin: "0 0 6px" }}>Deposit settings</h2>
         <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
-        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", display: "block", marginBottom: 8 }}>Minimum deposit to split ($)</span>
+        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280", display: "block", marginBottom: 8 }}>Minimum deposit to split ($)</span>
         <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 12px" }}>
           Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all. $100 is the
           lowest you can set it.
@@ -287,7 +287,7 @@ function SettingsPageInner() {
         </div>
 
         <div style={{ height: 2, background: "#E7DEFA", margin: "24px 0 4px" }} />
-        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", display: "block", margin: "14px 0 8px" }}>How often should we notify you?</span>
+        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280", display: "block", margin: "14px 0 8px" }}>How often should we notify you?</span>
         <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
           Applies to text, email and app notifications. Deposits under your minimum deposit never send a notification.
         </p>
@@ -320,8 +320,8 @@ function SettingsPageInner() {
       </Card>
 
       {canSwitchPersona && (
-      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Testing: switch persona</h2>
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, margin: "0 0 6px" }}>Testing: switch persona</h2>
         <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
         <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
           Instantly switches your own account to a different onboarding persona and resets your split rules to
@@ -358,8 +358,8 @@ function SettingsPageInner() {
       </Card>
       )}
 
-      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Billing</h2>
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, margin: "0 0 6px" }}>Billing</h2>
         <div style={{ height: 2, background: "#E7DEFA", marginBottom: 20 }} />
 
         {billingRedirect === "success" && (

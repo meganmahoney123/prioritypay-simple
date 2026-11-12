@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bell, ArrowRight, ChevronDown, ChevronRight, Home, Download, SlidersHorizontal, LayoutGrid, Target, User, X } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { BLOOM_TOKENS } from "@/lib/bloomTheme";
+import { BLOOM_TOKENS, APP_REFINED_TOKENS } from "@/lib/bloomTheme";
 import { currency } from "@/components/ui";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import AppLockGate from "@/components/AppLockGate";
@@ -154,7 +154,7 @@ function NavLink({ href, label, active, onClick, badge }) {
             background: "var(--color-accent)",
             color: "#fff",
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 600,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -402,6 +402,7 @@ export default function AppShell({ children, isSandbox = false }) {
       className="pp-ledger-shell"
       style={{
         ...BLOOM_TOKENS,
+        ...APP_REFINED_TOKENS,
         minHeight: "100vh",
         display: "flex",
         flexWrap: "wrap",
@@ -495,7 +496,7 @@ export default function AppShell({ children, isSandbox = false }) {
               // triggers the re-render createPortal needs to find it.
               <span ref={setTitleSlotEl} style={{ minWidth: 0, flex: "1 1 auto" }} />
             ) : (
-              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
+              <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 600, margin: 0, letterSpacing: "-0.03em" }}>
                 {pageTitle(pathname)}
               </h1>
             )}
@@ -515,7 +516,7 @@ export default function AppShell({ children, isSandbox = false }) {
               style={{
                 fontFamily: "var(--font-heading)",
                 fontSize: 12,
-                fontWeight: 800,
+                fontWeight: 600,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
                 color: "var(--color-accent-700)",
@@ -544,7 +545,7 @@ export default function AppShell({ children, isSandbox = false }) {
               background: "var(--color-accent-200)",
               color: "var(--color-accent-700)",
               fontFamily: "var(--font-heading)",
-              fontWeight: 800,
+              fontWeight: 600,
               fontSize: 15,
             }}
           >
@@ -589,7 +590,7 @@ export default function AppShell({ children, isSandbox = false }) {
               {waitingDeposits > 0 ? waitingDeposits : 1} deposit{waitingDeposits > 1 ? "s" : ""} ready to split &middot;{" "}
               {currency(pendingTotal)} to transfer
             </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 700, textDecoration: "underline", flexShrink: 0 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 600, textDecoration: "underline", flexShrink: 0 }}>
               Go split {waitingDeposits > 1 ? "them" : "it"} <ArrowRight size={13} />
             </span>
           </Link>
@@ -623,7 +624,7 @@ export default function AppShell({ children, isSandbox = false }) {
           >
             <div style={{ width: 44, height: 5, borderRadius: 99, background: "var(--color-neutral-300)", margin: "0 auto 14px" }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 800 }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600 }}>
                 {sheet === "profile" ? "Account" : nav.groups.find((g) => g.key === sheet)?.label}
               </div>
               <button onClick={() => setSheet(null)} aria-label="Close" style={{ display: "inline-flex", background: "transparent", border: 0, cursor: "pointer", color: "var(--color-neutral-700)", padding: 4 }}>
@@ -702,7 +703,7 @@ export default function AppShell({ children, isSandbox = false }) {
                 {t.href === "/deposits" && waitingDeposits > 0 && (
                   <span
                     aria-label={`${waitingDeposits} waiting`}
-                    style={{ position: "absolute", top: -4, right: -2, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8, background: "var(--color-accent)", color: "#fff", fontSize: 10, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                    style={{ position: "absolute", top: -4, right: -2, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 8, background: "var(--color-accent)", color: "#fff", fontSize: 10, fontWeight: 600, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                   >
                     {waitingDeposits}
                   </span>

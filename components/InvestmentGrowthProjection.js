@@ -129,7 +129,7 @@ function ResultBox({ text }) {
         background: "var(--color-accent-200)",
         color: "var(--color-accent-800)",
         fontFamily: "var(--font-mono)",
-        fontWeight: 700,
+        fontWeight: 600,
       }}
     >
       {text}
@@ -207,8 +207,8 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
   const isEmpty = !data || !data.hasGroupedCategories;
 
   return (
-    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", margin: "0 0 4px" }}>
+    <Card className="p-5" style={{ borderRadius: 14, background: "var(--color-surface)" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 600, color: "var(--color-text)", margin: "0 0 4px" }}>
         {title}
       </h2>
       <p className="text-xs text-neutral-500 mb-4">
@@ -224,7 +224,7 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
         <>
           <p className="text-sm mb-4" style={{ color: "var(--color-text)" }}>
             Current combined balance:{" "}
-            <span style={{ fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--color-accent-700)" }}>
+            <span style={{ fontWeight: 600, fontFamily: "var(--font-mono)", color: "var(--color-accent-700)" }}>
               {currency(principal)}
             </span>
           </p>
@@ -370,7 +370,7 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
                 {solveFor === "return" && "You'd need an annual return of"}
               </span>
             </div>
-            <div style={{ color: "#fff", fontSize: 22, fontWeight: 800, fontFamily: "var(--font-mono)", lineHeight: 1.2, marginTop: 2 }}>
+            <div style={{ color: "#fff", fontSize: 22, fontWeight: 600, fontFamily: "var(--font-mono)", lineHeight: 1.2, marginTop: 2 }}>
               {formatSolved(result.value, result.unit)}
               {solveFor === "contribution" && result.value !== null && "/mo"}
             </div>

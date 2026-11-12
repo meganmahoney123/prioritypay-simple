@@ -22,7 +22,7 @@ export default function PersonaToggle({ value, onChange, options = ALL_PERSONAS,
     <div className="mb-5">
       <div
         className="mb-2"
-        style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}
+        style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}
       >
         {label}
       </div>
@@ -37,7 +37,7 @@ export default function PersonaToggle({ value, onChange, options = ALL_PERSONAS,
               aria-pressed={active}
               style={{
                 fontSize: 16,
-                fontWeight: 700,
+                fontWeight: 600,
                 padding: "14px 26px",
                 borderRadius: 999,
                 cursor: "pointer",

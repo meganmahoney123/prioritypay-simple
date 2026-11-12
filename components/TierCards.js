@@ -21,7 +21,7 @@ const TIER_TAG = "Even split, then waterfall";
 const TIER_SUB = "100% of each deposit is split evenly across these categories. As soon as a category meets the monthly cap, the rest of the deposit waterfalls down to the next tier.";
 
 export const TIER_CSS = `
-.pp-tier-card{background:#fff;border:2px solid #9A72F0;border-radius:22px;padding:6px 20px 8px}
+.pp-tier-card{background:#fff;border:1px solid #DDD5F3;border-radius:22px;padding:6px 20px 8px}
 .pp-tier-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 0 2px}
 .pp-tier-title{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:${PURPLE}}
 .pp-tier-sub{font-size:14px;line-height:1.5;color:#4A3F63;margin:0 0 4px}
@@ -35,7 +35,7 @@ export const TIER_CSS = `
 .pp-tier-pill input::-webkit-outer-spin-button,.pp-tier-pill input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .pp-tier-pill input:focus{background:#fff;border-radius:6px}
 .pp-tier-pill input[readonly]{cursor:default}
-.pp-tier-cap{display:inline-flex;align-items:center;gap:6px;border:2px solid #9A72F0;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:800;color:${PURPLE};white-space:nowrap}
+.pp-tier-cap{display:inline-flex;align-items:center;gap:6px;border:1px solid #DDD5F3;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:800;color:${PURPLE};white-space:nowrap}
 .pp-tier-cap input{width:62px;border:0;background:transparent;font-family:${MONO};font-weight:700;font-size:15px;color:#241337;text-align:right;padding:2px 0;outline:none;-moz-appearance:textfield}
 .pp-tier-cap input::-webkit-outer-spin-button,.pp-tier-cap input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .pp-tier-cap.pp-tier-bad{border-color:#B3261E}
@@ -47,13 +47,13 @@ export const TIER_CSS = `
 .pp-tier-num{width:26px;height:26px;border-radius:50%;background:${PURPLE};color:#fff;border:2px solid ${PURPLE};display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none;align-self:center}
 .pp-tier-num.out{background:#fff;color:${PURPLE}}
 .pp-tier-tag{font-size:13px;font-weight:500;color:#4A3F63;white-space:nowrap}
-.pp-tier-stack{background:#fff;border:2px solid #9A72F0;border-radius:18px;overflow:hidden}
+.pp-tier-stack{background:#fff;border:1px solid #DDD5F3;border-radius:18px;overflow:hidden}
 .pp-tier-stack .pp-tier-card{border:0;border-radius:0;padding:0 18px 4px;background:#fff}
 .pp-tier-stack .pp-tier-head{background:#F4EEFF;margin:0 -18px;padding:9px 18px;align-items:center;justify-content:flex-start;gap:10px}
 .pp-tier-stack .pp-tier-title{flex:1}
 .pp-tier-stack .pp-tier-sub{display:none}
 .pp-tier-stack .pp-tier-head + .pp-tier-sub + .pp-tier-row{border-top:0}
-.pp-tier-flow{text-align:center;font-size:12px;font-weight:800;color:${PURPLE};padding:5px 0;border-top:2px solid #D9C9FF;border-bottom:2px solid #D9C9FF;background:#fff}
+.pp-tier-flow{text-align:center;font-size:12px;font-weight:800;color:${PURPLE};padding:5px 0;border-top:1px solid #DDD5F3;border-bottom:1px solid #DDD5F3;background:#fff}
 .pp-tier-addlink{background:transparent;border:0;font:inherit;font-size:14px;font-weight:800;color:${PURPLE};cursor:pointer;padding:4px;text-align:left}
 .pp-tier-arrow{text-align:center;color:${PURPLE};font-weight:800;font-size:14px;padding:2px 0}
 .pp-tier-hint{font-size:13px;font-weight:600;color:#6B4FB8;width:100%}
@@ -68,7 +68,7 @@ function Header({ n, outline, title, tag, tagTitle, total, ok, show = true, acti
       {n ? <span className={`pp-tier-num${outline ? " out" : ""}`}>{n}</span> : null}
       <div className="pp-tier-title">{title}</div>
       {tag ? <span className="pp-tier-tag" title={tagTitle}>{tag}</span> : null}
-      {action || <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 14, color: ok ? PURPLE : "#B3261E", whiteSpace: "nowrap" }}>{show ? total : ""}</span>}
+      {action || <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 14, color: ok ? PURPLE : "#B3261E", whiteSpace: "nowrap" }}>{show ? total : ""}</span>}
     </div>
   );
 }
@@ -98,7 +98,7 @@ function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow, focusName }) 
       <input ref={nameRef} className="pp-tier-name" aria-label="Bill name" placeholder="Name" value={r.label || ""} onChange={(e) => onUpdate(r.id, { label: e.target.value })} />
       <span className={`pp-tier-cap${showBad ? " pp-tier-bad" : ""}`}>
         Monthly cap
-        <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 15, color: "#241337" }}>$</span>
+        <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 15, color: "#241337" }}>$</span>
         <input
           aria-label={`${r.label || "Bill"} monthly cap`}
           type="number"
@@ -153,7 +153,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
           const rows = tierRows(percent, t);
           const delAction =
             confirming === t ? (
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#B3261E", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#B3261E", whiteSpace: "nowrap" }}>
                 Delete this tier and its {rows.length} {rows.length === 1 ? "bill" : "bills"}?{" "}
                 <button type="button" className="pp-tier-more" style={{ color: "#B3261E" }} onClick={() => { setConfirming(null); onRemoveTier(t); }}>Yes, delete</button>
                 <button type="button" className="pp-tier-more" onClick={() => setConfirming(null)}>Cancel</button>
@@ -195,7 +195,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
           );
         })}
         {/* "+ Add a priority tier" sits just above the Final Categories card */}
-        <div style={{ padding: "9px 18px", background: "#fff", borderBottom: "2px solid #D9C9FF" }}>
+        <div style={{ padding: "9px 18px", background: "#fff", borderBottom: "1px solid #DDD5F3" }}>
           <button type="button" className="pp-tier-addlink" style={{ padding: 0 }} onClick={() => (placeholders > 0 ? setExtra((v) => v + 1) : onAddTier())}>
             + Add a priority tier{shown === 0 ? " (rent, car payment, insurance... paid before anything else)" : ""}
           </button>

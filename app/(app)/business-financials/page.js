@@ -162,7 +162,7 @@ export default function BusinessFinancialsPage() {
             fontFamily: "var(--font-mono)",
             fontSize: "clamp(36px, 5.5vw, 56px)",
             lineHeight: 1,
-            fontWeight: 800,
+            fontWeight: 600,
             letterSpacing: "-0.02em",
             color: "#fff",
             marginTop: 14,

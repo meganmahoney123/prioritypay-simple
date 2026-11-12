@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, PrimaryButton } from "@/components/ui";
-import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
+import { BLOOM_TOKENS, bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
 import { cancelLinkFor } from "@/lib/cancelLinks";
 import { FREQUENCIES, frequencyLabel, occurrencesBetween, upcoming, toIso, parseIso } from "@/lib/bills";
 
@@ -518,7 +518,7 @@ export default function BillsPage() {
   if (loading) return <div style={{ padding: 24, color: muted }}>Loading your bills...</div>;
   if (needsSetup) {
     return (
-      <div style={{ maxWidth: 720 }}>
+      <div style={{ ...BLOOM_TOKENS, maxWidth: 720 }}>
         <Card><h2 style={h2}>Almost ready</h2><p style={{ color: muted, margin: 0 }}>This page needs one database update before it can save your bills. Run the latest SQL migration in Supabase, then refresh.</p></Card>
       </div>
     );
@@ -533,7 +533,7 @@ export default function BillsPage() {
   const th = { fontSize: 11.5, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: muted };
 
   return (
-    <div style={{ maxWidth: 940, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ ...BLOOM_TOKENS, maxWidth: 940, display: "flex", flexDirection: "column", gap: 16 }}>
       {error && <div style={{ color: "#B3261E", fontSize: 14 }}>{error}</div>}
 
       {confirmScreen ? (

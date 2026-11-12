@@ -39,7 +39,7 @@ export default function SimpleSplitCard({ rows, onUpdate, onRemove, overflow, pe
   return (
     <div className="pp-ssc" role="group" aria-label={`Sample ${money(SAMPLE)} deposit split`}>
       <style>{`
-        .pp-ssc{border:1px solid #D9C9FF;border-radius:24px;background:#fff;padding:20px 22px;display:grid;gap:14px}
+        .pp-ssc{border:1px solid #DDD5F3;border-radius:24px;background:#fff;padding:20px 22px;display:grid;gap:14px}
         .pp-ssc .pp-ssc-body{display:grid;grid-template-columns:150px minmax(0,1fr);gap:24px;align-items:center}
         .pp-ssc .pp-ssc-row{display:grid;grid-template-columns:12px minmax(0,1fr) 92px 76px 32px;gap:10px;align-items:center;font-size:15px;min-height:40px}
         .pp-ssc .pp-ssc-pct{display:flex;align-items:center;justify-content:flex-end;gap:4px;color:#6b6280}
@@ -58,7 +58,7 @@ export default function SimpleSplitCard({ rows, onUpdate, onRemove, overflow, pe
         <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
           Sample: {money(SAMPLE)} deposit
         </span>
-        {over && <span style={{ fontSize: 13, fontWeight: 700, color: "#B42318" }}>Over 100% ({pctText(used)})</span>}
+        {over && <span style={{ fontSize: 13, fontWeight: 600, color: "#B42318" }}>Over 100% ({pctText(used)})</span>}
       </div>
 
       <div className="pp-ssc-body">
@@ -118,7 +118,7 @@ export default function SimpleSplitCard({ rows, onUpdate, onRemove, overflow, pe
                     />
                     %
                   </span>
-                  <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money((pct / 100) * SAMPLE)}</span>
+                  <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{money((pct / 100) * SAMPLE)}</span>
                   <button type="button" className="pp-ssc-x" aria-label={`Remove ${r.label}`} onClick={() => onRemove(r.id)}>
                     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="#6B6280" strokeWidth="1.8" strokeLinecap="round" /></svg>
                   </button>
@@ -135,7 +135,7 @@ export default function SimpleSplitCard({ rows, onUpdate, onRemove, overflow, pe
               Guilt-Free Spending <span style={{ fontSize: 13, opacity: 0.8 }}>(what&apos;s left)</span>
             </span>
             <span style={{ textAlign: "right", color: "#6b6280", paddingRight: 14 }}>{pctText(rest)}</span>
-            <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{money((rest / 100) * SAMPLE)}</span>
+            <span style={{ textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{money((rest / 100) * SAMPLE)}</span>
             <span />
           </div>
         </div>

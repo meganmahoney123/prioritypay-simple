@@ -37,14 +37,14 @@ function currency(n) {
 // Same look as the Bills and Autopays tab: white card, purple outline, small
 // spaced-out grey labels, big monospace numbers, thicker hairline dividers.
 const cardStyle = {
-  border: "2px solid #9A72F0",
-  borderRadius: 22,
+  border: "1px solid #DDD5F3",
+  borderRadius: 14,
   background: "#fff",
   color: "var(--color-text)",
   padding: "24px 26px",
 };
-const eyebrow = { fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8" };
-const bigNumber = { fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "#241337" };
+const eyebrow = { fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280" };
+const bigNumber = { fontSize: 34, fontWeight: 600, lineHeight: 1.15, marginTop: 6, color: "#241337" };
 const divider = { height: 2, background: "#E7DEFA", margin: "14px 0 10px" };
 const minus = { color: "#9C3B22" };
 
@@ -123,7 +123,7 @@ function RecentDeposits({ deposits, periodTitle, rangeLabel }) {
             <CompactDepositRow key={d.id} d={d} />
           ))}
         </div>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--color-accent-700)", textDecoration: "underline", marginTop: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "underline", marginTop: 8 }}>
           View all {deposits.length} {deposits.length === 1 ? "deposit" : "deposits"}
         </div>
       </button>
@@ -141,7 +141,7 @@ function RecentDeposits({ deposits, periodTitle, rangeLabel }) {
           >
             <div className="flex items-start justify-between gap-3" style={{ padding: "18px 20px 12px" }}>
               <div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "var(--color-accent-900)" }}>All deposits</div>
+                <div style={{ fontSize: 17, fontWeight: 600, color: "var(--color-accent-900)" }}>All deposits</div>
                 <div style={{ fontSize: 12.5, color: "var(--color-accent-700)" }}>
                   {rangeLabel || periodTitle} · {deposits.length} {deposits.length === 1 ? "deposit" : "deposits"}
                 </div>

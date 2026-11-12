@@ -48,8 +48,8 @@ export default function SplitPercentPieChart({ percent = [], remainingPct = 0 })
   const hasData = pieData.length > 0;
 
   return (
-    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)", margin: "0 0 4px" }}>
+    <Card className="p-5" style={{ borderRadius: 14, background: "var(--color-surface)" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 600, color: "var(--color-text)", margin: "0 0 4px" }}>
         What your split looks like
       </h2>
       <p className="text-xs text-neutral-500 mb-4">Sample: $10,000 deposit. Updates live as you adjust percentages below.</p>

@@ -35,7 +35,7 @@ const TIERS = {
 };
 
 const CSS = `
-.pp-ex-chip{padding:7px 16px;border-radius:999px;font-family:${MONO};font-weight:700;font-size:15px;background:#fff;color:${PURPLE};border:2px solid #D9C9FF;cursor:pointer}
+.pp-ex-chip{padding:7px 16px;border-radius:999px;font-family:${MONO};font-weight:700;font-size:15px;background:#fff;color:${PURPLE};border:1px solid #DDD5F3;cursor:pointer}
 .pp-ex-chip[aria-pressed="true"]{background:${PURPLE};color:#fff;border-color:${PURPLE}}
 .pp-ex-val{position:relative;width:96px;height:24px;flex:none;font-family:${MONO};font-weight:700;font-size:17px;color:${PURPLE};text-align:right}
 .pp-ex-val span{position:absolute;right:0;top:0;transition:opacity .35s}
@@ -65,7 +65,7 @@ export default function SplitExample() {
 
   const stayDelay = `${ROWS.length * 0.5}s`;
   return (
-    <div style={{ background: "#fff", border: "2px solid #9A72F0", borderRadius: 18, overflow: "hidden" }}>
+    <div style={{ background: "#fff", border: "1px solid #DDD5F3", borderRadius: 18, overflow: "hidden" }}>
       <style>{TIER_CSS}{CSS}</style>
       <button
         type="button"
@@ -74,8 +74,8 @@ export default function SplitExample() {
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", background: "#F4EEFF", border: 0, cursor: "pointer", font: "inherit", textAlign: "left" }}
       >
         <span aria-hidden style={{ fontSize: 17 }}>💡</span>
-        <span style={{ flex: 1, fontSize: 16, fontWeight: 800, color: PURPLE }}>Confused? Here&apos;s an example of how splits work</span>
-        <span style={{ color: PURPLE, fontWeight: 800 }}>{open ? "▴" : "▾"}</span>
+        <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: PURPLE }}>Confused? Here&apos;s an example of how splits work</span>
+        <span style={{ color: PURPLE, fontWeight: 600 }}>{open ? "▴" : "▾"}</span>
       </button>
       {open && (
         <div style={{ padding: "16px 18px 18px", display: "grid", gap: 18 }}>
@@ -83,7 +83,7 @@ export default function SplitExample() {
             This is a made-up example, not your numbers. Pick a deposit and watch the money fill the tiers from the top down.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 14, fontWeight: 700 }}>Deposit</span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>Deposit</span>
             {AMOUNTS.map((a, i) => (
               <button key={a} type="button" className="pp-ex-chip" aria-pressed={sel === i} onClick={() => pick(i)}>{usd(a)}</button>
             ))}
@@ -112,7 +112,7 @@ export default function SplitExample() {
                           {kind === "cap" ? (
                             <span className="pp-tier-cap">
                               Monthly cap
-                              <span style={{ fontFamily: MONO, fontWeight: 700, fontSize: 15, color: "#241337" }}>$ {rule.toLocaleString("en-US")}</span>
+                              <span style={{ fontFamily: MONO, fontWeight: 600, fontSize: 15, color: "#241337" }}>$ {rule.toLocaleString("en-US")}</span>
                             </span>
                           ) : (
                             <span className="pp-tier-pill">{rule}%</span>

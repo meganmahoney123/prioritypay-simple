@@ -23,7 +23,7 @@ export default function DebtPayoffCard({ hasCategory }) {
       <Card className="p-4" style={{ border: "1.5px solid var(--color-accent)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 800 }}>Debt Payoff</div>
+            <div style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 600 }}>Debt Payoff</div>
             <div style={{ fontSize: 14, color: "color-mix(in srgb, var(--color-text) 68%, transparent)" }}>
               {info
                 ? info.plan.neverPaysOff
@@ -32,7 +32,7 @@ export default function DebtPayoffCard({ hasCategory }) {
                 : "Add your debts to get a payoff date."}
             </div>
           </div>
-          <span style={{ fontSize: 14, fontWeight: 800, color: "var(--color-accent-700)" }}>{info ? "Open plan ›" : "Set up your payoff plan ›"}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)" }}>{info ? "Open plan ›" : "Set up your payoff plan ›"}</span>
         </div>
       </Card>
     </Link>

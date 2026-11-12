@@ -27,7 +27,7 @@ export default function CloseoutNudge() {
   if (!info || info.status === "confirmed") return null;
 
   return (
-    <Card className="p-4 flex items-center justify-between gap-3 flex-wrap" style={bloomAccentCardStyle({ borderRadius: 22 })}>
+    <Card className="p-4 flex items-center justify-between gap-3 flex-wrap" style={bloomAccentCardStyle({ borderRadius: 14 })}>
       <div className="flex items-center gap-2">
         <CalendarCheck size={16} style={{ color: "var(--color-accent-700)" }} className="shrink-0" />
         <span className="text-sm" style={{ color: "var(--color-accent-800)" }}>

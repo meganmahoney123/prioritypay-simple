@@ -51,8 +51,8 @@ export default function TotalAllocationSection() {
   }, [slicesRaw, unallocated, total]);
 
   return (
-    <Card className="p-5" style={{ borderRadius: 26, background: "var(--color-surface)" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>
+    <Card className="p-5" style={{ borderRadius: 14, background: "var(--color-surface)" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontWeight: 600, color: "var(--color-text)" }}>
         How all your money is allocated right now
       </h2>
       <p className="text-xs text-neutral-500 mb-4">

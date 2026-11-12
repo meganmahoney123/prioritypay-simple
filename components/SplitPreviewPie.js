@@ -44,7 +44,7 @@ export default function SplitPreviewPie({ rows, colorFor, sample = SAMPLE }) {
   return (
     <div className="pp-split-preview" role="group" aria-label={`Sample ${money(sample)} deposit split`}>
       <style>{`
-        .pp-split-preview{border:1px solid #D9C9FF;border-radius:24px;background:#fff;padding:16px 20px;display:grid;gap:12px;z-index:5}
+        .pp-split-preview{border:1px solid #DDD5F3;border-radius:24px;background:#fff;padding:16px 20px;display:grid;gap:12px;z-index:5}
         .pp-split-preview .pp-sp-body{display:grid;grid-template-columns:132px minmax(0,1fr);gap:18px;align-items:center}
         .pp-split-preview ul{list-style:none;margin:0;padding:0;display:grid;gap:5px}
         .pp-split-preview li{display:grid;grid-template-columns:12px minmax(0,1fr) auto auto;gap:8px;align-items:center;font-size:14px}
@@ -55,7 +55,7 @@ export default function SplitPreviewPie({ rows, colorFor, sample = SAMPLE }) {
         <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
           Sample: {money(sample)} deposit
         </span>
-        {over && <span style={{ fontSize: 13, fontWeight: 700, color: "#B42318" }}>Over 100% ({pctText(used)})</span>}
+        {over && <span style={{ fontSize: 13, fontWeight: 600, color: "#B42318" }}>Over 100% ({pctText(used)})</span>}
       </div>
       <div className="pp-sp-body">
         <svg viewBox="0 0 132 132" width="132" height="132" aria-hidden="true">
@@ -85,7 +85,7 @@ export default function SplitPreviewPie({ rows, colorFor, sample = SAMPLE }) {
               <span style={{ width: 12, height: 12, borderRadius: 4, background: i.color, border: i.rest ? "1px solid #C4A9FA" : "none" }} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i.label}</span>
               <span style={{ fontFamily: "var(--font-mono)", color: "color-mix(in srgb, var(--color-text) 60%, transparent)", fontVariantNumeric: "tabular-nums" }}>{pctText(i.pct)}</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, minWidth: 64, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{money((i.pct / 100) * sample)}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, minWidth: 64, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{money((i.pct / 100) * sample)}</span>
             </li>
           ))}
         </ul>

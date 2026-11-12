@@ -321,7 +321,7 @@ function WithdrawalsPageInner() {
                   creditCard
                   onLinked={load}
                   className="text-[15px] px-3 py-1.5"
-                  style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700 }}
+                  style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 600 }}
                 />
               </div>
             ) : matchedTxnId ? (
@@ -330,8 +330,8 @@ function WithdrawalsPageInner() {
                 style={{ padding: "14px 16px", borderRadius: 16, border: "2.5px solid #4E22B8", background: "#EDE6FF" }}
               >
                 <span>
-                  <span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", color: "#4E22B8" }}>SELECTED CHARGE</span>
-                  <span style={{ display: "block", fontSize: 17, fontWeight: 700, color: "#241337" }}>
+                  <span style={{ display: "block", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: "#4E22B8" }}>SELECTED CHARGE</span>
+                  <span style={{ display: "block", fontSize: 17, fontWeight: 600, color: "#241337" }}>
                     {description} · {formatDate(occurredAt)}
                   </span>
                 </span>
@@ -345,7 +345,7 @@ function WithdrawalsPageInner() {
                       setDescription("");
                     }}
                     className="underline shrink-0"
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "#4E22B8", fontWeight: 700, minHeight: 44 }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#4E22B8", fontWeight: 600, minHeight: 44 }}
                   >
                     Change
                   </button>
@@ -362,14 +362,14 @@ function WithdrawalsPageInner() {
                       placeholder="Search by name (or part of a name)…"
                       aria-label="Search charges by name"
                       className="w-full"
-                      style={{ minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 16, color: "#241337" }}
+                      style={{ minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1.1px solid #DDD5F3", background: "#fff", fontSize: 16, color: "#241337" }}
                     />
                     <div className="flex flex-wrap items-center gap-2">
                       <select
                         value={cardMonth}
                         onChange={(e) => setCardMonth(e.target.value)}
                         aria-label="Filter charges by month"
-                        style={{ minHeight: 44, padding: "0 12px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 15, color: "#241337" }}
+                        style={{ minHeight: 44, padding: "0 12px", borderRadius: 14, border: "1.1px solid #DDD5F3", background: "#fff", fontSize: 15, color: "#241337" }}
                       >
                         <option value="">All months</option>
                         {cardMonthOptions.map((m) => (
@@ -387,7 +387,7 @@ function WithdrawalsPageInner() {
                           placeholder="Min"
                           aria-label="Minimum amount"
                           className="font-mono"
-                          style={{ width: 84, minHeight: 44, padding: "0 10px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 15, color: "#241337" }}
+                          style={{ width: 84, minHeight: 44, padding: "0 10px", borderRadius: 14, border: "1.1px solid #DDD5F3", background: "#fff", fontSize: 15, color: "#241337" }}
                         />
                         to
                         <input
@@ -399,7 +399,7 @@ function WithdrawalsPageInner() {
                           placeholder="Max"
                           aria-label="Maximum amount"
                           className="font-mono"
-                          style={{ width: 84, minHeight: 44, padding: "0 10px", borderRadius: 14, border: "1.5px solid #B9A3F0", background: "#fff", fontSize: 15, color: "#241337" }}
+                          style={{ width: 84, minHeight: 44, padding: "0 10px", borderRadius: 14, border: "1.1px solid #DDD5F3", background: "#fff", fontSize: 15, color: "#241337" }}
                         />
                       </span>
                       {cardFiltersActive && (
@@ -407,7 +407,7 @@ function WithdrawalsPageInner() {
                           type="button"
                           onClick={clearCardFilters}
                           className="underline"
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#4E22B8", fontWeight: 700, fontSize: 14, minHeight: 44 }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#4E22B8", fontWeight: 600, fontSize: 14, minHeight: 44 }}
                         >
                           Clear filters
                         </button>
@@ -425,7 +425,7 @@ function WithdrawalsPageInner() {
               <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
                 {Object.entries(groupedCardTxns).map(([group, txns]) => (
                   <div key={group}>
-                    <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3B1C7A", marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3B1C7A", marginBottom: 8 }}>
                       {group}
                     </div>
                     <div className="flex flex-col gap-2.5">
@@ -438,16 +438,16 @@ function WithdrawalsPageInner() {
                             type="button"
                             onClick={() => pickCardTxn(t)}
                             className="w-full flex items-center gap-4 text-left"
-                            style={{ minHeight: 64, padding: "8px 16px", borderRadius: 16, border: "1.5px solid #D9C9FF", background: "#fff", color: "#241337" }}
+                            style={{ minHeight: 64, padding: "8px 16px", borderRadius: 16, border: "1.1px solid #DDD5F3", background: "#fff", color: "#241337" }}
                           >
                             <span
                               className="flex flex-col items-center justify-center shrink-0"
                               style={{ width: 52, height: 48, borderRadius: 12, background: "#EDE6FF", color: "#3B1C7A" }}
                             >
-                              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em" }}>{mon}</span>
-                              <span style={{ fontSize: 19, fontWeight: 800, lineHeight: 1 }}>{Number(dd)}</span>
+                              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>{mon}</span>
+                              <span style={{ fontSize: 19, fontWeight: 600, lineHeight: 1 }}>{Number(dd)}</span>
                             </span>
-                            <span className="flex-1 min-w-0 truncate" style={{ fontSize: 17, fontWeight: 700 }}>{t.name}</span>
+                            <span className="flex-1 min-w-0 truncate" style={{ fontSize: 17, fontWeight: 600 }}>{t.name}</span>
                             <span className="font-mono shrink-0" style={{ fontSize: 18, fontWeight: 600 }}>{currency(t.amount)}</span>
                           </button>
                         );
@@ -525,7 +525,7 @@ function WithdrawalsPageInner() {
             {businesses.length === 0 ? (
               <p className="text-[15px] p-3" style={bloomNoticeCardStyle()}>
                 <b>No businesses added yet.</b> Add each business in Settings and pick its type, then come back to save this expense.{" "}
-                <a href="/settings#businesses" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
+                <a href="/settings#businesses" style={{ color: "var(--color-accent-700)", fontWeight: 600 }}>Open Settings</a>
               </p>
             ) : (
               <label className="text-[15px] block">
@@ -610,13 +610,13 @@ function WithdrawalsPageInner() {
           className="mb-4"
           style={{ background: "#F3EEFF", border: "1.5px dashed #9A72F0", borderRadius: 16, padding: "14px 16px" }}
         >
-          <div style={{ fontSize: 15, fontWeight: 800, color: "#241337" }}>Receipt for your taxes (optional)</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#241337" }}>Receipt for your taxes (optional)</div>
           <p style={{ fontSize: 14, color: "#4A3F63", margin: "2px 0 10px", lineHeight: 1.45 }}>
             Keep a photo or PDF of the receipt with this expense so it is ready at tax time.
           </p>
           <label
             className="inline-flex items-center gap-2 cursor-pointer"
-            style={{ background: receiptUrl ? "#fff" : "#4E22B8", color: receiptUrl ? "#4E22B8" : "#fff", border: "2px solid #4E22B8", borderRadius: 14, padding: "11px 18px", fontSize: 15, fontWeight: 800, minHeight: 46 }}
+            style={{ background: receiptUrl ? "#fff" : "#4E22B8", color: receiptUrl ? "#4E22B8" : "#fff", border: "2px solid #4E22B8", borderRadius: 14, padding: "11px 18px", fontSize: 15, fontWeight: 600, minHeight: 46 }}
           >
             <Paperclip size={16} />
             {uploading ? "Uploading…" : receiptUrl ? `Receipt attached${receiptFile?.name ? `: ${receiptFile.name}` : ""}. Replace` : "Attach receipt"}

@@ -477,7 +477,7 @@ function SplitRulesPageInner() {
             gap: 10,
           }}
         >
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#7A2C18" }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "#7A2C18" }}>
             Connect a bank account to finish setting up {shownNeed.length === 1 ? "this category" : "these categories"}
           </div>
           <div style={{ fontSize: 15, lineHeight: 1.5, color: "#7A2C18" }}>
@@ -485,14 +485,14 @@ function SplitRulesPageInner() {
             Until you pick an account, that money just stays where your deposit lands.
           </div>
           {accounts.length === 0 ? (
-            <a href="/accounts" style={{ alignSelf: "flex-start", background: "#4E22B8", color: "#fff", borderRadius: 14, padding: "10px 18px", fontWeight: 800, fontSize: 15 }}>
+            <a href="/accounts" style={{ alignSelf: "flex-start", background: "#4E22B8", color: "#fff", borderRadius: 14, padding: "10px 18px", fontWeight: 600, fontSize: 15 }}>
               Connect a bank account first
             </a>
           ) : (
             <button
               type="button"
               onClick={scrollToFirstUnconnected}
-              style={{ alignSelf: "flex-start", background: "#4E22B8", color: "#fff", borderRadius: 14, padding: "10px 18px", fontWeight: 800, fontSize: 15 }}
+              style={{ alignSelf: "flex-start", background: "#4E22B8", color: "#fff", borderRadius: 14, padding: "10px 18px", fontWeight: 600, fontSize: 15 }}
             >
               Choose an account for {shownNeed[0].label}
             </button>
@@ -569,7 +569,7 @@ function SplitRulesPageInner() {
           margin: 0, borderRadius: "20px 20px 0 0",
           padding: "8px 16px calc(8px + env(safe-area-inset-bottom, 0px))",
           background: "#fff",
-          borderTop: "1.5px solid #D9C9FF",
+          borderTop: "1.1px solid #DDD5F3",
           boxShadow: "0 -8px 24px rgba(78,34,184,0.10)",
           display: "flex",
           flexDirection: "column",
@@ -585,11 +585,11 @@ function SplitRulesPageInner() {
           const dot = { problem: "#C2452B", saving: "#9A72F0", pending: "#E07A1F", saved: "#4E22B8", idle: "#CBB8F5" }[state];
           const text = soft && !dirty && !saving ? "Almost there: add a monthly cap to each priority row and your changes save automatically." : state === "problem" ? problem : saving ? "Saving…" : dirty ? "Unsaved changes" : saved ? "All changes saved" : "Changes save automatically.";
           return (
-            <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, fontSize: 14, fontWeight: 700, color, textAlign: "center" }}>
+            <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 8, fontSize: 14, fontWeight: 600, color, textAlign: "center" }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: dot, display: "inline-block", flex: "none" }} />
               {text}
               {state === "problem" && lastError && (
-                <button type="button" onClick={() => trySave(percent)} style={{ textDecoration: "underline", fontWeight: 800, color: "#4E22B8" }}>
+                <button type="button" onClick={() => trySave(percent)} style={{ textDecoration: "underline", fontWeight: 600, color: "#4E22B8" }}>
                   Try again
                 </button>
               )}
@@ -601,7 +601,7 @@ function SplitRulesPageInner() {
                 title={undoCount === 0 && !dirty ? "Nothing to undo yet" : "Undo your last change"}
                 style={{
                   textDecoration: "underline",
-                  fontWeight: 800,
+                  fontWeight: 600,
                   color: "#4E22B8",
                   opacity: undoCount === 0 && !dirty ? 0.4 : 1,
                   cursor: undoCount === 0 && !dirty ? "default" : "pointer",

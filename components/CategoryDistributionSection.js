@@ -98,7 +98,7 @@ function CategoryCard({ category, color, onSavePct, savingPct, mode = "month" })
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-          <span className="truncate" style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>{label}</span>
+          <span className="truncate" style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>{label}</span>
         </div>
         {/* Current split percentage, editable right here -- saves via
             PUT /api/split-rules the moment the field loses focus or Enter
@@ -131,7 +131,7 @@ function CategoryCard({ category, color, onSavePct, savingPct, mode = "month" })
               MozAppearance: "textfield",
               WebkitAppearance: "none",
               color: "var(--color-text)",
-              fontWeight: 700,
+              fontWeight: 600,
             }}
           />
           %
@@ -140,7 +140,7 @@ function CategoryCard({ category, color, onSavePct, savingPct, mode = "month" })
 
       <div className="flex items-end justify-between gap-3 mb-1">
         <span className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance</span>
-        <span className="font-mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--color-text)" }}>{currency(balance)}</span>
+        <span className="font-mono" style={{ fontSize: 22, fontWeight: 600, color: "var(--color-text)" }}>{currency(balance)}</span>
       </div>
 
       <div className="flex items-center justify-between text-xs mb-2" style={{ color: "var(--color-neutral-700)" }}>
@@ -337,7 +337,7 @@ export default function CategoryDistributionSection({ mode = "month", period, su
               unused Guilt-Free money to nudge about. */}
           {mode === "month" && period === currentMonthPeriod() && guiltFree > 0 && daysLeftInMonth() <= 5 && (
             <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-surface)", padding: "20px 22px" }}>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 13.5, fontWeight: 800, color: "var(--color-text)" }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontSize: 13.5, fontWeight: 600, color: "var(--color-text)" }}>
                 Put your Guilt-Free balance to work
               </div>
               <div style={{ fontSize: 12, color: "var(--color-neutral-700)", marginTop: 3, lineHeight: 1.4 }}>
@@ -366,7 +366,7 @@ export default function CategoryDistributionSection({ mode = "month", period, su
 
       {!loading && cardCategories.length > 0 && (
         <div>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)", marginBottom: 12 }}>
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 600, color: "var(--color-text)", marginBottom: 12 }}>
             Your Categories
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -395,7 +395,7 @@ export default function CategoryDistributionSection({ mode = "month", period, su
           than nested inside one big outer box. */}
       {!loading && totalDeposited > 0 && (
         <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-lg)", background: "var(--color-surface)", padding: "20px 20px 22px" }}>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--color-text)" }}>
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>
             How your income was distributed ({mode === "year" ? "this year" : "this month"})
           </h3>
           <p className="text-xs mt-0.5" style={{ color: "var(--color-neutral-700)" }}>
@@ -461,10 +461,10 @@ export default function CategoryDistributionSection({ mode = "month", period, su
                   stays crisp text (selectable, no SVG font scaling) and
                   doesn't move if the chart resizes. */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-neutral-700)" }}>
+                <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-neutral-700)" }}>
                   Total Income
                 </span>
-                <span className="font-mono" style={{ fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>
+                <span className="font-mono" style={{ fontSize: 17, fontWeight: 600, color: "var(--color-text)" }}>
                   {currency(totalDeposited)}
                 </span>
               </div>

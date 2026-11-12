@@ -40,7 +40,7 @@ function CapProgress({ used, limit, unit }) {
       <div style={{ height: 8, borderRadius: 999, background: "#EDE6FF", overflow: "hidden" }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
         <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: full ? "#B58900" : "#6D3BE0" }} />
       </div>
-      <div style={{ marginTop: 5, fontSize: 13, fontWeight: 700, color: full ? "#8A6A00" : "var(--color-text-muted, #4A3F63)", fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ marginTop: 5, fontSize: 13, fontWeight: 600, color: full ? "#8A6A00" : "var(--color-text-muted, #4A3F63)", fontVariantNumeric: "tabular-nums" }}>
         {currency(used)} of {currency(lim)} {unit}
         {full ? " · limit reached" : ""}
       </div>
@@ -94,7 +94,7 @@ function CapCard({ title, sub, value, onChange, used, unit }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: "var(--color-text)" }}>{title}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)" }}>{title}</div>
         <button
           type="button"
           role="switch"
@@ -132,7 +132,7 @@ function CapCard({ title, sub, value, onChange, used, unit }) {
           opacity: isSet ? 1 : 0.55,
         }}
       >
-        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--color-text-muted, #4A3F63)" }}>$</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, color: "var(--color-text-muted, #4A3F63)" }}>$</span>
         <input
           type="number"
           aria-label={`${title} amount in dollars`}
@@ -144,7 +144,7 @@ function CapCard({ title, sub, value, onChange, used, unit }) {
           value={isSet ? value : ""}
           onChange={(e) => onChange(clamp(e.target.value))}
           onBlur={(e) => onChange(settle(e.target.value))}
-          style={{ width: "100%", minWidth: 0, border: 0, outline: "none", background: "transparent", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 17, color: "var(--color-text)" }}
+          style={{ width: "100%", minWidth: 0, border: 0, outline: "none", background: "transparent", fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 17, color: "var(--color-text)" }}
         />
       </label>
       {isSet && <CapProgress used={used} limit={value} unit={unit} />}
@@ -338,7 +338,7 @@ function PercentRow({ shareMode, rule, accounts, onUpdate, onRemove, creating, s
 
   if (theme === "ledger") {
     return (
-      <div data-rule-id={rule.id} style={tierStyle ? { borderTop: "1.5px solid #E7DEFA", padding: "13px 0" } : { border: "1px solid var(--color-divider)", borderRadius: 22, background: "var(--color-surface)", padding: "18px 20px" }}>
+      <div data-rule-id={rule.id} style={tierStyle ? { borderTop: "1.5px solid #E7DEFA", padding: "13px 0" } : { border: "1px solid var(--color-divider)", borderRadius: 14, background: "var(--color-surface)", padding: "18px 20px" }}>
         {tierStyle ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -396,7 +396,7 @@ function PercentRow({ shareMode, rule, accounts, onUpdate, onRemove, creating, s
                 minWidth: 0,
                 fontFamily: "var(--font-heading)",
                 fontSize: 19,
-                fontWeight: 700,
+                fontWeight: 600,
               }}
             >
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor || "var(--color-accent)", flexShrink: 0 }} />
@@ -464,7 +464,7 @@ function PercentRow({ shareMode, rule, accounts, onUpdate, onRemove, creating, s
                   textAlign: "right",
                   fontFamily: "var(--font-mono)",
                   fontSize: 16,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   color: "#4E22B8",
                   background: "transparent",
                   border: 0,
@@ -472,7 +472,7 @@ function PercentRow({ shareMode, rule, accounts, onUpdate, onRemove, creating, s
                   opacity: isEmployerRetirementRow(rule) && rule.employerHandles ? 0.5 : 1,
                 }}
               />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "#4E22B8" }}>%</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 600, color: "#4E22B8" }}>%</span>
             </span>
             {canDelete && (
               <button
@@ -1052,7 +1052,7 @@ export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow
         {num ? <span className="pp-tier-num out">{num}</span> : null}
         <div className="pp-tier-title">{title}</div>
         <span className="pp-tier-tag" title="This is the final tier. The percentages below do NOT need to add up to 100% of your deposit.">By percent, can be under 100%</span>
-        <span style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, fontSize: 14, color: total > 100.0001 ? "#B3261E" : "#4E22B8", whiteSpace: "nowrap" }}>{total}%</span>
+        <span style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, fontSize: 14, color: total > 100.0001 ? "#B3261E" : "#4E22B8", whiteSpace: "nowrap" }}>{total}%</span>
       </div>
       <p className="pp-tier-sub">
         This is the final tier. The percentages below do NOT need to add up to 100% of your deposit. For example, you could schedule just 75% of each deposit to be split among the categories below.
@@ -1092,7 +1092,7 @@ export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow
               )}
               {retOpen && (
                 <div style={{ margin: "0 0 12px 19px", border: "2px solid #E7DEFA", borderRadius: 18, padding: "12px 16px 4px", background: "#fff" }}>
-                  <div style={{ fontSize: 16, fontWeight: 800 }}>How should we split your retirement money between these accounts?</div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>How should we split your retirement money between these accounts?</div>
                   <p style={{ fontSize: 14, lineHeight: 1.5, color: "#4A3F63", margin: "4px 0 2px" }}>
                     Your retirement total is <b style={{ color: "#4E22B8" }}>{retTotal}%</b> of each deposit. The accounts below always add up to 100% of that.
                   </p>
@@ -1116,7 +1116,7 @@ export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow
                       startingBalanceRoomInfo={roomById[r.id]}
                     />
                   ))}
-                  <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1.5px solid #E7DEFA", padding: "8px 0 10px", fontSize: 14, fontWeight: 800 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1.5px solid #E7DEFA", padding: "8px 0 10px", fontSize: 14, fontWeight: 600 }}>
                     <span style={{ color: "#4E22B8" }}>✓ Adds up to 100%</span>
                     <span style={{ fontFamily: "var(--font-mono, monospace)" }}>100%</span>
                   </div>
@@ -1290,7 +1290,7 @@ export default function PercentSplitEditor({
           <summary
             style={{
               fontSize: 16,
-              fontWeight: 700,
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1322,7 +1322,7 @@ export default function PercentSplitEditor({
             <span style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
               Allocated
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: 30, color: "#4E22B8", fontVariantNumeric: "lining-nums tabular-nums" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 30, color: "#4E22B8", fontVariantNumeric: "lining-nums tabular-nums" }}>
               {totalPct}%
             </span>
           </div>
@@ -1331,7 +1331,7 @@ export default function PercentSplitEditor({
           section.type === "group" ? (
             <div
               key={section.group}
-              style={{ border: "1px solid #D9C9FF", borderRadius: 24, background: "#F7F3FF", overflow: "hidden" }}
+              style={{ border: "1px solid #DDD5F3", borderRadius: 14, background: "#F7F3FF", overflow: "hidden" }}
             >
               <div
                 style={{
@@ -1341,7 +1341,7 @@ export default function PercentSplitEditor({
                   justifyContent: "space-between",
                   gap: "4px 20px",
                   padding: "16px 22px",
-                  borderBottom: "1px solid #D9C9FF",
+                  borderBottom: "1px solid #DDD5F3",
                   background: "#EDE6FF",
                 }}
               >
@@ -1349,7 +1349,7 @@ export default function PercentSplitEditor({
                   style={{
                     fontFamily: "var(--font-heading)",
                     fontSize: 14,
-                    fontWeight: 800,
+                    fontWeight: 600,
                     letterSpacing: "0.2em",
                     textTransform: "uppercase",
                     color: "#4E22B8",

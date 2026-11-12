@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BLOOM_TOKENS } from "@/lib/bloomTheme";
 import PendingTransfers from "@/components/PendingTransfers";
 import TransferHistory from "@/components/TransferHistory";
 
@@ -18,7 +19,7 @@ export default function DepositsPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" style={BLOOM_TOKENS}>
       <PendingTransfers showEmpty accounts={accounts} refreshKey={tick} onChanged={() => setTick((t) => t + 1)} />
       <TransferHistory accounts={accounts} refreshKey={tick} />
     </div>

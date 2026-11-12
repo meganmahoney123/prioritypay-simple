@@ -209,7 +209,7 @@ export default function DashboardPage() {
       {/* Greeting portals into AppShell's header in place of the plain
           "Dashboard" title -- see components/AppShell.js's titleSlot. */}
       {titleSlot && createPortal(
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 800, margin: 0, letterSpacing: "-0.03em" }}>
+        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 600, margin: 0, letterSpacing: "-0.03em" }}>
           {timeOfDayGreeting()}{greetingName ? `, ${greetingName}` : ""}
         </h1>,
         titleSlot
@@ -224,7 +224,7 @@ export default function DashboardPage() {
             <button
               onClick={() => setMode("month")}
               style={{
-                padding: "7px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999, border: "none", cursor: "pointer",
+                padding: "7px 16px", fontSize: 13, fontWeight: 600, borderRadius: 999, border: "none", cursor: "pointer",
                 background: mode === "month" ? "#FFFFFF" : "transparent",
                 color: mode === "month" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
               }}
@@ -234,7 +234,7 @@ export default function DashboardPage() {
             <button
               onClick={() => setMode("year")}
               style={{
-                padding: "7px 16px", fontSize: 13, fontWeight: 700, borderRadius: 999, border: "none", cursor: "pointer",
+                padding: "7px 16px", fontSize: 13, fontWeight: 600, borderRadius: 999, border: "none", cursor: "pointer",
                 background: mode === "year" ? "#FFFFFF" : "transparent",
                 color: mode === "year" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
               }}
@@ -256,7 +256,7 @@ export default function DashboardPage() {
               >
                 <ChevronLeft size={13} />
               </button>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 800, color: "var(--color-accent-700)", width: 130, textAlign: "center" }}>{periodLabel(monthPeriod)}</span>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 600, color: "var(--color-accent-700)", width: 130, textAlign: "center" }}>{periodLabel(monthPeriod)}</span>
               <button
                 onClick={() => !atLatestMonth && setMonthPeriod((p) => shiftPeriod(p, 1))}
                 disabled={atLatestMonth}
@@ -283,7 +283,7 @@ export default function DashboardPage() {
               >
                 <ChevronLeft size={12} color="var(--color-accent-700)" />
               </button>
-              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 800, color: "var(--color-accent-700)" }}>{year}</span>
+              <span style={{ fontFamily: "var(--font-heading)", fontSize: 12.5, fontWeight: 600, color: "var(--color-accent-700)" }}>{year}</span>
               <button
                 onClick={() => !atLatestYear && setYear((y) => Math.min(currentYear, y + 1))}
                 disabled={atLatestYear}
@@ -377,7 +377,7 @@ export default function DashboardPage() {
           including cards, lives on the Accounts page this links to. */}
       {accounts.filter((a) => a.account_type !== "credit").length > 0 && (
         <div>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 13, fontWeight: 800, color: "var(--color-neutral-700)", marginBottom: 10 }}>
+          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 13, fontWeight: 600, color: "var(--color-neutral-700)", marginBottom: 10 }}>
             Your Accounts
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -393,8 +393,8 @@ export default function DashboardPage() {
                     background: "var(--color-surface)", textDecoration: "none", color: "var(--color-text)",
                   }}
                 >
-                  <span style={{ fontSize: 14.5, fontWeight: 700 }}>{a.institution_name}</span>
-                  <span className="flex items-center gap-1.5" style={{ color: "var(--color-accent-700)", fontSize: 13, fontWeight: 700 }}>
+                  <span style={{ fontSize: 14.5, fontWeight: 600 }}>{a.institution_name}</span>
+                  <span className="flex items-center gap-1.5" style={{ color: "var(--color-accent-700)", fontSize: 13, fontWeight: 600 }}>
                     View Balance <ChevronRight size={14} />
                   </span>
                 </Link>

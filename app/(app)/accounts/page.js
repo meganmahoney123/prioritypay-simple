@@ -167,13 +167,13 @@ export default function AccountsPage() {
   // into a function so it can render inside either the "Your Accounts" or
   // "Connected Credit Cards" grid below without duplicating the JSX.
   const renderAccountCard = (acc) => (
-    <Card key={acc.id} style={{ padding: "22px 24px", borderRadius: 22, background: "#fff", border: "2px solid #9A72F0" }}>
+    <Card key={acc.id} style={{ padding: "22px 24px", borderRadius: 14, background: "#fff", border: "1px solid #DDD5F3" }}>
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: 21, fontWeight: 700, lineHeight: 1.15 }}>{acc.institution_name}</div>
+          <div style={{ fontFamily: "var(--font-heading)", fontSize: 21, fontWeight: 600, lineHeight: 1.15 }}>{acc.institution_name}</div>
           <div style={{ fontSize: 15, color: "#4A3F63" }}>{acc.account_name}{acc.mask ? ` •••• ${acc.mask}` : ""}</div>
         </div>
-        <span style={{ display: "inline-block", fontSize: 14, fontWeight: 800, color: "#0F6B4F", background: "#E3F5EE", borderRadius: 999, padding: "5px 12px", whiteSpace: "nowrap" }}>
+        <span style={{ display: "inline-block", fontSize: 14, fontWeight: 600, color: "#0F6B4F", background: "#E3F5EE", borderRadius: 999, padding: "5px 12px", whiteSpace: "nowrap" }}>
           {acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}
         </span>
       </div>
@@ -183,7 +183,7 @@ export default function AccountsPage() {
         if (bal === null || bal === undefined) return null;
         return (
           <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "2px solid #E7DEFA" }}>
-            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8" }}>Account balance</span>
+            <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280" }}>Account balance</span>
             <span className="font-mono font-bold" style={{ fontSize: 24 }}>{currency(Number(bal))}</span>
           </div>
         );
@@ -193,7 +193,7 @@ export default function AccountsPage() {
         const mine = ruleRows.filter((r) => r.accountId === acc.id);
         return (
           <div className="mb-3 pb-3" style={{ borderBottom: "2px solid #E7DEFA" }}>
-            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", marginBottom: 6 }}>Categories sent here</div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B6280", marginBottom: 6 }}>Categories sent here</div>
             {mine.length ? (
               <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 15, lineHeight: 1.6, color: "var(--color-text)" }}>
                 {mine.map((r) => (
@@ -247,7 +247,7 @@ export default function AccountsPage() {
             label="Enable auto-detect"
             onUpdated={load}
             className="text-[15px]"
-            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, padding: "8px 16px", fontSize: 13 }}
+            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 600, padding: "8px 16px", fontSize: 13 }}
           />
         </div>
       ) : null}
@@ -293,14 +293,14 @@ export default function AccountsPage() {
     return (
       <div
         key={acc.id}
-        style={{ border: "2px solid #9A72F0", borderRadius: 22, background: "#fff", padding: "22px 24px" }}
+        style={{ border: "1px solid #DDD5F3", borderRadius: 14, background: "#fff", padding: "22px 24px" }}
       >
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-9 h-9 flex items-center justify-center shrink-0" style={{ borderRadius: 9, background: "var(--color-accent-100)" }}>
             <CreditCard size={16} style={{ color: "var(--color-accent-700)" }} />
           </div>
           <div>
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700 }}>
+            <div style={{ fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 600 }}>
               {acc.institution_name} {acc.account_name}
             </div>
             <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{acc.mask ? `•••• ${acc.mask}` : ""}</div>
@@ -322,8 +322,8 @@ export default function AccountsPage() {
             </div>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "14px 0 10px" }} />
             <div className="flex items-baseline justify-between">
-              <span style={{ fontSize: 13, fontWeight: 700 }}>Net amount owed</span>
-              <span className="font-mono" style={{ fontSize: 22, fontWeight: 700, color: "#9C3B22" }}>{currency(cc.netOwed)}</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Net amount owed</span>
+              <span className="font-mono" style={{ fontSize: 22, fontWeight: 600, color: "#9C3B22" }}>{currency(cc.netOwed)}</span>
             </div>
             <p className="text-xs mt-2" style={{ color: "var(--color-neutral-700)", lineHeight: 1.4 }}>
               Only the net amount owed reduces Guilt-Free Spending above. Charges already covered by a category withdrawal aren&apos;t subtracted twice.
@@ -378,26 +378,26 @@ export default function AccountsPage() {
               padding: "26px 30px",
             }}
           >
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
               Guilt-Free Spending Available
             </div>
-            <div className="font-mono" style={{ fontSize: 40, fontWeight: 700, marginTop: 4, color: "var(--color-accent-900)" }}>
+            <div className="font-mono" style={{ fontSize: 40, fontWeight: 600, marginTop: 4, color: "var(--color-accent-900)" }}>
               {currency(guiltFreeAvailable)}
             </div>
             <div style={{ height: 1, background: "var(--color-accent-300)", margin: "18px 0 14px" }} />
             <div className="space-y-2.5">
               <div className="flex items-baseline justify-between">
                 <span style={{ fontSize: 12, color: "var(--color-accent-700)", fontWeight: 600 }}>Total balance, all accounts</span>
-                <span className="font-mono" style={{ fontSize: 16, fontWeight: 700 }}>{currency(totalBalanceAllAccounts)}</span>
+                <span className="font-mono" style={{ fontSize: 16, fontWeight: 600 }}>{currency(totalBalanceAllAccounts)}</span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span style={{ fontSize: 12, color: "#9C3B22", fontWeight: 600 }}>− Allocated to categories</span>
-                <span className="font-mono" style={{ fontSize: 16, fontWeight: 700, color: "#9C3B22" }}>{currency(totalAllocatedToCategories)}</span>
+                <span className="font-mono" style={{ fontSize: 16, fontWeight: 600, color: "#9C3B22" }}>{currency(totalAllocatedToCategories)}</span>
               </div>
               {totalCardOwed > 0 && (
                 <div className="flex items-baseline justify-between">
                   <span style={{ fontSize: 12, color: "#9C3B22", fontWeight: 600 }}>− Credit card balance owed (net)</span>
-                  <span className="font-mono" style={{ fontSize: 16, fontWeight: 700, color: "#9C3B22" }}>{currency(totalCardOwed)}</span>
+                  <span className="font-mono" style={{ fontSize: 16, fontWeight: 600, color: "#9C3B22" }}>{currency(totalCardOwed)}</span>
                 </div>
               )}
             </div>
@@ -438,7 +438,7 @@ export default function AccountsPage() {
             label="Connect an Account / Credit Card"
             onLinked={load}
             keyHint="unified"
-            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, width: "100%", maxWidth: 320 }}
+            style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 600, width: "100%", maxWidth: 320 }}
           />
           {disconnectError && (
             <div className="text-xs p-3 w-full" style={{ ...bloomWarningCardStyle(), maxWidth: 320 }}>
@@ -452,7 +452,7 @@ export default function AccountsPage() {
         <div>
           <h2
             style={{
-              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, color: "var(--color-text)",
+              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600, color: "var(--color-text)",
               paddingBottom: 10, marginBottom: 16, borderBottom: "2px solid var(--color-divider)",
             }}
           >
@@ -468,7 +468,7 @@ export default function AccountsPage() {
         <div>
           <h2
             style={{
-              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, color: "var(--color-text)",
+              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600, color: "var(--color-text)",
               paddingBottom: 10, marginBottom: 16, borderBottom: "2px solid var(--color-divider)",
             }}
           >
@@ -484,7 +484,7 @@ export default function AccountsPage() {
         <div>
           <h2
             style={{
-              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 800, color: "var(--color-text)",
+              fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 600, color: "var(--color-text)",
               paddingBottom: 10, marginBottom: 16, borderBottom: "2px solid var(--color-divider)",
             }}
           >

@@ -46,7 +46,7 @@ Thanks for your help!`;
           <X size={20} />
         </button>
 
-        <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 700, margin: "0 0 8px", paddingRight: 24 }}>
+        <h3 style={{ fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, margin: "0 0 8px", paddingRight: 24 }}>
           Not sure about your {label}?
         </h3>
         <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 65%, transparent)", margin: "0 0 20px" }}>
