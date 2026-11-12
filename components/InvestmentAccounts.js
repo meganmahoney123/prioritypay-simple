@@ -156,7 +156,7 @@ export default function InvestmentAccounts() {
   const monoStyle = { fontFamily: "var(--font-mono)" };
 
   return (
-    <div className="ps-page ps-refined space-y-6" style={{}}>
+    <div className="ps-page ps-refined space-y-6" style={{ background: "#F5F0FF", borderRadius: 20, padding: 20 }}>
       <p style={{ margin: 0, fontSize: 17, lineHeight: 1.5, color: MUTED, maxWidth: 760 }}>
         All of your investing accounts in one place. Pick one account, or see them together, and estimate where they could be in the future.
       </p>
@@ -203,7 +203,7 @@ export default function InvestmentAccounts() {
                 }}
               >
                 <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>{c.kind}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#5B3FD1" }}>{c.kind}</span>
                   <span style={{ width: 16, height: 16, borderRadius: 5, background: c.color, flex: "none" }} />
                 </span>
                 <span style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.25 }}>{c.name}</span>
@@ -232,7 +232,7 @@ export default function InvestmentAccounts() {
       <Card className="space-y-5" style={{ borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 28px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>PROJECTION ESTIMATOR · {selName}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#5B3FD1" }}>PROJECTION ESTIMATOR · {selName}</div>
             <div style={{ fontSize: 15, color: MUTED }}>In {years} years at {ret}% a year, this could grow to about</div>
           </div>
           <div style={{ ...monoStyle, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{currency(finalTotal)}</div>
@@ -332,7 +332,7 @@ export default function InvestmentAccounts() {
 
       <Card className="space-y-2" style={{ borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 28px" }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#5B3FD1" }}>
             CONTRIBUTIONS VIA PRIORITYSAVE
           </div>
           <div className="text-sm" style={{ color: "#6B6280" }}>
@@ -394,7 +394,7 @@ export default function InvestmentAccounts() {
       </Card>
 
       <Card className="space-y-2" style={{ borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 28px" }}>
-        <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>IN {years} YEARS, BY ACCOUNT</div>
+        <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#5B3FD1" }}>IN {years} YEARS, BY ACCOUNT</div>
         {rows.map((a) => (
           <div key={a.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "14px 16px", background: "#fff", border: "1px solid #E6E1F0", borderRadius: 14, fontSize: 17, fontWeight: 600 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>

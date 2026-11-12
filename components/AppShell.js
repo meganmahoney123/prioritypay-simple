@@ -580,7 +580,7 @@ export default function AppShell({ children, isSandbox = false }) {
               width: "100%",
               boxSizing: "border-box",
               padding: "11px clamp(20px, 3.5vw, 44px)",
-              background: "#F4F2FA",
+              background: "#E6DBFB",
               borderBottom: "1px solid var(--color-divider)",
               color: "var(--color-text)",
               textDecoration: "none",

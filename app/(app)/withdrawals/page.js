@@ -287,9 +287,9 @@ function WithdrawalsPageInner() {
             }}
             className="flex-1 text-base font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
             style={{
-              border: `1px solid ${sourceType === "card" ? "#3A3150" : "var(--color-divider)"}`,
-              color: sourceType === "card" ? "#1F1636" : "var(--color-neutral-700)",
-              background: sourceType === "card" ? "#F4F3F8" : "transparent",
+              border: `1px solid ${sourceType === "card" ? "#6D3BE0" : "var(--color-divider)"}`,
+              color: sourceType === "card" ? "#4E22B8" : "var(--color-neutral-700)",
+              background: sourceType === "card" ? "#EFE8FF" : "transparent",
             }}
           >
             <CreditCard size={15} /> Match a credit card charge
@@ -302,9 +302,9 @@ function WithdrawalsPageInner() {
             }}
             className="flex-1 text-base font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
             style={{
-              border: `1px solid ${sourceType === "cash" ? "#3A3150" : "var(--color-divider)"}`,
-              color: sourceType === "cash" ? "#1F1636" : "var(--color-neutral-700)",
-              background: sourceType === "cash" ? "#F4F3F8" : "transparent",
+              border: `1px solid ${sourceType === "cash" ? "#6D3BE0" : "var(--color-divider)"}`,
+              color: sourceType === "cash" ? "#4E22B8" : "var(--color-neutral-700)",
+              background: sourceType === "cash" ? "#EFE8FF" : "transparent",
             }}
           >
             <ReceiptText size={15} /> Cash expense
@@ -327,7 +327,7 @@ function WithdrawalsPageInner() {
             ) : matchedTxnId ? (
               <div
                 className="flex items-center justify-between gap-3 flex-wrap"
-                style={{ padding: "14px 16px", borderRadius: 16, border: "1.5px solid #6D3BE0", background: "#F4F3F8" }}
+                style={{ padding: "14px 16px", borderRadius: 16, border: "1.5px solid #6D3BE0", background: "#EFE8FF" }}
               >
                 <span>
                   <span style={{ display: "block", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>SELECTED CHARGE</span>
@@ -425,7 +425,7 @@ function WithdrawalsPageInner() {
               <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
                 {Object.entries(groupedCardTxns).map(([group, txns]) => (
                   <div key={group}>
-                    <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3A3150", marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5B3FD1", marginBottom: 8 }}>
                       {group}
                     </div>
                     <div className="flex flex-col gap-2.5">
@@ -442,7 +442,7 @@ function WithdrawalsPageInner() {
                           >
                             <span
                               className="flex flex-col items-center justify-center shrink-0"
-                              style={{ width: 52, height: 48, borderRadius: 12, background: "#F4F3F8", color: "#3A3150" }}
+                              style={{ width: 52, height: 48, borderRadius: 12, background: "#EFE8FF", color: "#4E22B8" }}
                             >
                               <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>{mon}</span>
                               <span style={{ fontSize: 19, fontWeight: 600, lineHeight: 1 }}>{Number(dd)}</span>
