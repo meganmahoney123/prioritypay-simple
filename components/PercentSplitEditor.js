@@ -298,6 +298,12 @@ function PercentRow({ shareMode, rule, accounts, onUpdate, onRemove, creating, s
   const [showLimits, setShowLimits] = useState(!!tierStyle);
   // Deposit Splits (tier style): the extras live behind "See more".
   const [tierOpen, setTierOpen] = useState(false);
+  // "Choose an account for ..." on Deposit Splits opens this row's details.
+  useEffect(() => {
+    const h = (e) => { if (String(e.detail) === String(rule.id)) setTierOpen(true); };
+    window.addEventListener("pp-open-rule", h);
+    return () => window.removeEventListener("pp-open-rule", h);
+  }, [rule.id]);
   // Every row shows its name the same way once added (like "Savings"); a
   // brand-new unnamed row starts in edit mode, and the pencil renames any
   // custom row later.

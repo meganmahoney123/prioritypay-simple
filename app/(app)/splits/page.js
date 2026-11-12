@@ -434,6 +434,15 @@ function SplitRulesPageInner() {
     if (!r) return;
     const el = document.querySelector(`[data-rule-id="${String(r.id).replace(/"/g, '\\"')}"]`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Open the row's "See more" section, then focus and open its bank account
+    // dropdown so the person lands right on the choice.
+    window.dispatchEvent(new CustomEvent("pp-open-rule", { detail: r.id }));
+    setTimeout(() => {
+      const sel = document.querySelector(`[data-rule-id="${String(r.id).replace(/"/g, '\\"')}"] select`);
+      if (!sel) return;
+      sel.focus({ preventScroll: true });
+      try { sel.showPicker?.(); } catch { /* some browsers only allow this on a direct click */ }
+    }, 450);
   };
   // Arriving from the Savings Planner (?connect=1): jump straight to the
   // first category that still needs an account.

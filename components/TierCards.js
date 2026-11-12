@@ -83,6 +83,12 @@ function BillRow({ r, showErrors, accounts, onUpdate, onRemoveRow, focusName }) 
   // box, so a brand new row never starts out looking like a mistake.
   const [touched, setTouched] = useState(false);
   const nameRef = useRef(null);
+  // "Choose an account for ..." on Deposit Splits opens this row's details.
+  useEffect(() => {
+    const h = (e) => { if (String(e.detail) === String(r.id)) setOpen(true); };
+    window.addEventListener("pp-open-rule", h);
+    return () => window.removeEventListener("pp-open-rule", h);
+  }, [r.id]);
   useEffect(() => { if (focusName && nameRef.current) nameRef.current.focus(); }, [focusName]);
   const capMissing = !(Number(r.max) > 0);
   const showBad = showErrors && touched && capMissing;
