@@ -717,6 +717,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
         <b style={{ color: e.tone === "green" ? "#0F6B4F" : "var(--color-accent-700)" }}>{e.lead}</b>
         {e.rest}
         {d.typeSaved ? "" : " (suggested)"}
+        {e.note && <div style={{ marginTop: 4 }}>{e.note}</div>}
       </div>
     );
   };
