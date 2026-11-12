@@ -64,9 +64,10 @@ export async function POST(request, { params }) {
     .eq("id", id)
     .eq("user_id", user.id);
   if (saveError) {
-    const missing = /deposit_type|business_id/i.test(saveError.message || "");
+    // Details stay in the server log; the message on screen is for the person.
+    console.error("deposit-type save failed:", saveError.message);
     return Response.json(
-      { error: missing ? "This needs a one-time database update before it can be saved." : saveError.message },
+      { error: "We couldn't save that deposit type just now. Please try again in a moment, and email support if it keeps happening." },
       { status: 500 }
     );
   }

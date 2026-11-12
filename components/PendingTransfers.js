@@ -1179,11 +1179,6 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           {showW401k && renderW401k()}
           {error && <p style={{ margin: 0, fontSize: 14, color: "#b42318" }}>{error}</p>}
           {pendingDeposits.length > 0 && (
-            <p style={{ ...mutedText, margin: 0 }}>
-              Deposits that pile up are added together automatically. Remove any that shouldn&apos;t be split (like a refund or a personal transfer). You can add it back any time.
-            </p>
-          )}
-          {pendingDeposits.length > 0 && (
             <Card style={bloomAccentCardStyle({ padding: "8px 22px 18px", borderRadius: 24, background: "var(--color-surface)" })}>
               <p style={{ ...mutedText, margin: "10px 0 2px" }}>
                 These amounts come from your splits. Tap any amount to change what you send. Your total updates.
