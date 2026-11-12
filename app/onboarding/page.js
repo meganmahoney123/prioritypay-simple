@@ -10,7 +10,7 @@ import PlaidLinkButton from "@/components/PlaidLinkButton";
 import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SimpleSplitCard from "@/components/SimpleSplitCard";
 import OnboardingLimits from "@/components/OnboardingLimits";
-import TierCards, { TierLastCard, TierExample } from "@/components/TierCards";
+import TierCards, { TierLastCard } from "@/components/TierCards";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
@@ -1197,7 +1197,6 @@ function OnboardingPageInner() {
 
             <AddCategoryCard style={{ marginTop: 22 }} suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
-            <div style={{ marginTop: 18 }}><TierExample percent={percent} /></div>
 
             {needsRetirement && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "16px 0 0" }}>

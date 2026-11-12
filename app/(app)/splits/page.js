@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { PrimaryButton } from "@/components/ui";
 import { LastTierEditor } from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
-import TierCards, { TierExample } from "@/components/TierCards";
+import TierCards from "@/components/TierCards";
 import { decodeSim } from "@/lib/simSharing";
 import AddCategoryCard from "@/components/AddCategoryCard";
 
@@ -460,7 +460,6 @@ function SplitRulesPageInner() {
 
       <AddCategoryCard suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
-      <TierExample percent={percent} />
 
       {startingBalanceOverBudget && (
         <p className="text-sm" style={{ color: "#9C3B22", fontFamily: "var(--font-heading)", fontWeight: 600, margin: 0 }}>
