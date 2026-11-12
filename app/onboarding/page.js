@@ -1277,10 +1277,10 @@ function OnboardingPageInner() {
         {step === STEP_LIMITS && (
           <div style={{ maxWidth: "46em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 400, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Add caps, if you want them
+              Want a limit on any of your final categories?
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <OnboardingLimits rows={lastTierRows} onUpdate={updatePercent} />
+            <OnboardingLimits rows={lastTierRows} onUpdate={updatePercent} priorityRows={percent.filter((r) => tierOf(r) >= 1)} onEditPriority={() => setStep(2)} />
           </div>
         )}
 

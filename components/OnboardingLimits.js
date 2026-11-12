@@ -122,12 +122,12 @@ export function CapExplainer() {
         @media (max-width:720px){ .pp-lim-pair{grid-template-columns:1fr} }
       `}</style>
       <div style={{ fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 600, marginBottom: 12 }}>
-        Two kinds of limits. Tap one to see how it works.
+        Two kinds of caps. Tap one to see how it works.
       </div>
       <div className="pp-lim-pair">
         <CapCard
           kind="Type 1"
-          title="Total Category Cap"
+          title="Total savings goal"
           subtitle="A major savings goal"
           graph={<TotalGraph />}
           text="Set the amount you're saving up for. Once the balance gets there, this category's split drops to 0%."
@@ -135,7 +135,7 @@ export function CapExplainer() {
         />
         <CapCard
           kind="Type 2"
-          title="Monthly Category Cap"
+          title="Monthly cap"
           subtitle="A recurring expense"
           graph={<MonthlyGraph />}
           text="Set the most this category needs each month. Once it gets that much, its split drops to 0% until the 1st."
@@ -146,144 +146,164 @@ export function CapExplainer() {
   );
 }
 
-export default function OnboardingLimits({ rows, onUpdate }) {
+const PURPLE = "#4E22B8";
+const LINE = "#E7DEFA";
+const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
+const START_TIP = "If you've already started saving for this category, add the amount here.";
+
+// Hover (and keyboard focus) explanation for "Starting balance".
+function Tip({ children, text }) {
+  return (
+    <span className="pp-tip" tabIndex={0} aria-label={text} title={text}>
+      {children}
+      <span className="pp-tip-box" role="tooltip">{text}</span>
+    </span>
+  );
+}
+
+// Step 3 (optional): caps on the FINAL tier only. Priority tiers already have
+// their required monthly caps from "Set Your Splits", so they are only recapped.
+//   Monthly cap          -> row.max          (stops at a monthly amount, resets monthly)
+//   Total savings goal   -> row.categoryCap  (stops at a total; resumes below it)
+//                           + row.startingBalance (what is already saved)
+export default function OnboardingLimits({ rows, onUpdate, priorityRows = [], onEditPriority }) {
   const live = rows.filter((r) => Number(r.pct) > 0);
+  const typeOf = (r) => (hasVal(r.max) ? "monthly" : hasVal(r.categoryCap) ? "total" : "none");
   const [types, setTypes] = useState(() => {
     const t = {};
-    rows.forEach((r) => {
-      t[r.id] = hasVal(r.max) ? "monthly" : hasVal(r.categoryCap) ? "total" : "none";
-    });
+    rows.forEach((r) => { t[r.id] = typeOf(r); });
     return t;
   });
-
-  const amountOf = (r, type) => (type === "monthly" ? r.max : type === "total" ? r.categoryCap : null);
+  const typeFor = (r) => types[r.id] || typeOf(r);
 
   const setType = (r, type) => {
-    const carry = amountOf(r, types[r.id] || "none");
+    const cur = typeFor(r);
+    const carry = cur === "monthly" ? r.max : cur === "total" ? r.categoryCap : null;
     setTypes((p) => ({ ...p, [r.id]: type }));
     onUpdate(r.id, {
       max: type === "monthly" && hasVal(carry) ? carry : null,
       categoryCap: type === "total" && hasVal(carry) ? carry : null,
     });
   };
-
   const setAmount = (r, type, raw) => {
     const n = Number(raw);
     const v = raw === "" || !Number.isFinite(n) || n <= 0 ? null : n;
     onUpdate(r.id, type === "monthly" ? { max: v, categoryCap: null } : { categoryCap: v, max: null });
   };
 
+  const priorityList = priorityRows
+    .filter((r) => hasVal(r.max))
+    .map((r) => `${r.label} ${money(Number(r.max))}`)
+    .join(" · ");
+
   return (
-    <div style={{ display: "grid", gap: 22 }}>
+    <div style={{ display: "grid", gap: 14 }}>
       <style>{`
-        .pp-lim-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
-        .pp-lim-card{border:1px solid #D9C9FF;border-radius:22px;background:#fff;padding:20px}
-        .pp-lim-card>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px}
-        .pp-lim-card>summary::-webkit-details-marker{display:none}
-        .pp-lim-card[open] .pp-lim-chev{transform:rotate(180deg)}
-        .pp-lim-head,.pp-lim-row{display:grid;grid-template-columns:minmax(0,1fr) 224px 52px 120px;gap:14px;align-items:start}
-        .pp-lim-head{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6b6280;padding:0 0 8px;border-bottom:1px solid #E3D8FA}
-        .pp-lim-row{padding:14px 0;border-bottom:1px solid #EFE8FF;font-size:15px}
-        .pp-lim-row select{width:100%;height:40px;font-size:14.5px;border:1px solid #E3D8FA;border-radius:10px;padding:0 10px;font:inherit;background:#fff;color:var(--color-text)}
-        .pp-lim-amt{display:grid;gap:4px;justify-items:end;margin-top:8px}
-        .pp-lim-amt label{display:flex;align-items:center;gap:4px;font-size:15px;color:#6b6280}
-        .pp-lim-amt input{width:92px;box-sizing:border-box;height:36px;border:1px solid #B79CF5;border-radius:10px;text-align:right;padding:0 8px;font:inherit;color:var(--color-text);background:#fff}
-        .pp-lim-amt small{font-size:12px;color:#6b6280}
-        @media (max-width:720px){
-          .pp-lim-pair{grid-template-columns:1fr}
-          .pp-lim-head{display:none}
-          .pp-lim-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}
-          .pp-lim-row .pp-lim-sel{grid-column:1/-1;grid-row:2}
-        }
+        .pp-cap-card{background:#fff;border:2px solid #9A72F0;border-radius:22px;padding:6px 20px 10px}
+        .pp-cap-row{padding:12px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1.5px solid ${LINE}}
+        .pp-cap-row:first-of-type{border-top:0}
+        .pp-cap-dot{width:9px;height:9px;border-radius:50%;background:#9A72F0;flex:none}
+        .pp-cap-name{flex:1 1 130px;min-width:0;font-size:17px;font-weight:700;overflow-wrap:anywhere}
+        .pp-cap-pct{background:#F4EEFF;border-radius:999px;padding:4px 12px;font-family:${MONO};font-weight:700;font-size:16px;color:${PURPLE}}
+        .pp-cap-sel{min-width:170px;height:40px;font:inherit;font-size:15px;font-weight:700;color:#241337;border:2px solid #D9C9FF;border-radius:12px;padding:0 10px;background:#fff}
+        .pp-cap-detail{width:100%;display:flex;gap:8px;flex-wrap:wrap;padding:0 0 4px 19px}
+        .pp-cap-chip{display:inline-flex;align-items:center;gap:6px;border:2px solid #9A72F0;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:800;color:${PURPLE};white-space:nowrap}
+        .pp-cap-chip.soft{border-color:#D9C9FF}
+        .pp-cap-chip input{flex:none;width:92px;max-width:92px;box-sizing:border-box;border:0;background:transparent;font-family:${MONO};font-weight:700;font-size:15px;color:#241337;text-align:left;padding:2px 0;outline:none;-moz-appearance:textfield}
+        .pp-cap-chip input::-webkit-outer-spin-button,.pp-cap-chip input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+        .pp-cap-def{flex:1;background:#EDE6FF;border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;display:flex;flex-direction:column;gap:8px}
+        .pp-cap-ex{margin-top:auto;display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:10px;padding:8px 12px;gap:8px}
+        .pp-tip{position:relative;display:inline-flex;align-items:center;cursor:help;outline:none}
+        .pp-tip-box{display:none;position:absolute;left:0;bottom:calc(100% + 8px);width:240px;z-index:30;background:#241337;color:#fff;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:600;line-height:1.4;white-space:normal;text-transform:none;letter-spacing:0}
+        .pp-tip:hover .pp-tip-box,.pp-tip:focus .pp-tip-box{display:block}
+        @media (max-width:560px){.pp-cap-defs{flex-direction:column}}
       `}</style>
 
-      <p style={{ margin: 0, fontSize: 16, lineHeight: 1.7, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", maxWidth: "36em" }}>
-        Once you reach your savings goal for a particular category, it might not make sense to continue adding money to that category.
-        That&apos;s why you can set limits.
-        <br /><br />
-        Once a category reaches a limit, PrioritySave resets that category to 0%. Other categories automatically increase accordingly to absorb the percentage that was allocated to that category. For Monthly category caps, it resets each month. For
-        total category cap, a split is only turned on again if a withdrawal causes the category to dip below its cap.
+      <p style={{ margin: 0, fontSize: 15, color: "#4A3F63", lineHeight: 1.5 }}>
+        Optional.{priorityRows.length > 0 ? " Your top and secondary priority bills are already capped." : ""}
       </p>
 
-      <div>
-        <div style={{ fontFamily: "var(--font-heading)", fontSize: 13, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 600, marginBottom: 12 }}>
-          Two kinds of limits. Tap one to see how it works.
+      {priorityList && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 14, padding: "10px 16px", fontSize: 14 }}>
+          <span><b>Already capped:</b> {priorityList} <span style={{ color: "#574A68" }}>(monthly)</span></span>
+          {onEditPriority && (
+            <button type="button" onClick={onEditPriority} style={{ background: "transparent", border: 0, font: "inherit", fontWeight: 800, color: PURPLE, cursor: "pointer" }}>Edit</button>
+          )}
         </div>
-        <div className="pp-lim-pair">
-          <CapCard
-            kind="Type 1"
-            title="Total Category Cap"
-            subtitle="A major savings goal"
-            graph={<TotalGraph />}
-            text="Set the amount you're saving up for. Once the balance gets there, this category's split drops to 0%."
-            examples={["Wedding", "New car", "Down payment"]}
-          />
-          <CapCard
-            kind="Type 2"
-            title="Monthly Category Cap"
-            subtitle="A recurring expense"
-            graph={<MonthlyGraph />}
-            text="Set the most this category needs each month. Once it gets that much, its split drops to 0% until the 1st."
-            examples={["Rent", "Car payment", "Insurance"]}
-          />
+      )}
+
+      <div className="pp-cap-defs" style={{ display: "flex", gap: 12 }}>
+        <div className="pp-cap-def">
+          <div><b style={{ color: PURPLE }}>Monthly cap</b><br />Stops at a monthly amount. Resets every month.</div>
+          <div className="pp-cap-ex"><span style={{ fontWeight: 700 }}>Business Expenses (OPEX)</span><span style={{ fontFamily: MONO, fontWeight: 700, color: PURPLE }}>$1,500</span></div>
+        </div>
+        <div className="pp-cap-def">
+          <div><b style={{ color: PURPLE }}>Total savings goal</b><br />Stops when you reach your total. Does not reset.</div>
+          <div className="pp-cap-ex"><span style={{ fontWeight: 700 }}>Wedding Fund</span><span style={{ fontFamily: MONO, fontWeight: 700, color: PURPLE }}>$25,000</span></div>
         </div>
       </div>
 
-      <div style={{ border: "1px solid #D9C9FF", borderRadius: 18, background: "#EDE6FF", padding: "14px 18px", fontSize: 15, lineHeight: 1.55, color: "#2A1550" }}>
-        <b>Not sure? Leave it at None.</b> Limits only make sense when more money in a category stops being useful. For many categories
-        (like Tax Reserve, Retirement and Investments), limits don&apos;t make sense.
+      <div style={{ background: "#EDE6FF", borderRadius: 14, padding: "12px 16px", fontSize: 14, lineHeight: 1.55 }}>
+        <b style={{ color: PURPLE }}>When a category reaches its cap or goal,</b> PrioritySave resets it to 0% and the other categories in this tier
+        automatically increase to absorb that percentage.
       </div>
 
-      <div>
-        <div className="pp-lim-head" aria-hidden="true">
-          <span>Category</span>
-          <span>Add cap?</span>
-          <span style={{ textAlign: "right" }}>%</span>
-          <span style={{ textAlign: "right" }}>Sample {money(SAMPLE)}</span>
+      <div className="pp-cap-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 0 2px" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: PURPLE }}>Final Splits</div>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#8A7FA0" }}>Optional caps</span>
         </div>
+        <p style={{ fontSize: 14, lineHeight: 1.5, color: "#4A3F63", margin: "0 0 4px" }}>
+          Add a monthly cap or a total savings goal to any category you want to stop funding once it is full. Monthly caps reset each month.
+          Total savings goals reset when the category dips below the target savings amount.
+        </p>
         {live.map((r) => {
-          const type = types[r.id] || "none";
-          const pct = Number(r.pct) || 0;
+          const type = typeFor(r);
           return (
-            <div className="pp-lim-row" key={r.id}>
-              <span style={{ paddingTop: 9, overflowWrap: "anywhere" }}>{r.label}</span>
-              <span className="pp-lim-sel">
-                <select aria-label={`Add cap for ${r.label}`} value={type} onChange={(e) => setType(r, e.target.value)}>
-                  <option value="none">None</option>
-                  <option value="total">Total Category Cap</option>
-                  <option value="monthly">Monthly Category Cap</option>
-                </select>
-              </span>
-              <span style={{ textAlign: "right", paddingTop: 9, color: "#6b6280" }}>{Math.round(pct * 10) / 10}%</span>
-              <span style={{ textAlign: "right" }}>
-                <span style={{ display: "block", paddingTop: 9, fontFamily: "var(--font-mono)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                  {money((pct / 100) * SAMPLE)}
-                </span>
-                {type !== "none" && (
-                  <span className="pp-lim-amt">
-                    <label>
-                      $
+            <div className="pp-cap-row" key={r.id}>
+              <span className="pp-cap-dot" />
+              <span className="pp-cap-name">{r.label}</span>
+              <span className="pp-cap-pct">{Math.round((Number(r.pct) || 0) * 100) / 100}%</span>
+              <select className="pp-cap-sel" aria-label={`Cap for ${r.label}`} value={type} onChange={(e) => setType(r, e.target.value)}>
+                <option value="none">No cap</option>
+                <option value="monthly">Monthly cap</option>
+                <option value="total">Total savings goal</option>
+              </select>
+              {type !== "none" && (
+                <div className="pp-cap-detail">
+                  <label className="pp-cap-chip">
+                    {type === "monthly" ? "Monthly cap" : "Goal"} $
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={1}
+                      step="any"
+                      aria-label={`${r.label} ${type === "monthly" ? "monthly cap" : "savings goal"} amount`}
+                      placeholder={type === "monthly" ? "1,500" : "25,000"}
+                      value={hasVal(type === "monthly" ? r.max : r.categoryCap) ? (type === "monthly" ? r.max : r.categoryCap) : ""}
+                      onChange={(e) => setAmount(r, type, e.target.value)}
+                    />
+                  </label>
+                  {type === "total" && (
+                    <label className="pp-cap-chip soft">
+                      <Tip text={START_TIP}>Starting balance</Tip> $
                       <input
                         type="number"
                         inputMode="decimal"
-                        min={1}
+                        min={0}
                         step="any"
-                        aria-label={`${r.label} ${type === "monthly" ? "monthly" : "total"} cap amount`}
-                        placeholder={type === "monthly" ? "2,000" : "25,000"}
-                        value={hasVal(amountOf(r, type)) ? amountOf(r, type) : ""}
-                        onChange={(e) => setAmount(r, type, e.target.value)}
+                        aria-label={`${r.label} starting balance`}
+                        placeholder="0"
+                        value={r.startingBalance ?? ""}
+                        onChange={(e) => onUpdate(r.id, { startingBalance: e.target.value.replace(/^0+(?=\d)/, "") })}
                       />
                     </label>
-                    <small>{type === "monthly" ? "Most per month" : "Stop at a total of"}</small>
-                  </span>
-                )}
-              </span>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
-        <div style={{ paddingTop: 12, fontSize: 14, color: "color-mix(in srgb, var(--color-text) 62%, transparent)" }}>
-          Guilt-Free Spending has no limit.
-        </div>
       </div>
     </div>
   );

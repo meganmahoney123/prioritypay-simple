@@ -163,9 +163,9 @@ function CapCards({ rule, onUpdate }) {
   return (
     <>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <CapCard title="Monthly limit" sub="Resets on the 1st of every month." value={rule.max} onChange={(v) => onUpdate(rule.id, { max: v })} used={mine?.month} unit="this month" />
+        <CapCard title="Monthly cap" sub="Resets on the 1st of every month." value={rule.max} onChange={(v) => onUpdate(rule.id, { max: v })} used={mine?.month} unit="this month" />
         <CapCard
-          title="Total limit"
+          title="Total savings goal"
           sub="Starting balance plus everything PrioritySave has seen you send here."
           value={rule.categoryCap}
           onChange={(v) => onUpdate(rule.id, { categoryCap: v })}
@@ -539,9 +539,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               {showLimits
                 ? "Hide"
                 : !isGrouped && !hideStartingBalance
-                ? "Add monthly or total limits and starting balance"
+                ? "Add a monthly cap or total savings goal and starting balance"
                 : !isGrouped
-                ? "Add monthly or total limits"
+                ? "Add a monthly cap or total savings goal"
                 : "Add a starting balance"}
             </button>
             )}
@@ -558,14 +558,14 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               <div style={{ marginTop: 8, background: "#FAF7FD", borderRadius: "var(--radius-sm)", padding: "12px 14px", fontSize: 13.5, lineHeight: 1.65, color: "color-mix(in srgb, var(--color-text) 72%, transparent)", display: "grid", gap: 8 }}>
                 {!isGrouped && (
                   <p style={{ margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>Monthly Category Cap:</strong> the most this category can
+                    <strong style={{ color: "var(--color-text)" }}>Monthly cap:</strong> the most this category can
                     receive in a calendar month. Once it&apos;s hit, it drops to 0% until the 1st, and the extra goes
                     to your other categories.
                   </p>
                 )}
                 {!isGrouped && (
                   <p style={{ margin: 0 }}>
-                    <strong style={{ color: "var(--color-text)" }}>Total Category Cap:</strong> the most you want saved
+                    <strong style={{ color: "var(--color-text)" }}>Total savings goal:</strong> the most you want saved
                     toward this category overall. It goes by PrioritySave&apos;s own tally: your starting balance plus
                     everything PrioritySave has seen you send here, minus withdrawals you log. It stops sending money
                     here once the tally hits this amount, and starts again if withdrawals bring it back below.
@@ -591,7 +591,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
           {true ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>
-                {forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Starting Balance:"}
+                <span title="If you've already started saving for this category, add the amount here." style={{ cursor: "help" }}>{forceShowStartingBalance ? "Starting balance for this category (enter 0 if none):" : "Starting Balance:"}</span>
               </span>
               <span style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 55%, transparent)" }}>$</span>
@@ -1153,8 +1153,8 @@ export default function PercentSplitEditor({
           <p style={{ fontSize: 16, lineHeight: 1.7, margin: "12px 0 16px" }}>
             Once you reach your savings goal for a particular category, it might not make sense to continue adding money to that category.
             That&apos;s why you can set limits. Once a category reaches a limit, PrioritySave resets that category to 0%. Other categories automatically increase accordingly to absorb the percentage that was allocated to that category. For a Monthly
-            Category Cap, it resets each month. For a Total Category Cap, the split only turns back on if a withdrawal causes the category
-            to dip below its cap.
+            cap, it resets each month. For a Total savings goal, the split only turns back on if a withdrawal causes the category
+            to dip below its goal.
           </p>
           <CapExplainer />
         </details>
@@ -1346,8 +1346,8 @@ export default function PercentSplitEditor({
       <details className="text-xs text-neutral-500 leading-relaxed">
         <summary className="cursor-pointer font-medium text-neutral-600">What&apos;s a cap?</summary>
         <p className="mt-2 mb-3">
-          Once a category reaches a limit, PrioritySave resets that category to 0%. Other categories automatically increase accordingly to absorb the percentage that was allocated to that category. A Monthly Category Cap resets each month. A Total
-          Category Cap only turns the split back on if a withdrawal brings the category below its cap.
+          Once a category reaches a limit, PrioritySave resets that category to 0%. Other categories automatically increase accordingly to absorb the percentage that was allocated to that category. A Monthly cap resets each month. A Total
+          savings goal only turns the split back on if a withdrawal brings the category below its goal.
         </p>
         <CapExplainer />
       </details>
