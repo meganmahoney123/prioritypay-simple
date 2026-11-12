@@ -7,7 +7,6 @@ import { PrimaryButton } from "@/components/ui";
 import { LastTierEditor } from "@/components/PercentSplitEditor";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import TierCards from "@/components/TierCards";
-import DepositPreview from "@/components/DepositPreview";
 import { decodeSim } from "@/lib/simSharing";
 import AddCategoryCard from "@/components/AddCategoryCard";
 
@@ -439,10 +438,7 @@ function SplitRulesPageInner() {
         onRemoveTier={removeTierBy}
         accounts={accounts}
         showErrors
-      />
-
-      <div style={{ display: "grid", gap: 12 }}>
-        <div className="pp-tier-arrow" style={{ textAlign: "center", color: "#4E22B8", fontWeight: 800, fontSize: 14 }}>↓ Then what is left flows down</div>
+      >
         <LastTierEditor
           percent={percent}
           accounts={accounts}
@@ -455,13 +451,12 @@ function SplitRulesPageInner() {
           setConnecting={setConnecting}
           pctOverflow={pctOverflow}
           persona={persona}
-          title={priorityTiers(percent).length ? tierName(priorityTiers(percent).length + 1) : "Your Categories"}
+          title="Final Categories"
+          num={priorityTiers(percent).length + 1}
         />
-      </div>
+      </TierCards>
 
       <AddCategoryCard suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
-
-      <DepositPreview percent={percent} showLaterToggle title="Try a deposit" />
 
 
       {startingBalanceOverBudget && (

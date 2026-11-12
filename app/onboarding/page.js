@@ -11,7 +11,6 @@ import PercentSplitEditor from "@/components/PercentSplitEditor";
 import SimpleSplitCard from "@/components/SimpleSplitCard";
 import OnboardingLimits from "@/components/OnboardingLimits";
 import TierCards, { TierLastCard } from "@/components/TierCards";
-import DepositPreview from "@/components/DepositPreview";
 import PriorityPayLogo from "@/components/PriorityPayLogo";
 import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, PERSONA_W2_NO_SIDE_HUSTLE, PERSONA_W2_WITH_SIDE_HUSTLE, isW2NoSideHustle, retirementPickerOptions, buildRetirementRow, buildGenericRetirementRow, tierOf, tierProblems, tierSampleRows, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
 import { decodeSim } from "@/lib/simSharing";
@@ -1117,17 +1116,17 @@ function OnboardingPageInner() {
               onRemoveRow={removeTier}
               onAddTier={addTierBy}
               onRemoveTier={removeTierBy}
-            />
-            <div style={{ height: 12 }} />
-
-            <TierLastCard
-              rows={lastTierRows}
-              onUpdate={updatePercent}
-              onRemove={removeFromStep2}
-              overflow={pctOverflow}
-              persona={businessType}
-              title={priorityTiers(percent).length ? tierName(priorityTiers(percent).length + 1) : "Your Categories"}
-            />
+            >
+              <TierLastCard
+                rows={lastTierRows}
+                onUpdate={updatePercent}
+                onRemove={removeFromStep2}
+                overflow={pctOverflow}
+                persona={businessType}
+                title="Final Categories"
+                num={priorityTiers(percent).length + 1}
+              />
+            </TierCards>
 
             <AddCategoryCard style={{ marginTop: 22 }} suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
@@ -1211,12 +1210,10 @@ function OnboardingPageInner() {
         {step === STEP_LIMITS && (
           <div style={{ maxWidth: "46em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Want a limit on any of your final categories?
+              Add additional limits
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
-            <OnboardingLimits rows={lastTierRows} onUpdate={updatePercent} priorityRows={percent.filter((r) => tierOf(r) >= 1)} onEditPriority={() => setStep(2)} />
-            <div style={{ height: 18 }} />
-            <DepositPreview percent={percent} />
+            <OnboardingLimits rows={lastTierRows} onUpdate={updatePercent} />
           </div>
         )}
 
@@ -1651,7 +1648,7 @@ function OnboardingPageInner() {
           }}
         >
           <div style={{ maxWidth: "40em", margin: "0 auto", padding: "16px clamp(18px, 4vw, 40px) 20px" }}>
-            {step !== 2 && (
+            {step === STEP_MATCH && (
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", fontSize: 15, color: "color-mix(in srgb, var(--color-text) 70%, transparent)", marginBottom: 12 }}>
                 <span style={{ fontFamily: "var(--font-heading)", fontWeight: 700, color: "var(--color-accent-700)" }}>
                   {totalPct}% allocated

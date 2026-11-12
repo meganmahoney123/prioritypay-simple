@@ -166,7 +166,7 @@ function Tip({ children, text }) {
 //   Monthly cap          -> row.max          (stops at a monthly amount, resets monthly)
 //   Total savings goal   -> row.categoryCap  (stops at a total; resumes below it)
 //                           + row.startingBalance (what is already saved)
-export default function OnboardingLimits({ rows, onUpdate, priorityRows = [], onEditPriority }) {
+export default function OnboardingLimits({ rows, onUpdate, priorityRows = [] }) {
   const live = rows.filter((r) => Number(r.pct) > 0);
   const flagsOf = (r) => ({ monthly: hasVal(r.max), total: hasVal(r.categoryCap) });
   const [flags, setFlags] = useState(() => {
@@ -200,11 +200,6 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [], on
   };
   const labelFor = (f) => (f.monthly && f.total ? "Monthly cap + goal" : f.monthly ? "Monthly cap" : f.total ? "Total savings goal" : "No cap");
 
-  const priorityList = priorityRows
-    .filter((r) => hasVal(r.max))
-    .map((r) => `${r.label} ${money(Number(r.max))}`)
-    .join(" · ");
-
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <style>{`
@@ -237,15 +232,6 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [], on
       <p style={{ margin: 0, fontSize: 15, color: "#4A3F63", lineHeight: 1.5 }}>
         Optional.{priorityRows.length > 0 ? " Your top and secondary priority bills are already capped." : ""}
       </p>
-
-      {priorityList && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 14, padding: "10px 16px", fontSize: 14 }}>
-          <span><b>Already capped:</b> {priorityList} <span style={{ color: "#574A68" }}>(monthly)</span></span>
-          {onEditPriority && (
-            <button type="button" onClick={onEditPriority} style={{ background: "transparent", border: 0, font: "inherit", fontWeight: 800, color: PURPLE, cursor: "pointer" }}>Edit</button>
-          )}
-        </div>
-      )}
 
       <div className="pp-cap-defs" style={{ display: "flex", gap: 12 }}>
         <div className="pp-cap-def">

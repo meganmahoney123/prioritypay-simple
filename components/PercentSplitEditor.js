@@ -959,7 +959,7 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
 // Deposit Splits' last tier: the same compact card as tiers 1 and 2, one row per
 // category. "See more" on a row opens its bank account, monthly / total cap and
 // starting balance (the same controls as before).
-export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow, onAccountLinked, creating, setCreating, connecting, setConnecting, pctOverflow, persona, children , title = "Everything else" }) {
+export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow, onAccountLinked, creating, setCreating, connecting, setConnecting, pctOverflow, persona, children , title = "Everything else", num }) {
   const rows = (percent || []).filter((r) => tierOf(r) === 0);
   const total = roundPct(rows.reduce((n, r) => n + (Number(r.pct) || 0), 0));
   const stays = roundPct(Math.max(0, 100 - total));
@@ -968,7 +968,9 @@ export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow
     <div className="pp-tier-card">
       <style>{TIER_CSS}</style>
       <div className="pp-tier-head">
+        {num ? <span className="pp-tier-num out">{num}</span> : null}
         <div className="pp-tier-title">{title}</div>
+        <span className="pp-tier-tag" title="This is the final tier. The percentages below do NOT need to add up to 100% of your deposit.">By percent, can be under 100%</span>
         <span style={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, fontSize: 14, color: total > 100.0001 ? "#B3261E" : "#4E22B8", whiteSpace: "nowrap" }}>{total}%</span>
       </div>
       <p className="pp-tier-sub">
