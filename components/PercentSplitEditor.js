@@ -1152,9 +1152,9 @@ export default function PercentSplitEditor({
           </summary>
           <p style={{ fontSize: 16, lineHeight: 1.7, margin: "12px 0 16px" }}>
             Once you reach your savings goal for a particular category, it might not make sense to continue adding money to that category.
-            That&apos;s why you can set limits. Once a category reaches a limit, PrioritySave resets that category to 0%. For a Monthly
+            That&apos;s why you can set limits. Once a category reaches a limit, PrioritySave resets that category to 0%. Other categories automatically increase accordingly to absorb the percentage that was allocated to that category. For a Monthly
             Category Cap, it resets each month. For a Total Category Cap, the split only turns back on if a withdrawal causes the category
-            to dip below its cap. Whatever a capped category doesn&apos;t take is shared across your other categories instead of going unused.
+            to dip below its cap.
           </p>
           <CapExplainer />
         </details>
@@ -1346,7 +1346,7 @@ export default function PercentSplitEditor({
       <details className="text-xs text-neutral-500 leading-relaxed">
         <summary className="cursor-pointer font-medium text-neutral-600">What&apos;s a cap?</summary>
         <p className="mt-2 mb-3">
-          Once a category reaches a limit, PrioritySave resets that category to 0%. A Monthly Category Cap resets each month. A Total
+          Once a category reaches a limit, PrioritySave resets that category to 0%. Other categories automatically increase accordingly to absorb the percentage that was allocated to that category. A Monthly Category Cap resets each month. A Total
           Category Cap only turns the split back on if a withdrawal brings the category below its cap.
         </p>
         <CapExplainer />

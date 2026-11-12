@@ -201,7 +201,7 @@ export default function OnboardingLimits({ rows, onUpdate }) {
         Once you reach your savings goal for a particular category, it might not make sense to continue adding money to that category.
         That&apos;s why you can set limits.
         <br /><br />
-        Once a category reaches a limit, PrioritySave resets that category to 0%. For Monthly category caps, it resets each month. For
+        Once a category reaches a limit, PrioritySave resets that category to 0%. Other categories automatically increase accordingly to absorb the percentage that was allocated to that category. For Monthly category caps, it resets each month. For
         total category cap, a split is only turned on again if a withdrawal causes the category to dip below its cap.
       </p>
 
