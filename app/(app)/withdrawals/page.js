@@ -267,13 +267,13 @@ function WithdrawalsPageInner() {
     load();
   };
 
-  if (loading) return <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>Loading…</p>;
+  if (loading) return <p className="text-base" style={{ color: "var(--color-neutral-700)" }}>Loading…</p>;
 
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <h2 className="text-sm font-semibold mb-1">Record a withdrawal</h2>
-        <p className="text-xs mb-4" style={{ color: "var(--color-neutral-700)" }}>
+        <h2 className="text-lg font-bold mb-1">Record a withdrawal</h2>
+        <p className="text-[15px] mb-4" style={{ color: "var(--color-neutral-700)" }}>
           One place for every expense, pick where the money came from, and whether it's a specific credit-card
           charge or a cash expense. If it's a card charge, Monthly Close-Out will already show it as categorized.
         </p>
@@ -285,7 +285,7 @@ function WithdrawalsPageInner() {
               setSourceType("card");
               setMatchedTxnId("");
             }}
-            className="flex-1 text-sm font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
+            className="flex-1 text-base font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
             style={{
               border: `1px solid ${sourceType === "card" ? "var(--color-accent)" : "var(--color-divider)"}`,
               color: sourceType === "card" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
@@ -300,7 +300,7 @@ function WithdrawalsPageInner() {
               setSourceType("cash");
               setMatchedTxnId("");
             }}
-            className="flex-1 text-sm font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
+            className="flex-1 text-base font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
             style={{
               border: `1px solid ${sourceType === "cash" ? "var(--color-accent)" : "var(--color-divider)"}`,
               color: sourceType === "cash" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
@@ -314,13 +314,13 @@ function WithdrawalsPageInner() {
         {sourceType === "card" && (
           <div className="mb-4">
             {cardAccounts.length === 0 ? (
-              <div className="text-xs p-3 flex items-center justify-between gap-3 flex-wrap" style={bloomNoticeCardStyle()}>
+              <div className="text-[15px] p-3 flex items-center justify-between gap-3 flex-wrap" style={bloomNoticeCardStyle()}>
                 <span>No credit cards connected yet.</span>
                 <PlaidLinkButton
                   label="Click here to connect your credit card"
                   creditCard
                   onLinked={load}
-                  className="text-xs px-3 py-1.5"
+                  className="text-[15px] px-3 py-1.5"
                   style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700 }}
                 />
               </div>
@@ -416,7 +416,7 @@ function WithdrawalsPageInner() {
                   </div>
                 )}
                 {Object.keys(groupedCardTxns).length === 0 ? (
-                  <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
+                  <p className="text-[15px] p-3" style={bloomNoticeCardStyle()}>
                     {cardFiltersActive
                       ? "No charges match your search or filters."
                       : "No unmatched card activity found. It may already be logged, or hasn't synced yet."}
@@ -465,7 +465,7 @@ function WithdrawalsPageInner() {
         {sourceType === "cash" && (
           <>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <label className="text-xs">
+          <label className="text-[15px]">
             <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>Amount</span>
             <input
               type="number"
@@ -475,28 +475,28 @@ function WithdrawalsPageInner() {
               onFocus={(e) => e.target.select()}
               onChange={(e) => setAmount(e.target.value)}
               disabled={sourceType === "card" && !!matchedTxnId}
-              className="w-full text-sm border border-neutral-200 rounded-lg px-2.5 py-2 font-mono disabled:opacity-60"
+              className="w-full text-base border border-neutral-200 rounded-lg px-2.5 py-2 font-mono disabled:opacity-60"
             />
           </label>
-          <label className="text-xs">
+          <label className="text-[15px]">
             <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>Date</span>
             <input
               type="date"
               value={occurredAt?.slice(0, 10)}
               onChange={(e) => setOccurredAt(e.target.value)}
               disabled={sourceType === "card" && !!matchedTxnId}
-              className="w-full text-sm border border-neutral-200 rounded-lg px-2.5 py-2 disabled:opacity-60"
+              className="w-full text-base border border-neutral-200 rounded-lg px-2.5 py-2 disabled:opacity-60"
             />
           </label>
         </div>
-        <label className="text-xs block mb-3">
+        <label className="text-[15px] block mb-3">
           <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>Description</span>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What was this for?"
-            className="w-full text-sm border border-neutral-200 rounded-lg px-2.5 py-2"
+            className="w-full text-base border border-neutral-200 rounded-lg px-2.5 py-2"
           />
         </label>
 
@@ -505,12 +505,12 @@ function WithdrawalsPageInner() {
 
         {(sourceType === "cash" || !!matchedTxnId) && (
         <>
-        <label className="text-xs block mb-2">
+        <label className="text-[15px] block mb-2">
           <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>What category did this come out of?</span>
           <select
             value={categoryLabel}
             onChange={(e) => setCategoryLabel(e.target.value)}
-            className="w-full text-sm border border-neutral-200 rounded-lg px-2.5 py-2"
+            className="w-full text-base border border-neutral-200 rounded-lg px-2.5 py-2"
           >
             <option value="">Select…</option>
             {splitRulesPercent.map((r) => (
@@ -523,17 +523,17 @@ function WithdrawalsPageInner() {
         {isOpex && (
           <div className="mb-3">
             {businesses.length === 0 ? (
-              <p className="text-xs p-3" style={bloomNoticeCardStyle()}>
+              <p className="text-[15px] p-3" style={bloomNoticeCardStyle()}>
                 <b>No businesses added yet.</b> Add each business in Settings and pick its type, then come back to save this expense.{" "}
                 <a href="/settings#businesses" style={{ color: "var(--color-accent-700)", fontWeight: 800 }}>Open Settings</a>
               </p>
             ) : (
-              <label className="text-xs block">
+              <label className="text-[15px] block">
                 <span className="block mb-1" style={{ color: "var(--color-neutral-700)" }}>Which business was this for? <span style={{ color: "#B3261E" }}>*</span></span>
                 <select
                   value={businessId}
                   onChange={(e) => setBusinessId(e.target.value)}
-                  className="w-full text-sm border border-neutral-200 rounded-lg px-2.5 py-2"
+                  className="w-full text-base border border-neutral-200 rounded-lg px-2.5 py-2"
                 >
                   <option value="">Select…</option>
                   {businesses.map((b) => (
@@ -561,7 +561,7 @@ function WithdrawalsPageInner() {
         )}
 
         {mileage && (
-          <div className="flex items-center gap-2 flex-wrap text-xs mb-3">
+          <div className="flex items-center gap-2 flex-wrap text-[15px] mb-3">
             <label className="flex items-center gap-1">
               Miles driven
               <input
@@ -584,7 +584,7 @@ function WithdrawalsPageInner() {
           </div>
         )}
         {meals && (
-          <div className="flex items-center gap-2 flex-wrap text-xs mb-3">
+          <div className="flex items-center gap-2 flex-wrap text-[15px] mb-3">
             <label className="flex items-center gap-1 flex-1 min-w-[160px]">
               Business purpose
               <input
@@ -629,9 +629,9 @@ function WithdrawalsPageInner() {
           </label>
         </div>
 
-        {error && <p className="text-xs mb-3 p-2" style={bloomWarningCardStyle()}>{error}</p>}
+        {error && <p className="text-[15px] mb-3 p-2" style={bloomWarningCardStyle()}>{error}</p>}
 
-        <PrimaryButton onClick={save} disabled={saving} className="text-sm px-4 py-2">
+        <PrimaryButton onClick={save} disabled={saving} className="text-base px-4 py-2">
           {saving ? "Saving…" : "Save withdrawal"}
         </PrimaryButton>
         </>
@@ -639,15 +639,15 @@ function WithdrawalsPageInner() {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-sm font-semibold mb-3">Recent withdrawals</h2>
+        <h2 className="text-lg font-bold mb-3">Recent withdrawals</h2>
         {withdrawals.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--color-neutral-700)" }}>No withdrawals recorded yet.</p>
+          <p className="text-base" style={{ color: "var(--color-neutral-700)" }}>No withdrawals recorded yet.</p>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {withdrawals.map((w) => (
-              <div key={w.id} className="flex items-center justify-between gap-3 text-xs border-b border-[var(--color-divider)] pb-2">
+              <div key={w.id} className="flex items-center justify-between gap-3 text-[15px] border-b border-[var(--color-divider)] pb-2">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{w.description || "(no description)"}</div>
+                  <div className="text-base font-medium truncate">{w.description || "(no description)"}</div>
                   <div style={{ color: "var(--color-neutral-700)" }}>
                     {formatDate(w.occurredAt)} ·{" "}
                     {w.allocations.length
