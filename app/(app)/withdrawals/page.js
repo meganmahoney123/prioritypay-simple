@@ -287,9 +287,9 @@ function WithdrawalsPageInner() {
             }}
             className="flex-1 text-base font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
             style={{
-              border: `1px solid ${sourceType === "card" ? "var(--color-accent)" : "var(--color-divider)"}`,
-              color: sourceType === "card" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
-              background: sourceType === "card" ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+              border: `1px solid ${sourceType === "card" ? "#3A3150" : "var(--color-divider)"}`,
+              color: sourceType === "card" ? "#1F1636" : "var(--color-neutral-700)",
+              background: sourceType === "card" ? "#F4F3F8" : "transparent",
             }}
           >
             <CreditCard size={15} /> Match a credit card charge
@@ -302,9 +302,9 @@ function WithdrawalsPageInner() {
             }}
             className="flex-1 text-base font-semibold px-3 py-2.5 rounded-xl flex items-center justify-center gap-2"
             style={{
-              border: `1px solid ${sourceType === "cash" ? "var(--color-accent)" : "var(--color-divider)"}`,
-              color: sourceType === "cash" ? "var(--color-accent-700)" : "var(--color-neutral-700)",
-              background: sourceType === "cash" ? "color-mix(in srgb, var(--color-accent) 8%, transparent)" : "transparent",
+              border: `1px solid ${sourceType === "cash" ? "#3A3150" : "var(--color-divider)"}`,
+              color: sourceType === "cash" ? "#1F1636" : "var(--color-neutral-700)",
+              background: sourceType === "cash" ? "#F4F3F8" : "transparent",
             }}
           >
             <ReceiptText size={15} /> Cash expense
@@ -327,10 +327,10 @@ function WithdrawalsPageInner() {
             ) : matchedTxnId ? (
               <div
                 className="flex items-center justify-between gap-3 flex-wrap"
-                style={{ padding: "14px 16px", borderRadius: 16, border: "2.5px solid #4E22B8", background: "#EDE6FF" }}
+                style={{ padding: "14px 16px", borderRadius: 16, border: "1.5px solid #6D3BE0", background: "#F4F3F8" }}
               >
                 <span>
-                  <span style={{ display: "block", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: "#4E22B8" }}>SELECTED CHARGE</span>
+                  <span style={{ display: "block", fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>SELECTED CHARGE</span>
                   <span style={{ display: "block", fontSize: 17, fontWeight: 600, color: "#241337" }}>
                     {description} · {formatDate(occurredAt)}
                   </span>
@@ -425,7 +425,7 @@ function WithdrawalsPageInner() {
               <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
                 {Object.entries(groupedCardTxns).map(([group, txns]) => (
                   <div key={group}>
-                    <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3B1C7A", marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3A3150", marginBottom: 8 }}>
                       {group}
                     </div>
                     <div className="flex flex-col gap-2.5">
@@ -442,7 +442,7 @@ function WithdrawalsPageInner() {
                           >
                             <span
                               className="flex flex-col items-center justify-center shrink-0"
-                              style={{ width: 52, height: 48, borderRadius: 12, background: "#EDE6FF", color: "#3B1C7A" }}
+                              style={{ width: 52, height: 48, borderRadius: 12, background: "#F4F3F8", color: "#3A3150" }}
                             >
                               <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" }}>{mon}</span>
                               <span style={{ fontSize: 19, fontWeight: 600, lineHeight: 1 }}>{Number(dd)}</span>
@@ -608,7 +608,7 @@ function WithdrawalsPageInner() {
 
         <div
           className="mb-4"
-          style={{ background: "#F3EEFF", border: "1.5px dashed #9A72F0", borderRadius: 16, padding: "14px 16px" }}
+          style={{ background: "#F7F6FA", border: "1px dashed #B9B2CC", borderRadius: 16, padding: "14px 16px" }}
         >
           <div style={{ fontSize: 15, fontWeight: 600, color: "#241337" }}>Receipt for your taxes (optional)</div>
           <p style={{ fontSize: 14, color: "#4A3F63", margin: "2px 0 10px", lineHeight: 1.45 }}>

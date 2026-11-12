@@ -132,3 +132,15 @@ input[type="number"] {
 .ps-page h1 { font-size: 28px !important; font-weight: 800 !important; color: #241337; }
 .ps-page h2 { color: #241337; }
 .ps-page input.ps-compact { padding: 7px 8px !important; min-height: 0 !important; font-size: 18px !important; font-family: var(--font-mono), monospace; font-weight: 700; }
+
+/* Calmer look for Savings Calculator, One-Time Transfer and Projections (Close Out keeps the original .ps-page rules). */
+.ps-page.ps-refined [data-ps="card"] { border: 1px solid #E6E1F0 !important; border-radius: 14px !important; box-shadow: 0 1px 2px rgba(31,22,54,0.04) !important; }
+.ps-page.ps-refined label.text-xs, .ps-page.ps-refined label > span.block, .ps-page.ps-refined .text-xs.font-semibold { font-weight: 600 !important; color: #3A3150 !important; }
+.ps-page.ps-refined select, .ps-page.ps-refined input[type="text"], .ps-page.ps-refined input[type="number"], .ps-page.ps-refined input[type="date"], .ps-page.ps-refined input[type="month"] {
+  font-size: 15px !important; border: 1px solid #D9D3E6 !important; border-radius: 8px !important; padding: 8px 12px !important; min-height: 42px; }
+.ps-page.ps-refined select:focus, .ps-page.ps-refined input:focus { outline: 2px solid #E3DAFA; border-color: #6D3BE0 !important; }
+.ps-page.ps-refined div.border-neutral-200 { border: 1px solid #D9D3E6 !important; border-radius: 8px !important; font-size: 16px; font-weight: 500; min-height: 42px; }
+.ps-page.ps-refined div.border-neutral-200 input { font-size: 16px !important; font-weight: 500; }
+.ps-page.ps-refined .pp-ledger-btn-primary { min-height: 42px; border-radius: 10px !important; font-weight: 600 !important; font-size: 15px !important; }
+.ps-page.ps-refined h1 { font-size: 24px !important; font-weight: 600 !important; }
+.ps-page.ps-refined input.ps-compact { font-weight: 500; font-size: 16px !important; }

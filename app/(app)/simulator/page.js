@@ -103,7 +103,7 @@ export default function MoneySimulatorDashboardPage() {
   };
 
   return (
-    <div className="ps-page max-w-4xl space-y-6" style={BLOOM_TOKENS}>
+    <div className="ps-page ps-refined max-w-4xl space-y-6" style={BLOOM_TOKENS}>
       <div>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3.2vw, 32px)", fontWeight: 400, margin: "0 0 8px", lineHeight: 1.3 }}>
           Enter a financial goal and adjust split percentages to achieve it.

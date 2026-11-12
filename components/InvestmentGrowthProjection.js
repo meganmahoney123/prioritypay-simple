@@ -126,8 +126,8 @@ function ResultBox({ text }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
-        background: "var(--color-accent-200)",
-        color: "var(--color-accent-800)",
+        background: "#F7F6FA",
+        color: "var(--color-text)",
         fontFamily: "var(--font-mono)",
         fontWeight: 600,
       }}
@@ -224,7 +224,7 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
         <>
           <p className="text-sm mb-4" style={{ color: "var(--color-text)" }}>
             Current combined balance:{" "}
-            <span style={{ fontWeight: 600, fontFamily: "var(--font-mono)", color: "var(--color-accent-700)" }}>
+            <span style={{ fontWeight: 600, fontFamily: "var(--font-mono)", color: "var(--color-text)" }}>
               {currency(principal)}
             </span>
           </p>
@@ -239,7 +239,7 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
                   key={opt.id}
                   type="button"
                   onClick={() => setSolveFor(opt.id)}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                  className="text-xs font-medium px-3 py-1.5 rounded-full"
                   style={{
                     border: `1px solid ${solveFor === opt.id ? "var(--color-accent)" : "var(--color-divider)"}`,
                     color: solveFor === opt.id ? "var(--color-accent-700)" : "var(--color-neutral-700)",
@@ -406,7 +406,7 @@ export default function InvestmentGrowthProjection({ title = "Investment & Retir
       )}
 
       {taxNote && (
-        <p className="text-xs mt-4" style={{ color: "var(--color-accent-700)" }}>
+        <p className="text-xs mt-4" style={{ color: "var(--color-text)" }}>
           This reflects pre-tax contributions, you&apos;ll still owe income tax on withdrawals in retirement.
         </p>
       )}

@@ -35,9 +35,9 @@ const TIERS = {
 };
 
 const CSS = `
-.pp-ex-chip{padding:7px 16px;border-radius:999px;font-family:${MONO};font-weight:700;font-size:15px;background:#fff;color:${PURPLE};border:1px solid #DDD5F3;cursor:pointer}
+.pp-ex-chip{padding:7px 16px;border-radius:8px;font-family:${MONO};font-weight:500;font-size:14px;background:#fff;color:#1F1636;border:1px solid #DDD5F3;cursor:pointer}
 .pp-ex-chip[aria-pressed="true"]{background:${PURPLE};color:#fff;border-color:${PURPLE}}
-.pp-ex-val{position:relative;width:96px;height:24px;flex:none;font-family:${MONO};font-weight:700;font-size:17px;color:${PURPLE};text-align:right}
+.pp-ex-val{position:relative;width:96px;height:24px;flex:none;font-family:${MONO};font-weight:500;font-size:16px;color:#1F1636;text-align:right}
 .pp-ex-val span{position:absolute;right:0;top:0;transition:opacity .35s}
 .pp-ex-bar{flex:1 1 100%;margin:0 0 0 19px;max-width:calc(100% - 19px);height:8px;background:#F0EAFB;border-radius:99px;overflow:hidden}
 .pp-ex-bar i{display:block;height:100%;width:0;border-radius:99px;transition:width .7s ease,background .3s}
@@ -71,10 +71,10 @@ export default function SplitExample() {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", background: "#F4EEFF", border: 0, cursor: "pointer", font: "inherit", textAlign: "left" }}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", background: "#F7F6FA", border: 0, cursor: "pointer", font: "inherit", textAlign: "left" }}
       >
         <span aria-hidden style={{ fontSize: 17 }}>💡</span>
-        <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: PURPLE }}>Confused? Here&apos;s an example of how splits work</span>
+        <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: "#1F1636" }}>Confused? Here&apos;s an example of how splits work</span>
         <span style={{ color: PURPLE, fontWeight: 600 }}>{open ? "▴" : "▾"}</span>
       </button>
       {open && (

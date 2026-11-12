@@ -156,13 +156,13 @@ export default function InvestmentAccounts() {
   const monoStyle = { fontFamily: "var(--font-mono)" };
 
   return (
-    <div className="ps-page space-y-6" style={{ background: "#EFE8FF", borderRadius: 28, padding: "20px 18px" }}>
+    <div className="ps-page ps-refined space-y-6" style={{}}>
       <p style={{ margin: 0, fontSize: 17, lineHeight: 1.5, color: MUTED, maxWidth: 760 }}>
         All of your investing accounts in one place. Pick one account, or see them together, and estimate where they could be in the future.
       </p>
 
       {isSample && (
-        <div style={{ background: "#fff", border: "3px solid #4E22B8", borderRadius: 20, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ background: "#fff", border: "2px solid #6D3BE0", borderRadius: 20, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
           <b style={{ fontSize: 16 }}>This is sample data</b>
           <span style={{ fontSize: 15, lineHeight: 1.5, color: INK }}>
             You haven&apos;t set up an investing account yet. Connect a Solo 401(k), Roth IRA, brokerage or other account and this page fills in with your real balances,
@@ -199,11 +199,11 @@ export default function InvestmentAccounts() {
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, textAlign: "left", padding: 20, borderRadius: 14,
                   cursor: "pointer", color: INK, minHeight: 44,
-                  border: on ? "3px solid #4E22B8" : "1px solid #DDD5F3", background: "#fff",
+                  border: on ? "2px solid #6D3BE0" : "1px solid #DDD5F3", background: "#fff",
                 }}
               >
                 <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", color: "#4E22B8" }}>{c.kind}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>{c.kind}</span>
                   <span style={{ width: 16, height: 16, borderRadius: 5, background: c.color, flex: "none" }} />
                 </span>
                 <span style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.25 }}>{c.name}</span>
@@ -222,7 +222,7 @@ export default function InvestmentAccounts() {
           <Link
             key={b.href}
             href={b.href}
-            style={{ display: "inline-flex", alignItems: "center", minHeight: 46, padding: "0 22px", borderRadius: 999, border: "2px dashed #4E22B8", background: "#fff", color: ACCENT, fontSize: 16, fontWeight: 600 }}
+            style={{ display: "inline-flex", alignItems: "center", minHeight: 46, padding: "0 22px", borderRadius: 999, border: "1px dashed #B9B2CC", background: "#fff", color: ACCENT, fontSize: 16, fontWeight: 600 }}
           >
             {b.label}
           </Link>
@@ -232,13 +232,13 @@ export default function InvestmentAccounts() {
       <Card className="space-y-5" style={{ borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 28px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", color: "#4E22B8" }}>PROJECTION ESTIMATOR · {selName}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>PROJECTION ESTIMATOR · {selName}</div>
             <div style={{ fontSize: 15, color: MUTED }}>In {years} years at {ret}% a year, this could grow to about</div>
           </div>
           <div style={{ ...monoStyle, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{currency(finalTotal)}</div>
         </div>
 
-        <div style={{ background: "#F8F5FF", border: "2px solid #E7DEFA", borderRadius: 18, padding: "10px 6px 4px" }}>
+        <div style={{ background: "#fff", border: "1px solid #E6E1F0", borderRadius: 18, padding: "10px 6px 4px" }}>
         <svg viewBox="0 0 900 380" width="100%" role="img" aria-label="Projected balance growth over time, by year" style={{ display: "block" }}>
           {tickYears.map((y) => (
             <line key={`v${y}`} x1={px(y)} y1="20" x2={px(y)} y2="310" stroke="#E3D8FA" strokeWidth="1" />
@@ -276,7 +276,7 @@ export default function InvestmentAccounts() {
               key={k.label}
               style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, fontWeight: 600,
-                background: k.color === INK ? INK : "#F3EEFF", color: k.color === INK ? "#fff" : INK, border: k.color === INK ? "none" : "2px solid #E7DEFA",
+                background: k.color === INK ? INK : "#F7F6FA", color: k.color === INK ? "#fff" : INK, border: k.color === INK ? "none" : "1px solid #E6E1F0",
               }}
             >
               <span style={{ width: 22, height: 6, borderRadius: 3, background: k.color === INK ? "#fff" : k.color, flex: "none" }} />
@@ -286,15 +286,15 @@ export default function InvestmentAccounts() {
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "22px 32px", background: "#F3EEFF", border: "2px solid #E7DEFA", borderRadius: 18, padding: 20 }}>
-          <label className="block text-base font-semibold" style={{ color: INK }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "22px 32px", background: "#F7F6FA", border: "1px solid #E6E1F0", borderRadius: 18, padding: 20 }}>
+          <label className="block text-base font-medium" style={{ color: INK }}>
             <span className="flex justify-between items-center">
               <span>Years to grow</span>
               <b style={{ ...monoStyle, background: "#fff", borderRadius: 999, padding: "4px 14px", color: ACCENT }}>{years}</b>
             </span>
             <input type="range" min="5" max="40" step="1" value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full" style={{ accentColor: "#4E22B8", height: 28 }} />
           </label>
-          <label className="block text-base font-semibold" style={{ color: INK }}>
+          <label className="block text-base font-medium" style={{ color: INK }}>
             <span className="flex justify-between items-center">
               <span>Average yearly return</span>
               <b style={{ ...monoStyle, background: "#fff", borderRadius: 999, padding: "4px 14px", color: ACCENT }}>{ret}%</b>
@@ -302,7 +302,7 @@ export default function InvestmentAccounts() {
             <input type="range" min="1" max="12" step="0.5" value={ret} onChange={(e) => setRet(Number(e.target.value))} className="w-full" style={{ accentColor: "#4E22B8", height: 28 }} />
           </label>
           {chosen.map((a) => (
-            <label key={a.label} className="block text-base font-semibold" style={{ color: INK }}>
+            <label key={a.label} className="block text-base font-medium" style={{ color: INK }}>
               <span className="flex justify-between items-center gap-3">
                 <span>
                   {a.label}: monthly contribution{" "}
@@ -332,10 +332,10 @@ export default function InvestmentAccounts() {
 
       <Card className="space-y-2" style={{ borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 28px" }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", color: "#4E22B8" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>
             CONTRIBUTIONS VIA PRIORITYSAVE
           </div>
-          <div className="text-sm" style={{ color: "var(--color-text-muted, #4E22B8)" }}>
+          <div className="text-sm" style={{ color: "#6B6280" }}>
             What you have added to each account. Click an account to see every month.
           </div>
         </div>
@@ -344,7 +344,7 @@ export default function InvestmentAccounts() {
           const mx = Math.max(1, ...a.s.last12.map((m) => m.amount));
           const prevKey = a.months.length >= 2 ? a.months[a.months.length - 2].month : "";
           return (
-            <div key={a.label} style={{ background: "#fff", border: "2px solid #E7DEFA", borderRadius: 18, padding: "12px 16px", borderLeft: `8px solid ${a.color}` }}>
+            <div key={a.label} style={{ background: "#fff", border: "1px solid #E6E1F0", borderRadius: 18, padding: "12px 16px", borderLeft: `8px solid ${a.color}` }}>
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : a.label)}
@@ -352,13 +352,13 @@ export default function InvestmentAccounts() {
                 className="w-full text-left py-3 grid gap-3 items-center"
                 style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", minHeight: 44, background: "transparent" }}
               >
-                <span className="flex items-center gap-2 font-bold">
+                <span className="flex items-center gap-2 font-semibold">
                   {a.label}
                 </span>
                 <Stat label={`LAST MONTH${prevKey ? ` (${monthName(prevKey).toUpperCase()})` : ""}`} value={currency(a.s.lastAmt)} />
                 <Stat label={`THIS MONTH SO FAR${thisMonth ? ` (${monthName(thisMonth).toUpperCase()})` : ""}`} value={currency(a.s.nowAmt)} />
                 <Stat label="ALL-TIME AVERAGE" value={a.s.hasHistory || a.s.allTimeAvg > 0 ? currency(a.s.allTimeAvg) : "—"} />
-                <span className="text-sm font-bold justify-self-start sm:justify-self-end" style={{ color: ACCENT, border: "2px solid #4E22B8", borderRadius: 999, padding: "10px 18px", background: "#fff", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+                <span className="text-sm font-semibold justify-self-start sm:justify-self-end" style={{ color: ACCENT, border: "1px solid #D9D3E6", borderRadius: 999, padding: "10px 18px", background: "#fff", minHeight: 44, display: "inline-flex", alignItems: "center" }}>
                   {isOpen ? "Hide history" : "View history"}
                 </span>
               </button>
@@ -374,16 +374,16 @@ export default function InvestmentAccounts() {
                       </div>
                       {a.s.last12.map((m) => (
                         <div key={m.month} className="grid items-center gap-3 text-sm" style={{ gridTemplateColumns: "64px minmax(0,1fr) 84px" }}>
-                          <span className="font-semibold">{monthLabel(m.month)}</span>
+                          <span className="font-medium">{monthLabel(m.month)}</span>
                           <span style={{ height: 16, borderRadius: 8, background: "#E8DEFB", display: "block" }}>
                             <span style={{ display: "block", height: 16, borderRadius: 8, background: a.color, width: `${m.amount ? Math.max(3, (m.amount / mx) * 100) : 0}%` }} />
                           </span>
-                          <span className="text-right font-semibold" style={{ fontFamily: "var(--font-mono)" }}>{currency(m.amount)}</span>
+                          <span className="text-right font-medium" style={{ fontFamily: "var(--font-mono)" }}>{currency(m.amount)}</span>
                         </div>
                       ))}
                     </>
                   )}
-                  <div className="text-xs" style={{ color: "var(--color-text-muted, #4E22B8)" }}>
+                  <div className="text-xs" style={{ color: "#6B6280" }}>
                     {isSample ? "Sample numbers. Your real contributions will show here." : "Only contributions made through PrioritySave transfers are counted here."}
                   </div>
                 </div>
@@ -394,9 +394,9 @@ export default function InvestmentAccounts() {
       </Card>
 
       <Card className="space-y-2" style={{ borderRadius: 14, border: "1px solid #DDD5F3", background: "#fff", padding: "26px 28px" }}>
-        <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", color: "#4E22B8" }}>IN {years} YEARS, BY ACCOUNT</div>
+        <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "#6B6280" }}>IN {years} YEARS, BY ACCOUNT</div>
         {rows.map((a) => (
-          <div key={a.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "14px 16px", background: "#F8F5FF", border: "2px solid #E7DEFA", borderRadius: 14, fontSize: 17, fontWeight: 600 }}>
+          <div key={a.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "14px 16px", background: "#fff", border: "1px solid #E6E1F0", borderRadius: 14, fontSize: 17, fontWeight: 600 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 16, height: 16, borderRadius: 5, background: a.color }} />
               {a.label}

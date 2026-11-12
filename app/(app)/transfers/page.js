@@ -522,7 +522,7 @@ export default function TransfersPage() {
   if (loading) return <p className="text-sm text-[var(--color-neutral-700)]">Loading…</p>;
 
   return (
-    <div className="ps-page max-w-2xl space-y-6">
+    <div className="ps-page ps-refined max-w-2xl space-y-6">
       <div>
         <p className="text-sm text-[var(--color-neutral-700)]">
           Great for boosting a category with some extra unallocated cash you&apos;re sitting on, or moving money

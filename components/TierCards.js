@@ -23,40 +23,40 @@ const TIER_SUB = "100% of each deposit is split evenly across these categories. 
 export const TIER_CSS = `
 .pp-tier-card{background:#fff;border:1px solid #DDD5F3;border-radius:22px;padding:6px 20px 8px}
 .pp-tier-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 0 2px}
-.pp-tier-title{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:${PURPLE}}
+.pp-tier-title{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#6B6280}
 .pp-tier-sub{font-size:14px;line-height:1.5;color:#4A3F63;margin:0 0 4px}
 .pp-tier-row{padding:13px 0;border-top:1.5px solid ${LINE};display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.pp-tier-dot{width:9px;height:9px;border-radius:50%;background:#9A72F0;flex:none}
-.pp-tier-name{flex:1 1 130px;min-width:0;font:inherit;font-size:17px;font-weight:700;color:inherit;background:transparent;border:1.5px solid transparent;border-radius:10px;padding:4px 6px;margin-left:-6px}
+.pp-tier-dot{width:8px;height:8px;border-radius:50%;background:#9A72F0;flex:none}
+.pp-tier-name{flex:1 1 130px;min-width:0;font:inherit;font-size:16px;font-weight:600;color:inherit;background:transparent;border:1.5px solid transparent;border-radius:10px;padding:4px 6px;margin-left:-6px}
 .pp-tier-name:hover,.pp-tier-name:focus{border-color:#D9C9FF;background:#fff;outline:none}
-.pp-tier-namefixed{flex:1 1 130px;min-width:0;font-size:17px;font-weight:700}
-.pp-tier-pill{display:inline-flex;align-items:center;gap:2px;background:#F4EEFF;border-radius:999px;padding:4px 12px;font-family:${MONO};font-weight:700;font-size:16px;color:${PURPLE};white-space:nowrap}
+.pp-tier-namefixed{flex:1 1 130px;min-width:0;font-size:16px;font-weight:600}
+.pp-tier-pill{display:inline-flex;align-items:center;gap:2px;background:#F4F3F8;border-radius:8px;padding:4px 12px;font-family:${MONO};font-weight:500;font-size:15px;color:#1F1636;white-space:nowrap}
 .pp-tier-pill input{width:44px;border:0;background:transparent;font:inherit;color:inherit;text-align:right;padding:2px 0;outline:none;-moz-appearance:textfield}
 .pp-tier-pill input::-webkit-outer-spin-button,.pp-tier-pill input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .pp-tier-pill input:focus{background:#fff;border-radius:6px}
 .pp-tier-pill input[readonly]{cursor:default}
-.pp-tier-cap{display:inline-flex;align-items:center;gap:6px;border:1px solid #DDD5F3;border-radius:12px;padding:3px 10px;font-size:13px;font-weight:800;color:${PURPLE};white-space:nowrap}
-.pp-tier-cap input{width:62px;border:0;background:transparent;font-family:${MONO};font-weight:700;font-size:15px;color:#241337;text-align:right;padding:2px 0;outline:none;-moz-appearance:textfield}
+.pp-tier-cap{display:inline-flex;align-items:center;gap:6px;border:1px solid #DDD5F3;border-radius:8px;padding:3px 10px;font-size:13px;font-weight:500;color:#6B6280;white-space:nowrap}
+.pp-tier-cap input{width:62px;border:0;background:transparent;font-family:${MONO};font-weight:500;font-size:15px;color:#1F1636;text-align:right;padding:2px 0;outline:none;-moz-appearance:textfield}
 .pp-tier-cap input::-webkit-outer-spin-button,.pp-tier-cap input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .pp-tier-cap.pp-tier-bad{border-color:#B3261E}
 .pp-tier-x{width:30px;height:30px;border:0;background:transparent;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#8A7FA0;font-size:15px;font-weight:800}
 .pp-tier-x:hover{background:#F3EEFF;color:#4A3F63}
-.pp-tier-more{background:transparent;border:0;font:inherit;font-size:14px;font-weight:800;color:${PURPLE};cursor:pointer;padding:4px 6px;white-space:nowrap}
+.pp-tier-more{background:transparent;border:0;font:inherit;font-size:14px;font-weight:500;color:${PURPLE};cursor:pointer;padding:4px 6px;white-space:nowrap}
 .pp-tier-details{width:100%;padding:4px 0 2px 19px;display:grid;gap:10px}
-.pp-tier-add{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1.5px solid ${LINE};padding:12px 0 6px;font:inherit;font-size:15px;font-weight:800;color:${PURPLE};cursor:pointer}
-.pp-tier-num{width:26px;height:26px;border-radius:50%;background:${PURPLE};color:#fff;border:2px solid ${PURPLE};display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none;align-self:center}
-.pp-tier-num.out{background:#fff;color:${PURPLE}}
+.pp-tier-add{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1.5px solid ${LINE};padding:12px 0 6px;font:inherit;font-size:14px;font-weight:500;color:${PURPLE};cursor:pointer}
+.pp-tier-num{width:26px;height:26px;border-radius:50%;background:#1F1636;color:#fff;border:1px solid #1F1636;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none;align-self:center}
+.pp-tier-num.out{background:#fff;color:#1F1636}
 .pp-tier-tag{font-size:13px;font-weight:500;color:#4A3F63;white-space:nowrap}
 .pp-tier-stack{background:#fff;border:1px solid #DDD5F3;border-radius:18px;overflow:hidden}
 .pp-tier-stack .pp-tier-card{border:0;border-radius:0;padding:0 18px 4px;background:#fff}
-.pp-tier-stack .pp-tier-head{background:#F4EEFF;margin:0 -18px;padding:9px 18px;align-items:center;justify-content:flex-start;gap:10px}
+.pp-tier-stack .pp-tier-head{background:#F7F6FA;margin:0 -18px;padding:9px 18px;align-items:center;justify-content:flex-start;gap:10px}
 .pp-tier-stack .pp-tier-title{flex:1}
 .pp-tier-stack .pp-tier-sub{display:none}
 .pp-tier-stack .pp-tier-head + .pp-tier-sub + .pp-tier-row{border-top:0}
-.pp-tier-flow{text-align:center;font-size:12px;font-weight:800;color:${PURPLE};padding:5px 0;border-top:1px solid #DDD5F3;border-bottom:1px solid #DDD5F3;background:#fff}
-.pp-tier-addlink{background:transparent;border:0;font:inherit;font-size:14px;font-weight:800;color:${PURPLE};cursor:pointer;padding:4px;text-align:left}
-.pp-tier-arrow{text-align:center;color:${PURPLE};font-weight:800;font-size:14px;padding:2px 0}
-.pp-tier-hint{font-size:13px;font-weight:600;color:#6B4FB8;width:100%}
+.pp-tier-flow{text-align:center;font-size:12px;font-weight:500;color:#6B6280;padding:5px 0;border-top:1px solid #DDD5F3;border-bottom:1px solid #DDD5F3;background:#fff}
+.pp-tier-addlink{background:transparent;border:0;font:inherit;font-size:14px;font-weight:500;color:${PURPLE};cursor:pointer;padding:4px;text-align:left}
+.pp-tier-arrow{text-align:center;color:#6B6280;font-weight:500;font-size:14px;padding:2px 0}
+.pp-tier-hint{font-size:13px;font-weight:500;color:#6B6280;width:100%}
 .pp-tier-err{font-size:13px;font-weight:700;color:#B3261E;width:100%}
 .pp-tier-acct{width:100%;max-width:420px}
 .pp-tier-acct-l{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#574A68;margin-bottom:4px}
