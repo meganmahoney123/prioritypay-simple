@@ -4,7 +4,34 @@ import { Plus } from "lucide-react";
 // "Add a category" block shown directly under the split list (onboarding and
 // Split Rules): tappable suggestion chips plus an "Add your own" button, in
 // one clearly bordered card so it isn't missed.
-export default function AddCategoryCard({ suggestions = [], onAddSuggested, onAddOwn, style }) {
+export default function AddCategoryCard({ suggestions = [], onAddSuggested, onAddOwn, style, inline = false }) {
+  if (inline) {
+    // Lives inside the final tier card: no box of its own, just the chips and a link.
+    return (
+      <div style={{ borderTop: "1.5px solid #E7DEFA", padding: "12px 0 8px", ...style }}>
+        <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 800, marginBottom: 8 }}>
+          Add a category <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500, color: "#4A3F63", fontSize: 13 }}>· added at 0%, then set its share above</span>
+        </div>
+        {suggestions.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            {suggestions.map((sg) => (
+              <button
+                key={sg.label}
+                type="button"
+                onClick={() => onAddSuggested(sg)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 700, color: "#4E22B8", background: "#fff", border: "1.5px solid #9A72F0", borderRadius: 999, padding: "5px 13px", cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                <Plus size={13} /> {sg.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <button type="button" onClick={onAddOwn} style={{ background: "transparent", border: 0, padding: "2px 0", cursor: "pointer", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 800, color: "#4E22B8", display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <Plus size={15} /> Add your own category
+        </button>
+      </div>
+    );
+  }
   return (
     <div style={{ border: "1px solid #D9C9FF", borderRadius: 20, background: "#F7F3FF", padding: "18px 18px 20px", ...style }}>
       <div style={{ fontFamily: "var(--font-heading)", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4E22B8", fontWeight: 700 }}>

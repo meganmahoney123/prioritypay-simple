@@ -62,7 +62,7 @@ const ONBOARDING_LIVE = true;
 // Order (Nov 2026): the fun part first (percentages), then connect banks, then
 // the plan step, and only after paying are accounts matched to each split.
 // Payment no longer finishes onboarding -- the last step does.
-const STEPS = ["Welcome", "Business", "Set Your Splits", "Caps", "Connect Accounts", "Start Plan", "Match Accounts", "Deposit Alerts", "Credit Cards"];
+const STEPS = ["Welcome", "Business", "Set Your Splits", "Limits", "Connect Accounts", "Start Plan", "Match Accounts", "Deposit Alerts", "Credit Cards"];
 const STEP_LIMITS = 3;
 const STEP_CONNECT = 4;
 const STEP_PLAN = 5;
@@ -1125,10 +1125,11 @@ function OnboardingPageInner() {
                 persona={businessType}
                 title="Final Categories"
                 num={priorityTiers(percent).length + 1}
-              />
+              >
+                <AddCategoryCard inline suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
+              </TierLastCard>
             </TierCards>
 
-            <AddCategoryCard style={{ marginTop: 22 }} suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
 
             {needsRetirement && (
@@ -1210,7 +1211,8 @@ function OnboardingPageInner() {
         {step === STEP_LIMITS && (
           <div style={{ maxWidth: "46em", margin: "0 auto" }}>
             <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(32px, 5.4vw, 46px)", fontWeight: 800, lineHeight: 1.06, margin: "0 0 10px" }}>
-              Add additional limits
+              Add additional limits{" "}
+              <span style={{ fontWeight: 500, color: "color-mix(in srgb, var(--color-text) 55%, transparent)", fontSize: "0.6em", whiteSpace: "nowrap" }}>(Optional)</span>
             </h1>
             <div style={{ height: 1, background: "var(--color-divider)", margin: "0 0 26px" }} />
             <OnboardingLimits rows={lastTierRows} onUpdate={updatePercent} />
@@ -1669,7 +1671,7 @@ function OnboardingPageInner() {
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <BackBtn onClick={back} />
               {step === STEP_LIMITS && (
-                <GhostBtn onClick={() => { clearAllLimits(); next(); }}>Skip, no caps</GhostBtn>
+                <GhostBtn onClick={() => { clearAllLimits(); next(); }}>Skip, no limits</GhostBtn>
               )}
               <PrimaryBtn onClick={step === 2 || step === STEP_LIMITS ? handleStep2Continue : handleStep4Continue} disabled={step === 2 && tierIssues.length > 0} flex>Continue &nbsp;→</PrimaryBtn>
             </div>

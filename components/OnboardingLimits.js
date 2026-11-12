@@ -198,7 +198,7 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [] }) 
     const v = raw === "" || !Number.isFinite(n) || n <= 0 ? null : n;
     onUpdate(r.id, kind === "monthly" ? { max: v } : { categoryCap: v });
   };
-  const labelFor = (f) => (f.monthly && f.total ? "Monthly cap + goal" : f.monthly ? "Monthly cap" : f.total ? "Total savings goal" : "No cap");
+  const labelFor = (f) => (f.monthly && f.total ? "Monthly cap + goal" : f.monthly ? "Monthly cap" : f.total ? "Total savings goal" : "No limit");
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -229,10 +229,6 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [] }) 
         @media (max-width:560px){.pp-cap-defs{flex-direction:column}}
       `}</style>
 
-      <p style={{ margin: 0, fontSize: 15, color: "#4A3F63", lineHeight: 1.5 }}>
-        Optional.{priorityRows.length > 0 ? " Your top and secondary priority bills are already capped." : ""}
-      </p>
-
       <div className="pp-cap-defs" style={{ display: "flex", gap: 12 }}>
         <div className="pp-cap-def">
           <div><b style={{ color: PURPLE }}>Monthly cap</b><br />Stops at a monthly amount. Resets every month.</div>
@@ -245,14 +241,14 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [] }) 
       </div>
 
       <div style={{ background: "#EDE6FF", borderRadius: 14, padding: "12px 16px", fontSize: 14, lineHeight: 1.55 }}>
-        <b style={{ color: PURPLE }}>When a category reaches its cap or goal,</b> PrioritySave resets it to 0% and the other categories in this tier
+        <b style={{ color: PURPLE }}>When a category reaches its limit,</b> PrioritySave resets it to 0% and the other categories in this tier
         automatically increase to absorb that percentage.
       </div>
 
       <div className="pp-cap-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 0 2px" }}>
           <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: PURPLE }}>Final Splits</div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#8A7FA0" }}>Optional caps</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#8A7FA0" }}>Optional limits</span>
         </div>
         <p style={{ fontSize: 14, lineHeight: 1.5, color: "#4A3F63", margin: "0 0 4px" }}>
           Tick a monthly cap, a total savings goal, or both for any category you want to stop funding once it is full. Monthly caps reset each month.

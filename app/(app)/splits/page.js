@@ -453,10 +453,11 @@ function SplitRulesPageInner() {
           persona={persona}
           title="Final Categories"
           num={priorityTiers(percent).length + 1}
-        />
+        >
+          <AddCategoryCard inline suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
+        </LastTierEditor>
       </TierCards>
 
-      <AddCategoryCard suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
 
 
       {startingBalanceOverBudget && (
