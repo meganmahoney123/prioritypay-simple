@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PrimaryButton } from "@/components/ui";
 import { LastTierEditor } from "@/components/PercentSplitEditor";
-import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName } from "@/lib/allocations";
+import { DEFAULT_SPLIT_RULES, getDefaultSplitRules, SUGGESTED_EXTRA_CATEGORIES, CATEGORY_COLORS, pickUniqueColor, pctTotal, roundPct, newSubAccountRow, clampPctToRemaining, maxAllowedPct, settleCaps, computeStartingBalanceRoom, tierOf, tierProblems, addTierRow, removeTierRow, addTierBlock, removeTierBlock, priorityTiers, tierName, isRetirementRow, applyRetirementTotal, applyRetirementShare } from "@/lib/allocations";
 import TierCards from "@/components/TierCards";
 import SplitExample from "@/components/SplitExample";
 import { decodeSim } from "@/lib/simSharing";
@@ -242,6 +242,29 @@ function SplitRulesPageInner() {
     trySave(target);
   };
 
+  // Retirement is one row with a total; its accounts share 100% of that total.
+  const setRetirementTotal = (raw) => {
+    markDirty();
+    setPercent((prev) => {
+      const { next, room, clamped } = applyRetirementTotal(prev, raw);
+      const first = prev.find(isRetirementRow);
+      setPctOverflow(
+        clamped && first
+          ? { id: first.id, message: `This would put your deposit allocation over 100%. Select no more than ${room}% or adjust some of the other percentages.` }
+          : null
+      );
+      return next;
+    });
+  };
+  const setRetirementShare = (id, raw) => {
+    markDirty();
+    setPercent((prev) => applyRetirementShare(prev, id, raw));
+  };
+  const removeRetirement = () => {
+    markDirty();
+    setPercent((prev) => prev.filter((r) => !isRetirementRow(r)));
+  };
+
   const updatePercent = (id, patch) => {
     markDirty();
     setPercent((prev) => {
@@ -452,6 +475,7 @@ function SplitRulesPageInner() {
           persona={persona}
           title="Final Categories"
           num={shownTiers + 1}
+          retirement={{ onTotal: setRetirementTotal, onShare: setRetirementShare, onRemove: removeRetirement }}
         >
           <AddCategoryCard inline suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
         </LastTierEditor>

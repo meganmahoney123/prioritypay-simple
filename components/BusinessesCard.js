@@ -41,21 +41,21 @@ export default function BusinessesCard() {
     if (await call("/api/businesses", "POST", { name, entityType: type })) { setName(""); setType(SOLE_PROP); }
   };
 
-  if (!loaded) return null;
-  const note = drawNote(joinEntities(list.map((b) => b.entityType)));
-
   // Arriving from "Open Settings" links elsewhere (#businesses): scroll here
   // and flash the card so people land right on the businesses list.
   const [flash, setFlash] = useState(false);
   useEffect(() => {
-    if (typeof window === "undefined" || window.location.hash !== "#businesses") return;
+    if (!loaded || typeof window === "undefined" || window.location.hash !== "#businesses") return;
     const t = setTimeout(() => {
       document.getElementById("businesses")?.scrollIntoView({ behavior: "smooth", block: "start" });
       setFlash(true);
       setTimeout(() => setFlash(false), 2200);
     }, 350);
     return () => clearTimeout(t);
-  }, []);
+  }, [loaded]);
+
+  if (!loaded) return null;
+  const note = drawNote(joinEntities(list.map((b) => b.entityType)));
 
   return (
     <div id="businesses" style={{ scrollMarginTop: 90, borderRadius: 24, boxShadow: flash ? "0 0 0 4px #9A72F0" : "none", transition: "box-shadow .4s" }}>

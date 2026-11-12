@@ -10,7 +10,7 @@ import ChipCheckboxes from "./ChipCheckboxes";
 import EmployerCheckEmailModal from "./EmployerCheckEmailModal";
 import SplitPreviewPie from "./SplitPreviewPie";
 import { CapExplainer } from "@/components/OnboardingLimits";
-import { percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, RETIREMENT_GROUP_SUBTEXT, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom, tierOf } from "@/lib/allocations";
+import { isRetirementRow, percentSections, groupPctTotal, connectSavingsOnly, retirementGroupSubtext, RETIREMENT_GROUP_SUBTEXT, isCoreRow, isEmployerRetirementRow, roundPct, currency, computeStartingBalanceRoom, tierOf } from "@/lib/allocations";
 import { TIER_CSS } from "./TierCards";
 import { bloomWarningCardStyle } from "@/lib/bloomTheme";
 
@@ -266,7 +266,7 @@ function flattenSelfEmployedRetirement(sections) {
 // handler, and validation rule below behaves identically regardless of
 // theme, so passing no theme (as the standalone Split Rules page does)
 // renders exactly as before.
-function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, readOnly, lockLabel, persona, startingBalanceRoomInfo, tierStyle }) {
+function PercentRow({ shareMode, rule, accounts, onUpdate, onRemove, creating, setCreating, connecting, setConnecting, onAccountLinked, showRowWarnings, overflowMessage, theme, dotColor, forceShowStartingBalance, hideStartingBalance, hideAccountPicker, hideCreateNew, readOnly, lockLabel, persona, startingBalanceRoomInfo, tierStyle }) {
   const locked = isCoreRow(rule, persona) || !!lockLabel || !!readOnly;
   // A starting balance only ever counts as money already sitting in THIS
   // row's own connected account (see the PUT /api/split-rules validation
@@ -349,6 +349,9 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
               ) : (
                 <span className="pp-tier-namefixed">{rule.label}</span>
               )}
+              {shareMode && (
+                <span style={{ fontSize: 13, color: "#4A3F63", whiteSpace: "nowrap" }}>= {roundPct(Number(rule.pct) || 0)}% of each deposit</span>
+              )}
               <span className="pp-tier-pill">
                 <input
                   type="number"
@@ -356,12 +359,12 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
                   min={0}
                   max={100}
                   step="any"
-                  aria-label={`${rule.label} percent`}
-                  value={rule.pct === 0 || rule.pct === "0" ? 0 : rule.pct ?? ""}
+                  aria-label={shareMode ? `${rule.label} share of retirement` : `${rule.label} percent`}
+                  value={shareMode ? shareMode.share : rule.pct === 0 || rule.pct === "0" ? 0 : rule.pct ?? ""}
                   disabled={isEmployerRetirementRow(rule) && rule.employerHandles}
                   readOnly={!!readOnly}
                   onFocus={(e) => e.target.select()}
-                  onChange={(e) => onUpdate(rule.id, { pct: e.target.value })}
+                  onChange={(e) => (shareMode ? shareMode.onShare(rule.id, e.target.value) : onUpdate(rule.id, { pct: e.target.value }))}
                 />
                 %
               </span>
@@ -1024,11 +1027,18 @@ function PercentRow({ rule, accounts, onUpdate, onRemove, creating, setCreating,
 // Deposit Splits' last tier: the same compact card as tiers 1 and 2, one row per
 // category. "See more" on a row opens its bank account, monthly / total cap and
 // starting balance (the same controls as before).
-export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow, onAccountLinked, creating, setCreating, connecting, setConnecting, pctOverflow, persona, children , title = "Everything else", num }) {
+export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow, onAccountLinked, creating, setCreating, connecting, setConnecting, pctOverflow, persona, retirement, children , title = "Everything else", num }) {
   const rows = (percent || []).filter((r) => tierOf(r) === 0);
   const total = roundPct(rows.reduce((n, r) => n + (Number(r.pct) || 0), 0));
   const stays = roundPct(Math.max(0, 100 - total));
   const { byRuleId: roomById } = computeStartingBalanceRoom(percent, accounts);
+  // Two or more retirement accounts show as ONE "Retirement" row (the total);
+  // "See more" opens the card that shares that total between the accounts.
+  const [retOpen, setRetOpen] = useState(false);
+  const retRows = retirement ? rows.filter(isRetirementRow) : [];
+  const grouped = retRows.length >= 2 && !retRows.some((r) => isEmployerRetirementRow(r));
+  const retTotal = roundPct(retRows.reduce((n, r) => n + (Number(r.pct) || 0), 0));
+  const retNames = retRows.map((r) => r.label).filter(Boolean).join(", ");
   return (
     <div className="pp-tier-card">
       <style>{TIER_CSS}</style>
@@ -1041,7 +1051,75 @@ export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow
       <p className="pp-tier-sub">
         This is the final tier. The percentages below do NOT need to add up to 100% of your deposit. For example, you could schedule just 75% of each deposit to be split among the categories below.
       </p>
-      {rows.map((rule) => (
+      {rows.map((rule) => {
+        const isRet = grouped && isRetirementRow(rule);
+        if (isRet && rule.id !== retRows[0].id) return null;
+        if (isRet) {
+          return (
+            <div key="retirement-group">
+              <div className="pp-tier-row">
+                <span className="pp-tier-dot" />
+                <span className="pp-tier-namefixed">
+                  Retirement<span style={{ fontWeight: 500, color: "#4A3F63", fontSize: 14 }}> · {retNames}</span>
+                </span>
+                <span className="pp-tier-pill">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={100}
+                    step="any"
+                    aria-label="Retirement percent"
+                    value={retTotal === 0 ? 0 : retTotal}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => retirement.onTotal(e.target.value)}
+                  />
+                  %
+                </span>
+                <button type="button" className="pp-tier-more" aria-expanded={retOpen} onClick={() => setRetOpen((v) => !v)}>
+                  {retOpen ? "See less ▴" : "See more ▾"}
+                </button>
+                <button type="button" className="pp-tier-x" aria-label="Remove retirement" onClick={retirement.onRemove}>✕</button>
+              </div>
+              {pctOverflow && retRows.some((r) => r.id === pctOverflow.id) && (
+                <p style={{ fontSize: 13, lineHeight: 1.5, color: "#B42318", margin: "0 0 8px" }}>{pctOverflow.message}</p>
+              )}
+              {retOpen && (
+                <div style={{ margin: "0 0 12px 19px", border: "2px solid #E7DEFA", borderRadius: 18, padding: "12px 16px 4px", background: "#fff" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800 }}>How should we split your retirement money between these accounts?</div>
+                  <p style={{ fontSize: 14, lineHeight: 1.5, color: "#4A3F63", margin: "4px 0 2px" }}>
+                    Your retirement total is <b style={{ color: "#4E22B8" }}>{retTotal}%</b> of each deposit. The accounts below always add up to 100% of that.
+                  </p>
+                  {retRows.map((r) => (
+                    <PercentRow
+                      key={r.id}
+                      rule={r}
+                      shareMode={{ share: retTotal > 0 ? roundPct(((Number(r.pct) || 0) / retTotal) * 100) : roundPct(100 / retRows.length), onShare: retirement.onShare }}
+                      accounts={accounts}
+                      onUpdate={onUpdatePercent}
+                      onRemove={onRemoveRow}
+                      creating={creating}
+                      setCreating={setCreating}
+                      connecting={connecting}
+                      setConnecting={setConnecting}
+                      onAccountLinked={onAccountLinked}
+                      overflowMessage={null}
+                      theme="ledger"
+                      tierStyle
+                      persona={persona}
+                      startingBalanceRoomInfo={roomById[r.id]}
+                    />
+                  ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1.5px solid #E7DEFA", padding: "8px 0 10px", fontSize: 14, fontWeight: 800 }}>
+                    <span style={{ color: "#4E22B8" }}>✓ Adds up to 100%</span>
+                    <span style={{ fontFamily: "var(--font-mono, monospace)" }}>100%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+        return (
         <PercentRow
           key={rule.id}
           rule={rule}
@@ -1059,7 +1137,8 @@ export function LastTierEditor({ percent, accounts, onUpdatePercent, onRemoveRow
           persona={persona}
           startingBalanceRoomInfo={roomById[rule.id]}
         />
-      ))}
+        );
+      })}
       {children}
     </div>
   );
