@@ -435,7 +435,7 @@ function SplitRulesPageInner() {
         onRemoveTier={removeTierBy}
         accounts={accounts}
         showErrors
-        minTiers={2}
+        minTiers={1}
       >
         {(shownTiers) => (
         <LastTierEditor

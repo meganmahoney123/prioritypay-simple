@@ -188,11 +188,14 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
             </div>
           );
         })}
+        {/* "+ Add a priority tier" sits just above the Final Categories card */}
+        <div style={{ padding: "9px 18px", background: "#fff", borderBottom: "2px solid #D9C9FF" }}>
+          <button type="button" className="pp-tier-addlink" style={{ padding: 0 }} onClick={() => (placeholders > 0 ? setExtra((v) => v + 1) : onAddTier())}>
+            + Add a priority tier{shown === 0 ? " (rent, car payment, insurance... paid before anything else)" : ""}
+          </button>
+        </div>
         {typeof children === "function" ? children(shown) : children}
       </div>
-      <button type="button" className="pp-tier-addlink" onClick={() => (placeholders > 0 ? setExtra((v) => v + 1) : onAddTier())}>
-        + Add a priority tier{shown === 0 ? " (rent, car payment, insurance... paid before anything else)" : ""}
-      </button>
     </div>
   );
 }
