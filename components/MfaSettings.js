@@ -87,7 +87,7 @@ export default function MfaSettings() {
   if (loading) return null;
 
   return (
-    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
       <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>
         Two-factor authentication
       </h2>

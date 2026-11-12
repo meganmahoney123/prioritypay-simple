@@ -37,13 +37,13 @@ function currency(n) {
 // Same look as the Bills and Autopays tab: white card, purple outline, small
 // spaced-out grey labels, big monospace numbers, thicker hairline dividers.
 const cardStyle = {
-  border: "2px solid #B9A3F0",
-  borderRadius: 30,
+  border: "2px solid #9A72F0",
+  borderRadius: 22,
   background: "#fff",
   color: "var(--color-text)",
   padding: "24px 26px",
 };
-const eyebrow = { fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372" };
+const eyebrow = { fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8" };
 const bigNumber = { fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "#241337" };
 const divider = { height: 2, background: "#E7DEFA", margin: "14px 0 10px" };
 const minus = { color: "#9C3B22" };
@@ -52,7 +52,7 @@ function Breakdown({ items }) {
   return (
     <div className="flex flex-col gap-1.5">
       {items.map((c) => (
-        <div key={c.label} className="flex items-center justify-between" style={{ fontSize: 17, fontWeight: 700, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
+        <div key={c.label} className="flex items-center justify-between" style={{ fontSize: 17, fontWeight: 600, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
           <span className="flex items-center gap-2 min-w-0">
             <span className="shrink-0" style={{ width: 11, height: 11, borderRadius: "50%", backgroundColor: colorForLabel(c.label) }} />
             <span className="truncate">{c.label}</span>
@@ -90,7 +90,7 @@ function DepositRow({ d }) {
 // opens the popup with the full details (who it was from).
 function CompactDepositRow({ d }) {
   return (
-    <div className="flex items-center justify-between gap-3" style={{ fontSize: 17, fontWeight: 700, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
+    <div className="flex items-center justify-between gap-3" style={{ fontSize: 17, fontWeight: 600, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
       <span>{shortDate(d.date)}</span>
       <span className="font-mono shrink-0" style={{ color: "#241337" }}>{currency(d.amount)}</span>
     </div>

@@ -2,12 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react";
 import ProfileCard from "@/components/ProfileCard";
-import BusinessesCard from "@/components/BusinessesCard";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { bloomInputStyle, bloomWarningCardStyle, bloomNoticeCardStyle } from "@/lib/bloomTheme";
 import MfaSettings from "@/components/MfaSettings";
-import AppLockSettingsCard from "@/components/AppLockSettingsCard";
 import DeleteAccountCard from "@/components/DeleteAccountCard";
 import CancelSubscriptionCard from "@/components/CancelSubscriptionCard";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -256,7 +254,111 @@ function SettingsPageInner() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+
+      <ProfileCard onChanged={loadProfile} />
+
+            <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Deposit settings</h2>
+        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", display: "block", marginBottom: 8 }}>Minimum deposit to split ($)</span>
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 12px" }}>
+          Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all. $100 is the
+          lowest you can set it.
+        </p>
+        <div style={{ maxWidth: 220 }}>
+          <input
+            type="number"
+            onFocus={(e) => e.target.select()}
+            min="100"
+            step="1"
+            aria-label="Minimum deposit to split"
+            value={profile.minDepositThreshold ?? 100}
+            onChange={(e) => {
+              setSaved(false);
+              const v = e.target.value === "" ? "" : Number(e.target.value);
+              setProfile((p) => ({ ...p, minDepositThreshold: v }));
+            }}
+            onBlur={(e) => {
+              const v = Math.max(100, Number(e.target.value) || 100);
+              setProfile((p) => ({ ...p, minDepositThreshold: v }));
+            }}
+            style={bloomInputStyle({ fontSize: 16, padding: "11px 2px" })}
+          />
+        </div>
+
+        <div style={{ height: 2, background: "#E7DEFA", margin: "24px 0 4px" }} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", display: "block", margin: "14px 0 8px" }}>How often should we notify you?</span>
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
+          Applies to text, email and app notifications. Deposits under your minimum deposit never send a notification.
+        </p>
+        {[
+          { value: "instant", label: "Each time a deposit arrives", hint: "The moment it lands, with a link to your split checklist." },
+          { value: "weekly", label: "One summary each week", hint: "A single message every Monday listing the deposits still waiting to be split. Nothing is sent if nothing is waiting." },
+        ].map((o) => (
+          <label key={o.value} className="flex items-start gap-2.5" style={{ marginBottom: 14, cursor: "pointer" }}>
+            <input
+              type="radio"
+              name="notification-frequency"
+              checked={(profile.notifications?.frequency || "instant") === o.value}
+              onChange={() => {
+                setSaved(false);
+                setProfile((p) => ({ ...p, notifications: { ...p.notifications, frequency: o.value } }));
+              }}
+              style={{ width: 16, height: 16, marginTop: 3 }}
+            />
+            <span>
+              <span style={{ fontSize: 15, fontWeight: 600, display: "block" }}>{o.label}</span>
+              <span style={{ fontSize: 13, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{o.hint}</span>
+            </span>
+          </label>
+        ))}
+
+        <div className="flex items-center gap-4" style={{ marginTop: 8 }}>
+          <PrimaryButton onClick={save}>Save</PrimaryButton>
+          {saved && <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontStyle: "italic", color: "var(--color-accent-700)" }}>Saved.</span>}
+        </div>
+      </Card>
+
+      {canSwitchPersona && (
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Testing: switch persona</h2>
+        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
+          Instantly switches your own account to a different onboarding persona and resets your split rules to
+          that persona&apos;s defaults, so there's no need to sign up a second account to see how Dashboard, Close Out, and
+          Deposit Splits look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            "Self Employed (No Employees)",
+            "Business Owner (With Employees)",
+            "W2 Employee (With Side Hustle/Business)",
+            "W2 Employee (No Side Hustle/Business)",
+          ].map((p) => (
+            <button
+              key={p}
+              onClick={() => switchPersona(p)}
+              disabled={!!personaSwitchBusy}
+              className="text-xs"
+              style={{
+                padding: "8px 14px",
+                borderRadius: "var(--radius-pill)",
+                border: `1px solid ${profile.persona === p ? "var(--color-accent-700)" : "var(--color-divider)"}`,
+                background: profile.persona === p ? "color-mix(in srgb, var(--color-accent) 10%, transparent)" : "transparent",
+                fontWeight: 600,
+                color: "var(--color-text)",
+                cursor: personaSwitchBusy ? "not-allowed" : "pointer",
+                opacity: personaSwitchBusy && personaSwitchBusy !== p ? 0.5 : 1,
+              }}
+            >
+              {personaSwitchBusy === p ? "Switching…" : p}
+            </button>
+          ))}
+        </div>
+      </Card>
+      )}
+
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Billing</h2>
         <div style={{ height: 2, background: "#E7DEFA", marginBottom: 20 }} />
 
@@ -364,94 +466,6 @@ function SettingsPageInner() {
       </Card>
 
       <MfaSettings />
-
-      <ProfileCard onChanged={loadProfile} />
-
-      <BusinessesCard />
-
-      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Deposit splitting</h2>
-        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
-        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 20px" }}>
-          Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all. $100 is the
-          lowest you can set it.
-        </p>
-      </Card>
-
-      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>How often should we notify you?</h2>
-        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
-        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
-          Applies to text, email and app notifications. Deposits under your minimum deposit above never send a notification.
-        </p>
-        {[
-          { value: "instant", label: "Each time a deposit arrives", hint: "The moment it lands, with a link to your split checklist." },
-          { value: "weekly", label: "One summary each week", hint: "A single message every Monday listing the deposits still waiting to be split. Nothing is sent if nothing is waiting." },
-        ].map((o) => (
-          <label key={o.value} className="flex items-start gap-2.5" style={{ marginBottom: 14, cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="notification-frequency"
-              checked={(profile.notifications?.frequency || "instant") === o.value}
-              onChange={() => {
-                setSaved(false);
-                setProfile((p) => ({ ...p, notifications: { ...p.notifications, frequency: o.value } }));
-              }}
-              style={{ width: 16, height: 16, marginTop: 3 }}
-            />
-            <span>
-              <span style={{ fontSize: 15, fontWeight: 600, display: "block" }}>{o.label}</span>
-              <span style={{ fontSize: 13, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 60%, transparent)" }}>{o.hint}</span>
-            </span>
-          </label>
-        ))}
-      </Card>
-
-      <AppLockSettingsCard />
-
-      <div className="flex items-center gap-4">
-        <PrimaryButton onClick={save}>Save</PrimaryButton>
-        {saved && <span style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontStyle: "italic", color: "var(--color-accent-700)" }}>Saved.</span>}
-      </div>
-
-      {canSwitchPersona && (
-      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Testing: switch persona</h2>
-        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
-        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
-          Instantly switches your own account to a different onboarding persona and resets your split rules to
-          that persona&apos;s defaults, so there's no need to sign up a second account to see how Dashboard, Close Out, and
-          Deposit Splits look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {[
-            "Self Employed (No Employees)",
-            "Business Owner (With Employees)",
-            "W2 Employee (With Side Hustle/Business)",
-            "W2 Employee (No Side Hustle/Business)",
-          ].map((p) => (
-            <button
-              key={p}
-              onClick={() => switchPersona(p)}
-              disabled={!!personaSwitchBusy}
-              className="text-xs"
-              style={{
-                padding: "8px 14px",
-                borderRadius: "var(--radius-pill)",
-                border: `1px solid ${profile.persona === p ? "var(--color-accent-700)" : "var(--color-divider)"}`,
-                background: profile.persona === p ? "color-mix(in srgb, var(--color-accent) 10%, transparent)" : "transparent",
-                fontWeight: 600,
-                color: "var(--color-text)",
-                cursor: personaSwitchBusy ? "not-allowed" : "pointer",
-                opacity: personaSwitchBusy && personaSwitchBusy !== p ? 0.5 : 1,
-              }}
-            >
-              {personaSwitchBusy === p ? "Switching…" : p}
-            </button>
-          ))}
-        </div>
-      </Card>
-      )}
 
       <DeleteAccountCard />
     </div>

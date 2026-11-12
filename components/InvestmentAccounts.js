@@ -197,13 +197,13 @@ export default function InvestmentAccounts() {
                 onClick={() => setSel(c.label)}
                 aria-pressed={on}
                 style={{
-                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, textAlign: "left", padding: 20, borderRadius: 30,
+                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, textAlign: "left", padding: 20, borderRadius: 22,
                   cursor: "pointer", color: INK, minHeight: 44,
-                  border: on ? "3px solid #4E22B8" : "2px solid #B9A3F0", background: "#fff",
+                  border: on ? "3px solid #4E22B8" : "2px solid #9A72F0", background: "#fff",
                 }}
               >
                 <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>{c.kind}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", color: "#4E22B8" }}>{c.kind}</span>
                   <span style={{ width: 16, height: 16, borderRadius: 5, background: c.color, flex: "none" }} />
                 </span>
                 <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.25 }}>{c.name}</span>
@@ -229,10 +229,10 @@ export default function InvestmentAccounts() {
         ))}
       </div>
 
-      <Card className="space-y-5" style={{ borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 28px" }}>
+      <Card className="space-y-5" style={{ borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 28px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>PROJECTION ESTIMATOR · {selName}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", color: "#4E22B8" }}>PROJECTION ESTIMATOR · {selName}</div>
             <div style={{ fontSize: 15, color: MUTED }}>In {years} years at {ret}% a year, this could grow to about</div>
           </div>
           <div style={{ ...monoStyle, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{currency(finalTotal)}</div>
@@ -330,12 +330,12 @@ export default function InvestmentAccounts() {
         </div>
       </Card>
 
-      <Card className="space-y-2" style={{ borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 28px" }}>
+      <Card className="space-y-2" style={{ borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 28px" }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", color: "#4E22B8" }}>
             CONTRIBUTIONS VIA PRIORITYSAVE
           </div>
-          <div className="text-sm" style={{ color: "var(--color-text-muted, #5D5372)" }}>
+          <div className="text-sm" style={{ color: "var(--color-text-muted, #4E22B8)" }}>
             What you have added to each account. Click an account to see every month.
           </div>
         </div>
@@ -383,7 +383,7 @@ export default function InvestmentAccounts() {
                       ))}
                     </>
                   )}
-                  <div className="text-xs" style={{ color: "var(--color-text-muted, #5D5372)" }}>
+                  <div className="text-xs" style={{ color: "var(--color-text-muted, #4E22B8)" }}>
                     {isSample ? "Sample numbers. Your real contributions will show here." : "Only contributions made through PrioritySave transfers are counted here."}
                   </div>
                 </div>
@@ -393,8 +393,8 @@ export default function InvestmentAccounts() {
         })}
       </Card>
 
-      <Card className="space-y-2" style={{ borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 28px" }}>
-        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>IN {years} YEARS, BY ACCOUNT</div>
+      <Card className="space-y-2" style={{ borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 28px" }}>
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", color: "#4E22B8" }}>IN {years} YEARS, BY ACCOUNT</div>
         {rows.map((a) => (
           <div key={a.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "14px 16px", background: "#F8F5FF", border: "2px solid #E7DEFA", borderRadius: 14, fontSize: 17, fontWeight: 700 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>

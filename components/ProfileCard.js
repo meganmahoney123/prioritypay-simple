@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { bloomInputStyle } from "@/lib/bloomTheme";
+import BusinessesCard from "@/components/BusinessesCard";
 import ChipCheckboxes from "@/components/ChipCheckboxes";
 import { WORK_OPTIONS, runsBusiness } from "@/lib/profileWork";
 
 const muted = { fontSize: 15, lineHeight: 1.6, color: "#4A3F63" };
-const label = { fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372", margin: "18px 0 8px", display: "block" };
+const label = { fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", margin: "18px 0 8px", display: "block" };
 
 // "Your profile" in Settings: how the person earns money right now. Update it
 // when life changes (new job, quit a job, opened an LLC, retired). Saving never
@@ -71,7 +72,7 @@ export default function ProfileCard({ onChanged }) {
   };
 
   return (
-    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 22, border: "2px solid #9A72F0", background: "#fff", padding: "26px 30px" }}>
       <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Your profile</h2>
       <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
       <p style={{ ...muted, margin: 0 }}>
@@ -91,7 +92,8 @@ export default function ProfileCard({ onChanged }) {
 
       {runs && (
         <>
-          <p style={{ ...muted, fontSize: 13.5, margin: "14px 0 0" }}>Add and edit your businesses in the Your businesses card below.</p>
+          <div style={{ height: 2, background: "#E7DEFA", margin: "22px 0 0" }} />
+          <BusinessesCard embedded />
 
           <span style={label}>Do you have employees (other than a spouse or your kids)?</span>
           <ChipCheckboxes

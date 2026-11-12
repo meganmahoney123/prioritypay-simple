@@ -167,7 +167,7 @@ export default function AccountsPage() {
   // into a function so it can render inside either the "Your Accounts" or
   // "Connected Credit Cards" grid below without duplicating the JSX.
   const renderAccountCard = (acc) => (
-    <Card key={acc.id} style={{ padding: "22px 24px", borderRadius: 30, background: "#fff", border: "2px solid #B9A3F0" }}>
+    <Card key={acc.id} style={{ padding: "22px 24px", borderRadius: 22, background: "#fff", border: "2px solid #9A72F0" }}>
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <div style={{ fontFamily: "var(--font-heading)", fontSize: 21, fontWeight: 700, lineHeight: 1.15 }}>{acc.institution_name}</div>
@@ -183,7 +183,7 @@ export default function AccountsPage() {
         if (bal === null || bal === undefined) return null;
         return (
           <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "2px solid #E7DEFA" }}>
-            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372" }}>Account balance</span>
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8" }}>Account balance</span>
             <span className="font-mono font-bold" style={{ fontSize: 24 }}>{currency(Number(bal))}</span>
           </div>
         );
@@ -193,7 +193,7 @@ export default function AccountsPage() {
         const mine = ruleRows.filter((r) => r.accountId === acc.id);
         return (
           <div className="mb-3 pb-3" style={{ borderBottom: "2px solid #E7DEFA" }}>
-            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372", marginBottom: 6 }}>Categories sent here</div>
+            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#4E22B8", marginBottom: 6 }}>Categories sent here</div>
             {mine.length ? (
               <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 15, lineHeight: 1.6, color: "var(--color-text)" }}>
                 {mine.map((r) => (
@@ -293,7 +293,7 @@ export default function AccountsPage() {
     return (
       <div
         key={acc.id}
-        style={{ border: "2px solid #B9A3F0", borderRadius: 30, background: "#fff", padding: "22px 24px" }}
+        style={{ border: "2px solid #9A72F0", borderRadius: 22, background: "#fff", padding: "22px 24px" }}
       >
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-9 h-9 flex items-center justify-center shrink-0" style={{ borderRadius: 9, background: "var(--color-accent-100)" }}>
