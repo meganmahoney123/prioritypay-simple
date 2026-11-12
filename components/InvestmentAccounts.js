@@ -197,13 +197,13 @@ export default function InvestmentAccounts() {
                 onClick={() => setSel(c.label)}
                 aria-pressed={on}
                 style={{
-                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, textAlign: "left", padding: 18, borderRadius: 24,
+                  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, textAlign: "left", padding: 20, borderRadius: 30,
                   cursor: "pointer", color: INK, minHeight: 44,
-                  border: on ? "3px solid #4E22B8" : "1.5px solid #CBB8F5", background: "#fff", boxShadow: "0 6px 20px rgba(78,34,184,0.10)",
+                  border: on ? "3px solid #4E22B8" : "2px solid #B9A3F0", background: "#fff",
                 }}
               >
                 <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", color: ACCENT }}>{c.kind}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>{c.kind}</span>
                   <span style={{ width: 16, height: 16, borderRadius: 5, background: c.color, flex: "none" }} />
                 </span>
                 <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.25 }}>{c.name}</span>
@@ -229,16 +229,16 @@ export default function InvestmentAccounts() {
         ))}
       </div>
 
-      <Card className="p-5 space-y-5">
+      <Card className="space-y-5" style={{ borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 28px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: ACCENT }}>PROJECTION ESTIMATOR · {selName}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>PROJECTION ESTIMATOR · {selName}</div>
             <div style={{ fontSize: 15, color: MUTED }}>In {years} years at {ret}% a year, this could grow to about</div>
           </div>
           <div style={{ ...monoStyle, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{currency(finalTotal)}</div>
         </div>
 
-        <div style={{ background: "#F8F5FF", border: "1.5px solid #DCCFF7", borderRadius: 18, padding: "10px 6px 4px" }}>
+        <div style={{ background: "#F8F5FF", border: "2px solid #E7DEFA", borderRadius: 18, padding: "10px 6px 4px" }}>
         <svg viewBox="0 0 900 380" width="100%" role="img" aria-label="Projected balance growth over time, by year" style={{ display: "block" }}>
           {tickYears.map((y) => (
             <line key={`v${y}`} x1={px(y)} y1="20" x2={px(y)} y2="310" stroke="#E3D8FA" strokeWidth="1" />
@@ -276,7 +276,7 @@ export default function InvestmentAccounts() {
               key={k.label}
               style={{
                 display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, fontWeight: 700,
-                background: k.color === INK ? INK : "#F3EEFF", color: k.color === INK ? "#fff" : INK, border: k.color === INK ? "none" : "1.5px solid #DCCFF7",
+                background: k.color === INK ? INK : "#F3EEFF", color: k.color === INK ? "#fff" : INK, border: k.color === INK ? "none" : "2px solid #E7DEFA",
               }}
             >
               <span style={{ width: 22, height: 6, borderRadius: 3, background: k.color === INK ? "#fff" : k.color, flex: "none" }} />
@@ -286,7 +286,7 @@ export default function InvestmentAccounts() {
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "22px 32px", background: "#F3EEFF", border: "1.5px solid #DCCFF7", borderRadius: 18, padding: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "22px 32px", background: "#F3EEFF", border: "2px solid #E7DEFA", borderRadius: 18, padding: 20 }}>
           <label className="block text-base font-semibold" style={{ color: INK }}>
             <span className="flex justify-between items-center">
               <span>Years to grow</span>
@@ -330,9 +330,9 @@ export default function InvestmentAccounts() {
         </div>
       </Card>
 
-      <Card className="p-5 space-y-2">
+      <Card className="space-y-2" style={{ borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 28px" }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: ACCENT }}>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>
             CONTRIBUTIONS VIA PRIORITYSAVE
           </div>
           <div className="text-sm" style={{ color: "var(--color-text-muted, #5D5372)" }}>
@@ -344,7 +344,7 @@ export default function InvestmentAccounts() {
           const mx = Math.max(1, ...a.s.last12.map((m) => m.amount));
           const prevKey = a.months.length >= 2 ? a.months[a.months.length - 2].month : "";
           return (
-            <div key={a.label} style={{ background: "#F8F5FF", border: "1.5px solid #DCCFF7", borderRadius: 18, padding: "12px 16px", borderLeft: `8px solid ${a.color}` }}>
+            <div key={a.label} style={{ background: "#fff", border: "2px solid #E7DEFA", borderRadius: 18, padding: "12px 16px", borderLeft: `8px solid ${a.color}` }}>
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : a.label)}
@@ -393,10 +393,10 @@ export default function InvestmentAccounts() {
         })}
       </Card>
 
-      <Card className="p-5 space-y-2">
-        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", color: ACCENT }}>IN {years} YEARS, BY ACCOUNT</div>
+      <Card className="space-y-2" style={{ borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 28px" }}>
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#5D5372" }}>IN {years} YEARS, BY ACCOUNT</div>
         {rows.map((a) => (
-          <div key={a.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "14px 16px", background: "#F8F5FF", border: "1.5px solid #DCCFF7", borderRadius: 14, fontSize: 17, fontWeight: 700 }}>
+          <div key={a.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "14px 16px", background: "#F8F5FF", border: "2px solid #E7DEFA", borderRadius: 14, fontSize: 17, fontWeight: 700 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ width: 16, height: 16, borderRadius: 5, background: a.color }} />
               {a.label}

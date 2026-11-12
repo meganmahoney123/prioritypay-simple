@@ -34,28 +34,30 @@ function currency(n) {
   return v.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 });
 }
 
+// Same look as the Bills and Autopays tab: white card, purple outline, small
+// spaced-out grey labels, big monospace numbers, thicker hairline dividers.
 const cardStyle = {
-  border: "1px solid var(--color-accent-300)",
-  borderRadius: "var(--radius-lg)",
-  background: "var(--color-accent-200)",
-  color: "var(--color-accent-800)",
-  padding: "20px 22px",
+  border: "2px solid #B9A3F0",
+  borderRadius: 30,
+  background: "#fff",
+  color: "var(--color-text)",
+  padding: "24px 26px",
 };
-const eyebrow = { fontSize: 11.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-accent-700)" };
-const bigNumber = { fontSize: 30, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "var(--color-accent-900)" };
-const divider = { height: 1, background: "var(--color-accent-300)", margin: "14px 0 10px" };
+const eyebrow = { fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372" };
+const bigNumber = { fontSize: 34, fontWeight: 700, lineHeight: 1.15, marginTop: 6, color: "#241337" };
+const divider = { height: 2, background: "#E7DEFA", margin: "14px 0 10px" };
 const minus = { color: "#9C3B22" };
 
 function Breakdown({ items }) {
   return (
     <div className="flex flex-col gap-1.5">
       {items.map((c) => (
-        <div key={c.label} className="flex items-center justify-between text-xs">
+        <div key={c.label} className="flex items-center justify-between" style={{ fontSize: 17, fontWeight: 700, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
           <span className="flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: colorForLabel(c.label) }} />
+            <span className="shrink-0" style={{ width: 11, height: 11, borderRadius: "50%", backgroundColor: colorForLabel(c.label) }} />
             <span className="truncate">{c.label}</span>
           </span>
-          <span className="font-mono shrink-0" style={{ color: "var(--color-accent-700)" }}>
+          <span className="font-mono shrink-0" style={{ color: "#241337" }}>
             {currency(c.amount)}
           </span>
         </div>
@@ -72,7 +74,7 @@ function shortDate(iso) {
 
 function DepositRow({ d }) {
   return (
-    <div className="flex items-center justify-between gap-3 text-xs">
+    <div className="flex items-center justify-between gap-3" style={{ fontSize: 15 }}>
       <span className="min-w-0 truncate">
         <span className="font-semibold">{d.name || "Deposit"}</span>
         <span style={{ color: "var(--color-accent-700)" }}> · {shortDate(d.date)}</span>
@@ -80,6 +82,17 @@ function DepositRow({ d }) {
       <span className="font-mono shrink-0" style={{ color: "var(--color-accent-800)" }}>
         {currency(d.amount)}
       </span>
+    </div>
+  );
+}
+
+// Short row for the card: just the date and the amount. Clicking the block
+// opens the popup with the full details (who it was from).
+function CompactDepositRow({ d }) {
+  return (
+    <div className="flex items-center justify-between gap-3" style={{ fontSize: 17, fontWeight: 700, padding: "6px 0", borderTop: "1.5px solid #E7DEFA" }}>
+      <span>{shortDate(d.date)}</span>
+      <span className="font-mono shrink-0" style={{ color: "#241337" }}>{currency(d.amount)}</span>
     </div>
   );
 }
@@ -104,13 +117,13 @@ function RecentDeposits({ deposits, periodTitle, rangeLabel }) {
         className="w-full text-left"
         style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", color: "inherit" }}
       >
-        <div style={{ ...eyebrow, fontSize: 11, marginBottom: 6 }}>Recent deposits</div>
-        <div className="flex flex-col gap-1.5">
+        <div style={{ ...eyebrow, marginBottom: 4 }}>Recent deposits</div>
+        <div className="flex flex-col">
           {recent.map((d) => (
-            <DepositRow key={d.id} d={d} />
+            <CompactDepositRow key={d.id} d={d} />
           ))}
         </div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-accent-700)", textDecoration: "underline", marginTop: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--color-accent-700)", textDecoration: "underline", marginTop: 8 }}>
           View all {deposits.length} {deposits.length === 1 ? "deposit" : "deposits"}
         </div>
       </button>
@@ -184,14 +197,14 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
         <div className="font-mono" style={bigNumber}>
           {currency(totalDeposited)}
         </div>
-        {rangeLabel && <div style={{ fontSize: 12.5, color: "var(--color-accent-700)", marginTop: 2 }}>{rangeLabel}</div>}
+        {rangeLabel && <div style={{ fontSize: 15, color: "#4A3F63", marginTop: 2 }}>{rangeLabel}</div>}
         <div style={divider} />
         {summary.deposits?.length > 0 && (
           <div style={{ marginBottom: 14 }}>
             <RecentDeposits deposits={summary.deposits} periodTitle={periodTitle} rangeLabel={rangeLabel} />
           </div>
         )}
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--color-accent-700)" }}>
+        <div style={{ fontSize: 14, lineHeight: 1.5, color: "#4A3F63" }}>
           All deposits, including those that didn&apos;t meet the minimum split trigger threshold.
         </div>
       </div>
@@ -213,13 +226,13 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
       {/* Guilt-free spending available */}
       <div style={cardStyle}>
         <div style={eyebrow}>Guilt-Free Spending Available</div>
-        <div className="font-mono" style={{ ...bigNumber, fontSize: 32 }}>
+        <div className="font-mono" style={{ ...bigNumber, fontSize: 34, color: "#0F6B4F" }}>
           {currency(guiltFree)}
         </div>
-        {rangeLabel && <div style={{ fontSize: 12.5, color: "var(--color-accent-700)", marginTop: 2 }}>{rangeLabel}</div>}
+        {rangeLabel && <div style={{ fontSize: 15, color: "#4A3F63", marginTop: 2 }}>{rangeLabel}</div>}
         <div style={divider} />
-        <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 12.5 }}>
-          <div className="flex justify-between gap-3" style={{ color: "var(--color-accent-800)" }}>
+        <div className="font-mono flex flex-col gap-1.5" style={{ fontSize: 17 }}>
+          <div className="flex justify-between gap-3" style={{ color: "#241337" }}>
             <span className="font-sans font-semibold">Total income</span>
             <span>{currency(totalDeposited)}</span>
           </div>
@@ -235,7 +248,7 @@ export default function IncomeSummaryCards({ summary, loading, mode = "month", r
           </div>
         </div>
         {cardChargesExcluded > 0 && (
-          <div style={{ fontSize: 11, color: "var(--color-accent-700)", marginTop: 10, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 13, color: "#4A3F63", marginTop: 10, lineHeight: 1.4 }}>
             Excludes the {currency(cardChargesExcluded)} already covered by category withdrawals. E.g. a charge allocated to a category reduces that
             category, so it isn&apos;t included in &quot;Credit card payments&quot; here.
           </div>

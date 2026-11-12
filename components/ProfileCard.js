@@ -6,8 +6,8 @@ import { bloomInputStyle } from "@/lib/bloomTheme";
 import ChipCheckboxes from "@/components/ChipCheckboxes";
 import { WORK_OPTIONS, runsBusiness } from "@/lib/profileWork";
 
-const muted = { fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)" };
-const label = { fontSize: 13.5, fontWeight: 600, margin: "18px 0 8px", display: "block" };
+const muted = { fontSize: 15, lineHeight: 1.6, color: "#4A3F63" };
+const label = { fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372", margin: "18px 0 8px", display: "block" };
 
 // "Your profile" in Settings: how the person earns money right now. Update it
 // when life changes (new job, quit a job, opened an LLC, retired). Saving never
@@ -71,16 +71,16 @@ export default function ProfileCard({ onChanged }) {
   };
 
   return (
-    <Card className="p-6" style={{ maxWidth: "40em" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Your profile</h2>
-      <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Your profile</h2>
+      <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
       <p style={{ ...muted, margin: 0 }}>
         How you earn money right now. Change it whenever life does: a new job, a job you left, an LLC you opened.
         This decides which deposit types you&apos;re offered on Split My Deposits. It never changes your split percentages.
       </p>
 
       <span style={label}>How do you earn money? Pick all that apply.</span>
-      <ChipCheckboxes options={WORK_OPTIONS} selected={picks} onToggle={togglePick} />
+      <ChipCheckboxes pill options={WORK_OPTIONS} selected={picks} onToggle={togglePick} />
 
       {picks.includes("w2") && (
         <>
@@ -95,6 +95,7 @@ export default function ProfileCard({ onChanged }) {
 
           <span style={label}>Do you have employees (other than a spouse or your kids)?</span>
           <ChipCheckboxes
+            pill
             options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
             selected={hasEmployees === true ? ["yes"] : hasEmployees === false ? ["no"] : []}
             onToggle={(v) => { touch(); setHasEmployees(v === "yes"); }}

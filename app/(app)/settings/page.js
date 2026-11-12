@@ -256,9 +256,9 @@ function SettingsPageInner() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Billing</h2>
-        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 20 }} />
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Billing</h2>
+        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 20 }} />
 
         {billingRedirect === "success" && (
           <p style={{ fontSize: 14, color: "var(--color-accent-700)", marginBottom: 16 }}>
@@ -369,19 +369,19 @@ function SettingsPageInner() {
 
       <BusinessesCard />
 
-      <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Deposit splitting</h2>
-        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Deposit splitting</h2>
+        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 20px" }}>
           Deposits below this amount (a refund, a reimbursement) won&apos;t trigger a split at all. $100 is the
           lowest you can set it.
         </p>
       </Card>
 
-      <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>How often should we notify you?</h2>
-        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>How often should we notify you?</h2>
+        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
           Applies to text, email and app notifications. Deposits under your minimum deposit above never send a notification.
         </p>
         {[
@@ -415,10 +415,10 @@ function SettingsPageInner() {
       </div>
 
       {canSwitchPersona && (
-      <Card className="p-6" style={{ maxWidth: "40em" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Testing: switch persona</h2>
-        <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-        <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 16px" }}>
+      <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Testing: switch persona</h2>
+        <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
+        <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 16px" }}>
           Instantly switches your own account to a different onboarding persona and resets your split rules to
           that persona&apos;s defaults, so there's no need to sign up a second account to see how Dashboard, Close Out, and
           Deposit Splits look for each one. Currently: <strong>{profile.persona || "not set"}</strong>.

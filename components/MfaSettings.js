@@ -87,11 +87,11 @@ export default function MfaSettings() {
   if (loading) return null;
 
   return (
-    <Card className="p-6" style={{ maxWidth: "40em" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>
         Two-factor authentication
       </h2>
-      <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 20 }} />
+      <div style={{ height: 2, background: "#E7DEFA", marginBottom: 20 }} />
 
       {factor ? (
         <>
@@ -157,7 +157,7 @@ export default function MfaSettings() {
         </form>
       ) : (
         <>
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 20px" }}>
             Add an authenticator app as a second step when you sign in, on top of your password.
           </p>
           {error && <p style={{ fontSize: 13.5, color: "#9C3B22", margin: "0 0 16px" }}>{error}</p>}

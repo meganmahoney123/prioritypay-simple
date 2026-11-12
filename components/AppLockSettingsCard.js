@@ -36,10 +36,10 @@ export default function AppLockSettingsCard() {
   };
 
   return (
-    <Card className="p-6" style={{ maxWidth: "40em" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>App lock</h2>
-      <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-      <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>App lock</h2>
+      <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
+      <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 20px" }}>
         Require Face ID or Touch ID to open PrioritySave, in addition to your regular login. This only protects
         this device, it never changes how you sign in on the web.
       </p>

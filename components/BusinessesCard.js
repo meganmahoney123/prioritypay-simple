@@ -6,7 +6,7 @@ import { Card, PrimaryButton, GhostButton } from "@/components/ui";
 import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
 import { ENTITY_OPTIONS, SOLE_PROP, drawNote, joinEntities } from "@/lib/entityCopy";
 
-const muted = { fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)" };
+const muted = { fontSize: 15, lineHeight: 1.6, color: "#4A3F63" };
 
 // "Your businesses" in Settings: every business the person earns through and
 // its type (sole proprietor, LLC, S corp and so on). Split My Deposits and
@@ -59,9 +59,9 @@ export default function BusinessesCard() {
 
   return (
     <div id="businesses" style={{ scrollMarginTop: 90, borderRadius: 24, boxShadow: flash ? "0 0 0 4px #9A72F0" : "none", transition: "box-shadow .4s" }}>
-    <Card className="p-6" style={{ maxWidth: "40em" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" }}>Your businesses</h2>
-      <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #B9A3F0", background: "#fff", padding: "26px 30px" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>Your businesses</h2>
+      <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
       <p style={{ ...muted, margin: "0 0 14px" }}>
         Add each business you earn through and mark its type (sole proprietor, LLC, S corp and more). When you split a deposit you pick which business it belongs to, and Close Out shows profit for each one.
       </p>

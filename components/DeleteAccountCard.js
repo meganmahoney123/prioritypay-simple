@@ -44,12 +44,12 @@ export default function DeleteAccountCard() {
   };
 
   return (
-    <Card className="p-6" style={{ maxWidth: "40em", borderColor: "color-mix(in srgb, #C0392B 35%, var(--color-divider))" }}>
-      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px", color: "#C0392B" }}>
+    <Card className="p-6" style={{ maxWidth: "40em", borderRadius: 30, border: "2px solid #E8B7AE", background: "#fff", padding: "26px 30px" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: 26, fontWeight: 800, margin: "0 0 6px", color: "#C0392B" }}>
         Delete account
       </h2>
-      <div style={{ height: 1, background: "var(--color-divider)", marginBottom: 16 }} />
-      <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 68%, transparent)", margin: "0 0 20px" }}>
+      <div style={{ height: 2, background: "#E7DEFA", marginBottom: 16 }} />
+      <p style={{ fontSize: 15, lineHeight: 1.6, color: "#4A3F63", margin: "0 0 20px" }}>
         Permanently deletes your PrioritySave account and all associated data, split rules, transfer history,
         close-outs, linked account references, and your profile. This cannot be undone. If you have an active
         subscription, it&apos;s canceled automatically as part of this.

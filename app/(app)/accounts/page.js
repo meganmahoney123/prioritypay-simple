@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Landmark, CreditCard, Briefcase } from "lucide-react";
-import { Card, Badge, currency } from "@/components/ui";
+import { CreditCard } from "lucide-react";
+import { Card, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import AccountCategoryBreakdown from "@/components/AccountCategoryBreakdown";
 
@@ -167,36 +167,24 @@ export default function AccountsPage() {
   // into a function so it can render inside either the "Your Accounts" or
   // "Connected Credit Cards" grid below without duplicating the JSX.
   const renderAccountCard = (acc) => (
-    <Card key={acc.id} style={{ padding: "18px 20px", borderRadius: "var(--radius-md)", background: "var(--color-surface)" }}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 flex items-center justify-center"
-            style={{ borderRadius: "var(--radius-sm)", background: "var(--color-accent-100)" }}
-          >
-            {acc.account_type === "credit" ? (
-              <CreditCard size={18} style={{ color: "var(--color-accent-700)" }} />
-            ) : acc.account_type === "business" ? (
-              <Briefcase size={18} style={{ color: "var(--color-accent-700)" }} />
-            ) : (
-              <Landmark size={18} style={{ color: "var(--color-accent-700)" }} />
-            )}
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-heading)", fontSize: 18 }}>{acc.institution_name}</div>
-            <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>{acc.account_name}{acc.mask ? ` •••• ${acc.mask}` : ""}</div>
-          </div>
+    <Card key={acc.id} style={{ padding: "22px 24px", borderRadius: 30, background: "#fff", border: "2px solid #B9A3F0" }}>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div style={{ fontFamily: "var(--font-heading)", fontSize: 21, fontWeight: 700, lineHeight: 1.15 }}>{acc.institution_name}</div>
+          <div style={{ fontSize: 15, color: "#4A3F63" }}>{acc.account_name}{acc.mask ? ` •••• ${acc.mask}` : ""}</div>
         </div>
-        <Badge>{acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}</Badge>
+        <span style={{ display: "inline-block", fontSize: 14, fontWeight: 800, color: "#0F6B4F", background: "#E3F5EE", borderRadius: 999, padding: "5px 12px", whiteSpace: "nowrap" }}>
+          {acc.account_type === "credit" ? "Credit card" : acc.account_type === "business" ? "Business account" : "Active"}
+        </span>
       </div>
       {acc.account_type !== "credit" && (() => {
         // Total balance for the bank account itself (no category splits).
         const bal = categoryBalances[acc.id]?.accountBalance ?? acc.current_balance;
         if (bal === null || bal === undefined) return null;
         return (
-          <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "1px solid var(--color-divider)" }}>
-            <span className="text-xs font-semibold" style={{ color: "var(--color-neutral-700)" }}>Account balance</span>
-            <span className="font-mono font-bold" style={{ fontSize: 18 }}>{currency(Number(bal))}</span>
+          <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "2px solid #E7DEFA" }}>
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372" }}>Account balance</span>
+            <span className="font-mono font-bold" style={{ fontSize: 24 }}>{currency(Number(bal))}</span>
           </div>
         );
       })()}
@@ -204,10 +192,10 @@ export default function AccountsPage() {
         // The categories from Deposit Splits that send money to this account.
         const mine = ruleRows.filter((r) => r.accountId === acc.id);
         return (
-          <div className="mb-3 pb-3" style={{ borderBottom: "1px solid var(--color-divider)" }}>
-            <div className="text-xs font-semibold" style={{ color: "var(--color-neutral-700)", marginBottom: 6 }}>Categories sent here</div>
+          <div className="mb-3 pb-3" style={{ borderBottom: "2px solid #E7DEFA" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5D5372", marginBottom: 6 }}>Categories sent here</div>
             {mine.length ? (
-              <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 14, lineHeight: 1.6, color: "var(--color-text)" }}>
+              <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 15, lineHeight: 1.6, color: "var(--color-text)" }}>
                 {mine.map((r) => (
                   <li key={r.id}>
                     <span style={{ fontWeight: 600 }}>{r.label}</span>
@@ -220,14 +208,14 @@ export default function AccountsPage() {
                 ))}
               </ul>
             ) : (
-              <div style={{ fontSize: 14, color: "var(--color-neutral-700)" }}>No categories send money here yet.</div>
+              <div style={{ fontSize: 15, color: "#4A3F63" }}>No categories send money here yet.</div>
             )}
           </div>
         );
       })()}
       {acc.account_type === "credit" ? (
         creditCardBalances[acc.id] ? (
-          <div className="text-xs" style={{ color: "var(--color-neutral-700)" }}>
+          <div className="text-[15px]" style={{ color: "var(--color-neutral-700)" }}>
             <div className="flex items-center justify-between mb-1">
               <span>Live balance</span>
               <span className="font-mono" style={{ color: "var(--color-text)" }}>{currency(creditCardBalances[acc.id].liveBalance)}</span>
@@ -245,12 +233,12 @@ export default function AccountsPage() {
             <p className="mt-2" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
           </div>
         ) : (
-          <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
+          <p className="text-[15px]" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
         )
       ) : acc.account_type === "business" ? (
-        <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
+        <p className="text-[15px]" style={{ color: "var(--color-neutral-700)" }}>Balance shown for visibility only, never used for splits or transfers.</p>
       ) : acc.autoDetectEnabled ? (
-        <p className="text-xs font-medium" style={{ color: "var(--color-accent-700)" }}>Each deposit here is split for you, and you'll get a checklist to confirm and send each transfer</p>
+        <p className="text-[15px] font-medium" style={{ color: "var(--color-accent-700)" }}>Each deposit here is split for you, and you'll get a checklist to confirm and send each transfer</p>
       ) : acc.hasPlaidConnection ? (
         <div>
           <PlaidLinkButton
@@ -258,7 +246,7 @@ export default function AccountsPage() {
             accountId={acc.id}
             label="Enable auto-detect"
             onUpdated={load}
-            className="text-xs"
+            className="text-[15px]"
             style={{ borderRadius: "var(--radius-pill)", fontFamily: "var(--font-heading)", fontWeight: 700, padding: "8px 16px", fontSize: 13 }}
           />
         </div>
@@ -305,7 +293,7 @@ export default function AccountsPage() {
     return (
       <div
         key={acc.id}
-        style={{ border: "1px solid var(--color-divider)", borderRadius: 18, background: "var(--color-surface)", padding: "20px 22px" }}
+        style={{ border: "2px solid #B9A3F0", borderRadius: 30, background: "#fff", padding: "22px 24px" }}
       >
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-9 h-9 flex items-center justify-center shrink-0" style={{ borderRadius: 9, background: "var(--color-accent-100)" }}>
