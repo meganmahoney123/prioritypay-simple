@@ -93,7 +93,7 @@ export default function ProfileCard({ onChanged }) {
       {runs && (
         <>
           <div style={{ height: 2, background: "#E7DEFA", margin: "22px 0 0" }} />
-          <BusinessesCard embedded />
+          <BusinessesCard embedded picks={picks} />
 
           <span style={label}>Do you have employees (other than a spouse or your kids)?</span>
           <ChipCheckboxes

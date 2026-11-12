@@ -12,11 +12,29 @@ const muted = { fontSize: 15, lineHeight: 1.6, color: "#4A3F63" };
 // its type (sole proprietor, LLC, S corp and so on). Split My Deposits and
 // Close Out use this list to attribute income and expenses and to apply the
 // right rules for each business type. Changes save as they are made.
-export default function BusinessesCard({ embedded = false }) {
+// Which structures to offer: Self Employed means sole proprietor; Business
+// Owner/Partner means the LLC, S-corp, C-corp and partnership options. A
+// business already saved with another type keeps showing its own type.
+function optionsFor(picks, current) {
+  if (!Array.isArray(picks)) return ENTITY_OPTIONS;
+  const self = picks.includes("self_employed");
+  const owns = picks.includes("owns_business");
+  const allowed = ENTITY_OPTIONS.filter((o) => (o.value === SOLE_PROP ? self : owns));
+  const list = allowed.length ? allowed : ENTITY_OPTIONS.filter((o) => o.value === SOLE_PROP);
+  if (current && !list.some((o) => o.value === current)) {
+    const cur = ENTITY_OPTIONS.find((o) => o.value === current);
+    if (cur) return [...list, cur];
+  }
+  return list;
+}
+
+export default function BusinessesCard({ embedded = false, picks }) {
   const [loaded, setLoaded] = useState(false);
   const [list, setList] = useState([]);
   const [name, setName] = useState("");
   const [type, setType] = useState(SOLE_PROP);
+  const addOptions = optionsFor(picks, null);
+  const effType = addOptions.some((o) => o.value === type) ? type : addOptions[0].value;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [confirmId, setConfirmId] = useState(null);
@@ -38,7 +56,7 @@ export default function BusinessesCard({ embedded = false }) {
 
   const add = async () => {
     if (!name.trim()) return setErr("Give the business a name.");
-    if (await call("/api/businesses", "POST", { name, entityType: type })) { setName(""); setType(SOLE_PROP); }
+    if (await call("/api/businesses", "POST", { name, entityType: effType })) { setName(""); setType(SOLE_PROP); }
   };
 
   // Arriving from "Open Settings" links elsewhere (#businesses): scroll here
@@ -79,7 +97,7 @@ export default function BusinessesCard({ embedded = false }) {
                 style={bloomInputStyle({ flex: "1 1 180px", width: "auto" })}
               />
               <select value={b.entityType || SOLE_PROP} aria-label="Business type" disabled={busy} onChange={(e) => call(`/api/businesses/${b.id}`, "PATCH", { entityType: e.target.value })} style={bloomSelectStyle({ flex: "1 1 200px", width: "auto" })}>
-                {ENTITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {optionsFor(picks, b.entityType || SOLE_PROP).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               {confirmId === b.id ? (
                 <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13 }}>
@@ -99,8 +117,8 @@ export default function BusinessesCard({ embedded = false }) {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
         <input value={name} onChange={(e) => { setErr(""); setName(e.target.value); }} placeholder="Business name" maxLength={80} style={bloomInputStyle({ flex: "1 1 180px", width: "auto" })} />
-        <select value={type} onChange={(e) => setType(e.target.value)} style={bloomSelectStyle({ flex: "1 1 200px", width: "auto" })}>
-          {ENTITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        <select value={effType} onChange={(e) => setType(e.target.value)} style={bloomSelectStyle({ flex: "1 1 200px", width: "auto" })}>
+          {addOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <PrimaryButton type="button" onClick={add} disabled={busy}>+ Add a business</PrimaryButton>
       </div>
@@ -133,7 +151,7 @@ export default function BusinessesCard({ embedded = false }) {
                 style={bloomInputStyle({ flex: "1 1 180px", width: "auto" })}
               />
               <select value={b.entityType || SOLE_PROP} aria-label="Business type" disabled={busy} onChange={(e) => call(`/api/businesses/${b.id}`, "PATCH", { entityType: e.target.value })} style={bloomSelectStyle({ flex: "1 1 200px", width: "auto" })}>
-                {ENTITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {optionsFor(picks, b.entityType || SOLE_PROP).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               {confirmId === b.id ? (
                 <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13 }}>
@@ -153,8 +171,8 @@ export default function BusinessesCard({ embedded = false }) {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
         <input value={name} onChange={(e) => { setErr(""); setName(e.target.value); }} placeholder="Business name" maxLength={80} style={bloomInputStyle({ flex: "1 1 180px", width: "auto" })} />
-        <select value={type} onChange={(e) => setType(e.target.value)} style={bloomSelectStyle({ flex: "1 1 200px", width: "auto" })}>
-          {ENTITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        <select value={effType} onChange={(e) => setType(e.target.value)} style={bloomSelectStyle({ flex: "1 1 200px", width: "auto" })}>
+          {addOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <PrimaryButton type="button" onClick={add} disabled={busy}>+ Add a business</PrimaryButton>
       </div>
