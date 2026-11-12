@@ -172,7 +172,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
 
 // Onboarding's last tier, drawn like the two above: plain rows with a percent
 // pill, no caps. Core rows (Tax Reserve, Savings...) keep their name fixed.
-export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, title = "Everything else", num, children }) {
+export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, title = "Everything else", num, retirement, children }) {
   const total = Math.round(rows.reduce((n, r) => n + (Number(r.pct) || 0), 0) * 100) / 100;
   const stays = Math.round(Math.max(0, 100 - total) * 100) / 100;
   const over = total > 100.0001;
@@ -183,7 +183,45 @@ export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, titl
       <p className="pp-tier-sub">
         This is the final tier. The percentages below do NOT need to add up to 100% of your deposit. For example, you could schedule just 75% of each deposit to be split among the categories below.
       </p>
-      {rows.map((r) => {
+      {(() => {
+        // Retirement accounts are shown as ONE row (the total). How that total is
+        // shared between the accounts is set in the Retirement accounts card.
+        const retIds = new Set(retirement ? retirement.rows.map((x) => x.id) : []);
+        let shown = false;
+        return rows.map((r) => {
+          if (retIds.has(r.id)) {
+            if (shown) return null;
+            shown = true;
+            const names = retirement.rows.filter((x) => x.retirementType || x.id !== "retirement_savings").map((x) => x.label).join(", ");
+            return (
+              <div key="retirement-group">
+                <div className="pp-tier-row">
+                  <span className="pp-tier-dot" />
+                  <span className="pp-tier-namefixed">
+                    Retirement{names ? <span style={{ fontWeight: 500, color: "#4A3F63", fontSize: 14 }}> · {names}</span> : null}
+                  </span>
+                  <span className="pp-tier-pill">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      max={100}
+                      step="any"
+                      aria-label="Retirement percent"
+                      value={retirement.total === 0 ? 0 : retirement.total}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => retirement.onTotal(e.target.value)}
+                    />
+                    %
+                  </span>
+                  <button type="button" className="pp-tier-x" aria-label="Remove retirement" onClick={retirement.onRemove}>✕</button>
+                </div>
+                {overflow && retIds.has(overflow.id) && (
+                  <p style={{ fontSize: 13, lineHeight: 1.5, color: "#B42318", margin: "0 0 8px" }}>{overflow.message}</p>
+                )}
+              </div>
+            );
+          }
         const editableName = !isCoreRow(r, persona);
         return (
           <div key={r.id}>
@@ -215,7 +253,8 @@ export function TierLastCard({ rows, onUpdate, onRemove, overflow, persona, titl
             )}
           </div>
         );
-      })}
+              });
+      })()}
       {children}
     </div>
   );

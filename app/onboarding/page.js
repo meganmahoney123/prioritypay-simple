@@ -600,6 +600,53 @@ function OnboardingPageInner() {
     setRemovedRows((prev) => [...prev, { row: percent[index], index }]);
     removeRow(id);
   };
+  // ---- Retirement: one total, shared between the ticked accounts (always 100%).
+  const retRowsNow = percent.filter(isRetRow);
+  const retTotalNow = roundPct(retRowsNow.reduce((n, r) => n + (Number(r.pct) || 0), 0));
+  // Spread `total` over `rows` in the same proportions they have now (evenly if
+  // they are all 0); the last row takes the rounding difference.
+  const spreadTotal = (rows, total) => {
+    const cur = rows.reduce((n, r) => n + (Number(r.pct) || 0), 0);
+    const out = {};
+    let used = 0;
+    rows.forEach((r, i) => {
+      const w = cur > 0 ? (Number(r.pct) || 0) / cur : 1 / rows.length;
+      const v = i === rows.length - 1 ? roundPct(total - used) : Math.floor(total * w * 100) / 100;
+      out[r.id] = Math.max(0, v);
+      used = roundPct(used + out[r.id]);
+    });
+    return out;
+  };
+  const setRetirementTotal = (raw) =>
+    setPercent((prev) => {
+      const rows = prev.filter(isRetRow);
+      if (!rows.length) return prev;
+      const others = prev.filter((r) => !isRetRow(r)).reduce((n, r) => n + (Number(r.pct) || 0), 0);
+      const room = Math.max(0, roundPct(100 - others));
+      const requested = Math.max(0, Number(raw) || 0);
+      setPctOverflow(
+        requested > room + 0.0001
+          ? { id: rows[0].id, message: `This would put your deposit allocation over 100%. Select no more than ${room}% or adjust some of the other percentages.` }
+          : null
+      );
+      const next = spreadTotal(rows, Math.min(requested, room));
+      return prev.map((r) => (next[r.id] !== undefined ? { ...r, pct: next[r.id] } : r));
+    });
+  // Change one account's share (0-100) of the retirement total; the other
+  // accounts shrink or grow in proportion so the shares always add up to 100%.
+  const setRetirementShare = (id, raw) =>
+    setPercent((prev) => {
+      const rows = prev.filter(isRetRow);
+      const mine = rows.find((r) => r.id === id);
+      const rest = rows.filter((r) => r.id !== id);
+      if (!mine || !rest.length) return prev;
+      const total = roundPct(rows.reduce((n, r) => n + (Number(r.pct) || 0), 0));
+      const share = Math.min(100, Math.max(0, Number(raw) || 0));
+      const mineNew = Math.floor(total * share) / 100;
+      const restNew = spreadTotal(rest, roundPct(total - mineNew));
+      return prev.map((r) => (r.id === id ? { ...r, pct: mineNew } : restNew[r.id] !== undefined ? { ...r, pct: restNew[r.id] } : r));
+    });
+  const removeRetirement = () => retRowsNow.forEach((r) => removeFromStep2(r.id));
   const addBackRemoved = (id) => {
     const item = removedRows.find((x) => x.row.id === id);
     if (!item) return;
@@ -1125,6 +1172,7 @@ function OnboardingPageInner() {
                 persona={businessType}
                 title="Final Categories"
                 num={priorityTiers(percent).length + 1}
+                retirement={retRowsNow.length ? { rows: retRowsNow, total: retTotalNow, onTotal: setRetirementTotal, onRemove: removeRetirement } : null}
               >
                 <AddCategoryCard inline suggestions={availableSuggestions} onAddSuggested={addSuggested} onAddOwn={addPercent} />
               </TierLastCard>
@@ -1155,6 +1203,49 @@ function OnboardingPageInner() {
                   >
                     + Add another account
                   </button>
+                )}
+                {retRowsNow.length >= 2 && (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1.5px solid #E7DEFA" }}>
+                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 800, color: "var(--color-text)" }}>
+                      How should we split your retirement money between these accounts?
+                    </div>
+                    <p style={{ fontSize: 14, lineHeight: 1.5, color: "color-mix(in srgb, var(--color-text) 66%, transparent)", margin: "4px 0 8px" }}>
+                      Your retirement total is <b style={{ color: "#4E22B8" }}>{retTotalNow}%</b> of each deposit (change it in Final Categories). Your accounts below always add up to 100% of that.
+                    </p>
+                    {retRowsNow.map((r) => {
+                      const share = retTotalNow > 0 ? roundPct(((Number(r.pct) || 0) / retTotalNow) * 100) : roundPct(100 / retRowsNow.length);
+                      return (
+                        <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0" }}>
+                          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#9A72F0", flex: "none" }} />
+                          {r.retirementType ? (
+                            <span style={{ flex: 1, fontSize: 16, fontWeight: 700 }}>{r.label}</span>
+                          ) : (
+                            <input aria-label="Account name" value={r.label} onChange={(e) => updatePercent(r.id, { label: e.target.value })} onFocus={(e) => e.target.select()} style={{ flex: 1, minWidth: 0, font: "inherit", fontSize: 16, fontWeight: 700, border: "1.5px solid #D9C9FF", borderRadius: 10, padding: "4px 8px", background: "#fff" }} />
+                          )}
+                          <span style={{ fontSize: 13, color: "color-mix(in srgb, var(--color-text) 62%, transparent)", whiteSpace: "nowrap" }}>= {roundPct(Number(r.pct) || 0)}% of each deposit</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 2, background: "#F4EEFF", border: "2px solid #D9C9FF", borderRadius: 999, padding: "3px 12px", fontFamily: "var(--font-mono, monospace)", fontWeight: 700, fontSize: 15, color: "#4E22B8" }}>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min={0}
+                              max={100}
+                              step="any"
+                              aria-label={`${r.label} share of retirement`}
+                              value={share}
+                              onFocus={(e) => e.target.select()}
+                              onChange={(e) => setRetirementShare(r.id, e.target.value)}
+                              style={{ width: 52, border: 0, background: "transparent", font: "inherit", color: "inherit", textAlign: "right", outline: "none" }}
+                            />
+                            %
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1.5px solid #E7DEFA", paddingTop: 8, marginTop: 4, fontSize: 14, fontWeight: 800 }}>
+                      <span style={{ color: "#4E22B8" }}>✓ Adds up to 100%</span>
+                      <span style={{ fontFamily: "var(--font-mono, monospace)" }}>100%</span>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
