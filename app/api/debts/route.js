@@ -16,6 +16,9 @@ const toDebt = (r) => ({
   apr: Number(r.apr) || 0,
   minPayment: Number(r.min_payment) || 0,
   paidOffAt: r.paid_off_at,
+  fromCard: !!r.plaid_account_id,
+  syncedAt: r.synced_at || null,
+  dueDate: r.due_date || null,
 });
 
 // A friendly starting extra: 10% of what has been deposited per month lately,
@@ -46,7 +49,15 @@ export async function GET() {
   const { data: profile } = await admin.from("simple_profiles").select("*").eq("id", user.id).single();
   const { data: rules } = await admin.from("simple_split_rules_percent").select("label, pct").eq("user_id", user.id).eq("label", "Debt Payoff");
 
+  const { count: cardCount } = await admin
+    .from("simple_accounts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("account_type", "credit")
+    .not("plaid_access_token", "is", null);
+
   return Response.json({
+    hasCards: (cardCount || 0) > 0,
     debts: (rows || []).map(toDebt),
     method: METHODS.includes(profile?.debt_method) ? profile.debt_method : "avalanche",
     extra: profile?.debt_extra === null || profile?.debt_extra === undefined ? null : Number(profile.debt_extra),

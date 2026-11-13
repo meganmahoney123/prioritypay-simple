@@ -36,6 +36,7 @@ export default function PlaidLinkButton({
   label = "Connect a bank account",
   mode = "link",
   accountId,
+  product,
   className,
   retirementType,
   investmentType,
@@ -62,7 +63,7 @@ export default function PlaidLinkButton({
     () => typeof window !== "undefined" && window.location.search.includes("oauth_state_id")
   );
   const storageKey = mode === "update"
-    ? `${STORAGE_KEY}_update_${accountId}`
+    ? `${STORAGE_KEY}_update_${accountId}${product ? `_${product}` : ""}`
     : retirementType
     ? `${STORAGE_KEY}_retirement_${retirementType}`
     : investmentType
@@ -104,7 +105,7 @@ export default function PlaidLinkButton({
       ? "/api/plaid/create-credit-link-token"
       : "/api/plaid/create-link-token";
     const body = mode === "update"
-      ? JSON.stringify({ accountId })
+      ? JSON.stringify({ accountId, product })
       : retirementType
       ? JSON.stringify({ retirementType })
       : investmentType

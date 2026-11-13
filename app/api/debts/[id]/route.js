@@ -46,7 +46,40 @@ export async function PATCH(request, { params }) {
 
   const { error } = await admin.from("simple_debts").update(update).eq("id", id).eq("user_id", user.id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json({ ok: true });
+
+  // A debt payment can also be recorded as a withdrawal, so it shows up in
+  // Withdrawals and lowers the Debt Payoff category the same way any other
+  // spending does. It never moves money.
+  let withdrawalLogged = false;
+  if (body.payment !== undefined && body.recordWithdrawal) {
+    const payment = Math.round(Number(body.payment) * 100) / 100;
+    const { data: cat } = await admin
+      .from("simple_split_rules_percent")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("label", "Debt Payoff")
+      .limit(1);
+    const hasCategory = !!(cat && cat.length);
+    const { data: w, error: wErr } = await admin
+      .from("simple_withdrawals")
+      .insert({
+        user_id: user.id,
+        amount: payment,
+        description: `Debt payment: ${debt.name}`,
+        occurred_at: new Date().toISOString(),
+        category_label: "Debt Payoff",
+        source_type: "cash",
+      })
+      .select()
+      .single();
+    if (!wErr && w) {
+      const { error: aErr } = await admin.from("simple_withdrawal_allocations").insert([
+        { withdrawal_id: w.id, label: hasCategory ? "Debt Payoff" : debt.name, amount: payment, source_type: hasCategory ? "category" : "external" },
+      ]);
+      withdrawalLogged = !aErr;
+    }
+  }
+  return Response.json({ ok: true, withdrawalLogged });
 }
 
 export async function DELETE(_request, { params }) {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
+import PlaidLinkButton from "@/components/PlaidLinkButton";
 import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
 import { DEBT_TYPES, buildPlan, debtTypeLabel, extraOptions, payoffLabel, suggestions, HIGH_APR } from "@/lib/debtPayoff";
 
@@ -69,6 +70,10 @@ export default function DebtPage() {
   const [customExtra, setCustomExtra] = useState("");
   const [method, setMethod] = useState("avalanche");
   const [extra, setExtra] = useState(0);
+  const [recordWithdrawal, setRecordWithdrawal] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNote, setSyncNote] = useState("");
+  const [needsConsent, setNeedsConsent] = useState([]);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/debts");
@@ -83,6 +88,33 @@ export default function DebtPage() {
     setExtra(d.extra ?? d.suggestedExtra);
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  const syncCards = useCallback(async (quiet) => {
+    setSyncing(true);
+    if (!quiet) { setSyncNote(""); setError(""); }
+    try {
+      const res = await fetch("/api/debts/sync", { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { if (!quiet) setError(d.needsSetup ? "Importing debts needs a one-time database update first." : d.error || "Couldn't update from your cards."); return; }
+      setNeedsConsent(d.needsConsent || []);
+      if (!quiet) {
+        const parts = [];
+        if (d.added) parts.push(`${d.added} added`);
+        if (d.updated) parts.push(`${d.updated} updated`);
+        setSyncNote(parts.length ? `Cards checked: ${parts.join(", ")}.` : (d.needsConsent || []).length ? "" : "Your cards are up to date.");
+      }
+      if (d.added || d.updated) load();
+    } finally { setSyncing(false); }
+  }, [load]);
+
+  // Quietly refresh card debts when the page opens (at most about twice a day).
+  useEffect(() => {
+    if (!data || !data.hasCards) return;
+    const newest = (data.debts || []).filter((d) => d.fromCard && d.syncedAt).map((d) => new Date(d.syncedAt).getTime());
+    const stale = !newest.length || Date.now() - Math.max(...newest) > 12 * 3600 * 1000;
+    if (stale) syncCards(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.hasCards]);
 
   const call = async (url, opts) => {
     setBusy(true); setError("");
@@ -118,8 +150,23 @@ export default function DebtPage() {
           <Link href="/dashboard" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "none" }}>‹ Dashboard</Link>
           <div style={{ fontSize: 14, color: muted }}>{active.length ? `${active.length} ${active.length === 1 ? "debt" : "debts"}` : "Add your debts to see a payoff date"}</div>
         </div>
-        {!adding && <GhostButton onClick={() => { setAdding(true); setEditing(null); }}>+ Add a debt</GhostButton>}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {data.hasCards && <GhostButton onClick={() => syncCards(false)} disabled={syncing}>{syncing ? "Checking your cards…" : "Update from my cards"}</GhostButton>}
+          {!adding && <GhostButton onClick={() => { setAdding(true); setEditing(null); }}>+ Add a debt</GhostButton>}
+        </div>
       </div>
+      {syncNote && <div style={{ fontSize: 14, color: muted }}>{syncNote}</div>}
+      {needsConsent.length > 0 && (
+        <Card className="p-4">
+          <div style={{ fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>Share your card&apos;s rate and minimum payment</div>
+          <p style={{ fontSize: 13.5, color: muted, margin: "0 0 10px" }}>These cards were connected before debt details were available. Approve it once and the interest rate, minimum payment and due date fill in on their own.</p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {needsConsent.map((c) => (
+              <PlaidLinkButton key={c.accountId} mode="update" accountId={c.accountId} product="liabilities" label={`Approve for ${c.name}`} onUpdated={() => syncCards(false)} />
+            ))}
+          </div>
+        </Card>
+      )}
 
       {error && <Card className="p-4" style={{ border: "1.5px solid #E8A09A" }}><span style={{ color: "#B3261E", fontSize: 14 }}>{error}</span></Card>}
 
@@ -173,7 +220,11 @@ export default function DebtPage() {
                     <span style={{ width: 26, height: 26, borderRadius: 99, background: "var(--color-accent)", color: "#fff", fontWeight: 600, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{i + 1}</span>
                     <div style={{ flex: "1 1 160px", minWidth: 0 }}>
                       <div style={{ fontSize: 15.5, fontWeight: 600 }}>{d.name}</div>
-                      <div style={{ fontSize: 12.5, color: muted }}>{debtTypeLabel(d.debtType)}</div>
+                      <div style={{ fontSize: 12.5, color: muted }}>
+                        {debtTypeLabel(d.debtType)}
+                        {d.fromCard ? ` · From your card${d.syncedAt ? `, updated ${new Date(d.syncedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}` : ""}
+                        {d.dueDate ? ` · Due ${new Date(`${d.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+                      </div>
                     </div>
                     <div style={{ display: "flex", gap: 18, alignItems: "baseline", flexWrap: "wrap" }}>
                       <span style={{ ...num, fontSize: 15 }}>{currency(d.balance)}</span>
@@ -190,8 +241,12 @@ export default function DebtPage() {
                 {paying === d.id && (
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
                     <input value={payAmount} onChange={(e) => setPayAmount(e.target.value)} inputMode="decimal" placeholder="Amount you paid" style={bloomInputStyle({ width: 180, padding: "10px 12px" })} />
-                    <PrimaryButton disabled={busy || !(Number(payAmount) > 0)} onClick={async () => { if (await call(`/api/debts/${d.id}`, { method: "PATCH", body: JSON.stringify({ payment: payAmount }) })) { setPaying(null); load(); } }}>Save payment</PrimaryButton>
+                    <PrimaryButton disabled={busy || !(Number(payAmount) > 0)} onClick={async () => { if (await call(`/api/debts/${d.id}`, { method: "PATCH", body: JSON.stringify({ payment: payAmount, recordWithdrawal }) })) { setPaying(null); load(); } }}>Save payment</PrimaryButton>
                     <GhostButton onClick={() => call(`/api/debts/${d.id}`, { method: "DELETE" }).then((ok) => ok && load())}>Remove debt</GhostButton>
+                    <label style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 13.5, flexBasis: "100%" }}>
+                      <input type="checkbox" checked={recordWithdrawal} onChange={(e) => setRecordWithdrawal(e.target.checked)} />
+                      Also record it as a withdrawal{data.hasCategory ? " from Debt Payoff" : ""}
+                    </label>
                     <span style={{ fontSize: 12.5, color: muted }}>This lowers what you owe here. It doesn&apos;t move any money.</span>
                   </div>
                 )}

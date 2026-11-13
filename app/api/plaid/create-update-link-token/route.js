@@ -19,7 +19,7 @@ export async function POST(request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const { accountId } = await request.json();
+  const { accountId, product } = await request.json();
   if (!accountId) return Response.json({ error: "Missing accountId." }, { status: 400 });
 
   const admin = supabaseAdmin();
@@ -41,7 +41,7 @@ export async function POST(request) {
       country_codes: [CountryCode.Us],
       language: "en",
       access_token: decryptToken(account.plaid_access_token),
-      additional_consented_products: [Products.Transactions],
+      additional_consented_products: [product === "liabilities" ? Products.Liabilities : Products.Transactions],
       redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/accounts`,
       webhook: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.prioritysave.com"}/api/plaid/webhook`,
     });
