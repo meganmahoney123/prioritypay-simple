@@ -6,6 +6,7 @@ import AccountBalances from "@/components/AccountBalances";
 import DepositsBanner from "@/components/DepositsBanner";
 import IncomeSummaryCards from "@/components/IncomeSummaryCards";
 import DebtPayoffCard from "@/components/DebtPayoffCard";
+import DebtNudgeCard from "@/components/DebtNudgeCard";
 import { useDashboardHeaderSlots } from "@/components/AppShell";
 import { allRules, DEFAULT_SPLIT_RULES, groupPctTotal, RETIREMENT_SETUP_LINKS, isW2NoSideHustle, isW2WithSideHustle } from "@/lib/allocations";
 import { Card } from "@/components/ui";
@@ -354,6 +355,7 @@ export default function DashboardPage() {
           otherwise: same accounts/splitRules/mtd/ytd data feeding the two
           backward-looking pie charts below. */}
       <DebtPayoffCard hasCategory={(splitRules?.percent || []).some((r) => r.label === "Debt Payoff")} />
+      <DebtNudgeCard hasCategory={(splitRules?.percent || []).some((r) => r.label === "Debt Payoff")} />
 
       <AccountBalances
         accounts={accounts}

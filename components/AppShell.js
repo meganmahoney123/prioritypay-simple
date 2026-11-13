@@ -300,10 +300,10 @@ export default function AppShell({ children, isSandbox = false }) {
       })
       .catch(() => {});
     // Debt Payoff only shows for people it applies to: they added a debt or
-    // have the Debt Payoff category.
+    // have the Debt Payoff category, or a connected credit card.
     fetch("/api/debts")
       .then((r) => r.json())
-      .then((d) => setShowDebt((d.debts || []).length > 0 || !!d.hasCategory))
+      .then((d) => setShowDebt((d.debts || []).length > 0 || !!d.hasCategory || !!d.hasCards))
       .catch(() => {});
   }, []);
 
