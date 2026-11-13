@@ -107,9 +107,15 @@ export default function DebtPage() {
     } finally { setSyncing(false); }
   }, [load]);
 
-  // Quietly refresh card debts when the page opens (at most about twice a day).
+  // Refresh card debts when the page opens (at most about twice a day), but only
+  // for people who asked for a payoff plan: they already have a card debt, or
+  // they came from "Set up my payoff plan" (?setup=1). Liabilities is billed per
+  // connection, so it is never fetched just because a card is linked.
   useEffect(() => {
     if (!data || !data.hasCards) return;
+    let wantsSetup = false;
+    try { wantsSetup = new URLSearchParams(window.location.search).get("setup") === "1"; } catch {}
+    if (!wantsSetup && !(data.debts || []).some((d) => d.fromCard)) return;
     const newest = (data.debts || []).filter((d) => d.fromCard && d.syncedAt).map((d) => new Date(d.syncedAt).getTime());
     const stale = !newest.length || Date.now() - Math.max(...newest) > 12 * 3600 * 1000;
     if (stale) syncCards(true);
@@ -156,6 +162,9 @@ export default function DebtPage() {
         </div>
       </div>
       {syncNote && <div style={{ fontSize: 14, color: muted }}>{syncNote}</div>}
+      {data.hasCards && !syncNote && !syncing && needsConsent.length === 0 && !(data.debts || []).some((d) => d.fromCard) && (
+        <div style={{ fontSize: 14, color: muted }}>Tap &quot;Update from my cards&quot; to bring in your card balances and rates.</div>
+      )}
       {needsConsent.length > 0 && (
         <Card className="p-4">
           <div style={{ fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>Share your card&apos;s rate and minimum payment</div>

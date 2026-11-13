@@ -41,7 +41,7 @@ export default function DebtNudgeCard({ hasCategory }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <button type="button" onClick={dismiss} style={{ fontSize: 14, background: "none", border: 0, cursor: "pointer", color: "color-mix(in srgb, var(--color-text) 68%, transparent)" }}>Not now</button>
-          <Link href="/debt" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "none" }}>Set up my payoff plan ›</Link>
+          <Link href="/debt?setup=1" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "none" }}>Set up my payoff plan ›</Link>
         </div>
       </div>
     </Card>

@@ -17,9 +17,9 @@ export async function POST() {
       user: { client_user_id: user.id },
       client_name: "PrioritySave",
       products: [Products.Transactions],
-      // Debt balances, rates and minimum payments for the Debt Payoff plan.
-      // Optional so a bank without Liabilities still links for transactions.
-      optional_products: [Products.Liabilities],
+      // Liabilities (balance, rate, minimum payment) is NOT requested here: Plaid
+      // bills it per connection each month, so it is added later, only for
+      // people who ask for a payoff plan (see the Debt page "Approve" button).
       // 24 months of history so yearly bills can be spotted.
       transactions: { days_requested: 730 },
       country_codes: [CountryCode.Us],

@@ -270,6 +270,13 @@ function OnboardingPageInner() {
   // Removed rather than just skipped, so this doesn't quietly collect SSNs
   // for no reason -- see the equivalent removal on the Accounts page.
   const [accounts, setAccounts] = useState([]);
+  // Credit-card step: does a connected card show money owed? (free balance check)
+  const [cardOwes, setCardOwes] = useState(0);
+  const creditCardCount = accounts.filter((a) => a.account_type === "credit").length;
+  useEffect(() => {
+    if (step !== STEP_CARDS || !creditCardCount) return;
+    fetch("/api/debts/cards-check").then((r) => r.json()).then((c) => { if (!c.error) setCardOwes(Number(c.owed) || 0); }).catch(() => {});
+  }, [step, creditCardCount]);
   const [percent, setPercent] = useState(() => [...tierSampleRows(DEFAULT_SPLIT_RULES.percent.map((r) => r.color)), ...DEFAULT_SPLIT_RULES.percent]);
   // On the match step, splits are read-only until someone asks to edit them.
   const [editSplits, setEditSplits] = useState(false);
@@ -1160,6 +1167,27 @@ function OnboardingPageInner() {
               <SplitExample />
             </div>
 
+            <div style={{ border: "1px solid var(--color-divider)", borderRadius: "var(--radius-md)", background: "var(--color-neutral-100)", padding: "14px 18px", margin: "0 0 22px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+              {percent.some((r) => r.label === "Debt Payoff") ? (
+                <span style={{ fontSize: 15, lineHeight: 1.5 }}>
+                  <strong>Debt Payoff is in your plan.</strong> Change its percentage below. You can add your debts after setup.
+                </span>
+              ) : (
+                <>
+                  <span style={{ fontSize: 15, lineHeight: 1.5, flex: "1 1 260px" }}>
+                    <strong>Paying off any debt?</strong> Credit cards, student or car loans, a mortgage, medical bills, buy now pay later, tax debt, or money you owe family. Add a Debt Payoff category and get a payoff date.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => addSuggested({ label: "Debt Payoff" })}
+                    style={{ fontFamily: "var(--font-heading)", fontWeight: 600, color: "var(--color-accent)", background: "transparent", border: "1px solid var(--color-accent)", borderRadius: "var(--radius-md)", padding: "9px 18px", cursor: "pointer" }}
+                  >
+                    Yes, add Debt Payoff
+                  </button>
+                </>
+              )}
+            </div>
+
             <TierCards
               percent={percent}
               onUpdate={updatePercent}
@@ -1713,6 +1741,13 @@ function OnboardingPageInner() {
                   </div>
                 ))}
               </div>
+            )}
+            {creditCardCount > 0 && cardOwes > 0 && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: "color-mix(in srgb, var(--color-text) 76%, transparent)", margin: "0 0 16px" }}>
+                {percent.some((r) => r.label === "Debt Payoff")
+                  ? "Your card shows a balance. After setup, open Debt Payoff in the sidebar to see your payoff date."
+                  : "Your card shows a balance. After setup, your dashboard will offer a debt payoff plan."}
+              </p>
             )}
             {paymentError && (
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "#b3261e", margin: "0 0 16px" }}>{paymentError}</p>
