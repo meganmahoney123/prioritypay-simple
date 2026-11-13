@@ -20,6 +20,7 @@ export default function ProfileCard({ onChanged }) {
   const [employer, setEmployer] = useState("");
   const [hasEmployees, setHasEmployees] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [hasCorp, setHasCorp] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -33,6 +34,10 @@ export default function ProfileCard({ onChanged }) {
         setHasEmployees(runsBusiness(d.workPicks || []) ? !!d.hasEmployees : null);
         setLoaded(true);
       })
+      .catch(() => {});
+    fetch("/api/businesses")
+      .then((r) => r.json())
+      .then((d) => setHasCorp((d.businesses || []).some((b) => b.entityType === "S-corp" || b.entityType === "C-corp")))
       .catch(() => {});
   }, []);
 
@@ -94,6 +99,11 @@ export default function ProfileCard({ onChanged }) {
         <>
           <div style={{ height: 2, background: "#E7DEFA", margin: "22px 0 0" }} />
           <BusinessesCard embedded picks={picks} />
+          {hasCorp && !picks.includes("w2") && (
+            <p style={{ ...muted, fontSize: 14, margin: "10px 0 0", background: "#F7F6FA", borderRadius: 10, padding: "10px 12px" }}>
+              <b style={{ fontWeight: 600 }}>Paying yourself a salary through payroll?</b> S-corp and C-corp owners usually do. If so, also check &ldquo;I have a W-2 job&rdquo; above so those paychecks can be marked as W-2 (taxes already withheld) on Split My Deposits. Your distributions stay Owner&apos;s draw.
+            </p>
+          )}
 
           <span style={label}>Do you have employees (other than a spouse or your kids)?</span>
           <ChipCheckboxes
