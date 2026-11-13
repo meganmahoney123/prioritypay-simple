@@ -235,7 +235,7 @@ export default function OnboardingLimits({ rows, onUpdate, priorityRows = [] }) 
           <div className="pp-cap-ex"><span style={{ fontWeight: 700 }}>Business Expenses (OPEX)</span><span style={{ fontFamily: MONO, fontWeight: 700, color: PURPLE }}>$1,500</span></div>
         </div>
         <div className="pp-cap-def">
-          <div><b style={{ color: PURPLE }}>Total savings goal</b><br />Stops when you reach your total. Does not reset monthly.</div>
+          <div><b style={{ color: PURPLE }}>Total savings goal</b><br />Stops when you reach your total. Resumes if you withdraw.</div>
           <div className="pp-cap-ex"><span style={{ fontWeight: 700 }}>Wedding Fund</span><span style={{ fontFamily: MONO, fontWeight: 700, color: PURPLE }}>$25,000</span></div>
         </div>
       </div>
