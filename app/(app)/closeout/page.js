@@ -1614,7 +1614,86 @@ export default function CloseoutPage() {
               <div className="font-mono font-bold" style={{ fontFamily: "var(--font-mono)", fontSize: 30, color: "#fff" }}>
                 {currency(recommendations.tax.setAsideThisMonth)}
               </div>
+              <div style={{ fontSize: 12.5, color: "var(--color-accent-400)", marginTop: 4 }}>Actually set aside so far this month</div>
             </div>
+
+            {(() => {
+              // What you may owe vs. what is actually set aside. The estimate is the
+              // Monthly calculator's number (net income x rate). With two or more
+              // sole-proprietor businesses it is also split by each one's share of
+              // profit: tax is one bill on combined profit, so a business that lost
+              // money shows $0 and lowers the combined total.
+              const setAside = Number(recommendations?.tax?.setAsideThisMonth) || 0;
+              const est = Number(liveTaxEstimate) || 0;
+              const positive = profitRows.map((r) => Math.max(0, r.profit));
+              const positiveTotal = positive.reduce((a, b) => a + b, 0);
+              const showByBiz = profitRows.length > 1 && positiveTotal > 0;
+              const bizEstimate = estimateTaxReserve(Math.max(0, profitTotals.profit), taxRatePct);
+              if (!(est > 0) && !showByBiz) return null;
+              const mono = { fontFamily: "var(--font-mono)" };
+              const short = est - setAside;
+              const pct = est > 0 ? Math.min(100, Math.round((setAside / est) * 100)) : 0;
+              return (
+                <div className="border border-[var(--color-divider)] rounded-[20px] p-4 mb-3">
+                  {showByBiz && (
+                    <>
+                      <div className="text-sm font-semibold mb-2">What you may owe, by business</div>
+                      <div className="overflow-x-auto">
+                        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 340 }}>
+                          <thead>
+                            <tr className="text-xs text-[var(--color-neutral-700)]">
+                              <th style={{ textAlign: "left", padding: "4px 0", fontWeight: 600 }}>Business</th>
+                              <th style={{ textAlign: "right", fontWeight: 600 }}>Net profit</th>
+                              <th style={{ textAlign: "right", fontWeight: 600 }}>
+                                Estimated tax
+                                <div style={{ fontWeight: 500, color: "var(--color-accent)" }}>at {Number(taxRatePct) || 0}%</div>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {profitRows.map((r, i) => (
+                              <tr key={r.id} style={{ borderTop: "1px solid var(--color-divider)" }}>
+                                <td style={{ padding: "10px 0", fontSize: 14 }}>
+                                  {r.name}
+                                  {r.profit < 0 && <div className="text-xs text-[var(--color-neutral-700)]">Lost money this month, which lowers your combined bill.</div>}
+                                </td>
+                                <td className="text-sm" style={{ textAlign: "right", ...mono, color: r.profit < 0 ? "#B3261E" : undefined }}>{currency(r.profit)}</td>
+                                <td className="text-sm" style={{ textAlign: "right", ...mono }}>{currency(bizEstimate * (positive[i] / positiveTotal))}</td>
+                              </tr>
+                            ))}
+                            <tr style={{ borderTop: "2px solid var(--color-text)", fontWeight: 700 }}>
+                              <td style={{ padding: "10px 0", fontSize: 14 }}>All businesses</td>
+                              <td className="text-sm" style={{ textAlign: "right", ...mono }}>{currency(profitTotals.profit)}</td>
+                              <td className="text-sm" style={{ textAlign: "right", ...mono }}>{currency(bizEstimate)}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="text-[11px] text-[var(--color-neutral-700)] mt-2 mb-3">
+                        Your tax is one bill on your combined profit, so each business shows its share by profit. The rate is the one in the calculator below.
+                      </p>
+                    </>
+                  )}
+                  {est > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between text-sm font-semibold">
+                        <span>Set aside so far this month</span>
+                        <span style={mono}>{currency(setAside)}</span>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 99, background: "var(--color-divider)", margin: "8px 0", overflow: "hidden" }}>
+                        <div style={{ height: 8, width: `${pct}%`, background: "var(--color-accent)", borderRadius: 99 }} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-[var(--color-neutral-700)]">
+                        <span>{pct}% of your {currency(est)} estimate</span>
+                        <span style={{ fontWeight: 600, color: short > 0 ? "#8A5A00" : "#0F6B4F" }}>
+                          {short > 0 ? `${currency(short)} short of the estimate` : "At or above the estimate"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="border border-[var(--color-divider)] rounded-[20px] p-4 mb-3">
               <div className="text-sm font-semibold mb-2">Monthly calculator</div>
