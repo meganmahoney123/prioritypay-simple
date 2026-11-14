@@ -146,7 +146,7 @@ export default function SplitExample() {
                   </div>
                   {t < 3 && (
                     <div className="pp-tier-flow pp-ex-flow">
-                      <span style={{ opacity: sel === null ? 1 : 0 }}>↓ Cap reached? The rest flows down</span>
+                      <span style={{ opacity: sel === null ? 1 : 0 }}>↓ Once every category above is full, the rest flows down</span>
                       {FLOW[t].map((v, k) => (
                         <span key={k} style={{ opacity: sel === k ? 1 : 0 }}>↓ {usd(v)} flows down{v === 0 ? ", nothing left for the next tier" : ""}</span>
                       ))}

@@ -18,7 +18,12 @@ const LINE = "#E7DEFA";
 const MONO = "var(--font-mono, 'IBM Plex Mono', monospace)";
 
 const TIER_TAG = "Even split, then waterfall";
-const TIER_SUB = "100% of each deposit is split evenly across these categories. As soon as a category meets the monthly cap, the rest of the deposit waterfalls down to the next tier.";
+// Tier 1 gets every deposit first. Later tiers only get what the tier above could not use.
+const tierSub = (n) =>
+  n === 1
+    ? "Every deposit goes here first, split evenly across these categories. A category that reaches its monthly cap is skipped, and its share goes to the others. Once all are full, the rest flows down to the next tier."
+    : "Gets whatever the tier above could not use, split evenly across these categories. Full categories are skipped, and once all are full, the rest flows down to the next tier.";
+const FLOW_LABEL = "↓ Once every category above is full, the rest flows down";
 
 export const TIER_CSS = `
 .pp-tier-card{background:#fff;border:1px solid #DDD5F3;border-radius:22px;padding:6px 20px 8px}
@@ -164,14 +169,14 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
           return (
             <div key={t}>
               <div className="pp-tier-card">
-                <Header n={t} title={tierName(t)} tag={TIER_TAG} tagTitle={TIER_SUB} action={delAction} />
-                <p className="pp-tier-sub">{TIER_SUB}</p>
+                <Header n={t} title={tierName(t)} tag={TIER_TAG} tagTitle={tierSub(t)} action={delAction} />
+                <p className="pp-tier-sub">{tierSub(t)}</p>
                 {rows.map((r) => (
                   <BillRow key={r.id} r={r} showErrors={showErrors} accounts={accounts} onUpdate={onUpdate} onRemoveRow={onRemoveRow} focusName={!initialIds.current.has(r.id)} />
                 ))}
                 <button type="button" className="pp-tier-add" onClick={() => onAddRow(t)}>+ Add a category</button>
               </div>
-              <div className="pp-tier-flow">↓ Cap reached? The rest flows down</div>
+              <div className="pp-tier-flow">{FLOW_LABEL}</div>
             </div>
           );
         })}
@@ -180,8 +185,8 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
           return (
             <div key={`ph${n}`}>
               <div className="pp-tier-card">
-                <Header n={n} title={tierName(n)} tag={TIER_TAG} tagTitle={TIER_SUB} action={placeholders + tiers.length > minTiers && k === placeholders - 1 && extra > 0 ? <button type="button" className="pp-tier-more" style={{ color: "#8A7FA0" }} onClick={() => setExtra((v) => Math.max(0, v - 1))}>Remove tier</button> : null} />
-                <p className="pp-tier-sub">{TIER_SUB}</p>
+                <Header n={n} title={tierName(n)} tag={TIER_TAG} tagTitle={tierSub(n)} action={placeholders + tiers.length > minTiers && k === placeholders - 1 && extra > 0 ? <button type="button" className="pp-tier-more" style={{ color: "#8A7FA0" }} onClick={() => setExtra((v) => Math.max(0, v - 1))}>Remove tier</button> : null} />
+                <p className="pp-tier-sub">{tierSub(n)}</p>
                 <div className="pp-tier-row" style={{ color: "#6B5F80", fontSize: 14 }}>
                   <span className="pp-tier-dot" style={{ background: "#D2C4F0" }} />
                   <span style={{ flex: 1 }}>
@@ -190,7 +195,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
                 </div>
                 <button type="button" className="pp-tier-add" onClick={() => onAddRow(tiers.length + 1)}>+ Add a category</button>
               </div>
-              <div className="pp-tier-flow">↓ Cap reached? The rest flows down</div>
+              <div className="pp-tier-flow">{FLOW_LABEL}</div>
             </div>
           );
         })}
