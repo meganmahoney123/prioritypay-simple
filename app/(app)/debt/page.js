@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
+import DebtExample from "@/components/DebtExample";
 import { bloomInputStyle, bloomSelectStyle } from "@/lib/bloomTheme";
 import { DEBT_TYPES, buildPlan, debtTypeLabel, extraOptions, payoffLabel, suggestions, HIGH_APR } from "@/lib/debtPayoff";
 
-const muted = "color-mix(in srgb, var(--color-text) 68%, transparent)";
-const h2 = { fontFamily: "var(--font-heading)", fontSize: 22, fontWeight: 400, margin: "0 0 6px" };
+const muted = "#5E5575";
+const ink = "#1F1636";
+const h2 = { fontFamily: "var(--font-heading)", fontSize: 20, fontWeight: 600, color: ink, margin: "0 0 6px" };
 const eyebrow = { fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: muted };
 const num = { fontFamily: "var(--font-mono, ui-monospace, monospace)", fontWeight: 600 };
 
@@ -150,7 +152,7 @@ export default function DebtPage() {
   const lastMonths = Math.max(1, ...active.map((d) => plan.payoff[d.id] || 0));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: "52em" }}>
+    <div className="ps-page ps-refined" style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: "52em", color: ink }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
           <Link href="/dashboard" style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)", textDecoration: "none" }}>‹ Dashboard</Link>
@@ -188,7 +190,7 @@ export default function DebtPage() {
             <div style={{ fontSize: 14, color: muted }}>Total owed <span style={num}>{currency(info.totalOwed)}</span></div>
           </div>
           {plan.neverPaysOff && <p style={{ fontSize: 14, color: "#B3261E", margin: "8px 0 0" }}>At this monthly payment the interest is as large as the payments. Add a minimum payment to each debt or raise the extra amount.</p>}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, borderTop: "1.5px solid var(--color-divider)", marginTop: 14, paddingTop: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, borderTop: "1px solid #E6E1F0", marginTop: 14, paddingTop: 14 }}>
             <div><div style={eyebrow}>Monthly payment</div><div style={{ ...num, fontSize: 24 }}>{currency(info.minimums + extra)}</div><div style={{ fontSize: 12.5, color: muted }}>{currency(info.minimums)} minimums + {currency(extra)} extra</div></div>
             <div><div style={eyebrow}>Interest to pay</div><div style={{ ...num, fontSize: 24, color: "#0F6B4F" }}>{plan.neverPaysOff ? "-" : currency(plan.totalInterest)}</div><div style={{ fontSize: 12.5, color: muted }}>{info.minimumsOnly.neverPaysOff ? "minimums alone never pay it off" : `vs ${currency(info.minimumsOnly.totalInterest)} with minimums only`}</div></div>
             <div><div style={eyebrow}>Months to go</div><div style={{ ...num, fontSize: 24 }}>{plan.months ?? "-"}</div><div style={{ fontSize: 12.5, color: muted }}>{info.minimumsOnly.months ? `vs ${info.minimumsOnly.months} with minimums only` : ""}</div></div>
@@ -218,7 +220,7 @@ export default function DebtPage() {
               {otherDiff !== null && otherDiff !== 0 && ` Here, ${method === "avalanche" ? "snowball" : "avalanche"} would cost about ${currency(Math.abs(otherDiff))} ${otherDiff > 0 ? "more" : "less"}.`}
             </p>
             {info.payoffOrder.map((d, i) => (
-              <div key={d.id} style={{ borderTop: "1.5px solid var(--color-divider)", padding: "10px 0" }}>
+              <div key={d.id} style={{ borderTop: "1px solid #E6E1F0", padding: "10px 0" }}>
                 {editing === d.id ? (
                   <DebtForm
                     initial={d} submitLabel="Save" busy={busy} onCancel={() => setEditing(null)}
@@ -226,7 +228,7 @@ export default function DebtPage() {
                   />
                 ) : (
                   <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                    <span style={{ width: 26, height: 26, borderRadius: 99, background: "var(--color-accent)", color: "#fff", fontWeight: 600, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{i + 1}</span>
+                    <span style={{ width: 26, height: 26, borderRadius: 99, background: "#F1EDF9", color: ink, fontWeight: 600, fontSize: 13, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{i + 1}</span>
                     <div style={{ flex: "1 1 160px", minWidth: 0 }}>
                       <div style={{ fontSize: 15.5, fontWeight: 600 }}>{d.name}</div>
                       <div style={{ fontSize: 12.5, color: muted }}>
@@ -239,7 +241,7 @@ export default function DebtPage() {
                       <span style={{ ...num, fontSize: 15 }}>{currency(d.balance)}</span>
                       <span style={{ ...num, fontSize: 15, color: d.apr >= HIGH_APR ? "#B3261E" : undefined }}>{d.apr}%</span>
                       <span style={{ ...num, fontSize: 15 }}>{currency(d.minPayment)}/mo</span>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)" }}>{payoffLabel(plan.payoff[d.id])}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: ink }}>{payoffLabel(plan.payoff[d.id])}</span>
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <GhostButton onClick={() => { setPaying(paying === d.id ? null : d.id); setPayAmount(""); }}>Log a payment</GhostButton>
@@ -264,11 +266,13 @@ export default function DebtPage() {
           </>
         )}
         {paidOff.length > 0 && (
-          <div style={{ borderTop: "1.5px solid var(--color-divider)", paddingTop: 10, marginTop: 4, fontSize: 14, color: muted }}>
+          <div style={{ borderTop: "1px solid #E6E1F0", paddingTop: 10, marginTop: 4, fontSize: 14, color: muted }}>
             Paid off: {paidOff.map((d) => d.name).join(", ")}
           </div>
         )}
       </Card>
+
+      {!active.length && !adding && <DebtExample onAdd={() => { setAdding(true); setEditing(null); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
 
       {active.length > 0 && (
         <Card className="p-6">
@@ -285,7 +289,7 @@ export default function DebtPage() {
               return (
                 <button key={n} type="button" onClick={() => pickExtra(n)} style={{ textAlign: "left", cursor: "pointer", padding: "12px 14px", borderRadius: 14, border: `${n === extra ? 2.5 : 1.5}px solid ${n === extra ? "var(--color-accent)" : "var(--color-divider)"}`, background: n === extra ? "color-mix(in srgb, var(--color-accent) 9%, transparent)" : "transparent", color: "var(--color-text)", fontFamily: "var(--font-body)" }}>
                   <div style={{ ...num, fontSize: 18 }}>+{currency(n)}/mo</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--color-accent-700)", marginTop: 4 }}>{payoffLabel(s.months)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: ink, marginTop: 4 }}>{payoffLabel(s.months)}</div>
                   <div style={{ fontSize: 12.5, color: muted }}>{s.neverPaysOff ? "never at this payment" : `${currency(s.totalInterest)} interest`}</div>
                 </button>
               );
@@ -305,10 +309,10 @@ export default function DebtPage() {
           {info.payoffOrder.map((d) => (
             <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0" }}>
               <span style={{ width: 110, fontSize: 14, fontWeight: 600, flex: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-              <div style={{ flex: 1, background: "color-mix(in srgb, var(--color-accent) 9%, transparent)", borderRadius: 99, height: 14 }}>
+              <div style={{ flex: 1, background: "#EDE9F6", borderRadius: 99, height: 14 }}>
                 <div style={{ width: `${Math.round(((plan.payoff[d.id] || 0) / lastMonths) * 100)}%`, height: 14, borderRadius: 99, background: "var(--color-accent)" }} />
               </div>
-              <span style={{ width: 78, textAlign: "right", fontSize: 13.5, fontWeight: 600, color: "var(--color-accent-700)", flex: "none" }}>{payoffLabel(plan.payoff[d.id])}</span>
+              <span style={{ width: 78, textAlign: "right", fontSize: 13.5, fontWeight: 600, color: ink, flex: "none" }}>{payoffLabel(plan.payoff[d.id])}</span>
             </div>
           ))}
           <div style={{ fontSize: 13, color: muted, marginTop: 8 }}>As each debt is paid off, its minimum rolls into the next one.</div>
@@ -320,7 +324,7 @@ export default function DebtPage() {
         <div style={{ display: "grid", gap: 8, marginTop: 8, fontSize: 14.5, lineHeight: 1.5 }}>
           {notes.map((n, i) => <div key={i}>• <b>{n.title}</b> {n.text}</div>)}
         </div>
-        <div style={{ fontSize: 12.5, color: muted, marginTop: 12, borderTop: "1.5px solid var(--color-divider)", paddingTop: 10 }}>
+        <div style={{ fontSize: 12.5, color: muted, marginTop: 12, borderTop: "1px solid #E6E1F0", paddingTop: 10 }}>
           General information, not financial advice. Payoff dates are estimates. Confirm balances and payoff amounts with your lender.
         </div>
       </Card>
