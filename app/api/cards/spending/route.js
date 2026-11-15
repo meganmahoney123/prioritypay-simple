@@ -45,6 +45,9 @@ export async function GET() {
   for (const c of cards || []) {
     const cap = c.card_cap === null || c.card_cap === undefined ? null : Number(c.card_cap);
     let summary = null;
+    // Why spending is not available, shown on the card so it is not a mystery.
+    let reason = null;
+    if (!c.plaid_access_token || !c.plaid_account_id) reason = "no_link";
     if (c.plaid_access_token && c.plaid_account_id) {
       const key = `${user.id}:${c.id}`;
       const hit = cache.get(key);
@@ -54,8 +57,9 @@ export async function GET() {
           const txns = await getTransactionsForRange(decryptToken(c.plaid_access_token), threeMonthsBack(today), today.toISOString().slice(0, 10));
           summary = summarizeCard(txns.filter((t) => t.account_id === c.plaid_account_id), today);
           cache.set(key, { at: Date.now(), summary });
-        } catch {
+        } catch (e) {
           summary = null;
+          reason = e?.response?.data?.error_code || "unknown";
         }
       }
     }
@@ -65,6 +69,7 @@ export async function GET() {
       cap,
       dismissed: !!c.card_cap_dismissed_at,
       tracked: !!summary,
+      reason: summary ? null : reason,
       spent: summary ? summary.spent : null,
       projected: summary ? summary.projected : null,
       daysLeft: summary ? summary.daysLeft : null,

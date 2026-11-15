@@ -16,6 +16,14 @@ const btn = (primary) => ({
   border: primary ? "1px solid " + ACC : "1px solid " + HAIR, background: primary ? ACC : "#fff", color: primary ? "#fff" : INK,
 });
 
+// Plain-language reason a card's spending could not be read.
+function reasonText(code) {
+  if (code === "no_link") return "This card is not linked to a bank connection, so its spending cannot be read.";
+  if (code === "PRODUCT_NOT_READY") return "Your bank is still preparing this card's transactions. Check back in a few minutes.";
+  if (code === "ITEM_LOGIN_REQUIRED") return "Reconnect this card to see its spending.";
+  return `Spending could not be read${code ? ` (code: ${code})` : ""}.`;
+}
+
 export default function CardCapPanel({ card, onChanged }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
@@ -76,9 +84,11 @@ export default function CardCapPanel({ card, onChanged }) {
         </div>
       )}
 
+      {!card.tracked && card.reason && <div style={{ fontSize: 13, color: MUTED, marginBottom: 10 }}>{reasonText(card.reason)}</div>}
+
       {!hasCap && !showSuggestion && !editing && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13.5, color: MUTED }}>No monthly spending cap{card.tracked ? "" : " (spending on this card is not tracked)"}.</span>
+          <span style={{ fontSize: 13.5, color: MUTED }}>No monthly spending cap{card.tracked ? "" : ""}.</span>
           <button type="button" onClick={() => { setEditing(true); setValue(sug ? String(sug.amount) : ""); }} style={{ ...btn(false), padding: "6px 12px", fontSize: 13 }}>Set a cap</button>
         </div>
       )}
