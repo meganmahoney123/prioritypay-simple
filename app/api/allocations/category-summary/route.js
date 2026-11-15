@@ -73,7 +73,7 @@ export async function GET(request) {
   ] = await Promise.all([
     admin
       .from("simple_split_rules_percent")
-      .select("label, group_name, pct, balance_cap, color, starting_balance")
+      .select("label, group_name, pct, balance_cap, category_cap, color, starting_balance")
       .eq("user_id", user.id),
     // Every real deposit this month (regardless of whether it's finished
     // splitting yet) -- source_amount is the whole deposit, before any
@@ -326,7 +326,7 @@ export async function GET(request) {
     color: r.color,
     monthlyContribution: monthlyByLabel[r.label] || 0,
     balance: balanceByLabel[r.label] || 0,
-    cap: r.balance_cap === null || r.balance_cap === undefined ? null : Number(r.balance_cap),
+    cap: r.category_cap === null || r.category_cap === undefined ? null : Number(r.category_cap),
     lastWithdrawal: lastWithdrawalByLabel[r.label] || null,
     history: historyByLabel[r.label] || [],
   }));
