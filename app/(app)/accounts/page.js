@@ -5,6 +5,7 @@ import { CreditCard } from "lucide-react";
 import { Card, currency } from "@/components/ui";
 import PlaidLinkButton from "@/components/PlaidLinkButton";
 import AccountCategoryBreakdown from "@/components/AccountCategoryBreakdown";
+import CardCapPanel from "@/components/CardCapPanel";
 
 const SHOW_ACCOUNT_BREAKDOWN = false;
 import { bloomGhostButtonStyle, bloomWarningCardStyle } from "@/lib/bloomTheme";
@@ -22,6 +23,7 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState([]);
   const [categoryBalances, setCategoryBalances] = useState({});
   const [creditCardBalances, setCreditCardBalances] = useState({});
+  const [cardSpending, setCardSpending] = useState({});
   const [investmentAccountIds, setInvestmentAccountIds] = useState(new Set());
   const [ruleRows, setRuleRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,8 +64,17 @@ export default function AccountsPage() {
     setLoading(false);
   };
 
+  // Card spending and caps load on their own so a slow bank call never holds up the page.
+  const loadCardSpending = () => {
+    fetch("/api/cards/spending")
+      .then((r) => r.json())
+      .then((d) => { if (!d.error) setCardSpending(Object.fromEntries((d.cards || []).map((c) => [c.accountId, c]))); })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     load();
+    loadCardSpending();
   }, []);
 
   // Every category the person has, across EVERY connected account -- not
@@ -332,6 +343,7 @@ export default function AccountsPage() {
         ) : (
           <p className="text-xs" style={{ color: "var(--color-neutral-700)" }}>Spending here shows up in close-out. Not used for splits.</p>
         )}
+        {cardSpending[acc.id] && <CardCapPanel card={cardSpending[acc.id]} onChanged={loadCardSpending} />}
         <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--color-divider)" }}>
           <button
             type="button"
