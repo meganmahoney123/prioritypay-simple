@@ -80,6 +80,11 @@ function WithdrawalsPageInner() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  // "This pays for the goal": shown only when the money comes out of a
+  // category that has a savings goal (a total cap). On by default.
+  const [payGoal, setPayGoal] = useState(true);
+  const [goalBanner, setGoalBanner] = useState(null);
+  const [goalBusy, setGoalBusy] = useState(null);
 
   const load = async () => {
     const [rulesRes, balancesRes, cardRes, withdrawalsRes, bizRes] = await Promise.all([
@@ -165,6 +170,30 @@ function WithdrawalsPageInner() {
   }, [isOpex, businesses, businessId]);
   const mileage = isMileageLabel(categoryLabel);
   const meals = isMealsLabel(categoryLabel);
+
+  const goalCaps = useMemo(() => {
+    const m = {};
+    for (const r of splitRulesPercent) {
+      const c = Number(r.categoryCap);
+      if (r.categoryCap !== null && r.categoryCap !== undefined && r.categoryCap !== "" && c > 0) m[r.label] = c;
+    }
+    return m;
+  }, [splitRulesPercent]);
+  const goalHits = allocations.filter((a) => a.sourceType === "category" && goalCaps[a.label] !== undefined && Number(a.amount) > 0);
+  const goalLowerBy = goalHits.reduce((n, a) => n + Number(a.amount), 0);
+
+  const changeGoal = async (id, action) => {
+    setGoalBusy(id);
+    const res = await fetch("/api/goal-payments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action }),
+    }).then((r) => r.json()).catch(() => ({ error: "Couldn't reach the server." }));
+    setGoalBusy(null);
+    if (res.error) { setError(res.error); return; }
+    setGoalBanner((b) => b && ({ ...b, undone: action === "undo" }));
+    load();
+  };
 
   const resetForm = () => {
     setAmount("");
@@ -256,12 +285,18 @@ function WithdrawalsPageInner() {
         sourceType,
         closeoutTransactionId: sourceType === "card" ? matchedTxnId : null,
         businessId: isOpex ? businessId : null,
+        payGoal: payGoal && goalHits.length > 0,
       }),
     }).then((r) => r.json());
     setSaving(false);
     if (res.error) {
       setError(res.error);
       return;
+    }
+    if (res.goalPayments?.length) {
+      setGoalBanner({ items: res.goalPayments, undone: false });
+    } else {
+      setGoalBanner(null);
     }
     resetForm();
     load();
@@ -560,6 +595,24 @@ function WithdrawalsPageInner() {
           </div>
         )}
 
+        {goalHits.length > 0 && (
+          <label
+            className="flex items-start gap-3 mb-3 p-3 rounded-xl cursor-pointer"
+            style={{ background: "#EDE6FF", border: "2px solid #6D3BE0" }}
+          >
+            <input type="checkbox" checked={payGoal} onChange={(e) => setPayGoal(e.target.checked)} className="mt-1 w-5 h-5" style={{ accentColor: "#6D3BE0" }} />
+            <span>
+              <span className="block text-base font-bold">This pays for the goal</span>
+              <span className="block text-[14px] mt-0.5" style={{ color: "var(--color-neutral-700)", lineHeight: 1.45 }}>
+                {goalHits.length === 1
+                  ? <>Lower the {goalHits[0].label} goal by {currency(goalLowerBy)}, from {currency(goalCaps[goalHits[0].label])} to {currency(Math.max(0, goalCaps[goalHits[0].label] - goalLowerBy))}, because this part is now paid.</>
+                  : <>Lower these goals by what you take from each: {goalHits.map((a) => `${a.label} ${currency(a.amount)}`).join(", ")}.</>}
+                {" "}Turn it off if you are only moving money out. You can undo it any time.
+              </span>
+            </span>
+          </label>
+        )}
+
         {mileage && (
           <div className="flex items-center gap-2 flex-wrap text-[15px] mb-3">
             <label className="flex items-center gap-1">
@@ -638,6 +691,28 @@ function WithdrawalsPageInner() {
         )}
       </Card>
 
+      {goalBanner && (
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl text-[15px]" style={{ background: "#E8F7F3", border: "1px solid #BFE6D8" }}>
+          <span>
+            {goalBanner.undone
+              ? <><b>Goal change undone.</b> {goalBanner.items.map((g) => `${g.label} is back to ${currency(g.fromCap)}.`).join(" ")}</>
+              : <><b>Goal lowered.</b> {goalBanner.items.map((g) => `${g.label}: ${currency(g.fromCap)} to ${currency(g.toCap)}.`).join(" ")}</>}
+          </span>
+          <button
+            type="button"
+            disabled={goalBusy === goalBanner.items[0].id}
+            onClick={async () => {
+              const action = goalBanner.undone ? "redo" : "undo";
+              for (const g of goalBanner.items) await changeGoal(g.id, action);
+            }}
+            className="font-bold shrink-0"
+            style={{ color: "#4E22B8" }}
+          >
+            {goalBanner.undone ? "Redo" : "Undo"}
+          </button>
+        </div>
+      )}
+
       <Card className="p-6">
         <h2 className="text-lg font-bold mb-3">Recent withdrawals</h2>
         {withdrawals.length === 0 ? (
@@ -655,6 +730,14 @@ function WithdrawalsPageInner() {
                       : w.categoryLabel || "Other"}
                     {w.sourceType === "card" ? " · Card" : " · Cash"}{w.receiptUrl ? " · Receipt saved" : ""}
                   </div>
+                  {(w.goalPayments || []).map((g) => (
+                    <div key={g.id} className="text-[13px] mt-0.5" style={{ color: "#4E22B8" }}>
+                      {g.undone ? `Goal change undone (${g.label})` : `${g.label} goal lowered by ${currency(g.amount)}`}{" · "}
+                      <button type="button" disabled={goalBusy === g.id} onClick={() => changeGoal(g.id, g.undone ? "redo" : "undo")} className="font-bold underline">
+                        {g.undone ? "Redo" : "Undo"}
+                      </button>
+                    </div>
+                  ))}
                 </div>
                 <span className="font-mono shrink-0">{currency(w.amount)}</span>
               </div>

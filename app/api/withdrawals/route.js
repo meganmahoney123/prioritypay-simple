@@ -20,8 +20,19 @@ export async function GET() {
     .limit(200);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
+  // "This paid for the goal" changes, if the table exists yet.
+  const goalByWithdrawal = {};
+  const { data: goalRows } = await admin
+    .from("simple_goal_payments")
+    .select("id, withdrawal_id, label, amount, undone_at")
+    .eq("user_id", user.id);
+  for (const g of goalRows || []) {
+    (goalByWithdrawal[g.withdrawal_id] ||= []).push({ id: g.id, label: g.label, amount: Number(g.amount) || 0, undone: !!g.undone_at });
+  }
+
   return Response.json({
     withdrawals: (withdrawals || []).map((w) => ({
+      goalPayments: goalByWithdrawal[w.id] || [],
       id: w.id,
       amount: Number(w.amount) || 0,
       description: w.description,
@@ -136,6 +147,33 @@ export async function POST(request) {
     if (allocError) return Response.json({ error: allocError.message }, { status: 500 });
   }
 
+  // "This pays for the goal": lower the goal (the category's total cap) by the
+  // amount drawn from each category that has one, and record it so it can be
+  // undone. Only categories that already have a goal are touched.
+  let goalPayments = [];
+  if (body.payGoal) {
+    const { data: goalRules } = await admin
+      .from("simple_split_rules_percent")
+      .select("id, label, category_cap")
+      .eq("user_id", user.id)
+      .not("category_cap", "is", null);
+    for (const a of allocations) {
+      if (a.sourceType === "external") continue;
+      const rule = (goalRules || []).find((r) => r.label === a.label);
+      const amt = Number(a.amount) || 0;
+      if (!rule || amt <= 0) continue;
+      const { data: rec, error: recErr } = await admin
+        .from("simple_goal_payments")
+        .insert({ user_id: user.id, withdrawal_id: withdrawal.id, label: rule.label, amount: amt })
+        .select()
+        .single();
+      if (recErr || !rec) continue; // table not there yet: leave the goal alone
+      const cap = Number(rule.category_cap) || 0;
+      await admin.from("simple_split_rules_percent").update({ category_cap: Math.max(0, cap - amt) }).eq("id", rule.id);
+      goalPayments.push({ id: rec.id, label: rule.label, amount: amt, fromCap: cap, toCap: Math.max(0, cap - amt) });
+    }
+  }
+
   // Matching this withdrawal to a real card transaction means Close-Out
   // already has the answer for that row -- confirm it the same way the
   // Close-Out page itself would (see setCategory/saveExpense in
@@ -152,5 +190,5 @@ export async function POST(request) {
     }
   }
 
-  return Response.json({ withdrawal });
+  return Response.json({ withdrawal, goalPayments });
 }
