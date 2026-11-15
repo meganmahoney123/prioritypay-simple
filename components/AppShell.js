@@ -41,6 +41,7 @@ function buildNav({ isW2Only = false, showDebt = false, showBusiness = false } =
   ];
   if (showBusiness) manage.push({ href: "/business", label: "Business" });
   const plan = [
+    { href: "/goals", label: "Savings Goals" },
     { href: "/simulator", label: "Savings Calculator" },
     { href: "/projections", label: "Investment Projections" },
   ];

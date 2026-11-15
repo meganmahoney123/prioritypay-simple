@@ -7,6 +7,7 @@ import { ChevronRight, Info } from "lucide-react";
 import { currency } from "@/components/ui";
 import { colorForIndex, colorForLabel } from "@/lib/allocations";
 import { bloomPrimaryButtonStyle } from "@/lib/bloomTheme";
+import GoalCover from "@/components/GoalCover";
 
 // Replaces the old MoneyDistributionChart -- same pie-plus-legend idea
 // ("how did this month's deposits split by category"), but now:
@@ -66,7 +67,13 @@ function daysLeftInMonth() {
   return lastDay - now.getUTCDate() + 1;
 }
 
-function CategoryCard({ category, color, onSavePct, savingPct, mode = "month" }) {
+function formatGoalDate(d) {
+  if (!d) return null;
+  const [y, m] = String(d).slice(0, 10).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+function CategoryCard({ category, color, onSavePct, savingPct, mode = "month", goal = null }) {
   const { label, monthlyContribution, balance, cap, lastWithdrawal } = category;
   const capPct = cap && cap > 0 ? Math.min(100, Math.round((balance / cap) * 100)) : null;
   const [draftPct, setDraftPct] = useState(category.pct);
@@ -149,14 +156,28 @@ function CategoryCard({ category, color, onSavePct, savingPct, mode = "month" })
       </div>
 
       {capPct !== null && (
-        <div className="mb-2">
-          <div style={{ height: 6, borderRadius: 999, background: "var(--color-neutral-300)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${capPct}%`, borderRadius: 999, background: color }} />
+        <Link
+          href={`/goals?label=${encodeURIComponent(label)}`}
+          className="block mb-2 p-2 rounded-xl"
+          style={{ border: "1.5px solid #CDB8FF", background: "#FBF9FF", textDecoration: "none" }}
+        >
+          <div className="flex items-center gap-3">
+            <GoalCover label={label} cover={goal?.cover} photoUrl={goal?.photoUrl} width={56} height={56} radius={12} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-mono" style={{ fontSize: 17, fontWeight: 700, color: "var(--color-text)" }}>{currency(balance)}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "#4E22B8" }}>{capPct}%</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 999, background: "#E7DEFA", overflow: "hidden", margin: "3px 0" }}>
+                <div style={{ height: "100%", width: `${capPct}%`, borderRadius: 999, background: "#6D3BE0" }} />
+              </div>
+              <div className="text-[11.5px]" style={{ color: "var(--color-neutral-700)" }}>
+                of {currency(cap)}{goal?.goalDate ? ` · ${formatGoalDate(goal.goalDate)}` : ""}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-[11px] mt-1" style={{ color: "var(--color-neutral-700)" }}>
-            <span>{capPct}% of {currency(cap)} goal</span>
-          </div>
-        </div>
+          <div className="text-right text-[12px] font-bold mt-1" style={{ color: "#4E22B8" }}>Open goal →</div>
+        </Link>
       )}
 
       {/* "Withdrawals" links to the withdrawal-entry form pre-filtered to
@@ -205,6 +226,14 @@ function CategoryCard({ category, color, onSavePct, savingPct, mode = "month" })
 export default function CategoryDistributionSection({ mode = "month", period, summary: data = null, loading = true, reloadSummary }) {
   const [savingPct, setSavingPct] = useState(null);
   const [pctError, setPctError] = useState(null);
+  const [goalMeta, setGoalMeta] = useState({});
+  useEffect(() => {
+    fetch("/api/goals").then((r) => r.json()).then((d) => {
+      const m = {};
+      for (const g of d.goals || []) m[g.label] = g;
+      setGoalMeta(m);
+    }).catch(() => {});
+  }, [data]);
   const loadSummary = useCallback(() => (reloadSummary ? reloadSummary() : Promise.resolve()), [reloadSummary]);
 
   // Lets a category's % be edited right from its card here on the
@@ -378,6 +407,7 @@ export default function CategoryDistributionSection({ mode = "month", period, su
                 onSavePct={savePct}
                 savingPct={savingPct}
                 mode={mode}
+                goal={goalMeta[c.label] || null}
               />
             ))}
           </div>
