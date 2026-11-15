@@ -17,11 +17,11 @@ const btn = (primary) => ({
 });
 
 // Plain-language reason a card's spending could not be read.
-function reasonText(code) {
+function reasonText(code, detail) {
   if (code === "no_link") return "This card is not linked to a bank connection, so its spending cannot be read.";
   if (code === "PRODUCT_NOT_READY") return "Your bank is still preparing this card's transactions. Check back in a few minutes.";
   if (code === "ITEM_LOGIN_REQUIRED") return "Reconnect this card to see its spending.";
-  return `Spending could not be read${code ? ` (code: ${code})` : ""}.`;
+  return `Spending could not be read${code ? ` (code: ${code})` : ""}${detail ? `: ${detail}` : ""}.`;
 }
 
 export default function CardCapPanel({ card, onChanged }) {
@@ -84,7 +84,7 @@ export default function CardCapPanel({ card, onChanged }) {
         </div>
       )}
 
-      {!card.tracked && card.reason && <div style={{ fontSize: 13, color: MUTED, marginBottom: 10 }}>{reasonText(card.reason)}</div>}
+      {!card.tracked && card.reason && <div style={{ fontSize: 13, color: MUTED, marginBottom: 10 }}>{reasonText(card.reason, card.detail)}</div>}
 
       {!hasCap && !showSuggestion && !editing && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>

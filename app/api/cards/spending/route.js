@@ -47,6 +47,7 @@ export async function GET() {
     let summary = null;
     // Why spending is not available, shown on the card so it is not a mystery.
     let reason = null;
+    let detail = null;
     if (!c.plaid_access_token || !c.plaid_account_id) reason = "no_link";
     if (c.plaid_access_token && c.plaid_account_id) {
       const key = `${user.id}:${c.id}`;
@@ -60,6 +61,8 @@ export async function GET() {
         } catch (e) {
           summary = null;
           reason = e?.response?.data?.error_code || "unknown";
+          // A short, non-secret hint for the person looking at the card.
+          detail = String(e?.response?.data?.error_message || e?.message || e).slice(0, 140);
         }
       }
     }
@@ -70,6 +73,7 @@ export async function GET() {
       dismissed: !!c.card_cap_dismissed_at,
       tracked: !!summary,
       reason: summary ? null : reason,
+      detail: summary ? null : detail,
       spent: summary ? summary.spent : null,
       projected: summary ? summary.projected : null,
       daysLeft: summary ? summary.daysLeft : null,
