@@ -172,6 +172,16 @@ function OnboardingPageInner() {
   // no retirement rows; that share goes to Savings so the total stays the same.
   const defaultsForBase = (persona, entity, picks = workPicks) => {
     let rows = getDefaultSplitRules(persona).percent;
+    // A W-2 job plus a business with employees: keep the business rows (with
+    // Business Expenses) and add the workplace 401k / IRA / HSA from the day
+    // job. Starts from the W-2 + side hustle lineup; the 10% for Business
+    // Expenses comes out of Emergency Fund and Savings so the total holds.
+    if (persona === HAS_EMPLOYEES_TYPE && picks.includes("w2")) {
+      const opex = getDefaultSplitRules(HAS_EMPLOYEES_TYPE).percent.find((r) => r.id === "opex");
+      rows = getDefaultSplitRules(PERSONA_W2_WITH_SIDE_HUSTLE).percent.map((r) => (r.id === "emergency_fund" || r.id === "savings" ? { ...r, pct: (Number(r.pct) || 0) - 5 } : r));
+      const at = rows.findIndex((r) => r.id === "solo_401k") + 1;
+      if (opex) rows.splice(at > 0 ? at : rows.length, 0, { ...opex });
+    }
     if (picks.length > 0 && picks.every((v) => v === "retired")) {
       const ret = rows.filter((r) => (r.group || "").startsWith("Retirement")).reduce((n, r) => n + (Number(r.pct) || 0), 0);
       return rows
