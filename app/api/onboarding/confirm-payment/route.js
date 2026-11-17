@@ -34,7 +34,10 @@ export async function POST(request) {
     return Response.json({ error: "This checkout session doesn't belong to your account." }, { status: 403 });
   }
 
-  if (session.payment_status !== "paid" || !session.subscription) {
+  // A 100%-off promo code finishes checkout with nothing to pay today, which
+  // Stripe reports as "no_payment_required" -- that still counts as started.
+  const started = session.payment_status === "paid" || (session.payment_status === "no_payment_required" && session.status === "complete");
+  if (!started || !session.subscription) {
     return Response.json({ error: "Payment hasn't completed yet." }, { status: 402 });
   }
 

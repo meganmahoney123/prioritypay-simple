@@ -43,6 +43,10 @@ export async function POST(request) {
     customer: customerId,
     client_reference_id: user.id,
     line_items: [{ price: priceId(), quantity: 1 }],
+    // Promo codes (e.g. a 100%-off first month for testers). A card is only
+    // asked for when something is actually due today.
+    allow_promotion_codes: true,
+    payment_method_collection: "if_required",
     success_url: `${origin}/onboarding?paid=1&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/onboarding?paid=cancelled`,
   });

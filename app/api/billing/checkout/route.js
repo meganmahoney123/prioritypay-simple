@@ -47,6 +47,10 @@ export async function POST(request) {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: priceId(), quantity: 1 }],
+    // Promo codes (e.g. a 100%-off first month for testers). A card is only
+    // asked for when something is actually due today.
+    allow_promotion_codes: true,
+    payment_method_collection: "if_required",
     success_url: `${origin}/settings?billing=success`,
     cancel_url: `${origin}/settings?billing=cancelled`,
   });
