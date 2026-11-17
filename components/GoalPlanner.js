@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import { GOAL_KINDS, GROUP_SUGGESTIONS, STATUSES } from "@/lib/goalTemplates";
 
@@ -130,6 +130,78 @@ function AddItem({ label, groupId, onChange, onError }) {
   );
 }
 
+
+// Upload a plan: scan a file, show what would change, apply only on confirm.
+function UploadPlan({ label, onApplied, onError }) {
+  const fileRef = useRef(null);
+  const [state, setState] = useState("idle"); // idle | scanning | review | applying
+  const [rows, setRows] = useState([]);
+  const [msg, setMsg] = useState(null);
+
+  const scan = async (file) => {
+    setState("scanning"); setMsg(null);
+    const fd = new FormData(); fd.append("file", file); fd.append("label", label);
+    const r = await fetch("/api/goal-plan/scan", { method: "POST", body: fd }).then((x) => x.json()).catch(() => ({ error: "Couldn't reach the server." }));
+    if (fileRef.current) fileRef.current.value = "";
+    if (r.error) { setState("idle"); return setMsg(r.error); }
+    const list = (r.proposals || []).map((p) => ({ ...p, on: p.kind !== "same" }));
+    if (!list.length) { setState("idle"); return setMsg("No costs found in that file."); }
+    setRows(list); setState("review");
+  };
+  const apply = async () => {
+    const chosen = rows.filter((r) => r.on && r.kind !== "same");
+    if (!chosen.length) { setState("idle"); return; }
+    setState("applying");
+    const res = await call({ action: "applyPlan", label, items: chosen.map((r) => ({ group: r.group, name: r.name, amount: r.amount, existingId: r.existingId })) });
+    if (res.error) { setState("review"); return onError(res.error); }
+    setState("idle"); setRows([]); setMsg(`Updated your plan with ${chosen.length} change${chosen.length === 1 ? "" : "s"}.`);
+    onApplied(res);
+  };
+  const n = (k) => rows.filter((r) => r.kind === k).length;
+
+  return (
+    <Card className="p-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[220px]">
+          <div className="font-bold text-[16px]">Already have a plan?</div>
+          <div className="text-[13.5px]" style={{ color: "var(--color-neutral-700)" }}>Upload a quote or plan from a pro (PDF, photo or CSV). You review every change before anything is updated.</div>
+        </div>
+        <PrimaryButton onClick={() => fileRef.current?.click()} disabled={state === "scanning" || state === "applying"} className="text-[14px] px-4 py-2">
+          {state === "scanning" ? "Reading your plan…" : "Upload a plan"}
+        </PrimaryButton>
+        <input ref={fileRef} type="file" accept=".pdf,.csv,.txt,image/*" className="hidden" onChange={(e) => e.target.files?.[0] && scan(e.target.files[0])} />
+      </div>
+      {msg && <p className="text-[14px] mt-3" style={{ color: msg.startsWith("Updated") ? "#0F6B4F" : "#B42318" }}>{msg}</p>}
+      {(state === "review" || state === "applying") && (
+        <div className="mt-4">
+          <div className="text-[14px] font-bold mb-2">Review before we change anything: {n("new")} new, {n("changed")} changed, {n("same")} already match</div>
+          <div style={{ border: "1px solid #E7DEFA", borderRadius: 14 }}>
+            {rows.map((r, i) => (
+              <label key={i} className="flex items-center gap-3 px-3 py-2 text-[14.5px]" style={{ borderTop: i ? "1px solid #EFE8FB" : "none", opacity: r.kind === "same" ? 0.55 : 1 }}>
+                <input type="checkbox" checked={r.on && r.kind !== "same"} disabled={r.kind === "same"} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, on: e.target.checked } : x)))} />
+                <span className="flex-1 min-w-0">
+                  <span className="font-semibold">{r.name}</span>
+                  <span className="block text-[12.5px]" style={{ color: "var(--color-neutral-700)" }}>{r.group}</span>
+                </span>
+                <span className="text-[12px] font-bold rounded-full px-2 py-0.5" style={{ background: r.kind === "new" ? "#E8F7F3" : r.kind === "changed" ? "#FFF4D6" : "#F1ECFB", color: r.kind === "new" ? "#0F6B4F" : r.kind === "changed" ? "#8A5A00" : "#4A3F63" }}>
+                  {r.kind === "new" ? "New" : r.kind === "changed" ? "Changed" : "Same"}
+                </span>
+                <span className="font-mono text-right w-28">
+                  {r.kind === "changed" ? <><s style={{ color: "#8A7FA5" }}>{currency(r.oldAmount)}</s> {currency(r.amount)}</> : currency(r.amount)}
+                </span>
+              </label>
+            ))}
+          </div>
+          <div className="flex gap-2 mt-3">
+            <PrimaryButton onClick={apply} disabled={state === "applying"} className="text-[14px] px-4 py-2">{state === "applying" ? "Updating…" : "Update my plan"}</PrimaryButton>
+            <GhostButton onClick={() => { setState("idle"); setRows([]); }} className="text-[14px] px-4 py-2">Cancel</GhostButton>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function GoalPlanner({ label, kind, target, onUseTotal }) {
   const [plan, setPlan] = useState(null);
   const [err, setErr] = useState(null);
@@ -148,6 +220,8 @@ export default function GoalPlanner({ label, kind, target, onUseTotal }) {
 
   if (plan.groups.length === 0) {
     return (
+      <div className="space-y-4">
+      <UploadPlan label={label} onApplied={apply} onError={setErr} />
       <Card className="p-5 space-y-3">
         <h2 className="text-lg font-bold">Plan what it costs</h2>
         <p className="text-[14px]" style={{ color: "var(--color-neutral-700)" }}>Pick what you are saving for and we will start a list of the costs that usually come with it. Change anything.</p>
@@ -162,6 +236,7 @@ export default function GoalPlanner({ label, kind, target, onUseTotal }) {
           ))}
         </div>
       </Card>
+      </div>
     );
   }
 
@@ -174,6 +249,7 @@ export default function GoalPlanner({ label, kind, target, onUseTotal }) {
 
   return (
     <div className="space-y-4">
+      <UploadPlan label={label} onApplied={apply} onError={setErr} />
       <Card className="p-5">
         <div className="flex flex-wrap items-end gap-x-8 gap-y-2">
           <div><div className="text-[12px] font-bold uppercase tracking-wider" style={{ color: "#4E22B8" }}>Plan total</div><div className="font-mono text-[28px] font-bold">{currency(total)}</div></div>

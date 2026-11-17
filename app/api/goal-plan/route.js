@@ -90,6 +90,29 @@ export async function POST(req) {
       }
     }
     if (!err) await admin.from("simple_goals").upsert({ user_id: uid, label, kind: kind.key }, { onConflict: "user_id,label" });
+  } else if (action === "applyPlan") {
+    // Confirmed changes from an uploaded plan: update amounts, add new items.
+    const list = Array.isArray(body.items) ? body.items.slice(0, 80) : [];
+    const { data: have } = await admin.from("simple_goal_groups").select("id, name").match(own);
+    const gid = new Map((have || []).map((g) => [g.name.toLowerCase(), g.id]));
+    let order = have?.length || 0;
+    for (const it of list) {
+      const amt = Math.max(0, Number(it.amount) || 0);
+      if (it.existingId) {
+        const r = await admin.from("simple_goal_items").update({ amount: amt }).eq("id", it.existingId).match(own);
+        if (r.error) { err = r.error; break; }
+        continue;
+      }
+      const gname = String(it.group || "Costs").trim().slice(0, 80) || "Costs";
+      let id = gid.get(gname.toLowerCase());
+      if (!id) {
+        const { data: row, error } = await admin.from("simple_goal_groups").insert({ ...own, name: gname, sort: order++ }).select("id").single();
+        if (error) { err = error; break; }
+        id = row.id; gid.set(gname.toLowerCase(), id);
+      }
+      const r = await admin.from("simple_goal_items").insert({ ...own, group_id: id, name: String(it.name || "Item").trim().slice(0, 140), amount: amt, sort: 99 });
+      if (r.error) { err = r.error; break; }
+    }
   } else if (action === "addGroup") {
     const name = String(body.name || "").trim().slice(0, 80);
     if (!name) return Response.json({ error: "Give the category a name." }, { status: 400 });
