@@ -17,7 +17,7 @@ export default function GoalCover({ label, cover, photoUrl, width = "100%", heig
   const h = typeof height === "number" ? Math.max(120, height * 2) : 600;
   const photo = coverPhotoUrl(c, Math.min(1200, w), Math.min(800, h));
   if (photo) {
-    return <div style={{ ...base, background: `url(${photo}) center / cover no-repeat, linear-gradient(135deg, ${c.from}, ${c.to})` }} />;
+    return <div style={{ ...base, background: `url(${photo}) ${c.pos || "center"} / cover no-repeat, linear-gradient(135deg, ${c.from}, ${c.to})` }} />;
   }
   const size = iconSize || Math.max(20, Math.round((typeof height === "number" ? height : 80) * 0.4));
   return (
