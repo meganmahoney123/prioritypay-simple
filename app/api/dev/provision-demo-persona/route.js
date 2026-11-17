@@ -67,7 +67,6 @@ const PERSONAS = {
     email: "megan+w2only@ignitemysite.com",
     personaLabel: PERSONA_W2_NO_SIDE_HUSTLE,
     accounts: [
-      { key: "tax_reserve", institution_name: "SoFi", account_name: "Tax Reserve Savings", mask: "1180", subtype: "savings", current_balance: 6100.0 },
       { key: "investments", institution_name: "Charles Schwab", account_name: "Brokerage Cash", mask: "4402", subtype: "savings", current_balance: 4600.0 },
       { key: "401k", institution_name: "Fidelity", account_name: "401k Feeder", mask: "7719", subtype: "savings", current_balance: 5350.0 },
       { key: "ira", institution_name: "Vanguard", account_name: "IRA Feeder", mask: "2846", subtype: "savings", current_balance: 3350.0 },
@@ -76,7 +75,6 @@ const PERSONAS = {
       { key: "savings", institution_name: "Capital One", account_name: "Online Savings", mask: "3312", subtype: "savings", current_balance: 7900.0 },
     ],
     splitRules: [
-      { label: "Tax Reserve", group: null, pct: 20, color: "#a3a3a3", accountKey: "tax_reserve", startingBalance: null },
       { label: "Investments", group: "Investments", pct: 10, color: "#14b8a6", accountKey: "investments", startingBalance: 2500 },
       { label: "401k", group: "Retirement", pct: 5, color: "#8b5cf6", accountKey: "401k", retirementType: "traditional_401k", startingBalance: 4000 },
       { label: "IRA", group: "Retirement", pct: 5, color: "#6366f1", accountKey: "ira", retirementType: "traditional_ira", startingBalance: 2000 },
