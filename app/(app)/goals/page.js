@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import GoalCover from "@/components/GoalCover";
+import GoalPlanner from "@/components/GoalPlanner";
 import { GOAL_COVERS, guessCover } from "@/lib/goalCovers";
 
 // Savings Goals. A goal is a category with a total goal amount (its cap), so
@@ -243,6 +244,13 @@ function GoalDetail({ goal, balance, payments, reload }) {
           {months && left > 0 && <div className="text-[13.5px] mt-2" style={{ color: "var(--color-neutral-700)" }}>About {currency(Math.ceil(left / months))} a month to get there.</div>}
         </Card>
       </div>
+
+      <GoalPlanner
+        label={goal.label}
+        kind={goal.kind}
+        target={goal.target}
+        onUseTotal={async (t) => { setTarget(String(t)); await put({ target: t }); reload(); }}
+      />
 
       <Card className="p-5 space-y-4">
         <h2 className="text-lg font-bold">Goal details</h2>
