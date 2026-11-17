@@ -1,6 +1,6 @@
 "use client";
 import { Plane, Sun, Mountain, Heart, PartyPopper, Home, Car, Ship, Baby, GraduationCap, Laptop, PawPrint, Gift, Star } from "lucide-react";
-import { coverByKey, guessCover } from "@/lib/goalCovers";
+import { coverByKey, guessCover, coverPhotoUrl } from "@/lib/goalCovers";
 
 const ICONS = { Plane, Sun, Mountain, Heart, PartyPopper, Home, Car, Ship, Baby, GraduationCap, Laptop, PawPrint, Gift, Star };
 
@@ -13,6 +13,12 @@ export default function GoalCover({ label, cover, photoUrl, width = "100%", heig
   }
   const c = coverByKey(cover || guessCover(label));
   const Icon = ICONS[c.icon] || Star;
+  const w = typeof width === "number" ? Math.max(120, width * 2) : 900;
+  const h = typeof height === "number" ? Math.max(120, height * 2) : 600;
+  const photo = coverPhotoUrl(c, Math.min(1200, w), Math.min(800, h));
+  if (photo) {
+    return <div style={{ ...base, background: `url(${photo}) center / cover no-repeat, linear-gradient(135deg, ${c.from}, ${c.to})` }} />;
+  }
   const size = iconSize || Math.max(20, Math.round((typeof height === "number" ? height : 80) * 0.4));
   return (
     <div style={{ ...base, background: `linear-gradient(135deg, ${c.from}, ${c.to})`, display: "flex", alignItems: "center", justifyContent: "center" }}>

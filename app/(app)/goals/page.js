@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, PrimaryButton, GhostButton, currency } from "@/components/ui";
 import GoalCover from "@/components/GoalCover";
 import GoalPlanner from "@/components/GoalPlanner";
-import { GOAL_COVERS, guessCover } from "@/lib/goalCovers";
+import { GOAL_COVERS, guessCover, coverByKey, coverCredit } from "@/lib/goalCovers";
 
 // Savings Goals. A goal is a category with a total goal amount (its cap), so
 // the list below is built from the categories that have one. Open a goal for
@@ -229,7 +229,13 @@ function GoalDetail({ goal, balance, payments, reload }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr]">
-        <GoalCover label={goal.label} cover={goal.cover} photoUrl={goal.photoUrl} height={200} radius={22} />
+        <div>
+          <GoalCover label={goal.label} cover={goal.cover} photoUrl={goal.photoUrl} height={200} radius={22} />
+          {!goal.photoUrl && coverCredit(coverByKey(goal.cover || guessCover(goal.label))) && (() => {
+            const cr = coverCredit(coverByKey(goal.cover || guessCover(goal.label)));
+            return <div className="text-[12px] mt-1" style={{ color: "var(--color-neutral-700)" }}>Photo by <a href={cr.url} target="_blank" rel="noopener noreferrer" style={{ color: "#4E22B8", fontWeight: 600 }}>{cr.by}</a> on <a href="https://unsplash.com/?utm_source=prioritysave&utm_medium=referral" target="_blank" rel="noopener noreferrer" style={{ color: "#4E22B8", fontWeight: 600 }}>Unsplash</a></div>;
+          })()}
+        </div>
         <Card className="p-5">
           <div className="text-[12px] font-bold uppercase tracking-wider" style={{ color: "#4E22B8" }}>Progress</div>
           <div className="flex items-baseline gap-2 mt-1 mb-2">
