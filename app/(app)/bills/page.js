@@ -667,8 +667,9 @@ export default function BillsPage() {
                 <CalendarView bills={bills} today={today} />
               ) : (
                 <div style={{ overflowX: "auto" }}>
-                  <div style={{ minWidth: 760 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: COLS, gap: 12, padding: "4px 0 8px" }}>
+                  <style>{`@media (max-width:640px){.pp-bills-table{min-width:0!important}.pp-bills-head{display:none!important}.pp-bills-row{grid-template-columns:48px minmax(0,1fr) auto!important;row-gap:8px!important}.pp-bills-row>:nth-child(4),.pp-bills-row>:nth-child(5),.pp-bills-row>:nth-child(6){grid-column:2 / -1}.pp-bills-row>:nth-child(1){grid-row:1 / span 2}.pp-bills-row>:nth-child(6){justify-content:flex-start!important}}`}</style>
+                  <div className="pp-bills-table" style={{ minWidth: 760 }}>
+                    <div className="pp-bills-head" style={{ display: "grid", gridTemplateColumns: COLS, gap: 12, padding: "4px 0 8px" }}>
                       <div style={th}>Date</div>
                       <div style={th}>Payment</div>
                       <div style={{ ...th, textAlign: "right" }}>Amount</div>
@@ -683,7 +684,7 @@ export default function BillsPage() {
                         const acc = accountById[b.account_id];
                         const d = parseIso(b.next_due);
                         return (
-                          <div key={b.id} style={{ display: "grid", gridTemplateColumns: COLS, gap: 12, alignItems: "center", padding: "12px 0", borderTop: "1.5px solid var(--color-divider)" }}>
+                          <div key={b.id} className="pp-bills-row" style={{ display: "grid", gridTemplateColumns: COLS, gap: 12, alignItems: "center", padding: "12px 0", borderTop: "1.5px solid var(--color-divider)" }}>
                             <div>
                               <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: muted }}>{d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}</div>
                               <div style={{ ...mono, fontSize: 20, lineHeight: 1.1 }}>{d.getUTCDate()}</div>

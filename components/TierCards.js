@@ -27,7 +27,7 @@ const FLOW_LABEL = "↓ Once every category above is full, the rest flows down";
 
 export const TIER_CSS = `
 .pp-tier-card{background:#fff;border:1px solid #DDD5F3;border-radius:22px;padding:6px 20px 8px}
-.pp-tier-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 0 2px}
+.pp-tier-head{display:flex;flex-wrap:wrap;min-width:0;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 0 2px}
 .pp-tier-title{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5B3FD1}
 .pp-tier-sub{font-size:14px;line-height:1.5;color:#4A3F63;margin:0 0 4px}
 .pp-tier-row{padding:13px 0;border-top:1.5px solid ${LINE};display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -158,7 +158,7 @@ export default function TierCards({ percent, onUpdate, onAddRow, onRemoveRow, on
           const rows = tierRows(percent, t);
           const delAction =
             confirming === t ? (
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#B3261E", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#B3261E" }}>
                 Delete this tier and its {rows.length} {rows.length === 1 ? "bill" : "bills"}?{" "}
                 <button type="button" className="pp-tier-more" style={{ color: "#B3261E" }} onClick={() => { setConfirming(null); onRemoveTier(t); }}>Yes, delete</button>
                 <button type="button" className="pp-tier-more" onClick={() => setConfirming(null)}>Cancel</button>

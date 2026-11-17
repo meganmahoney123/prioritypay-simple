@@ -839,9 +839,9 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
           const busy = busyKey === `dep:${d.id}`;
           return (
             <div key={d.id} style={{ padding: "12px 0", borderTop: "1px solid var(--color-divider)" }}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 {checkBox(true, () => openSkip(d.id), `Remove ${d.title} from this split`, busy)}
-                <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ minWidth: 0, flex: "1 1 150px" }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text)", overflowWrap: "anywhere" }}>{d.title}</div>
                   <div style={{ ...mutedText, marginTop: 2 }}>{formatDate(d.createdAt, true)}</div>
                   {renderEffect(d)}
@@ -849,7 +849,7 @@ export default function PendingTransfers({ accounts, refreshKey, onChanged, show
                 {sourceTag(d, true)}
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700 }}>{money(d.sourceAmount)}</div>
                 {skipOpenFor !== d.id && (
-                  <button onClick={() => openSkip(d.id)} style={{ ...linkButtonStyle, fontSize: 14 }}>
+                  <button onClick={() => openSkip(d.id)} style={{ ...linkButtonStyle, fontSize: 14, whiteSpace: "nowrap" }}>
                     Remove
                   </button>
                 )}
