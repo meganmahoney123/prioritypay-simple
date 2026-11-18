@@ -1246,8 +1246,9 @@ export default function CloseoutPage() {
                   <div style={{ fontSize: 13.5, color: PS_MUTED }}>Updates as you tag deposits</div>
                 </div>
                 <div className="overflow-x-auto">
-                  <div style={{ minWidth: 460, marginTop: 8 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, fontSize: 11.5, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>
+                  <style>{`@media (max-width:640px){.pp-co-wrap{min-width:0!important}.pp-co-head{display:none!important}.pp-co-row{grid-template-columns:minmax(0,1fr) auto!important;row-gap:6px!important}.pp-co-row>:nth-child(1){grid-column:1;grid-row:1}.pp-co-row>:nth-child(3){grid-column:2;grid-row:1}.pp-co-row>:nth-child(2){grid-column:1 / -1;grid-row:2}.pp-co-row>:nth-child(2):empty{display:none}.pp-co-table{min-width:0!important}.pp-co-table th,.pp-co-table td{font-size:13px!important;padding-left:6px}.pp-co-table td:first-child,.pp-co-table th:first-child{padding-left:0}}`}</style>
+                  <div className="pp-co-wrap" style={{ marginTop: 8 }}>
+                    <div className="pp-co-row pp-co-head" style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, fontSize: 11.5, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED }}>
                       <div>SOURCE</div><div>SHARE</div><div style={{ textAlign: "right" }}>AMOUNT</div>
                     </div>
                     {incomeSources.map((r) => {
@@ -1255,7 +1256,7 @@ export default function CloseoutPage() {
                       const parts = breakdownFor(r.key);
                       return (
                         <div key={r.key} style={{ borderTop: "1.5px solid #E7DEFA" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "13px 0" }}>
+                        <div className="pp-co-row" style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "13px 0" }}>
                           <div>
                             <div style={{ fontSize: 16.5, fontWeight: 800, color: PS_INK }}>{r.label}</div>
                             <div style={{ fontSize: 13, color: PS_MUTED }}>{[r.detail, `${r.list.length} deposit${r.list.length === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}</div>
@@ -1271,7 +1272,7 @@ export default function CloseoutPage() {
                         {parts.length > 1 && (
                           <div style={{ marginBottom: 12, marginLeft: 6, paddingLeft: 14, borderLeft: "3px solid #D9C9FF" }}>
                             {parts.map((b) => (
-                              <div key={b.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "baseline", padding: "6px 0" }}>
+                              <div key={b.id} className="pp-co-row" style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "baseline", padding: "6px 0" }}>
                                 <div>
                                   <div style={{ fontSize: 15, fontWeight: 700, color: PS_INK }}>{b.name}</div>
                                   <div style={{ fontSize: 12.5, color: PS_MUTED }}>{b.detail}</div>
@@ -1285,7 +1286,7 @@ export default function CloseoutPage() {
                         </div>
                       );
                     })}
-                    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "14px 0 2px", borderTop: `2px solid ${PS_INK}` }}>
+                    <div className="pp-co-row" style={{ display: "grid", gridTemplateColumns: "1.5fr 1.4fr .8fr", gap: 14, alignItems: "center", padding: "14px 0 2px", borderTop: `2px solid ${PS_INK}` }}>
                       <div style={{ fontSize: 17, fontWeight: 800, color: PS_INK }}>Total income</div>
                       <div />
                       <div style={{ textAlign: "right", fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: 24, fontWeight: 700 }}>{currency(incomeGrandTotal)}</div>
@@ -1303,7 +1304,7 @@ export default function CloseoutPage() {
                   <div style={{ fontSize: 13.5, color: PS_MUTED }}>Updates as you sort expenses below</div>
                 </div>
                 <div className="overflow-x-auto">
-                  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8, minWidth: 460 }}>
+                  <table className="pp-co-table" style={{ width: "100%", borderCollapse: "collapse", marginTop: 8, minWidth: 460 }}>
                     <thead>
                       <tr style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.1em", color: PS_MUTED, textAlign: "right" }}>
                         <th style={{ textAlign: "left", padding: "6px 0" }}>BUSINESS</th>
